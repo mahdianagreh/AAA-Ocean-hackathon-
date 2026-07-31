@@ -5,6 +5,14 @@
 
 Every data source named in the concept doc, assigned to one owner.
 
+**Individual task files** — each is self-contained, open only your own:
+
+- [`tasks/mahdi.md`](tasks/mahdi.md) — Terrain & Hydrology
+- [`tasks/karam.md`](tasks/karam.md) — Rainfall & Land Reanalysis
+- [`tasks/pulga.md`](tasks/pulga.md) — Land Cover, Soil, Urban & Marine Habitat
+- [`tasks/abd.md`](tasks/abd.md) — Satellite Imagery & Plume Detection
+- [`tasks/nizar.md`](tasks/nizar.md) — Weather Forecasts & Ocean Currents
+
 ---
 
 ## Shared — do this first (Day 1, together)
