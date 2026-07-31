@@ -5,6 +5,8 @@
 
 Every data source named in the concept doc, assigned to one owner.
 
+**Read first:** [`tasks/00-contracts.md`](tasks/00-contracts.md) — the Day-1 contract that lets all five streams run in parallel with no one blocked.
+
 **Individual task files** — each is self-contained, open only your own:
 
 - [`tasks/mahdi.md`](tasks/mahdi.md) — Terrain & Hydrology

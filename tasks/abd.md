@@ -24,7 +24,11 @@ Two consequences:
 ## Before you start
 
 - [ ] **AOI bounding box frozen** (Mahdi commits `data/aoi/aqaba_aoi.geojson`).
-- [ ] **Candidate event dates from Karam** — you are blocked without these. Chase him on Day 3.
+- [ ] **Get the event dates yourself on Day 1 — do not wait for Karam.** The two candidates are already named in the concept doc: **October 2016** and **February 2013**. Exact dates are in the literature, not in IMERG:
+  - Ginat et al. 2025 — https://nhess.copernicus.org/articles/25/3201/2025/index.html
+  - Katz et al. 2015 — https://www.sciencedirect.com/science/article/pii/S0012821X15001119
+
+  Write them to `docs/event_dates.md`. **This is the single most important decoupling in the project** — it moves your gate from Day 5 to Day 2, so a bad answer leaves eleven days to react instead of nine. See [`00-contracts.md`](00-contracts.md) §4 P3.
 - [ ] **Copernicus Data Space account** registered.
 - [ ] **Google Earth Engine access** — the fast path for experimentation.
 - [ ] **NASA Earthdata account** — needed for HLS and Landsat.
@@ -187,21 +191,23 @@ backend/src/models/plume_segmentation.py
 
 ---
 
-## Who depends on you
+## Handoffs — non-blocking
 
-| Teammate | Needs from you | By when |
+| Teammate | What they get from you | Are they blocked? |
 |---|---|---|
-| **Everyone** | the go/no-go on the demo event — it sets the whole demo | **Day 5** |
-| **Nizar** | the observed plume mask, to calibrate diffusion / windage / settling against | Day 9 |
-| **Whoever runs the backtest** | observed mask for IoU, Dice, centroid distance, area error | Day 9 |
+| **Everyone** | the go/no-go on the demo event | **This one is real** — but now answered Day 2, not Day 5 |
+| **Nizar** | observed plume mask, the calibration target | **No** — he built the parameter search against a synthetic mask; yours is a file swap |
+| **Backtest** | observed mask for IoU / Dice / centroid metrics | Metric code is written and tested early against synthetic masks |
+
+**Your go/no-go is the one genuine dependency left in the project**, which is exactly why it moved to Day 2. Announce it the moment you know — a bad answer with eleven days left is a manageable problem.
 
 ## What you depend on
 
-| From | What | By when |
+| From | What | Blocked? |
 |---|---|---|
-| **Karam** | candidate event dates | **Day 3** |
-| **Mahdi** | outlet coordinates — to check the plume emerges where predicted | Day 4 |
-| **Pulga** | coastline / water mask (or derive your own from SCL) | Day 4 |
-| **Everyone** | the frozen AOI box | Day 1 |
+| **Karam** | event dates | **No** — you took them from the papers yourself on Day 1 |
+| **Mahdi** | outlet coordinates | **No** — provisional ones from Day 1; and the audit doesn't need them at all |
+| **Pulga** | water mask | **No** — derive your own from Sentinel-2's SCL band |
+| **Contract** | the padded download box | Available Day 1 |
 
-You can register accounts and learn the Copernicus Browser on Day 1–2. The moment Karam's dates land, the audit is your only priority until it's answered.
+**Start Day 1.** Register the accounts, read the two papers for the dates, and open the Copernicus Browser. The audit is your only priority until the gate is answered.

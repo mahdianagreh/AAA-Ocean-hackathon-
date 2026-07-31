@@ -18,10 +18,13 @@ You also own the project's most important honest caveat. The current products ar
 ## Before you download anything
 
 - [ ] **AOI bounding box frozen** (Mahdi commits `data/aoi/aqaba_aoi.geojson`).
+Read [`00-contracts.md`](00-contracts.md) first — **you start Day 1 and wait for nobody.**
+
 - [ ] **Copernicus Marine account** registered → needed for the primary currents. **Day 1** — don't leave this to Day 8.
-- [ ] **Outlet coordinates from Mahdi** (Day 4) — the particle release point.
-- [ ] **Event windows from Karam** — so you pull current fields for the right dates.
-- [ ] **Coastline mask + depth field from Pulga** — the transport model's boundaries.
+- [ ] **Use `outlets_PROVISIONAL.gpkg`** — Mahdi publishes hand-clicked outlet points on Day 1. Build the particle engine against them; swapping in his real coordinates later is a config change, not a rebuild.
+- [ ] **Pull your own GEBCO copy.** It's a 10-minute download with no dependencies — don't wait for Pulga's coastline and depth field. Two people having their own is fine.
+- [ ] **Event dates** are in `docs/event_dates.md` from Day 1, straight from the literature. You don't need Karam's IMERG ranking to know which windows to pull.
+- [ ] **Publish P5 · synthetic plume mask on Day 1 (~30 min):** a plain ellipse offset from an outlet, saved in the exact format Abd's real mask will use → `data/processed/plume/observed_plume_PROVISIONAL.gpkg`. This is what lets you build and test the entire calibration parameter search before any satellite mask exists.
 
 ### Environment
 
@@ -190,22 +193,27 @@ docs/forcing_limitations.md
 
 ---
 
-## Who depends on you
+## Handoffs — non-blocking
 
-| Teammate | Needs from you | By when |
+| Teammate | What they get from you | Are they blocked? |
 |---|---|---|
-| **Whoever builds the particle engine** | interpolation-ready current + wind fields | **Day 8** |
-| **Whoever runs calibration** | current fields for the demo event window | Day 9 |
-| **Frontend** | live forecast output for the forecast-mode demo | Day 12 |
+| **Particle engine** | interpolation-ready current + wind fields | It's yours — build it Day 1 against provisional outlets |
+| **Calibration** | current fields for the demo window | **No** — dates are known Day 1 from the literature |
+| **Frontend** | live forecast output | Day 12, and it works on any weather |
 
 ## What you depend on
 
-| From | What | By when |
+| From | What | Blocked? |
 |---|---|---|
-| **Mahdi** | outlet coordinates — the particle release point | Day 4 |
-| **Karam** | event windows and per-catchment rainfall thresholds | Day 4 |
-| **Pulga** | coastline mask + depth field | Day 8 |
-| **Abd** | observed plume mask — the calibration target | Day 9 |
-| **Everyone** | the frozen AOI box | Day 1 |
+| **Mahdi** | real outlet coordinates | **No** — provisional from Day 1; the swap is a config change |
+| **Karam** | per-catchment 3 h rainfall thresholds | **No** — ask for a rough number early, refine later |
+| **Pulga** | coastline + depth field | **No** — pull your own GEBCO, 10 minutes |
+| **Abd** | observed plume mask | **Only for final calibration** — see below |
 
-GFS and GEFS need nothing but the AOI box — **start those on Day 1.** Currents can also be pulled for the event window as soon as Karam confirms dates on Day 3.
+### The one real dependency, and how it's reduced
+
+Calibration tunes diffusion, windage and settling by comparing simulated plumes against Abd's observed mask. You genuinely cannot calibrate against an observation that doesn't exist.
+
+**So don't wait for it.** Build and test the entire parameter search against your synthetic mask (P5) — the grid search, the metric computation, the best-parameter selection, all of it. When Abd's real mask lands, you swap one file path and re-run. Roughly an hour, not days of blocked work.
+
+**Start Day 1.** GFS, GEFS, ECMWF and both current products need nothing but the padded download box.

@@ -11,7 +11,19 @@
 
 You produce the geometry everyone else's work sits on. The catchment polygons decide which rainfall cells Karam averages, and the **coastal outlet coordinates are the plume release point** for Nizar's current forcing and Abd's satellite validation.
 
-> **Hard deadline: outlets locked by Day 4.** If an outlet moves after that, Nizar's transport runs and Abd's plume comparison both re-run from scratch.
+**But nobody waits for you.** Read [`00-contracts.md`](00-contracts.md) first. Your Day-1 job is to publish *provisional* versions of both so everyone else starts immediately, then replace them with the real thing.
+
+### Your two Day-1 provisional deliverables (~2 hours total)
+
+**P1 · Provisional catchments** — download HydroBASINS level 9 (precomputed, no DEM processing), clip to AOI, pick the 5 draining to the Gulf, assign `AQ-C01`…`AQ-C05`.
+→ `data/processed/vectors/catchments_PROVISIONAL.gpkg`
+
+**P2 · Provisional outlets** — open satellite imagery, click where each wadi visibly meets the sea. No DEM needed.
+→ `data/processed/vectors/outlets_PROVISIONAL.gpkg`
+
+Both are coarse and wrong in detail, and structurally identical to your real output. Karam, Pulga and Nizar build their full pipelines against them and re-run in minutes when your real geometry lands.
+
+> **Outlets still matter.** Getting them right is your main technical contribution — the provisional ones just mean nobody sits idle while you do it properly.
 
 ---
 
@@ -171,15 +183,19 @@ data/processed/features/catchment_terrain.parquet
 
 ---
 
-## Who depends on you
+## Handoffs — non-blocking
 
-| Teammate | Needs from you | By when |
-|---|---|---|
-| **Karam** | catchment polygons — to average IMERG rainfall per catchment | Day 3 |
-| **Pulga** | catchment polygons + `catchment_id` scheme — to attach land-cover and soil fractions | Day 4 |
-| **Nizar** | outlet lon/lat — the particle release point | Day 4 |
-| **Abd** | outlet lon/lat — to compare the observed plume against the predicted source | Day 5 |
+Nobody is idle waiting for you, because the provisional versions went out on Day 1. These are **upgrades**, not unblocks.
+
+| Teammate | Provisional they're using | Your real version replaces it | Their re-run cost |
+|---|---|---|---|
+| **Karam** | `catchments_PROVISIONAL.gpkg` | 30 m DEM delineation | minutes |
+| **Pulga** | `catchments_PROVISIONAL.gpkg` | same | minutes |
+| **Nizar** | `outlets_PROVISIONAL.gpkg` | DEM outlets checked vs imagery + OSM | minutes |
+| **Abd** | not blocked — he needs event dates, not outlets | outlets used as a source cross-check | none |
+
+Announce each swap in the team channel and tick it off in [`00-contracts.md`](00-contracts.md) §5. An unannounced swap means someone keeps quoting stale numbers.
 
 ## What you depend on
 
-Nothing. **Your stream blocks nobody and is blocked by nobody** — which is why it should be finished early rather than late. Start Day 2 and don't wait for anyone.
+**Nothing at all.** Your stream is fully independent start to finish. One optional input worth having: Pulga's OSM layer flags mapped culverts and storm drains, which helps you correct the last stretch of each channel. Useful, not required — if it's late, hand-check against satellite imagery instead.

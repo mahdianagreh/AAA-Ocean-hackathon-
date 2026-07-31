@@ -11,7 +11,14 @@
 
 You decide **which historical event the whole demo is built on**. Abd cannot start the satellite imagery audit until you hand over candidate event dates, and the runoff model has no training labels until your event table exists.
 
-> **Day 3 is your hard deadline for candidate event dates.** Abd's Day-5 imagery gate — the project's single biggest risk — sits directly downstream of your output.
+**You are no longer a blocker, and you are no longer blocked.** Read [`00-contracts.md`](00-contracts.md) first.
+
+Two changes to what you may have expected:
+
+- **Event dates no longer come from you.** The two candidates (Oct 2016, Feb 2013) are named in the concept doc and their exact dates come from the literature, not from IMERG. Abd reads the papers himself on Day 1 and starts his audit immediately. Your IMERG ranking *confirms* those dates rather than discovering them.
+- **You don't wait for Mahdi's catchments.** He publishes `catchments_PROVISIONAL.gpkg` on Day 1 from HydroBASINS. Build your entire per-catchment aggregation pipeline against it. When his real 30 m delineation lands, you re-run the same script — same IDs, same schema, minutes of work.
+
+Start downloading IMERG on Day 1 using the padded download box from the contract.
 
 ---
 
@@ -164,19 +171,21 @@ notebooks/01_event_mining.ipynb
 
 ---
 
-## Who depends on you
+## Handoffs — non-blocking
 
-| Teammate | Needs from you | By when |
+| Teammate | What they get from you | Are they blocked? |
 |---|---|---|
-| **Abd** | candidate event dates — cannot start the imagery audit without them | **Day 3** |
-| **Nizar** | event windows — to pull matching current fields for those dates | Day 8 |
-| **Whoever builds the runoff model** | the full event feature table with labels | Day 7 |
+| **Abd** | IMERG *confirmation* that the literature dates were extreme | **No** — he took the dates from the papers on Day 1 |
+| **Nizar** | event windows | **No** — same, they're in `docs/event_dates.md` from Day 1 |
+| **Runoff model** | the event feature table with labels | Only at training time, Day 7 |
+
+Your rainfall percentiles do feed Nizar's GEFS exceedance thresholds — get him a rough per-catchment 3 h threshold early, even a crude one. A provisional number he can wire up beats a precise one he waits for.
 
 ## What you depend on
 
-| From | What | By when |
+| From | What | Blocked? |
 |---|---|---|
-| **Mahdi** | catchment polygons — to aggregate rainfall per catchment instead of per pixel | Day 3 |
-| **Everyone** | the frozen AOI box | Day 1 |
+| **Mahdi** | real catchment polygons | **No** — provisional ones from Day 1, re-run costs minutes |
+| **Contract** | the padded download box | Available Day 1 |
 
-You can start downloading IMERG over the raw bounding box on Day 1 and aggregate to catchments as soon as Mahdi's polygons land — don't sit idle waiting for them.
+**Start Day 1.** Download IMERG over the padded box, build the aggregation pipeline against provisional catchments, and re-run when Mahdi's real geometry lands.

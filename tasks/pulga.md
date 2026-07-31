@@ -15,9 +15,12 @@ You supply both ends of the chain. On land, your land-cover and soil layers are 
 
 ## Before you download anything
 
-- [ ] **AOI bounding box frozen** (Mahdi commits `data/aoi/aqaba_aoi.geojson`).
-- [ ] **Catchment polygons and the `catchment_id` scheme from Mahdi** (`AQ-C01`, `AQ-C02`, …) — agree this join key with him before you build any feature table.
-- [ ] **Google Earth Engine access** — needed for Allen Coral Atlas. Mahdi creates the shared project.
+Read [`00-contracts.md`](00-contracts.md) first — **you start Day 1 and wait for nobody.**
+
+- [ ] **Download using the padded box** from the contract (`34.80, 29.25, 35.15, 29.70`). It's a superset of the analysis area, so your downloads stay valid even if the AOI shifts.
+- [ ] **Use `catchments_PROVISIONAL.gpkg`** — Mahdi publishes it Day 1 from HydroBASINS. Build your full aggregation pipeline against it; re-running on his real polygons later takes minutes.
+- [ ] **Register your own free Google Earth Engine project.** There is no shared one — that was a pointless blocker.
+- [ ] **Publish P4 · provisional reef zones on Day 1 (~1 hour):** hand-draw 6–8 boxes along the coast where reefs are known, name them `R-01`…`R-08`, set every `sensitivity_weight` to `1.0`. → `data/processed/vectors/reef_zones_PROVISIONAL.gpkg`. This unblocks the exposure engine and the whole dashboard while you prepare the real Coral Atlas export.
 - [ ] **CRS convention:** EPSG:4326 for storage, EPSG:32636 (UTM 36N) for all area calculations. Reef zone areas in km² must come from the projected CRS, not degrees.
 
 ### Environment
@@ -184,20 +187,22 @@ data/processed/bathymetry/depth_utm36n.tif
 
 ---
 
-## Who depends on you
+## Handoffs — non-blocking
 
-| Teammate | Needs from you | By when |
+| Teammate | What they get from you | Are they blocked? |
 |---|---|---|
-| **Whoever builds the runoff model** | land-cover + soil feature columns | Day 7 |
-| **Nizar** | coastline mask + depth field for the particle engine | Day 8 |
-| **Whoever builds the exposure engine** | named reef zones with IDs and areas | **Day 10** |
-| **Mahdi** | OSM drainage conflicts, so he can correct outlets | Day 4 |
+| **Exposure engine** | real Coral Atlas reef zones | **No** — your `reef_zones_PROVISIONAL.gpkg` went out Day 1 with the same IDs |
+| **Nizar** | coastline + depth field | **No** — he pulls his own GEBCO copy, it's a 10-minute download |
+| **Runoff model** | land-cover + soil columns | Only at training time, Day 7 |
+| **Mahdi** | OSM culvert/drain conflicts | **No** — helpful for his outlet correction, not required |
+
+Keep the reef zone **IDs and count identical** between provisional and real. If `R-01` means a different stretch of coast after the swap, every stored exposure result silently becomes wrong — and unlike a crash, nothing tells you.
 
 ## What you depend on
 
-| From | What | By when |
+| From | What | Blocked? |
 |---|---|---|
-| **Mahdi** | catchment polygons + `catchment_id` scheme | Day 4 |
-| **Everyone** | the frozen AOI box | Day 1 |
+| **Mahdi** | real catchment polygons | **No** — provisional from Day 1, re-run costs minutes |
+| **Contract** | the padded download box, `catchment_id` scheme | Available Day 1 |
 
-WorldCover, SoilGrids, OSM, ACA and GEBCO downloads all need only the AOI box — **start them on Day 1** and do the per-catchment aggregation once Mahdi's polygons land.
+**Start Day 1.** All five of your sources need nothing but the padded box.
