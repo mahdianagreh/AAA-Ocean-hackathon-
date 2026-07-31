@@ -1,0 +1,20 @@
+# Python environment
+.venv/
+__pycache__/
+*.pyc
+
+# Raw downloads — reproducible with scripts/, 41 MB, not worth versioning
+# (jordan-latest.osm.pbf is 30 MB, the WorldCover tile 8 MB)
+data/raw/*
+!data/raw/aoi/
+!data/raw/aoi/**
+
+# Intermediates and the local catchment test fixture. The fixture MUST NOT be
+# shared — contract §4 P1 gives catchment ownership to Mahdi, and a second
+# AQ-C{NN} geometry in circulation is exactly what the ID contract prevents.
+data/interim/
+data/outputs/
+
+# data/aoi/ and data/processed/ ARE committed on purpose: they are the shared
+# contract paths from 00-contracts.md §3 that other people's code reads
+# (reef zones, coastline, depth field, feature tables). ~8 MB total.

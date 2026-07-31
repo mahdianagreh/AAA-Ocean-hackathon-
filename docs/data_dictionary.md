@@ -1,0 +1,464 @@
+# Data dictionary — Workstream A+B (land cover, soil, urban, marine habitat)
+
+**Owner:** Pulga · **Project:** ReefShield Aqaba · **Last verified:** 2026-08-01
+
+**Spatial contract:** download box `34.80, 29.25, 35.15, 29.70` (W, S, E, N, EPSG:4326).
+Storage CRS **EPSG:4326**, all area/distance maths in **EPSG:32636** (UTM 36N).
+Constants live in [scripts/config.py](../scripts/config.py) — nothing hardcodes a bbox.
+
+**Reproduce from zero:** [README_pulga.md](README_pulga.md).
+**All 34 QA figures with captions:** [qa_screenshots/MANIFEST.md](qa_screenshots/MANIFEST.md).
+**Judge-facing limitations:** [pitch_limitations.md](pitch_limitations.md).
+
+> **Standing rule for this workstream.** Every dataset, transformation, join and
+> sanity check has a saved, captioned, timestamped figure. If it cannot be shown, it
+> is assumed rather than verified — and assumptions produced all five bugs listed at
+> the bottom of this file.
+
+---
+
+## CRS of every artefact
+
+| Artefact | CRS | Pixel size |
+|---|---|---|
+| WorldCover tile + AOI clip | EPSG:4326 | 8.33e-05° (~10 m) |
+| Bathymetry, raw (`gmrt_aqaba.tif`) | EPSG:4326 | 5.50e-04° (~53 m) |
+| SoilGrids ×12 | EPSG:4326 | 2.26e-03° (~250 m) |
+| **`depth_utm36n.tif`** | **EPSG:32636** | **50 m** |
+| All vectors — reef zones, coastline, `osm_aqaba.gpkg`, AOI boxes | EPSG:4326 | — |
+| All `*.parquet` feature tables | non-spatial | — |
+
+Per contract §1: **EPSG:4326 for storage, EPSG:32636 for all maths.** The depth field
+is the single reprojected raster, because the particle engine integrates distances on
+it. SoilGrids is natively Homolosine; `OUTPUTCRS=EPSG:4326` is requested in the WCS
+call so it arrives already reprojected.
+
+**Measurement CRS is not cosmetic.** Every length, area and distance is computed in
+UTM 36N. Figures with satellite basemaps are *drawn* in EPSG:3857 because that is the
+tile CRS — but measuring there inflates ground distance by 1/cos(lat) = **1.148** at
+this latitude, which is exactly how culvert #1 was briefly reported as 45 m from the
+coast when the true distance is 39 m. Draw in 3857; measure in 32636.
+
+Figures drawn in EPSG:4326 pass `config.geographic_aspect()` to `set_aspect()`.
+`imshow` defaults to `aspect='equal'`, which would draw 1° longitude the same length
+as 1° latitude — at 29.4 °N that is ~97 km against ~111 km, making the figure **14.9%
+too wide**. A distorted picture is a real defect when the picture is the evidence.
+
+**Zonal statistics** run with catchments and raster in the same geographic CRS
+(4326 against 4326), so no reprojection artefacts enter the aggregation. Caveat:
+4326 cells are not equal-area, so a catchment mean is very slightly weighted toward
+its northern cells. Across a 0.45°-tall AOI that is far below SoilGrids' own model
+uncertainty and is not worth correcting.
+
+---
+
+## 1. ESA WorldCover 10 m
+
+| Field | Value |
+|---|---|
+| **Product/version** | ESA WorldCover v200, 2021 epoch |
+| **Access date** | 2026-08-01 |
+| **Access method** | Direct S3 (AWS Open Data), tile `N27E033` |
+| **Source URL** | `https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_N27E033_Map.tif` |
+| **Spatial resolution** | 10 m |
+| **Coverage** | One 3°×3° tile fully contains the padded box (asserted in code, not assumed) |
+| **License** | CC BY 4.0 — attribution: © ESA WorldCover project 2021 |
+| **Reproduce** | `cd scripts && ../.venv/bin/python process_worldcover.py` |
+| **Outputs** | `data/interim/worldcover_aqaba_clip.tif`, `data/processed/features/landcover_by_catchment.parquet` |
+
+**QA figures — all five steps**
+
+| figure | claim it makes checkable |
+|---|---|
+| [worldcover_01_raw_tile_before_clip.png](qa_screenshots/worldcover_01_raw_tile_before_clip.png) | one tile covers the whole AOI |
+| [worldcover_02_clipped_to_aoi.png](qa_screenshots/worldcover_02_clipped_to_aoi.png) | the clip is correctly placed and bare ground dominates |
+| [worldcover_03_catchment_boundaries_overlay.png](qa_screenshots/worldcover_03_catchment_boundaries_overlay.png) | the exact polygons zonal_stats aggregates within |
+| [worldcover_04_class_fractions_by_catchment.png](qa_screenshots/worldcover_04_class_fractions_by_catchment.png) | fractions close to 100% per catchment |
+| [worldcover_05_bareground_sanity_annotated.png](qa_screenshots/worldcover_05_bareground_sanity_annotated.png) | every catchment clears the 50% assert and brackets the ~74% baseline |
+
+**Measured composition** (padded AOI, 4200×5400 px @ 10 m):
+
+| class | % of AOI | % of land |
+|---|---:|---:|
+| bare / sparse vegetation | 72.53 | **95.30** |
+| built-up | 3.15 | 4.14 |
+| permanent water | 23.89 | (sea) |
+| tree cover | 0.25 | 0.33 |
+| grassland | 0.07 | 0.09 |
+| cropland | 0.06 | 0.08 |
+| shrubland | 0.04 | 0.06 |
+| herbaceous wetland | 0.00 | 0.00 |
+
+**Sanity check: PASSED.** Bare/sparse ground is 95.3% of the land surface. The check
+is an `assert`, so a wrong class mapping halts the pipeline rather than quietly
+poisoning the runoff model. Class codes are **not sequential** (10, 20, …, 95, 100)
+and are declared once in `config.py`.
+
+**Independent corroboration.** WorldCover puts water at 23.89% of the AOI; the
+bathymetry water mask independently gives 23.3%. Two unrelated products agreeing to
+within 0.6 pp is good evidence both clips are correctly georeferenced.
+
+**Known limitations**
+
+1. The product is a **2021 epoch only and carries no time series**, so it cannot
+   capture land-use change between the February 2013 and October 2016 flood events;
+   both events are modelled against 2021 land cover, which is a real source of error
+   we accept rather than hide for a two-week MVP.
+2. At 10 m the product **cannot resolve individual streets**, and its `built_up`
+   class bundles roads, yards and parking together with roofs, which is precisely why
+   OSM building footprints are carried as a second independent impervious estimate.
+3. The full 11-class fraction table is retained in the parquet output even though
+   only bare-ground and built-up were requested, because **re-running the aggregation
+   later to recover a dropped column is more expensive than storing it now**.
+
+---
+
+## 2. ISRIC SoilGrids v2.0
+
+| Field | Value |
+|---|---|
+| **Product/version** | SoilGrids v2.0 |
+| **Access date** | 2026-08-01 |
+| **Access method** | WCS 2.0.1 `GetCoverage` per variable/depth, `https://maps.isric.org/mapserv?map=/map/<var>.map` |
+| **Spatial resolution** | 250 m |
+| **Coverage** | Padded box, 155×188 cells |
+| **License** | CC BY 4.0 |
+| **Reproduce** | `../.venv/bin/python download_soilgrids.py` then `.venv/bin/python tests/test_soilgrids_units.py` |
+| **Outputs** | `data/raw/soilgrids/*.tif` (12 rasters), `data/processed/features/soil_by_catchment.parquet` (73 columns) |
+
+**QA figures — one per variable plus three verification figures**
+
+| figure | claim it makes checkable |
+|---|---|
+| [soilgrids_01_clay_both_depths.png](qa_screenshots/soilgrids_01_clay_both_depths.png) | clay plausible at both depths, nodata matches the gulf |
+| [soilgrids_02_sand_both_depths.png](qa_screenshots/soilgrids_02_sand_both_depths.png) | sand, inverse pattern to clay as expected |
+| [soilgrids_03_silt_both_depths.png](qa_screenshots/soilgrids_03_silt_both_depths.png) | silt |
+| [soilgrids_04_soc_both_depths.png](qa_screenshots/soilgrids_04_soc_both_depths.png) | organic carbon low, as desert soil must be |
+| [soilgrids_05_bdod_both_depths.png](qa_screenshots/soilgrids_05_bdod_both_depths.png) | bulk density in the real-soil band |
+| [soilgrids_06_cfvo_both_depths.png](qa_screenshots/soilgrids_06_cfvo_both_depths.png) | coarse fragments |
+| [soilgrids_07_texture_triangle_by_catchment.png](qa_screenshots/soilgrids_07_texture_triangle_by_catchment.png) | the 100.00% sum is physically sensible, not arithmetic luck |
+| [soilgrids_08_unit_conversion_before_after.png](qa_screenshots/soilgrids_08_unit_conversion_before_after.png) | the ÷10 divisor, and the 100% ceiling not being breached |
+| [soilgrids_09_within_catchment_variance.png](qa_screenshots/soilgrids_09_within_catchment_variance.png) | spread per catchment, not just a point estimate |
+
+**Variables:** clay, sand, silt, soc, bdod, cfvo at 0–5 cm and 5–15 cm (12 rasters).
+
+**Unit conversions** (values ship as scaled integers; divide by these):
+
+| variable | divisor | converted unit | observed range |
+|---|---:|---|---|
+| clay | 10 | % | 17.6 – 55.8 |
+| sand | 10 | % | 10.6 – 51.4 |
+| silt | 10 | % | 25.1 – 50.3 |
+| soc | 10 | g/kg | 3.1 – 60.5 |
+| bdod | 100 | kg/dm³ | 1.09 – 1.46 |
+| cfvo | 10 | vol% | 13.3 – 39.7 |
+
+**How the divisors were verified rather than assumed.** Clay + sand + silt is a
+closed composition and must sum to 100%. It does, to a median of **exactly 100.00**
+at both depths — and a 10× divisor error would land the sum at 1000 or 10, so this
+single identity pins the texture divisor. Bulk density landing in 1.09–1.46 kg/dm³ is
+textbook real soil, and organic carbon median 12.1 g/kg is appropriately low for
+desert. 21/21 tests in
+[tests/test_soilgrids_units.py](../tests/test_soilgrids_units.py) pass.
+
+**Statistics retained per catchment:** mean, std, min, max, median, count — for all
+6 variables at both depths, giving 73 columns. Added beyond the requested mean
+because a catchment whose clay spans 18–56% behaves differently from one uniformly
+at 35%, and the mean alone hides that.
+
+**Known limitations**
+
+1. SoilGrids is a **globally model-derived product, not surveyed soil**, so it must
+   be used strictly as a *relative* erodibility ranking across our catchments and no
+   value may ever be quoted as a measured local soil property.
+2. The honest answer if a judge asks how we know Aqaba's soil texture is: *"We don't.
+   We use a global model as a relative ranking across catchments, and local sampling
+   is a Phase 2 item."*
+3. The 250 m cells are **coarser than the smaller catchments**, so aggregation uses
+   `all_touched=True`; without it a small catchment can contain no cell centre and
+   return null rather than a value.
+4. The WCS GeoTIFFs arrive with **no nodata tag declared**, yet 25.5% of cells are
+   exactly `0`, matching the AOI's sea fraction — these are nodata, not soil with
+   zero clay, and are masked to NaN in `soilgrids_units.load_converted()`. Left
+   unmasked they would drag every coastal catchment mean toward zero.
+
+---
+
+## 3. OpenStreetMap — Jordan extract
+
+| Field | Value |
+|---|---|
+| **Product/version** | Geofabrik `jordan-latest.osm.pbf`, 30 MB |
+| **Access date** | 2026-08-01 |
+| **Access method** | `https://download.geofabrik.de/asia/jordan-latest.osm.pbf`, clipped with `ogr2ogr -clipsrc` |
+| **Spatial resolution** | Vector (no intrinsic resolution) |
+| **Coverage** | Padded box |
+| **License** | ODbL 1.0 — © OpenStreetMap contributors |
+| **Reproduce** | `./scripts/extract_osm.sh` then `../.venv/bin/python osm_drainage_report.py` |
+| **Outputs** | `data/raw/osm/jordan-latest.osm.pbf`, `data/processed/vectors/osm_aqaba.gpkg` (12 layers) |
+
+**QA figures**
+
+| figure | claim it makes checkable |
+|---|---|
+| [osm_01_roads_over_satellite.png](qa_screenshots/osm_01_roads_over_satellite.png) | roads align with visible carriageways — georeferencing is right |
+| [osm_02_buildings_over_satellite.png](qa_screenshots/osm_02_buildings_over_satellite.png) | footprints match built-up areas in imagery |
+| [osm_03_waterways_drainage_over_satellite.png](qa_screenshots/osm_03_waterways_drainage_over_satellite.png) | drainage follows real wadi floors |
+| [osm_04_culverts_all_27_numbered.png](qa_screenshots/osm_04_culverts_all_27_numbered.png) | all 27 culverts, numbered to match the handoff table |
+| [osm_05_culvert_top5_insets.png](qa_screenshots/osm_05_culvert_top5_insets.png) | each top culvert sits under a visible road embankment |
+| [osm_06_dive_poi_and_marine_park.png](qa_screenshots/osm_06_dive_poi_and_marine_park.png) | dive sites and the Marine Park boundary |
+| [urban_01_road_density_choropleth.png](qa_screenshots/urban_01_road_density_choropleth.png) | road density per catchment |
+| [urban_02_builtup_fraction_choropleth.png](qa_screenshots/urban_02_builtup_fraction_choropleth.png) | built-up fraction per catchment |
+
+**Layers extracted (12)**
+
+| layer | features | purpose |
+|---|---:|---|
+| roads | 3 845 | impervious surface, runoff |
+| buildings | 10 099 | independent built-up estimate |
+| waterways | 206 | drainage network |
+| drainage_features | 200 | **outlet correction** — 27 culverts |
+| industrial | 32 | sediment/contaminant source proxy |
+| port | 1 | port frontage |
+| dive_tourism_poi | 75 | who the alert product serves |
+| tourism_areas | 208 | coastal tourism footprint |
+| protected_areas | 2 | **Aqaba Marine Park**, independent reef reference |
+| osm_coastline | 11 | **independent check on the derived shoreline** |
+| infrastructure_lines | 251 | rail, embankments, breakwaters — flow-blocking |
+| water_bodies | 49 | reservoirs, standing water |
+
+**Custom osmconf was required.** GDAL's default OSM config does not expose `tunnel`,
+`industrial`, `natural` or `protect_class` as columns — they sit inside the
+`other_tags` HSTORE where SQL cannot filter them cleanly.
+[scripts/osmconf_reefshield.ini](../scripts/osmconf_reefshield.ini) promotes them,
+and that is what surfaced the **27 culverts**, the **Aqaba Marine Park**, and the
+**OSM coastline**. `drainage_features` composition: 89 stream, 57 drain, 41 canal,
+9 river, 4 ditch; 27 `tunnel=culvert`; 102 `intermittent=yes`; 9 named, including
+**وادي اليتيم (Wadi Al-Yutum)**, the major wadi draining to Aqaba.
+
+**Known limitations**
+
+1. **Absence of a mapped feature is not evidence of absence.** OSM drainage
+   completeness in Aqaba is unverified and probably patchy, so only *positive*
+   matches — a feature that IS mapped — may be used as outlet corrections, and OSM
+   may never be used to rule a channel out.
+2. Tagging for arid drainage is **inconsistent across contributors**: `wadi` is
+   deprecated upstream but still present in Jordanian data, so the filter
+   deliberately catches every variant rather than one canonical tag.
+3. The extract is a **single snapshot with no version history**, so if a contributor
+   adds or removes a culvert tomorrow our conflict list silently goes stale; the
+   access date above is the only provenance anchor.
+
+---
+
+## 4. Reef zones (provisional — Allen Coral Atlas pending)
+
+| Field | Value |
+|---|---|
+| **Product/version** | **PROVISIONAL**, derived. Allen Coral Atlas v2.0 export is swap-in #3. |
+| **Access date** | 2026-08-01 (provisional build) |
+| **Access method** | Derived from the water mask + published dive-site positions |
+| **Coverage** | Jordanian coast, 29.356–29.530 N |
+| **License** | n/a (own derivation). ACA is CC BY 4.0 when swapped in. |
+| **Reproduce** | `../.venv/bin/python make_reef_zones_provisional.py` (needs `process_bathymetry.py` first) |
+| **Output** | `data/processed/vectors/reef_zones_PROVISIONAL.gpkg` |
+
+**QA figures**
+
+| figure | claim it makes checkable |
+|---|---|
+| [reef_01_provisional_over_satellite.png](qa_screenshots/reef_01_provisional_over_satellite.png) | every zone is seaward of the visible shoreline |
+| [reef_02_per_zone_insets.png](qa_screenshots/reef_02_per_zone_insets.png) | each zone individually, with area/park/depth |
+| [reef_03_overlap_bug_before_after.png](qa_screenshots/reef_03_overlap_bug_before_after.png) | **bug fixed** — 1.46 ha double-count removed |
+| [reef_04_marine_park_validation.png](qa_screenshots/reef_04_marine_park_validation.png) | **independent validation** against the Marine Park |
+| [depth_04_crossshore_profiles_per_zone.png](qa_screenshots/depth_04_crossshore_profiles_per_zone.png) | why width is an assumption, not a derived contour |
+
+**Schema** — every field that will exist in the final `reef_zones.gpkg` exists here
+already, with the same names and types, so the exposure engine is built once:
+
+| column | type | notes |
+|---|---|---|
+| `reef_zone_id` | str | `R-01`…`R-08`, contract §2. **Never renumber.** |
+| `id` | str | Duplicate of `reef_zone_id` — contract §3 names the column `id`, the implementation plan uses `reef_zone_id`. Both carried so either join key works. |
+| `zone_name` | str | Human-readable coastal stretch |
+| `habitat_class` | str | `unknown` until ACA lands |
+| `sensitivity_weight` | float | **1.0 placeholder for every zone** |
+| `sensitivity_weight_status` | str | `PLACEHOLDER_PENDING_MARINE_SCIENTIST` — in the schema itself, not only the docs |
+| `provisional` | bool | `True` |
+| `geom_basis` | str | How the geometry was derived |
+| `area_km2` | float | From UTM 36N, never degrees |
+| `depth_median_m`, `depth_min_m` | float | Context only — see caveat |
+| `marine_park_overlap_pct` | float | **Real measured data**, added this pass |
+
+**Zones** (north → south, total 5.69 km², consistent with published estimates of
+Jordan's reef area of ~5–13 km²):
+
+| id | stretch | area km² | median depth m | in Marine Park |
+|---|---|---:|---:|---:|
+| R-01 | North Aqaba / Ayla & Public Beach | 0.85 | −44.8 | 0% |
+| R-02 | Port frontage / First Bay & Power Station | 0.81 | −312.2 | 0% |
+| R-03 | Tourist Camp / north Marine Park boundary | 0.62 | −220.6 | 0% |
+| R-04 | Marine Science Station / Cedar Pride | 0.42 | −103.7 | **71.3%** |
+| R-05 | Japanese Garden / Gorgonian | 0.39 | −36.6 | **66.6%** |
+| R-06 | Black Rock / Blue Coral | 0.54 | −21.6 | **84.5%** |
+| R-07 | Tala Bay / Seven Sisters | 0.61 | −19.9 | **79.1%** |
+| R-08 | Royal Diving Club / Yamanieh to Saudi border | 1.44 | −29.4 | 7.8% |
+
+**Independent validation.** The Aqaba Marine Park boundary (from OSM,
+`protect_class=4`, 3.45 km², spanning 29.397–29.460 N) was **never used as an input
+to zone placement**, yet R-04–R-07 land 67–85% inside it. That is genuine
+corroboration that the dive-site latitudes are right. R-01–R-03 falling outside is
+consistent with them being city and port frontage.
+
+**What is trustworthy in this geometry, and what is not.** A first attempt placed
+these as boxes on a hand-fitted straight-line shoreline. Checked against the
+bathymetry it was ~600 m too far east at R-03–R-05 (those boxes sat on dry land at
++7 to +18 m elevation) and too far west at R-07–R-08 (in 250–400 m of open water).
+- **Along-shore position is data-derived** from the water mask, reliable to ~50 m,
+  and an `assert` now requires every zone's median depth to be below sea level.
+- **Seaward width is a flat 250 m assumption**, deliberately *not* derived from depth
+  contours: the Gulf of Aqaba drop-off is far steeper than the bathymetry's ~450 m
+  true resolution can resolve, so those contours would dress an artefact up as a
+  measurement. `area_km2` is therefore order-of-magnitude only.
+- The implausibly deep medians at R-02/R-03 are that same artefact, not evidence of
+  300 m-deep reef.
+
+**Known limitations**
+
+1. **Allen Coral Atlas maps shallow reef only**, so once swapped in, deeper habitat
+   remains unrepresented and the exposure model is silent about it.
+2. **`sensitivity_weight` reflects team assumptions, not Atlas data and not
+   scientific measurement**; assigning real weights is a Phase 2 item requiring
+   marine-scientist input, and this must be said out loud on the slide because
+   presenting invented weights as data is what loses credibility under questioning.
+3. `marine_park_overlap_pct` is deliberately stored as a **raw measured percentage
+   and not converted into a sensitivity weight**, because that conversion is the
+   marine scientist's judgement call and inventing it from protection status would
+   repeat the exact error limitation 2 warns about.
+4. **R-01 and R-02 cover developed beach and port frontage** where reef presence is
+   doubtful; per contract §2, if ACA yields fewer real zones the extras are dropped
+   and the remaining IDs keep their names, never renumbered.
+5. R-08 is **2.4× the median zone area** and straddles the park boundary, making it
+   the obvious candidate for a split once real habitat data exists — but splitting it
+   now would change the zone count and break the ID contract, so it is flagged as a
+   recommendation rather than done unilaterally.
+
+---
+
+## 5. Bathymetry — depth field and coastline
+
+| Field | Value |
+|---|---|
+| **Product/version** | **GMRT (Global Multi-Resolution Topography), gmrt.org** — GEBCO stand-in |
+| **Access date** | 2026-08-01 |
+| **Access method** | `https://www.gmrt.org/services/GridServer`, `resolution=max`, `layer=topo` |
+| **Spatial resolution** | ~53 m grid spacing; **true information content ~450 m** |
+| **Coverage** | Padded box, 639×943 source → 699×1013 @ 50 m in UTM 36N |
+| **License** | Open — GMRT / GEBCO attribution |
+| **Reproduce** | `../.venv/bin/python process_bathymetry.py` |
+| **Outputs** | `data/raw/bathymetry/gmrt_aqaba.tif`, `data/processed/bathymetry/depth_utm36n.tif`, `data/processed/vectors/coastline.gpkg` |
+
+**QA figures**
+
+| figure | claim it makes checkable |
+|---|---|
+| [depth_01_full_field_and_isobaths.png](qa_screenshots/depth_01_full_field_and_isobaths.png) | the field handed to Nizar, and the steep shelf |
+| [depth_02_sign_convention_22_control_points.png](qa_screenshots/depth_02_sign_convention_22_control_points.png) | 22/22 control points pass, each labelled |
+| [depth_03_nodata_bug_before_after.png](qa_screenshots/depth_03_nodata_bug_before_after.png) | **bug fixed** — 1917 NaN → 0, one sentinel |
+| [coastline_01_single_sea_body.png](qa_screenshots/coastline_01_single_sea_body.png) | one sea body, no false interior lakes |
+| [coastline_02_osm_vs_gmrt_agreement.png](qa_screenshots/coastline_02_osm_vs_gmrt_agreement.png) | **substitution justified** — 62 m median vs OSM |
+
+**Provenance deviation — flagged deliberately, not buried.** The contract asks for
+GEBCO 15 arc-second. Every programmatic GEBCO route is currently closed:
+`wcs.gebco.net` returns empty capabilities, `download.gebco.net` rejects POST (405),
+and BODC GeoTIFF tile paths 404. GEBCO's portal is an interactive web form and cannot
+be scripted. We therefore ship GMRT, a synthesis whose deep-water source in this
+region **is** GEBCO.
+
+Two independent corroborations:
+- GMRT and NOAA NCEI's independent global DEM mosaic agree on the AOI minimum to
+  within 0.2 m (−907.08 vs −907.27 m).
+- The derived coastline agrees with **OSM's `natural=coastline`** — a completely
+  separate lineage, traced from imagery — to a **median of 62 m**, about one 50 m
+  pixel, rising to 337 m at p90 in the port and marina where breakwaters are below
+  the source resolution.
+
+`resolve_source()` prefers a canonical `data/raw/bathymetry/gebco_aqaba.tif` if
+anyone drops one in from the web form; **nothing else in the pipeline changes.** The
+file is named `gmrt_aqaba.tif` rather than `gebco_aqaba.tif` on purpose — naming a
+GMRT file "gebco" is exactly the silent provenance error the contract exists to
+prevent.
+
+**Verified properties**
+
+- **Sign convention: negative = below sea level, positive = land**, asserted against
+  **22 empirically sampled control points** spread across the whole basin (11 water,
+  11 land). Expanded from 5, which were clustered near the city and could have passed
+  while the mask was wrong elsewhere. The expansion immediately caught two points
+  wrongly assumed to be mid-gulf that are in fact Wadi Araba land at +533 m and
+  +241 m.
+- Depth range −907.1 m to +1542.3 m; 23.3% of the AOI below sea level (WorldCover
+  independently: 23.89%).
+- The water mask polygonises to **one** 397.3 km² sea body — no spurious interior
+  lakes in dry wadi floors, which would punch false holes in the particle barrier.
+- **Single nodata representation.** GMRT ships 1 917 cells (~0.3%) as bare NaN with
+  no nodata tag; these are gap-filled before warping and the output carries only the
+  declared `−32768` sentinel.
+
+**Known limitations**
+
+1. **15 arc-seconds is ≈450 m at this latitude**, which is sufficient for basin-scale
+   geometry and as a "particles stop at the shore" barrier but **not** sufficient for
+   reef-scale depth changes, small channels or harbour structures, so the plume model
+   must not be read as resolving anything at that scale.
+2. The **~53 m grid spacing is not 53 m of resolution**: away from multibeam tracks
+   GMRT is interpolated from the coarser source grid, so quoting 53 m as the
+   resolution would overstate the data by roughly an order of magnitude.
+3. The **coastline is derived from the 0 m contour of that same coarse grid**, which
+   is why it is only accurate to ~62 m in the median and several hundred metres
+   around engineered structures — quantified against OSM rather than asserted.
+4. A **NaN depth does not raise an exception**; it silently turns any interpolated
+   particle position into a non-number, which is why the nodata consolidation is
+   enforced by an `assert` rather than left to convention.
+
+---
+
+## Feature tables — schema
+
+`data/processed/features/*.parquet`, all joined on `catchment_id` (`AQ-C{NN}`,
+contract §2). Produced by [aggregate_catchments.py](../scripts/aggregate_catchments.py).
+
+| table | columns |
+|---|---|
+| `landcover_by_catchment` | `catchment_id`, `landcover_px_total`, `frac_<class>` × 11, `frac_bare_or_sparse` |
+| `soil_by_catchment` | `catchment_id`, `<var>_<depth>_{mean,std,min,max,median,count}` × 12 = **73 columns** |
+| `urban_by_catchment` | `catchment_id`, `area_km2`, `road_density_km_per_km2`, `road_length_km`, `osm_building_frac`, `osm_building_count`, `mapped_drainage_km_per_km2`, `industrial_frac`, `infra_line_km_per_km2`, `tourism_poi_count` |
+
+**Built-in assertions:** land-cover fractions must sum to 1.0 per catchment, and
+catchment-mean texture must still sum to 100% after spatial averaging.
+
+**`osm_building_frac` vs `frac_built_up` are independent estimates and will
+disagree** — OSM maps roofs, WorldCover's `built_up` includes roads, yards and
+parking. The disagreement is informative, not a bug.
+
+> **Current status: blocked on Mahdi's catchment polygons** (contract §4 P1). The
+> pipeline is written, runs clean, and its assertions pass against a labelled local
+> fixture, with outputs quarantined to `data/interim/*_FIXTURE.parquet`. The contract
+> feature paths are **not** written in fixture mode. Re-run when Mahdi publishes —
+> that is the only remaining step.
+
+---
+
+## Bugs caught by this QA discipline
+
+Five so far. Each has a figure or a test, because a fix without evidence is a claim.
+
+| # | bug | how it would have failed silently | evidence |
+|---|---|---|---|
+| 1 | Reef zones R-03–R-05 placed on **dry land** | exposure scores computed for land | [reef_01](qa_screenshots/reef_01_provisional_over_satellite.png), depth assert |
+| 2 | **Mixed NaN / −32768** nodata in depth field | NaN particle positions, no exception | [depth_03](qa_screenshots/depth_03_nodata_bug_before_after.png) |
+| 3 | **Undeclared 0-nodata** in SoilGrids over sea | coastal catchment means dragged to zero | [soilgrids_08](qa_screenshots/soilgrids_08_unit_conversion_before_after.png), 21 tests |
+| 4 | **1.46 ha overlap** between R-04 and R-05 | reef area double-counted, inflated headline | [reef_03](qa_screenshots/reef_03_overlap_bug_before_after.png) |
+| 5 | Culvert distances measured in **EPSG:3857** | every distance overstated by 14.8% | [osm_04](qa_screenshots/osm_04_culverts_all_27_numbered.png) now matches the report |
+
+Bugs 4 and 5 were both found *by building the figure*, not by reading the code.
