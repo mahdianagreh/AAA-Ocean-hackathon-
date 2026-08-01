@@ -1,0 +1,40 @@
+# --- Secrets: never commit these ---
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+.netrc
+.cdsapirc
+service-account*.json
+gee-service-account*.json
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# --- Data (large files stay local; share via the agreed data drop) ---
+data/raw/
+data/interim/
+data/processed/
+data/outputs/
+*.nc
+*.nc4
+*.HDF5
+*.h5
+*.tif
+*.tiff
+*.zarr/
+*.grib
+*.grib2
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

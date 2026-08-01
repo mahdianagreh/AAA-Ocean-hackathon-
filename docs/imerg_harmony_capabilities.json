@@ -1,0 +1,148 @@
+{
+  "bboxSubset": true,
+  "capabilitiesVersion": "2",
+  "concatenate": false,
+  "conceptId": "C2723754847-GES_DISC",
+  "outputFormats": [
+    "text/csv",
+    "application/netcdf",
+    "application/x-netcdf4;profile=opendap_url",
+    "image/tiff"
+  ],
+  "reproject": false,
+  "services": [
+    {
+      "capabilities": {
+        "output_formats": [
+          "text/csv"
+        ],
+        "subsetting": {
+          "multiple_variable": false,
+          "temporal": true,
+          "variable": true
+        }
+      },
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/S2739607260-GES_DISC",
+      "name": "giovanni-time-series-adapter"
+    },
+    {
+      "capabilities": {
+        "output_formats": [
+          "application/netcdf"
+        ],
+        "subsetting": {
+          "bbox": true,
+          "dimension": true,
+          "shape": true,
+          "temporal": true,
+          "variable": true
+        }
+      },
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/S2164732315-XYZ_PROV",
+      "name": "sds/HOSS-geographic"
+    },
+    {
+      "capabilities": {
+        "output_formats": [
+          "application/x-netcdf4;profile=opendap_url"
+        ],
+        "subsetting": {
+          "bbox": true,
+          "variable": true
+        }
+      },
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/S4057306097-XYZ_PROV",
+      "name": "sds/hoss-opendap-url"
+    },
+    {
+      "capabilities": {
+        "averaging": {
+          "area": true,
+          "time": true
+        },
+        "output_formats": [
+          "text/csv",
+          "image/tiff"
+        ],
+        "subsetting": {
+          "bbox": true,
+          "multiple_variable": false,
+          "temporal": true,
+          "variable": true
+        }
+      },
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/S3385907677-GES_DISC",
+      "name": "giovanni-averaging-service"
+    }
+  ],
+  "shapeSubset": true,
+  "shortName": "GPM_3IMERGHH",
+  "temporalSubset": true,
+  "variableSubset": true,
+  "variables": [
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634765-GES_DISC",
+      "name": "Grid/Intermediate/IRinfluence"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634739-GES_DISC",
+      "name": "Grid/Intermediate/IRprecipitation"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634732-GES_DISC",
+      "name": "Grid/Intermediate/MWobservationTime"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634718-GES_DISC",
+      "name": "Grid/Intermediate/MWprecipitation"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634723-GES_DISC",
+      "name": "Grid/Intermediate/MWprecipSource"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634824-GES_DISC",
+      "name": "Grid/Intermediate/precipitationUncal"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634691-GES_DISC",
+      "name": "Grid/lat"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634702-GES_DISC",
+      "name": "Grid/lat_bnds"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634689-GES_DISC",
+      "name": "Grid/lon"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634699-GES_DISC",
+      "name": "Grid/lon_bnds"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634706-GES_DISC",
+      "name": "Grid/precipitation"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634715-GES_DISC",
+      "name": "Grid/precipitationQualityIndex"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634710-GES_DISC",
+      "name": "Grid/probabilityLiquidPrecipitation"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634708-GES_DISC",
+      "name": "Grid/randomError"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634687-GES_DISC",
+      "name": "Grid/time"
+    },
+    {
+      "href": "https://cmr.earthdata.nasa.gov/search/concepts/V3156634694-GES_DISC",
+      "name": "Grid/time_bnds"
+    }
+  ]
+}
