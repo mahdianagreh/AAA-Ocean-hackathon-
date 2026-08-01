@@ -1,0 +1,32 @@
+# IMERG Early Run near-real-time demonstration.
+#
+# Proves the same generic pipeline can retrieve preliminary near-real-time data.
+# The window is NOT fixed: the runner resolves the latest available Early Run
+# granule from NASA CMR and works backwards from it, because wall-clock "now"
+# is not the same as the latest available product time.
+#
+# Early Run is preliminary and uncalibrated. It must never be mixed with Final
+# Run data or used for training.
+
+event_id: IMERG-EARLY-LIVE
+description: >-
+  Near-real-time IMERG Early Run proof. Window is resolved at run time from the
+  latest available granule; only the box and the window length are configured.
+
+spatial:
+  west: 34.80
+  south: 29.25
+  east: 35.15
+  north: 29.70
+
+live:
+  run_type: early
+  window_hours: 3          # 1-3 hours
+  max_granules: 6          # hard cap for this demonstration
+  output_dir: data/processed/live
+
+outputs:
+  root_dir: data
+  save_netcdf: true
+  save_json: true
+  save_parquet: false
