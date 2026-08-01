@@ -1,0 +1,45 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "aqaba_terrain_aoi",
+        "bbox": [
+          34.75,
+          29.15,
+          35.94,
+          30.3
+        ],
+        "note": "Derived from the contributing catchments plus 0.05 deg pad. Covers full upstream area - clipping tighter cuts off Wadi Yutum's headwaters."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              34.75,
+              29.15
+            ],
+            [
+              35.94,
+              29.15
+            ],
+            [
+              35.94,
+              30.3
+            ],
+            [
+              34.75,
+              30.3
+            ],
+            [
+              34.75,
+              29.15
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

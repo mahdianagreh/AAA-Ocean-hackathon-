@@ -1,0 +1,18 @@
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# data - rebuild with scripts/, never commit rasters or shapefiles
+data/**
+!data/**/
+!data/.gitkeep
+!data/**/.gitkeep
+!data/aoi/*.geojson
+
+# small shared handoff vectors - teammates need these without re-downloading
+# the 177 MB HydroBASINS source. Keep under ~1 MB each.
+!data/processed/vectors/*.gpkg
+
+# os
+.DS_Store

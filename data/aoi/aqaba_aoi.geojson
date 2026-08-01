@@ -1,0 +1,45 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "aqaba_aoi",
+        "bbox": [
+          34.75,
+          29.15,
+          35.94,
+          30.3
+        ],
+        "note": "Union of terrain_aoi and marine_aoi. Use as the download superset."
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              34.75,
+              29.15
+            ],
+            [
+              35.94,
+              29.15
+            ],
+            [
+              35.94,
+              30.3
+            ],
+            [
+              34.75,
+              30.3
+            ],
+            [
+              34.75,
+              29.15
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

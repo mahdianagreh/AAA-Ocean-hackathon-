@@ -25,25 +25,49 @@ The cost of a rerun is minutes. The cost of waiting is days.
 
 ## 1. Spatial contract
 
-### Download box (generous, padded)
+> **Corrected 1 Aug 2026.** The first version of this contract proposed a single
+> 14 × 28 km box. That was wrong by roughly 37×. Wadi Yutum's contributing area is
+> **6,458 km² reaching 90 km inland to 35.89 °E** — the old box cut off about 85% of
+> it, which would have made headwater rainfall invisible to the model. If you
+> downloaded against the old numbers, re-pull.
 
-Download everything to a **padded box**, wider than the study area. Clipping to the exact analysis box happens at analysis time, not download time.
+**The project needs two extents, not one.** They are written by
+`scripts/01_make_aoi.py` and `scripts/02_provisional_catchments.py`.
+
+### Terrain AOI — land side
+
+`data/aoi/terrain_aoi.geojson` · **derived from the catchments, not guessed**
 
 ```text
-DOWNLOAD_BBOX = 34.80, 29.25, 35.15, 29.70   # W, S, E, N — EPSG:4326
+TERRAIN_BBOX = 34.75, 29.15, 35.94, 30.30   # W, S, E, N — EPSG:4326
+                                            # ~115 km × 128 km
 ```
 
-Because it's a superset, **nobody has to wait for the final AOI to start downloading.** If the analysis box shifts, your downloads are still valid.
+Must cover the **full contributing catchments**. Anything clipped tighter loses
+upstream drainage area. Used for: DEM, hydrology, rainfall, land cover, soil.
 
-### Analysis box (exact)
+### Marine AOI — sea side
 
-Committed Day 1 as `data/aoi/aqaba_aoi.geojson`. Starting proposal, to confirm visually — *not verified*:
+`data/aoi/marine_aoi.geojson` · hand-set, **unconfirmed**
 
 ```text
-ANALYSIS_BBOX = 34.90, 29.35, 35.05, 29.60   # W, S, E, N — EPSG:4326
+MARINE_BBOX = 34.80, 29.25, 35.05, 29.60    # W, S, E, N — EPSG:4326
+                                            # ~24 km × 39 km
 ```
 
-Must extend far enough seaward to hold a 24-hour plume, or particles run off the edge of the map.
+Must reach far enough seaward to hold a 24-hour plume, or particles run off the
+edge of the map. Used for: currents, bathymetry, satellite imagery, reef zones.
+
+### Download box — the union
+
+`data/aoi/aqaba_aoi.geojson` · **download against this or wider**
+
+```text
+AQABA_BBOX = 34.75, 29.15, 35.94, 30.30     # W, S, E, N — EPSG:4326
+```
+
+Because it's a superset of both, **nobody waits for a final AOI to start
+downloading.** Clip to the relevant extent at analysis time, not download time.
 
 ### CRS
 
@@ -63,12 +87,28 @@ These strings are the join keys for every table in the project. Renaming one lat
 | Entity | Format | Examples | Owner |
 |---|---|---|---|
 | Catchment | `AQ-C{NN}` | `AQ-C01` … `AQ-C05` | Mahdi |
-| Coastal outlet | `AQ-O{NN}` — matches its catchment number | `AQ-O01` ↔ `AQ-C01` | Mahdi |
+| Coastal outlet | `AQ-O{NN}` | `AQ-O01`, `AQ-O02` | Mahdi |
 | Reef zone | `R-{NN}` | `R-01` … `R-08` | Pulga |
 | Event | `AQ-{YYYY}-{MM}-{DD}` | `AQ-2016-10-25` | Karam |
 | Simulation run | `sim_{ULID}` | `sim_01JXYZ` | Nizar |
 
-**Count is fixed on Day 1 too.** Five catchments, five outlets, and a number of reef zones agreed up front. If the real delineation produces four catchments, `AQ-C05` is dropped — the other four keep their names.
+> **Corrected 1 Aug 2026 — outlets are not 1:1 with catchments.** The first version
+> assumed `AQ-O01` ↔ `AQ-C01`. The drainage network says otherwise: the Jordanian
+> coast has **two** discharge points, and four of the five catchments share one.
+>
+> | Outlet | Catchments draining to it | Area |
+> |---|---|---:|
+> | `AQ-O01` | `AQ-C01`, `AQ-C02`, `AQ-C03`, `AQ-C04` — the Wadi Yutum system | 6,458 km² |
+> | `AQ-O02` | `AQ-C05` — independent basin south of Aqaba city | 376 km² |
+>
+> **Many catchments to one outlet is correct hydrology, not a modelling shortcut.**
+> The runoff model wants them separate because they respond to rain differently;
+> the plume model releases from the shared outlet. Every catchment row therefore
+> carries an `outlet_id` column — join on that, never assume the numbers match.
+>
+> **Nizar:** you have two release points, not five.
+
+**Count is fixed on Day 1.** Five catchments, two outlets, and an agreed number of reef zones. If the real 30 m delineation produces four catchments, `AQ-C05` is dropped — the other four keep their names.
 
 ---
 
