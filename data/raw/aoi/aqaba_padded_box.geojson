@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "aqaba_padded_box",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "name": "aqaba_download_padded_box", "verified": true, "area_km2": 1693.4110569398765 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 35.15, 29.25 ], [ 35.15, 29.7 ], [ 34.8, 29.7 ], [ 34.8, 29.25 ], [ 35.15, 29.25 ] ] ] } }
+]
+}

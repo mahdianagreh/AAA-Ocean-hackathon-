@@ -1,40 +1,20 @@
-# --- Secrets: never commit these ---
-.env
-.env.local
-.env.*.local
-*.pem
-*.key
-.netrc
-.cdsapirc
-service-account*.json
-gee-service-account*.json
-
-# --- Python ---
+# Python environment
 .venv/
-venv/
 __pycache__/
-*.py[cod]
-*.egg-info/
-.ipynb_checkpoints/
-.pytest_cache/
+*.pyc
 
-# --- Data (large files stay local; share via the agreed data drop) ---
-data/raw/
+# Raw downloads — reproducible with scripts/, 41 MB, not worth versioning
+# (jordan-latest.osm.pbf is 30 MB, the WorldCover tile 8 MB)
+data/raw/*
+!data/raw/aoi/
+!data/raw/aoi/**
+
+# Intermediates and the local catchment test fixture. The fixture MUST NOT be
+# shared — contract §4 P1 gives catchment ownership to Mahdi, and a second
+# AQ-C{NN} geometry in circulation is exactly what the ID contract prevents.
 data/interim/
-data/processed/
 data/outputs/
-*.nc
-*.nc4
-*.HDF5
-*.h5
-*.tif
-*.tiff
-*.zarr/
-*.grib
-*.grib2
 
-# --- OS / editor ---
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
+# data/aoi/ and data/processed/ ARE committed on purpose: they are the shared
+# contract paths from 00-contracts.md §3 that other people's code reads
+# (reef zones, coastline, depth field, feature tables). ~8 MB total.
