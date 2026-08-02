@@ -14,10 +14,16 @@ requests. Not possible inside this project's window.
 The same product is published daily — one granule per day, ~10,200 for the
 whole record. So:
 
-    Stage 1 (this script)  daily, 1998 -> present     ~10,200 granules
-    Stage 2                half-hourly, top ~50 events  ~6,000 granules
+    Stage 1 (this script)  daily, 1998 -> present      10,321 granules
+    Stage 2                half-hourly, 3-day window       144 per event
                            -------------------------------------------
-                           ~16,000 instead of ~490,000, about 3 %
+                           top 50 events  -> ~17,500 total, about 3.6 %
+                           top 100 events -> ~24,700 total, about 5 %
+
+    (Measured, not estimated: the stage-2 dry run reports 144 granules per
+    event for a +/-1 day window. An earlier note in this file said ~6,000 for
+    stage 2, which assumed 50 events at a smaller window — corrected here
+    rather than left to mislead whoever plans the download budget.)
 
 Stage 1 finds *which days were wet*. Stage 2 recovers the sub-daily intensity
 that actually drives a flash flood, only for days worth the request.
