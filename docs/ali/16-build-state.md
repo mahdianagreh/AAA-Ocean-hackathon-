@@ -6,7 +6,7 @@
 stream, the two-AOI spatial contract, and the first Abd/Nizar modules landed.** All figures
 measured from the repository, not reported.
 
-> **The short version.** **5,424 lines** of backend, **6 of 8** ingestion sources, but only
+> **The short version.** **5,570 lines** of backend, **6 of 8** ingestion sources, but only
 > **1 of 8** subsystem directories. **Three of five workstreams complete; the product layer does
 > not exist at all** — no API, no database, no frontend, no container.
 >
@@ -29,10 +29,15 @@ measured from the repository, not reported.
 
 ## 1 · Headline
 
-**[derived]** The project has **5,424 lines of production backend code**, covering **6 of the 8
+**[derived]** The project has **5,570 lines of production backend code**, covering **6 of the 8
 planned ingestion sources** and **1 of the 8 planned subsystem directories**. Three of five
 workstreams are essentially complete and of high quality, two have started, and **the entire
 product layer (API, database, frontend) still does not exist.**
+
+> **Moving target.** This doc was re-measured three times on 2026-08-02 as work landed. Karam's
+> multi-year IMERG sweep and event-catalogue work arrived after the second pass, taking the backend
+> from 5,424 → 5,570 lines and the tests from 258 → 280 functions. **Treat the exact figures as a
+> same-day snapshot; the structural conclusions have not moved.**
 
 **This is not a criticism — it is day 4 of 15.** But the gap between the concept doc's
 architecture and the repository is large enough that it must be stated plainly in any pitch
@@ -82,8 +87,8 @@ had to do.
 | `backend/src/processing/event_mining.py` | 284 | Candidate ranking with scope honesty |
 | `backend/src/config/event_pipeline.py` | 445 | Typed YAML config — the reason the pipeline is event-agnostic |
 | `backend/src/config/spatial.py` | 228 | **New** — single source of truth for the two-AOI contract, with a guard |
-| `scripts/` | **10,286** | **48 scripts** incl. Pulga's land/marine chain and Mahdi's 00–10 hydrology chain |
-| `tests/` | ~3,800 | **258 `def test_` functions across 8 files** (was 247 across 7) |
+| `scripts/` | **11,437** | **52 scripts** incl. Pulga's land/marine chain, Mahdi's 00–10 hydrology chain, and Karam's IMERG sweep/catalogue tools |
+| `tests/` | ~4,200 | **280 `def test_` functions across 10 files** (was 247 across 7 at the first audit) |
 
 ---
 
@@ -204,12 +209,14 @@ specific:
   contributor will not know which to use, and the count went **up**, not down.
 - **`sys.path` manipulation** in every script (`sys.path.insert(0, ...)`) instead of an
   installable package. Fragile and will break under any deployment scenario.
-- **Test count still cannot be verified.** **258** `def test_` functions are present across 8
-  files; [`docs/MASTER_TASK_SUMMARY.md`](../MASTER_TASK_SUMMARY.md) reports **272** passing. The
-  difference is consistent with parametrisation, but **the suite still cannot be run** — there is
-  no venv, and `geopandas` (re-checked 2026-08-02), `xarray`, `rasterio`, `earthaccess`,
-  `cdsapi`, `harmony` and `netCDF4` are all absent from the system Python. **Nobody has run
-  these tests on this machine.** Unchanged since the first audit.
+- **Test count still cannot be verified *here*.** **280** `def test_` functions are present across
+  10 files; the most recent commit message reports **312 passing**. The difference is consistent
+  with parametrisation, and **somebody is clearly running them** — but **not on this machine, and
+  not reproducibly**: there is no venv, and `geopandas` (re-checked 2026-08-02), `xarray`,
+  `rasterio`, `earthaccess`, `cdsapi`, `harmony` and `netCDF4` are all absent from the system
+  Python. **[judgement]** The gap is no longer "do the tests pass?" but "**can anyone other than the
+  author run them?**" — which is the actual reproducibility claim in concept doc §22.1, and it is
+  still unmet. A `pyproject.toml` closes it in an hour.
 
 ---
 
@@ -218,8 +225,8 @@ specific:
 **[judgement]**
 
 **Safe:**
-> Three of the five data workstreams are complete and tested — 5,400 lines of production code
-> with 258 tests, all offline, covering satellite rainfall, land reanalysis, and catchment
+> Three of the five data workstreams are complete and tested — 5,500 lines of production code
+> with 280 tests, all offline, covering satellite rainfall, land reanalysis, and catchment
 > and terrain delineation end to end. The pipeline is configuration-driven: a different YAML
 > runs a different event, a different box, a different date range, with no code change.
 

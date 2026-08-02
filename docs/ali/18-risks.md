@@ -90,11 +90,37 @@ a two-AOI contract, and the offending box is named in the source as `RETIRED_BOX
 
 **[judgement]** This is the right fix, done the right way: the mistake became a regression test.
 
-**What remains.** The contract is correct; **the data has not necessarily been re-derived over
-it.** Until catchment rainfall is re-run over `TERRAIN_AOI` and the ordering anomaly is shown to
-invert, **no causal statement linking rainfall to the flood is defensible** — the constraint is
-now a pipeline-run task, not a design flaw. See [`16-build-state.md`](16-build-state.md)
-§7 action 1.
+**What remains.** The contract is correct; **the data still has to be re-derived over it.** Until
+catchment rainfall is re-run over `TERRAIN_AOI` and the ordering anomaly is shown to invert, **no
+causal statement linking rainfall to the flood is defensible** — the constraint is now a
+pipeline-run task, not a design flaw. See [`16-build-state.md`](16-build-state.md) §7 action 1.
+
+### R2b · The mixed-extent trap — caught, and it had already sprung
+
+**[sourced]** Later on 2026-08-02, Karam added
+`assert_existing_granules_match_extent()` and **it fired immediately on the real data:**
+
+```text
+data/raw/imerg/events/AQ-2016-10-28 already holds 156 granule(s) covering
+  lon 34.85..35.15  lat 29.25..29.65
+but this run requests
+  lon 34.75..35.94  lat 29.15..30.30
+```
+
+**[judgement]** This is worth understanding properly, because it is a subtler bug than R2 itself.
+Resume logic matches granules **by filename** — and a granule fetched against the retired box has
+**exactly the same filename** as the correct one. So a naive resume would have *skipped* them, and
+produced a dataset where every timestamp is present, every value is real, and **the grid silently
+differs between granules.** No error, no gap, and nothing downstream could have detected it.
+
+**Two things follow.** First, it **confirms R2 empirically**: those 156 granules are the demo
+event as fetched against the wrong box, now quarantined to `AQ-2016-10-28_RETIRED_BOX` rather than
+deleted, since they are the evidence behind the coverage report. **Every rainfall figure derived
+before this point was computed over the retired extent.** Second, the fix is the *right* kind —
+an assertion that makes the failure loud instead of a note asking people to be careful.
+
+**Status.** ✅ Guard in place. ⚠️ **The correct-extent re-fetch and the re-examination of the
+ordering anomaly are now unblocked but not yet done** — that remains the top engineering item.
 
 ### R3 · The test suite has not been run
 

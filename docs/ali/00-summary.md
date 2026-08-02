@@ -206,7 +206,7 @@ where **most of the boxes don't exist yet.**
 | Weather forecasts and ocean currents | Nizar | ⚠️ Started — no simulation engine yet |
 | **The actual product — website, database, API** | — | ❌ **Nothing exists** |
 
-**5,424 lines** of working code. **258 tests.**
+**5,570 lines** of working code. **280 tests.**
 
 **The awkward part:** the finished work is the hardest to fake and the least impressive to look
 at. The missing work is what everyone wants to see in a demo. That is a presentation problem as
@@ -324,7 +324,8 @@ Small fixes that stop a wrong number reaching a slide:
 
 ## 11 · What changed on 2 August
 
-Everything above is current as of today. Three things landed and one answer came back:
+Everything above is current as of today. It was a fast day — this page was re-checked three times
+as work landed.
 
 **Finished:** Mahdi's terrain and catchment work merged in. The rainfall download area was
 enlarged and locked down with tests. The satellite audit was completed.
@@ -332,10 +333,22 @@ enlarged and locked down with tests. The satellite audit was completed.
 **Started:** weather-forecast, ocean-current and plume-detection code all now exists — though it
 is early scaffolding, not finished to the standard of the mature modules.
 
-**Grew:** code from 4,435 to 5,424 lines; tests from 247 to 258.
+**A real bug was caught late in the day, and it's worth knowing about.** Karam added a check that
+refuses to mix data from two different map areas. It fired immediately: the 156 satellite rainfall
+files for the October 2016 event had all been downloaded against the **old, too-small area.**
 
-**Unchanged:** still no website, no database, no dependency list, and the tests have still never
-been run.
+The sneaky part is that the filenames are identical either way, so a normal "resume where we left
+off" would have skipped them and quietly built a dataset where **every value is real but the grid
+silently changes halfway through** — no error, no gap, nothing downstream could have spotted it.
+
+Those files are now set aside, and **the rainfall data needs re-downloading over the correct area
+before any rainfall-caused-the-flood claim can be made.** That is now the top engineering job.
+
+**Grew:** code from 4,435 to 5,570 lines; tests from 247 to 280.
+
+**Unchanged:** still no website, no database, no dependency list — and while the tests do pass for
+whoever is running them, **nobody can run them on a fresh machine**, which is the reproducibility
+claim that actually matters.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Where else does this problem happen · who pays for solving it · what is actually built**
 
-**Author:** Ali · **Date:** 2026-08-02 · **20 documents, ~35,800 words, 51 sources**
+**Author:** Ali · **Date:** 2026-08-02 · **20 documents, ~36,400 words, 51 sources**
 
 > ### 👉 New here? Read [`00-summary.md`](00-summary.md) first
 >
@@ -77,7 +77,7 @@ operational forecast-mode land-to-sea sediment system exists on any arid coast.
 
 ### 5 · Three of five workstreams are complete; the product layer does not exist
 
-**5,424 lines** of production backend covering **6 of 8** planned ingestion sources but only
+**5,570 lines** of production backend covering **6 of 8** planned ingestion sources but only
 **1 of 8** planned subsystem directories. No API, no database, no frontend, no dependency
 manifest, and the test suite has still never been run on this machine.
 [`16-build-state.md`](16-build-state.md).
