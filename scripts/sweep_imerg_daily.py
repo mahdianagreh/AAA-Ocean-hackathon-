@@ -89,6 +89,10 @@ logger = logging.getLogger("sweep")
 #: scripts/run_daily_sweep.sh watches for this.
 EXIT_STALLED = 75
 
+#: Below this share of a year's days, treat the year as failed rather than
+#: recording a partial result. See the note in sweep_year().
+MIN_YEAR_COMPLETENESS = 0.90
+
 #: A Harmony job legitimately sits in the queue for ~25 minutes before it
 #: delivers anything, so the stall threshold has to sit well above that.
 DEFAULT_STALL_MINUTES = 45
@@ -279,6 +283,20 @@ def main() -> int:
                 # not a reason to abandon 28 years of sweep.
                 skip_unavailable=True,
             )
+            expected = len(
+                expected_granule_timestamps(start, end, granule_minutes=1440)
+            )
+            # A year that comes back mostly empty is a failure, not a result.
+            # Harmony's auto-pause returned ONE granule of 365 and reported
+            # success; the sweep logged "1 day(s) on disk" and moved on. Days
+            # genuinely absent from the archive are rare, so anything under
+            # this share means something went wrong upstream.
+            if len(paths) < MIN_YEAR_COMPLETENESS * expected:
+                return year, len(paths), time.time() - t0, (
+                    f"only {len(paths)}/{expected} day(s) returned "
+                    f"({100.0 * len(paths) / max(expected, 1):.0f}%) — "
+                    "treating as failed rather than accepting a partial year"
+                )
             return year, len(paths), time.time() - t0, None
         except Exception as exc:  # noqa: BLE001 - one bad year must not end the run
             return year, 0, time.time() - t0, f"{type(exc).__name__}: {exc}"

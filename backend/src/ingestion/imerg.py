@@ -218,6 +218,12 @@ def download_imerg_subset(
         variables=[variable],
         format=HARMONY_OUTPUT_FORMAT,
         concatenate=False,
+        # Harmony auto-pauses any job above its preview threshold: it renders a
+        # couple of granules, sets status to "previewing", then pauses and waits
+        # to be resumed. wait_for_processing() sees a job that is no longer
+        # running and returns happily, so without this a 365-granule request
+        # silently yields ONE file and reports success. Measured 2 Aug 2026.
+        skip_preview=True,
     )
 
     if not request.is_valid():
@@ -250,6 +256,31 @@ def download_imerg_subset(
         raise HarmonySubsetError(
             f"Harmony processing failed: {type(exc).__name__}: {exc}"
         ) from exc
+
+    # Belt and braces: skip_preview should stop the auto-pause, but a paused or
+    # otherwise non-successful job must never be mistaken for a finished one.
+    try:
+        state = (client.status(job_id) or {}).get("status", "unknown")
+    except Exception:  # noqa: BLE001 - status is a diagnostic, not the payload
+        state = "unknown"
+
+    if state in {"paused", "previewing"}:
+        logger.warning("Harmony job %s is %s — resuming", job_id, state)
+        try:
+            client.resume(job_id)
+            client.wait_for_processing(job_id, show_progress=False)
+            state = (client.status(job_id) or {}).get("status", "unknown")
+        except Exception as exc:
+            raise HarmonySubsetError(
+                f"Harmony job {job_id} was {state} and could not be resumed: "
+                f"{type(exc).__name__}: {exc}"
+            ) from exc
+
+    if state not in {"successful", "complete_with_errors", "unknown"}:
+        raise HarmonySubsetError(
+            f"Harmony job {job_id} ended in state {state!r}, not a completed "
+            "state. Refusing to treat partial output as a finished download."
+        )
 
     output_dir.mkdir(parents=True, exist_ok=True)
     try:
