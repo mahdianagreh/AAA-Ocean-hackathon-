@@ -44,8 +44,11 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -79,6 +82,49 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 logger = logging.getLogger("sweep")
+
+
+
+#: Exit code meaning "I stalled; restart me". The supervisor loop in
+#: scripts/run_daily_sweep.sh watches for this.
+EXIT_STALLED = 75
+
+#: A Harmony job legitimately sits in the queue for ~25 minutes before it
+#: delivers anything, so the stall threshold has to sit well above that.
+DEFAULT_STALL_MINUTES = 45
+
+
+def start_stall_watchdog(output_dir: Path, stall_minutes: float) -> threading.Event:
+    """Exit the process if no new granule lands for `stall_minutes`.
+
+    A laptop going to sleep kills the connection mid-download. harmony-py then
+    blocks on a socket that is never coming back, and the process stays alive
+    doing nothing — which is exactly what happened on 2 Aug: the sweep sat idle
+    for 2 h 40 min while looking perfectly healthy.
+
+    Dying loudly is better than hanging quietly. Everything already fetched is
+    on disk, and the restart resumes from there.
+    """
+    stop = threading.Event()
+    limit = stall_minutes * 60
+
+    def watch() -> None:
+        last_count, last_change = -1, time.time()
+        while not stop.is_set():
+            count = len(list(output_dir.glob("*.nc*")))
+            if count != last_count:
+                last_count, last_change = count, time.time()
+            elif time.time() - last_change > limit:
+                logger.error(
+                    "STALLED: no new granule in %.0f min (%d on disk). Exiting "
+                    "so the supervisor can restart with resume.",
+                    stall_minutes, count,
+                )
+                os._exit(EXIT_STALLED)
+            stop.wait(30)
+
+    threading.Thread(target=watch, daemon=True, name="stall-watchdog").start()
+    return stop
 
 
 def year_bounds(year: int, latest: datetime) -> tuple[str, str]:
@@ -145,8 +191,20 @@ def main() -> int:
     parser.add_argument("--end-year", type=int, default=now_year)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument(
-        "--chunk-granules", type=int, default=60,
-        help="days per Harmony job (default 60)",
+        "--chunk-granules", type=int, default=400,
+        help=("days per Harmony job (default 400 — a whole year in one job). "
+              "Harmony's per-job overhead is ~25 min whether the job covers "
+              "60 days or 365, so small chunks multiply the wait."),
+    )
+    parser.add_argument(
+        "--workers", type=int, default=6,
+        help=("concurrent Harmony jobs (default 6). Years are independent, so "
+              "there is no reason to wait for one before starting the next."),
+    )
+    parser.add_argument(
+        "--stall-minutes", type=float, default=DEFAULT_STALL_MINUTES,
+        help=("exit for restart if no granule arrives in this long "
+              f"(default {DEFAULT_STALL_MINUTES})"),
     )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
@@ -178,17 +236,33 @@ def main() -> int:
                                             granule_minutes=1440))
             for y in range(args.start_year, args.end_year + 1)
         )
-        jobs = -(-total // args.chunk_granules)
-        logger.info("DRY RUN: %d day(s) across %d Harmony job(s); nothing fetched",
-                    total, jobs)
+        n_years = len([y for y in range(args.start_year, args.end_year + 1)
+                       if datetime(y, 1, 1, tzinfo=timezone.utc) <= latest])
+        logger.info(
+            "DRY RUN: %d day(s) across %d Harmony job(s) (one per year), "
+            "%d at a time; nothing fetched", total, n_years, args.workers,
+        )
         return 0
 
+    years = [
+        y for y in range(args.start_year, args.end_year + 1)
+        if datetime(y, 1, 1, tzinfo=timezone.utc) <= latest
+    ]
+    logger.info("  workers     %d concurrent Harmony job(s)", args.workers)
+    logger.info(
+        "  plan        %d year(s), one job each — measured overhead is ~25 min "
+        "per job regardless of size, so whole years beat small chunks",
+        len(years),
+    )
+
+    watchdog = start_stall_watchdog(args.output_dir, args.stall_minutes)
+
     started = time.time()
-    fetched_total = 0
-    for year in range(args.start_year, args.end_year + 1):
-        if datetime(year, 1, 1, tzinfo=timezone.utc) > latest:
-            logger.info("%d is beyond the Final Run record — stopping", year)
-            break
+    done_count = 0
+    lock = threading.Lock()
+
+    def sweep_year(year: int) -> tuple[int, int, float, str | None]:
+        """Fetch one year. Returns (year, days_on_disk, seconds, error)."""
         start, end = year_bounds(year, latest)
         t0 = time.time()
         try:
@@ -205,16 +279,28 @@ def main() -> int:
                 # not a reason to abandon 28 years of sweep.
                 skip_unavailable=True,
             )
+            return year, len(paths), time.time() - t0, None
         except Exception as exc:  # noqa: BLE001 - one bad year must not end the run
-            logger.error("%d FAILED: %s: %s — continuing", year, type(exc).__name__, exc)
-            continue
+            return year, 0, time.time() - t0, f"{type(exc).__name__}: {exc}"
 
-        fetched_total += len(paths)
-        logger.info(
-            "%d done: %d day(s) on disk, %.0fs  [elapsed %.1f min]",
-            year, len(paths), time.time() - t0, (time.time() - started) / 60,
-        )
+    with ThreadPoolExecutor(max_workers=args.workers) as pool:
+        futures = {pool.submit(sweep_year, y): y for y in years}
+        for future in as_completed(futures):
+            year, n_days, seconds, error = future.result()
+            with lock:
+                done_count += 1
+                if error:
+                    logger.error("%d FAILED after %.0fs: %s — continuing",
+                                 year, seconds, error)
+                else:
+                    logger.info(
+                        "%d done: %d day(s) on disk, %.0fs  "
+                        "[%d/%d years, %.1f min elapsed]",
+                        year, n_days, seconds, done_count, len(years),
+                        (time.time() - started) / 60,
+                    )
 
+    watchdog.set()
     manifest = write_manifest(args.output_dir, args.start_year, args.end_year)
     logger.info(
         "SWEEP COMPLETE: %d/%d days present (%.2f%%), %d missing, %.1f min total",
