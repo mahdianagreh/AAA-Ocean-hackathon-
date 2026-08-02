@@ -29,7 +29,7 @@ Legend: **C1** ephemeral drainage · **C2** intense episodic rain · **C3** reef
 | **Makran / Chabahar** | Iran | 2 | 2 | 1 | 0 | 0 | 2 | **7** | 3 |
 | **Arabian Gulf (Bahrain/Qatar/AUH)** | multiple | 1 | 0 | 1 | 2 | 2 | 1 | **7** | ✗ wrong trigger |
 
-**Six MENA sites score Tier 1.** Four of them share a single 15–25 km basin with Aqaba.
+**Six MENA sites score Tier 1.** Four of them share a single 14–26 km basin with Aqaba.
 
 ---
 
@@ -119,7 +119,7 @@ recalibrating plume detection for naturally turbid water.
 
 **"Is this only for Aqaba?"**
 > No. Six MENA sites score identically to Aqaba on our screening rubric, four of them in the
-> same 15–25 km basin. The October 2016 storm we model flooded four countries at once.
+> same 14–26 km basin. The October 2016 storm we model flooded four countries at once.
 
 **"How big is this?"**
 > More than a quarter of the world's reefs face watershed-based pollution. Reef tourism is
