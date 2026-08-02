@@ -50,6 +50,21 @@ OUT_FEAT = ROOT / "data/processed/features/catchment_terrain.parquet"
 
 UTM = 32636
 N_CATCHMENTS = 5
+
+# Set by eye against Esri World Imagery - see reports/outlets/README.md.
+# Jordan's coast is mostly port and industrial, so for three of five catchments
+# there is no natural wadi mouth to find: discharge reaches the sea through
+# engineered outfalls whose position is set by drainage design, not terrain.
+# The catchments and their areas are sound either way; only the mouth is
+# uncertain. Keyed by rank, since IDs are assigned by area below.
+POSITION_CONFIDENCE = {
+    1: ("high", "engineered Wadi Yutum flood channel, mouth at the shoreline"),
+    2: ("low", "routes through the container terminal and reclaimed land"),
+    3: ("low", "follows a road corridor between tank farms, lands on a jetty"),
+    4: ("low", "DISCHARGES INTO AN ENCLOSED HARBOUR - plume will not disperse "
+               "as modelled; do not demo without stating this"),
+    5: ("high", "natural braided wadi bed, mouth at the shore, reef offshore"),
+}
 # Natural Earth 10m coastlines are ~1 km generalised, so a discharge point on
 # the real shore can sit up to ~1 km from the polygon. 3 km keeps Jordanian
 # mouths while still excluding the Israeli and Saudi coasts, which are
@@ -173,10 +188,14 @@ def main():
         geometry=geoms, crs=UTM,
     )
 
+    conf = [POSITION_CONFIDENCE.get(i + 1, ("unchecked", ""))[0] for i in range(len(sel))]
+    note = [POSITION_CONFIDENCE.get(i + 1, ("unchecked", ""))[1] for i in range(len(sel))]
     outl = gpd.GeoDataFrame(
         sel[["outlet_id", "catchment_id", "upstream_km2"]].assign(
             provisional=False,
             method="max flow accumulation at the sea edge",
+            position_confidence=conf,
+            imagery_note=note,
         ),
         geometry=[Point(x, y) for x, y in zip(sel.utm_x, sel.utm_y)], crs=UTM,
     )
