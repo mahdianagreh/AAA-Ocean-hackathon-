@@ -2,6 +2,19 @@
 
 **Part B. SW Madagascar and coastal Kenya. Semi-arid, land-use-driven variant.**
 
+> **The short version.** This region's problem is **chronic-plus-seasonal**, not episodic — so
+> forecast mode is worth *less* here, and **catchment attribution and exposure mapping are worth
+> more.**
+>
+> **Toliara, Madagascar (10/12)** is the most ecologically urgent site in the scan and the poorest.
+> The buyer is an NGO or a development bank, not a marine park with a budget. Treat it as an
+> **impact and credibility site, not a revenue site.**
+>
+> **Kenya (8/12) fails on C1** — the Sabaki and Tana are perennial rivers — **so it is not a
+> deployment target.** But its literature is the **strongest external proof anywhere that plume
+> *direction*, not just plume size, decides which reef survives**: limited southward plume movement
+> is what spared northern Malindi Marine National Park. **Use Kenya as evidence, not as a market.**
+
 ---
 
 ## Why this region is a different variant

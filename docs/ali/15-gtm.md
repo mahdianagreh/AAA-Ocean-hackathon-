@@ -2,6 +2,20 @@
 
 **Part C. The sequence of moves, and everything that can kill it.**
 
+> **The short version.** **This does not sell into a market — it inserts into a funded programme
+> that already exists.** The go-to-market is not lead generation; it is **getting into one room at
+> UNDP Jordan with a working demo and an honest backtest.**
+>
+> **Five moves:** finish the validation (now) → **ABOFA, 9–13 Sept 2026** → a grant-funded pilot
+> (3–12 mo) → a commercial Saudi second site (12–24 mo) → regional via GFCR or PERSGA (24–36 mo).
+>
+> **ABOFA is a procurement room, not a demo slot.** Success there is **one named follow-up
+> meeting**, not a prize.
+>
+> **Of ten commercial risks, two are real:** no validated backtest, and **the team simply stopping
+> on 14 August.** The second is the most probable reason this never becomes a business, and it is
+> the only one that costs nothing to fix — one conversation before the hackathon ends.
+
 ---
 
 ## 1 · The go-to-market thesis in one paragraph
@@ -11,7 +25,7 @@ that already exists**. The GFCR Gulf of Aqaba and Northern Red Sea Resilient Ree
 targets a **USD 10 million** grant with the **Aqaba Marine Reserve as a priority site**, names
 **increased sediment flows from changing rainfall intensity** as a key threat, and funds
 **"water quality / land-ocean interface projects"** as an explicit protection outcome
-**[sourced, §2.1 of [`14-business-funding-and-policy.md`](14-business-funding-and-policy.md)]**.
+**[sourced, §2.1 of [`14-funding.md`](14-funding.md)]**.
 The go-to-market is therefore not lead generation — it is **getting into one room at UNDP
 Jordan with a working demo and a validated backtest.**
 
@@ -22,13 +36,25 @@ Jordan with a working demo and a validated backtest.**
 ### Move 1 — Finish the validation (now → 13 August)
 
 **Nothing else matters until there is one honest backtest.** Not a better dashboard, not more
-sites. Every buyer in [`12-business-buyers-and-value.md`](12-business-buyers-and-value.md)
-§6 has "one validated historical backtest" as a blocking requirement, and it is currently
-gated on the satellite imagery audit that has not been done.
+sites. Every buyer in [`12-buyers.md`](12-buyers.md)
+§6 has "one validated historical backtest" as a blocking requirement.
 
-**[judgement]** If the imagery gate fails — no clear post-event scene exists — the honest
-move is to reposition the demo around *forecast capability and exposure mapping* and say so
-plainly. That is survivable. Claiming validation you do not have is not.
+> **Update 2026-08-02 — the contingency below has fired.** The imagery audit has run and
+> returned **NO-GO**: [`docs/event_audit.md`](../event_audit.md) §3 shows the October 2016 plume
+> dispersed 2.5–3.5 days before any accessible satellite pass, confirmed by Sentinel-2 and
+> Landsat 8. **A physical null, not a data-quality problem.**
+>
+> **So Move 1 is now specific:** validate the transport model against the Kalman et al. **in-situ
+> mooring record** — salinity **−1.75 ‰**, turbidity peak **2.18 g/L**, 250 m offshore at 13 m
+> depth, onset 09:50 Oct 28, cleared ~17:15 Oct 29. **[judgement]** This is a *quantitative*
+> target rather than a visual one, so it is a better backtest than originally planned — but it
+> depends on the particle engine, which does not exist yet. That dependency is now the single
+> most schedule-critical item in the project.
+
+**[judgement]** The original contingency still reads correctly, and is worth keeping on the
+record: if the imagery gate failed, the honest move was to reposition around *forecast capability
+and exposure mapping* and say so plainly. **That is survivable, and it is what happened.**
+Claiming validation you do not have is not.
 
 ### Move 2 — The ABOFA room (9–13 September)
 
@@ -50,7 +76,7 @@ ROWA, ASEZA — are the plausible attendee list.
 ### Move 3 — The pilot (3–12 months)
 
 One deployment, one full flood season, instrumented for the survey-efficiency metric in
-[`12-business-buyers-and-value.md`](12-business-buyers-and-value.md) §5.1. Funded by GFCR or
+[`12-buyers.md`](12-buyers.md) §5.1. Funded by GFCR or
 GEF 10905, not sold.
 
 **[judgement]** Design the pilot so the *evaluation* is credible: baseline the current
@@ -95,7 +121,7 @@ Scored **[judgement]**. Probability × impact, highest first.
 
 | # | Risk | P | I | Mitigation |
 |---|---|---|---|---|
-| 1 | **No validated backtest** — imagery gate fails, so there is no evidence the system works | Med | **Critical** | Audit multiple events, not one. If it fails, reposition around forecast + exposure and say so. This is the same risk the concept doc §25 ranks first. |
+| 1 | **No validated backtest** — ⬛ **the imagery half of this has already happened.** The audit ran and found no detectable plume in any accessible scene | **Certain** (imagery) → **Med** (overall) | **Critical** | **Route changed, not lost.** Validate against the in-situ mooring record instead — see Move 1. Residual risk is now *"the transport engine isn't built in time to test against it"*, which is an engineering-schedule risk rather than a data-availability one. |
 | 2 | **The GFCR programme is dormant or already allocated** | Med | High | Concept note signed late 2022 with a Jun 2023 proposal target — **status unverified**. Check first; GEF 10905 is the fallback channel, and it is confirmed in implementation. |
 | 3 | **Procurement timelines** — 12–24 months from interest to contract | **High** | High | Lead with grant-funded deployment and event-response work, which bypass tender. Do not model revenue on a normal sales cycle. |
 | 4 | **Team dissolves after the hackathon** | **High** | High | The most likely failure mode for any student project, and it is rarely written down. Decide before 13 August who owns the repo, the relationships and the follow-up. |

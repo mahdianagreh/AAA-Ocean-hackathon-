@@ -2,7 +2,16 @@
 
 **Where else does this problem happen · who pays for solving it · what is actually built**
 
-**Author:** Ali · **Date:** 2026-08-02 · **19 documents, ~27,800 words, 51 sources**
+**Author:** Ali · **Date:** 2026-08-02 · **20 documents, ~35,800 words, 51 sources**
+
+> ### 👉 New here? Read [`00-summary.md`](00-summary.md) first
+>
+> It explains the whole research set **in plain English, on one page** — what the problem is, who
+> would pay for it, what we've actually built, and what is currently going wrong. You can read it
+> top to bottom without needing any of the others.
+>
+> Every other document opens with a **"The short version"** box, so you can skim any of them in
+> about thirty seconds before deciding whether to read the detail.
 
 ---
 
@@ -28,7 +37,7 @@ afterwards: *who would pay for it*, and *what have you actually built*. Four par
 
 ---
 
-## The five findings that matter
+## The six findings that matter
 
 ### 1 · It is a category, not a one-off — and MENA is the densest cluster on Earth
 
@@ -40,7 +49,7 @@ Six MENA sites score as high as Aqaba on the screening rubric, and **four share 
 ### 2 · Aridity alone is not the problem — and this sharpens the pitch
 
 **Ningaloo Reef is arid, reef-lined, and has excellent water quality *because* it has almost
-no runoff.** The rubric in [`01-problem-signature.md`](01-problem-signature.md) deliberately
+no runoff.** The rubric in [`01-signature.md`](01-signature.md) deliberately
 excludes it. Being able to say "no, not that one, and here's why" is what makes the screening
 credible.
 
@@ -56,7 +65,7 @@ interface projects"* as a **protection outcome**. Separately, **GEF project 1090
 reserve.
 
 ReefShield is not adjacent to that programme. It is a missing component of it. Full detail:
-[`14-business-funding-and-policy.md`](14-business-funding-and-policy.md).
+[`14-funding.md`](14-funding.md).
 
 ### 4 · The prior art validates the concept and leaves the arid coast empty
 
@@ -66,64 +75,79 @@ water-clarity product covers **Hawaii and Puerto Rico** and is **experimental**.
 operational forecast-mode land-to-sea sediment system exists on any arid coast.
 [`08-prior-art.md`](08-prior-art.md).
 
-### 5 · Two of five workstreams are complete; the product layer does not exist
+### 5 · Three of five workstreams are complete; the product layer does not exist
 
-**4,435 lines** of production backend covering **2 of 8** planned ingestion sources and
-**0 of 8** planned subsystem directories. No API, no database, no frontend, no dependency
-manifest, and the test suite has never been run on this machine.
-[`16-technical-build-state.md`](16-technical-build-state.md).
+**5,424 lines** of production backend covering **6 of 8** planned ingestion sources but only
+**1 of 8** planned subsystem directories. No API, no database, no frontend, no dependency
+manifest, and the test suite has still never been run on this machine.
+[`16-build-state.md`](16-build-state.md).
+
+### 6 · The imagery gate has resolved — and it failed
+
+**[sourced]** The project's own audit ([`docs/event_audit.md`](../event_audit.md) §3) returns
+**NO-GO for image-based validation**: the October 2016 plume dispersed **2.5–3.5 days before any
+accessible satellite pass**, confirmed by Sentinel-2 and Landsat 8 independently. A **physical
+null**, not a data-quality problem. The documented pivot is to validate against the Kalman et al.
+**in-situ mooring record** instead — a quantitative target rather than a visual one.
+[`18-risks.md`](18-risks.md) §1.5.
 
 ---
 
 ## Document index
 
+### Start here
+
+| # | File | Contents |
+|---|---|---|
+| 00 | [`00-summary.md`](00-summary.md) | **The whole set in plain English.** What the problem is · is it only Aqaba · has someone built it already · who pays · is it a real business · what's built · **what's going wrong now** · what not to cite |
+
 ### Framing
 
 | # | File | Contents |
 |---|---|---|
-| 01 | [`01-problem-signature.md`](01-problem-signature.md) | The six-criterion rubric, scoring bands, the Ningaloo counterexample test |
+| 01 | [`01-signature.md`](01-signature.md) | The six-criterion rubric, scoring bands, the Ningaloo counterexample test |
 
 ### Part A — MENA
 
 | # | File | Contents |
 |---|---|---|
-| 02 | [`02-mena-gulf-of-aqaba.md`](02-mena-gulf-of-aqaba.md) | Eilat, Sinai, Saudi/NEOM — Tier 1, same basin, transboundary machinery |
-| 03 | [`03-mena-red-sea-coast.md`](03-mena-red-sea-coast.md) | Egyptian Red Sea, Jeddah, Sudan, Djibouti/Eritrea/Socotra |
-| 04 | [`04-mena-arabian-peninsula.md`](04-mena-arabian-peninsula.md) | Oman, UAE, Iran — the cyclone-driven variant |
+| 02 | [`02-aqaba.md`](02-aqaba.md) | Eilat, Sinai, Saudi/NEOM — Tier 1, same basin, transboundary machinery |
+| 03 | [`03-red-sea.md`](03-red-sea.md) | Egyptian Red Sea, Jeddah, Sudan, Djibouti/Eritrea/Socotra |
+| 04 | [`04-arabia.md`](04-arabia.md) | Oman, UAE, Iran — the cyclone-driven variant |
 
 ### Part B — Rest of World
 
 | # | File | Contents |
 |---|---|---|
-| 05 | [`05-row-western-indian-ocean.md`](05-row-western-indian-ocean.md) | Madagascar, Kenya — semi-arid, land-use-driven |
-| 06 | [`06-row-americas.md`](06-row-americas.md) | Bonaire/Curaçao, Baja California, Puerto Rico/USVI |
-| 07 | [`07-row-asia-pacific.md`](07-row-asia-pacific.md) | West Maui, and the Australian counterexamples |
+| 05 | [`05-indian-ocean.md`](05-indian-ocean.md) | Madagascar, Kenya — semi-arid, land-use-driven |
+| 06 | [`06-americas.md`](06-americas.md) | Bonaire/Curaçao, Baja California, Puerto Rico/USVI |
+| 07 | [`07-asia-pacific.md`](07-asia-pacific.md) | West Maui, and the Australian counterexamples |
 
 ### Cross-cutting
 
 | # | File | Contents |
 |---|---|---|
 | 08 | [`08-prior-art.md`](08-prior-art.md) | eReefs, NOAA CRW, Allen Coral Atlas, WaveFoRCE, R2R — and the gap |
-| 09 | [`09-shortlist-scorecard.md`](09-shortlist-scorecard.md) | 21 scored sites, expansion sequence, judge one-liners |
+| 09 | [`09-scorecard.md`](09-scorecard.md) | 21 scored sites, expansion sequence, judge one-liners |
 | 10 | [`10-sources.md`](10-sources.md) | 51 sources with access level and what each supports |
 
 ### Part C — Business
 
 | # | File | Contents |
 |---|---|---|
-| 11 | [`11-business-market-sizing.md`](11-business-market-sizing.md) | TAM/SAM/SOM with shown arithmetic; the reef-valuation trap; Aqaba value-at-risk |
-| 12 | [`12-business-buyers-and-value.md`](12-business-buyers-and-value.md) | Four buyer archetypes, named contacts, value quantification |
-| 13 | [`13-business-model-and-unit-economics.md`](13-business-model-and-unit-economics.md) | Revenue streams, cost structure, per-deployment unit economics |
-| 14 | [`14-business-funding-and-policy.md`](14-business-funding-and-policy.md) | **The GFCR programme, GEF 10905, PERSGA, policy hooks, parametric insurance** |
-| 15 | [`15-business-gtm-and-risks.md`](15-business-gtm-and-risks.md) | Five-move GTM sequence, partnerships, commercial risk register |
+| 11 | [`11-market.md`](11-market.md) | TAM/SAM/SOM with shown arithmetic; the reef-valuation trap; Aqaba value-at-risk |
+| 12 | [`12-buyers.md`](12-buyers.md) | Four buyer archetypes, named contacts, value quantification |
+| 13 | [`13-economics.md`](13-economics.md) | Revenue streams, cost structure, per-deployment unit economics |
+| 14 | [`14-funding.md`](14-funding.md) | **The GFCR programme, GEF 10905, PERSGA, policy hooks, parametric insurance** |
+| 15 | [`15-gtm.md`](15-gtm.md) | Five-move GTM sequence, partnerships, commercial risk register |
 
 ### Part D — Technical
 
 | # | File | Contents |
 |---|---|---|
-| 16 | [`16-technical-build-state.md`](16-technical-build-state.md) | Measured build audit vs the concept doc's own plan; critical path; ranked actions |
-| 17 | [`17-technical-scaling-and-cost.md`](17-technical-scaling-and-cost.md) | Data volumes, compute profile, cost to run, porting cost |
-| 18 | [`18-technical-risk-register.md`](18-technical-risk-register.md) | Six undocumented risks + re-scored concept doc §25 risks |
+| 16 | [`16-build-state.md`](16-build-state.md) | Measured build audit vs the concept doc's own plan; critical path; ranked actions |
+| 17 | [`17-scaling.md`](17-scaling.md) | Data volumes, compute profile, cost to run, porting cost |
+| 18 | [`18-risks.md`](18-risks.md) | Six undocumented risks + re-scored concept doc §25 risks |
 
 ---
 

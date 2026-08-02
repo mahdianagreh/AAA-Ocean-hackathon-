@@ -2,12 +2,25 @@
 
 **Part A, Tier 1. The same basin, the same storms, the same reefs, four flags.**
 
+> **The short version.** Three sites here all score **11/12** — Eilat, Sinai (Taba/Nuweiba/Dahab)
+> and the Saudi coast including NEOM — and with Aqaba that makes **four Tier 1 sites in one basin
+> 14–26 km wide.**
+>
+> **The strongest fact in the whole scan lives here:** the October 2016 event moved **~24,000 t of
+> sediment** into the sea, which **exceeded the annual atmospheric dust input** — and the paper
+> documenting it was written from the *Israeli* side of a border the reefs do not observe.
+>
+> **The commercial read:** NEOM is ~100 km away, being built now, inside a **$1.3 trillion**
+> programme. A demo built in Jordan is directly demonstrable to that buyer.
+
 ---
 
 ## The headline
 
-The Gulf of Aqaba is **14–26 km wide** ([GFCR concept note](https://mptf.undp.org/sites/default/files/documents/2022-12/gulf_of_aqaba_and_n_red_sea_reefs_programme_redacted.pdf)) and about 160 km long. Jordan, Israel, Egypt
-and Saudi Arabia all hold coastline on it. **A storm system over the northern Gulf produces
+The Gulf of Aqaba is **14–26 km wide and ~180 km long, average depth 800 m**
+([GFCR concept note](https://mptf.undp.org/sites/default/files/documents/2022-12/gulf_of_aqaba_and_n_red_sea_reefs_programme_redacted.pdf)).
+Jordan, Israel, Egypt and Saudi Arabia all hold coastline on it — **Egypt ~180 km, Israel ~9 km,
+Jordan ~27 km, Saudi Arabia ~150 km** **[sourced]**. **A storm system over the northern Gulf produces
 flash floods in all four jurisdictions in the same 48 hours.**
 
 That is not a marketing framing — it is what the October 2016 event actually did. The
@@ -74,8 +87,11 @@ data-poor. Everything else is identical.
 >    loses the volume basis and the two-catchment scope. Worth tightening before it reaches
 >    a slide.
 > 2. **The paper explicitly names Wadi Yutum**, which is Mahdi's `AQ-C01`. That is direct
->    literature support for the catchment the delineation on branch `mahdi` identifies as
->    4,453 km² — and further evidence that the download box (~1,700 km²) is too small.
+>    literature support for the catchment the delineation identifies as **4,453 km² ±4%
+>    (range 4,349–4,690)** ([`tasks/mahdi.md`](../../tasks/mahdi.md)) **[sourced]** — and it was
+>    the evidence that the original ~1,700 km² download box was too small. **That box has since
+>    been retired** in favour of a `TERRAIN_AOI` of ~14,700 km²; see
+>    [`18-risks.md`](18-risks.md) R2.
 
 ### Transboundary machinery that already exists
 
@@ -169,15 +185,16 @@ The honest framing for a judge:
 
 > "We built this for Aqaba. But the storm that generated our demo event flooded four
 > countries at once, and the paper we validate against was written from the other side of
-> the border. The gulf is 15 km wide. Nobody can solve this one coastline at a time."
+> the border. The gulf is 14 to 26 kilometres wide. Nobody can solve this one coastline at a
+> time."
 
 ---
 
 ## Open questions for the team
 
 1. **Does the Oct 2016 catchment analysis change if you include Israeli and Egyptian
-   catchments?** Mahdi's delineation (branch `mahdi`) shows AQ-C01 alone is 4,453 km². The
-   contributing area for the *event* may cross borders. Worth knowing before claiming
+   catchments?** Mahdi's delineation (now on `main`) shows AQ-C01 alone is **4,453 km² ±4%**.
+   The contributing area for the *event* may cross borders. Worth knowing before claiming
    catchment-level rainfall attribution.
 2. **Can Allen Coral Atlas supply reef habitat for the Egyptian and Saudi shores in the same
    export?** If yes, a four-country demo map is nearly free.

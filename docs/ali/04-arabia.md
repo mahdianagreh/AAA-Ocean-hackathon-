@@ -2,6 +2,23 @@
 
 **Part A. Oman, UAE east coast, Iran. The cyclone-driven variant of the same problem.**
 
+> **The short version.** **Muscat / Daymaniyat (11/12) carries the single best piece of external
+> validation in the entire scan** — a published, independent statement of ReefShield's exact causal
+> chain, from a different country and a different ocean basin:
+>
+> > corals were affected *"not only by wave-induced mechanical damage but were also impacted by
+> > freshwater exposure resulting from heavy rains, as well as sedimentation from wadis discharging
+> > into the sea."*
+>
+> **Cyclones change three things:** lead time improves from hours to *days* (good), wave damage
+> confounds attribution (bad), and freshwater shock joins sediment as a stressor (documented).
+>
+> **One real porting cost:** Oman's water is **naturally turbid** from phytoplankton productivity,
+> so the "clear water = normal" baseline in plume detection needs recalibrating.
+>
+> **The Arabian Gulf proper is *not* a fit** — the stressors there are thermal and hypersaline, and
+> the sediment comes from dredging. That is a different product.
+
 ---
 
 ## Why this region is a different variant

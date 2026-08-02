@@ -3,6 +3,25 @@
 **Part B. West Maui, plus the two Australian cases that do *not* fit — and why that is
 useful.**
 
+> **The short version.** None of these three is a market. All three are **arguments.**
+>
+> **West Maui (7/12)** shows the mature end-state — watershed plans, agency partnership,
+> before/after monitoring — and shows the gap **even in a well-funded site**: the monitoring is
+> retrospective. *Nobody there forecasts the next plume either.*
+>
+> **Ningaloo (≈6/12) is the site that disciplines the whole thesis.** Its reef sits close to shore
+> **because** there is no runoff. Aridity is not the hazard; aridity *plus* four other conditions
+> is. Being able to name a famous arid reef coast that fails the rubric is what makes the rubric
+> credible.
+>
+> **Burdekin / GBR** is the **existence proof and the price tag**: governments will fund exactly
+> this capability at national scale, and the version they funded assumes data richness no arid
+> coast has.
+>
+> **The most important number in this doc is a risk, not a market:** transmission loss of
+> **13.2% → 98%** (20–85% in the Negev). Most of a desert flood can soak into the wadi bed and
+> never reach the sea, **and the pipeline does not model this.**
+
 ---
 
 ## Site 18 · West Maui, Hawaii — Score 7/12

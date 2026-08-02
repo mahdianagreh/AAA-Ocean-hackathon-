@@ -2,6 +2,16 @@
 
 **What has to be true at a site before ReefShield is the right tool for it**
 
+> **The short version.** Six criteria, each scored 0–2, maximum 12: **ephemeral drainage ·
+> intense episodic rain · reef within a few km · confined basin · development at the outlet ·
+> data-poor.** Plus two modifiers that change the sales story, not the score: economic exposure
+> and a transboundary basin.
+>
+> **Aqaba scores 12/12.** The rubric exists to *exclude* things — **Ningaloo scores ≈6 and is
+> deliberately not a customer**, which is what makes the screening credible.
+>
+> Bands: **11–12** Tier 1 · **8–10** Tier 2 · **5–7** Tier 3 · **≤4** not a fit.
+
 ---
 
 ## Why a rubric rather than a list
@@ -96,7 +106,7 @@ and a growing city **[sourced, concept doc §3.3]**.
 This is the criterion that decides whether ReefShield is *needed* or merely *possible*. If
 a site already has gauged catchments, local current meters and an operational model, the
 value proposition collapses — see the Burdekin/GBR discussion in
-[`07-row-asia-pacific.md`](07-row-asia-pacific.md).
+[`07-asia-pacific.md`](07-asia-pacific.md).
 
 Kalman et al. explicitly note that **data limitations often prevent comprehensive analysis**
 of these events elsewhere ([NHESS](https://nhess.copernicus.org/articles/25/3201/2025/))
@@ -140,7 +150,7 @@ Maximum 12.
 | 5–7 | **Tier 3 — partial** | Real problem, different mechanism; substantial adaptation |
 | ≤4 | **Not a fit** | Either no problem, or already solved |
 
-Full scored table in [`09-shortlist-scorecard.md`](09-shortlist-scorecard.md).
+Full scored table in [`09-scorecard.md`](09-scorecard.md).
 
 ---
 

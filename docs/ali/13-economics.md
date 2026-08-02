@@ -3,6 +3,22 @@
 **Part C. How the thing makes money, what it costs to run, and what a deployment actually
 takes.**
 
+> **The short version.** **All the input data is free.** That single fact shapes everything: no
+> cost of goods, structurally high margin — **but no data moat either.** The moat is the
+> integration, the validation record, and institutional embedding.
+>
+> **The numbers:** ≈**+$45k** contribution in year one per site, ≈**+$73k/site/yr** at steady
+> state. **Six sites ≈ $440k/yr** — sustains a team of 3–4. Infrastructure is **~2–7%** of a
+> mid-range licence, so **cost is not the constraint.**
+>
+> **The constraint is expert labour.** Manual plume QC is *the method, not a shortcut*, so
+> validation cost does **not** fall with scale. **Treat every QC'd mask as a capital asset** — at
+> ~50–100 labelled masks, segmentation becomes trainable and the economics change.
+>
+> **One legal decision:** Allen Coral Atlas is **CC BY 4.0** (fine), but **OpenStreetMap is
+> share-alike (ODbL)**. Recommended: publish the OSM-derived tables under ODbL and record it.
+> A formal licence review is needed before the first paid contract.
+
 ---
 
 ## 1 · The structural fact that determines everything
@@ -38,7 +54,7 @@ The core commercial motion.
 | Additional catchment/reef zone | **$3k – 8k** each | Expansion within an existing site |
 
 **Why a deployment fee matters [judgement]:** the honest finding from
-[`09-shortlist-scorecard.md`](09-shortlist-scorecard.md) is that geography is cheap to change
+[`09-scorecard.md`](09-scorecard.md) is that geography is cheap to change
 but **validation is not**. Pricing onboarding separately makes that visible rather than
 burying expert labour inside a subscription and eroding margin.
 
@@ -57,7 +73,7 @@ Programmatic access for research institutions and, eventually, insurance or port
 
 ### 2.4 Grant-funded deployments *(the actual year-one revenue)*
 
-See [`14-business-funding-and-policy.md`](14-business-funding-and-policy.md). For sites like
+See [`14-funding.md`](14-funding.md). For sites like
 Toliara this is the *only* viable model, and for Aqaba it is the likely first-year one.
 
 ---
@@ -67,10 +83,12 @@ Toliara this is the *only* viable model, and for Aqaba it is the likely first-ye
 ### 3.1 Infrastructure — genuinely small
 
 **[assumption, derived from the repo's measured data volumes]** Real figures from the
-project: committed processed data is **7.6 MB**; the 156-granule October 2016 IMERG event
-occupies a few hundred MB raw and produces a **126 KB** processed NetCDF; an ERA5-Land event
-file is **166 KB**; the antecedent feature Parquet is **21.6 KB**
-([`docs/MASTER_TASK_SUMMARY.md`](../MASTER_TASK_SUMMARY.md) §12) **[sourced]**.
+project: committed processed data is **17 MB** (was 7.6 MB before two 4 MB plume rasters landed
+on 2 Aug); the 156-granule October 2016 IMERG event occupies a few hundred MB raw and produces a
+**126 KB** processed NetCDF; an ERA5-Land event file is **166 KB**; the antecedent feature
+Parquet is **21.6 KB** ([`docs/MASTER_TASK_SUMMARY.md`](../MASTER_TASK_SUMMARY.md) §12)
+**[sourced]**. Full current breakdown in
+[`17-scaling.md`](17-scaling.md) §1.
 
 | Item | Monthly **[assumption]** |
 |---|---|
@@ -78,10 +96,13 @@ file is **166 KB**; the antecedent feature Parquet is **21.6 KB**
 | Storage (raw archive + processed outputs, per site) | $20 – 60 |
 | Database (PostGIS) | $30 – 100 |
 | Frontend hosting / CDN | $10 – 40 |
-| **Per-site infrastructure total** | **~$150 – 500/month** = **$1.8k – 6k/yr** |
+| **Per-site infrastructure total** | **~$140 – 500/month** = **$1.7k – 6k/yr** |
 
-**[derived]** Against a $40k–120k licence, **infrastructure is 2–8% of revenue.** The cost
-base is not the constraint.
+**[derived]** Against the **mid-range $80k** authority licence, **infrastructure is roughly
+2–7% of revenue** — the figure to quote, with the basis stated. Across the full $40k–120k
+licence range it spans **~1.4% to 15%**, the 15% being the worst case of high infrastructure
+against the lowest licence. Either way the cost base is not the constraint. Sensitivity table in
+[`17-scaling.md`](17-scaling.md) §3.
 
 The particle simulation is the only compute-intensive component, and it is bounded: the
 concept doc's own API example specifies **5,000 particles over 24 hours at 30-minute steps**
@@ -150,7 +171,7 @@ finance judge to take it apart.
 | **Public procurement cycles** | 12–24 months from interest to contract; cash-flow death | Lead with grant-funded deployments and event-response work, which bypass procurement |
 | **Customer concentration** | One Saudi contract could be >60% of revenue | Accept it early; diversify by Year 3 |
 | **Free alternative appears** | A national agency or NOAA generalises its product | Genuinely possible. Defence is institutional embedding and the local validation record, not technology |
-| **No validated backtest** | There is no product to sell at all | This is the *actual* top risk, and it is Abd's imagery gate — see [`18-technical-risk-register.md`](18-technical-risk-register.md) |
+| **No validated backtest** | There is no product to sell at all | This is the *actual* top risk, and it is Abd's imagery gate — see [`18-risks.md`](18-risks.md) |
 
 ---
 

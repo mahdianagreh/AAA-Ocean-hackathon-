@@ -3,6 +3,19 @@
 Every source used in this scan, with what it supports and how it was accessed. Accessed
 **2026-08-02** unless noted.
 
+> **The short version.** **51 sources** (S1–S50 plus S15b). The ones that carry the most weight:
+>
+> | Source | Why it matters | Access |
+> |---|---|---|
+> | **S1** Kalman et al. 2025 | The whole project's scientific basis — sediment tonnages, 27 mm/yr, transmission loss, the authors' own generalisability sentence | `[full]` |
+> | **S41** GFCR concept note | The US$10 M programme, the AMR as a priority site, the authoritative gulf dimensions | `[full]`, 12 pages |
+> | **S37** NOAA CRW | The "two regions on Earth, still experimental" gap, quoted verbatim | `[full]` |
+> | **S2** Katz et al. 2015 | The hyperpycnal-flow mechanism — **`[blocked]`, HTTP 403.** The one to chase; HTU library access would resolve it |
+>
+> **Two cautions.** Most regional sources are `[abstract]` only — fine for a market scan, **not
+> sufficient for a scientific claim on a slide.** And **nothing here is a patent search**, which
+> concept doc §5.2 also asks for and which remains undone.
+
 **Access legend:** `[full]` fetched and read · `[abstract]` search-result summary or
 abstract only · `[blocked]` paywalled or 403 — **claims from these are marked
 [unverified]**

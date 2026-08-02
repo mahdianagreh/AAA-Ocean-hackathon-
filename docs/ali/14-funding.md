@@ -3,10 +3,25 @@
 **Part C. Who pays for the first three years, and which policy instruments create the
 obligation to buy.**
 
-> **Headline:** there is a **US$10 million UNDP programme, running to 2030, whose priority
-> site is the Aqaba Marine Reserve, which lists ReefShield's exact problem as a named threat
-> and "water quality / land-ocean interface projects" as a funded outcome.** Details in §2.1.
-> This is the single most important finding in the business analysis.
+> **The short version — and this is the single most important finding in the business analysis.**
+>
+> There is a **US$10 million UNDP programme, running to 2030, whose priority site is the Aqaba
+> Marine Reserve.** It lists ReefShield's exact problem as a named threat and funds **"water
+> quality / land-ocean interface projects"** as an outcome. Details in §2.1.
+>
+> **A second channel is already in implementation:** GEF project 10905 — US$663k + US$5.5 M
+> co-financing, IUCN implementing, **UNDP Jordan executing** — explicitly about *"management
+> effectiveness and operational capability"* at that same reserve.
+>
+> **So this is not a cold pitch.** Every organisation named is already working on the Aqaba Marine
+> Reserve, under two funded instruments, with UNDP Jordan in both.
+>
+> **Note on Saudi Arabia:** a strategic partner but **not a GFCR recipient** — so NEOM and Red Sea
+> Global stay a *commercial* route. Grants will not reach them.
+>
+> **What nobody has checked yet:** whether the GFCR full proposal was actually funded. The concept
+> note was signed in late 2022 targeting a Jun 2023 proposal. **Someone should verify this — it
+> decides whether this is a live channel or a history lesson.**
 
 ---
 

@@ -2,6 +2,22 @@
 
 **Part C. How big is this, and how do we know?**
 
+> **The short version.** **~12 sites we could actually serve.** That is the honest number, and it
+> is small. It is still the right market, for four reasons: the buyers are wealthy and
+> concentrated, contracts are sticky, the cost base is tiny, and the same engine serves much
+> larger adjacent markets (dredging, brine, spills, algal blooms).
+>
+> **Realistic revenue:** **$0–80k** in year one (grant-funded, not sold) → **$450k–1.5M** by year
+> three. **This is a grant-to-contract business, not a venture-scale SaaS.**
+>
+> **⚠️ The trap:** reef-valuation figures disagree by **two orders of magnitude**. Use the
+> conservative direct-use number (**$112k/km²/yr**), never Costanza's ~$35M/km². Applying Costanza
+> gives "$200 million of reef," which collapses under one question and takes your honest numbers
+> down with it.
+>
+> **The defensible line:** the Aqaba Marine Reserve is worth **~$0.25–1.5 M/yr**, Jordan's whole
+> reef **~$0.6–3.8 M/yr** — protected by a system costing tens of thousands.
+
 Every number below is either **[sourced]** with a citation or **[assumption]** with the
 arithmetic shown. Nothing is asserted without one of the two. A judge who asks "where did
 that number come from?" should be able to follow it in under thirty seconds.
@@ -67,7 +83,7 @@ figure for it. Two honest ways to bound it:
 
 ## 2 · SAM — the sites we could actually serve
 
-From the scorecard in [`09-shortlist-scorecard.md`](09-shortlist-scorecard.md), counting only
+From the scorecard in [`09-scorecard.md`](09-scorecard.md), counting only
 Tier 1 and Tier 2 sites that are **not already served** and **not access-blocked**:
 
 | Region | Sites | Names |
@@ -118,7 +134,7 @@ product-led-growth SaaS will be wrong.
 
 **The right comparison is a specialist environmental-intelligence consultancy with a
 software product**, not a startup. Which is exactly what the funding landscape in
-[`14-business-funding-and-policy.md`](14-business-funding-and-policy.md) is built for.
+[`14-funding.md`](14-funding.md) is built for.
 
 ---
 
@@ -134,7 +150,7 @@ software product**, not a startup. Which is exactly what the funding landscape i
    in [`tasks/00-contracts.md`](../../tasks/00-contracts.md) is accidentally also a
    commercial moat **[judgement]**.
 3. **The cost base is tiny.** The platform runs on free open data — see
-   [`17-technical-scaling-and-cost.md`](17-technical-scaling-and-cost.md). Gross margin is
+   [`17-scaling.md`](17-scaling.md). Gross margin is
    structurally high because there is no data licensing cost.
 4. **It is adjacent to much larger markets.** The same particle engine and exposure scoring
    serve **dredge plumes, desalination brine, oil spills, wastewater and harmful algal

@@ -2,6 +2,23 @@
 
 **Part B. Bonaire and Curaçao, Baja California Sur, Puerto Rico and the USVI.**
 
+> **The short version.** **Bonaire / Curaçao (11/12) is the best non-MENA commercial target** — a
+> dive-tourism economy exactly like Aqaba's, ephemeral *rooien*, a funded marine park, and the
+> product could be sold essentially unchanged. Read the 2025 Curaçao connectivity paper before
+> claiming novelty there.
+>
+> **Baja California Sur (9/12)** fits, but the literature frames the threat as **sewage and
+> nutrients rather than sediment**, so the pitch would lead with pollutant transport.
+>
+> **Puerto Rico (9/12) is not a market — it is the proof the market is real.** It scores **0 on
+> C6** because NOAA already runs a water-clarity product there. That product covers **two regions
+> on Earth** and is still **experimental**: the need is federally validated, and nobody has
+> generalised the solution.
+>
+> **The best single statistic in the scan is here:** unpaved-road erosion running **330–760×
+> undisturbed hillslopes** — the argument for why the model needs land-cover and soil layers, not
+> just rainfall. *(From Isla de Culebra, not Guánica — do not mix them up.)*
+
 ---
 
 ## Site 15 · Bonaire and Curaçao (ABC islands) — Score 11/12

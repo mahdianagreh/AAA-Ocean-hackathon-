@@ -2,6 +2,20 @@
 
 **Part A. Egypt's Red Sea, central Saudi Arabia, Sudan, Eritrea, Djibouti, Yemen.**
 
+> **The short version.** **Egypt's Red Sea (Hurghada → Marsa Alam) scores 11/12 and is the largest
+> single addressable market in the scan** — highest reef-tourism volume, documented flood sediment
+> physically on the reefs, and a dive industry with a direct commercial reason to know when
+> visibility will drop.
+>
+> **Jeddah (10/12)** is the urban-drainage variant: the sediment story is mixed with wastewater, so
+> the sediment-load proxy becomes a pollutant-load proxy — same architecture, different emphasis.
+>
+> **Sudan, Eritrea, Djibouti and Socotra all satisfy the physical signature but are blocked by
+> conflict and access**, not by technical fit. They belong on a coverage slide, not in a pipeline.
+>
+> **The framing that works here:** these reefs are adapted to *almost no* terrestrial input — which
+> is exactly why a single flood pulse is a shock rather than a background condition.
+
 Beyond the Gulf of Aqaba, the same signature runs the length of both Red Sea shores. This
 is the largest contiguous market for the platform.
 
@@ -131,7 +145,7 @@ conflict, access, or institutional capacity rather than by technical fit. They b
 
 | Change | Effort | Notes |
 |---|---|---|
-| New AOI + catchment delineation | **Medium, not low** | Mahdi's `03_dem_fetch.py` → `06_catchments.py` chain runs anywhere in principle, but it is **not** parameter-driven: `01_make_aoi.py` hard-codes `MARINE_BBOX`, and `06_catchments.py` hard-codes `country == "Jordan"` plus `JORDAN_MAX_DIST_M`. Porting to Egypt means **editing source**, not swapping a config **[verified against branch `mahdi`]** |
+| New AOI + catchment delineation | **Medium, not low** | Mahdi's `03_dem_fetch.py` → `06_catchments.py` chain runs anywhere in principle, but it is **not** parameter-driven: `01_make_aoi.py` hard-codes `MARINE_BBOX`, and `06_catchments.py` hard-codes `country == "Jordan"` plus `JORDAN_MAX_DIST_M`. Porting to Egypt means **editing source**, not swapping a config **[verified on `main`, 2026-08-02: `scripts/06_catchments.py:93` and `scripts/01_make_aoi.py:29`]** |
 | IMERG / ERA5 ingestion | **None** | Already event- and box-agnostic by design **[sourced: `docs/pipeline_capability_report.md` §2]** |
 | Reef habitat polygons | Low | Allen Coral Atlas covers the whole Red Sea |
 | Bathymetry / coastline | Low | GMRT/GEBCO global |

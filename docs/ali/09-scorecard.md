@@ -1,7 +1,15 @@
 # 09 · Shortlist and scorecard
 
-**All 18 assessed sites, scored against the rubric in
-[`01-problem-signature.md`](01-problem-signature.md), split MENA / Rest of World.**
+**Every site scored against the rubric in [`01-signature.md`](01-signature.md),
+split MENA / Rest of World.**
+
+> **The short version.** **21 scored rows** below: the **18 numbered sites** profiled in
+> [`02`](02-aqaba.md)–[`07`](07-asia-pacific.md), plus **Aqaba as the baseline**
+> and three extra entries kept in for comparison (Dhofar, the Arabian Gulf, and the Ningaloo and
+> Burdekin counterexamples). One row covers three sites — Djibouti, Eritrea and Socotra are
+> scored together.
+>
+> **Headline: six MENA sites reach Tier 1, and four of them share one basin.**
 
 Scores are **[judgement]** built on **[sourced]** evidence in the regional files. Each
 criterion is 0–2; maximum 12.
@@ -98,7 +106,7 @@ recalibrating plume detection for naturally turbid water.
 | ERA5-Land ingestion | ✅ **Yes** | Same |
 | Antecedent features | ✅ **Yes** | Event time and windows are all arguments |
 | Config-driven runner | ✅ **Yes** | New site = new YAML |
-| Catchment delineation | ⚙️ **Re-run + code edit** | Mahdi's DEM chain works anywhere hydrologically, but `01_make_aoi.py` hard-codes `MARINE_BBOX` and `06_catchments.py` hard-codes `country == "Jordan"`. Parameterising those two constants is the actual porting task **[verified against branch `mahdi`]** |
+| Catchment delineation | ⚙️ **Re-run + code edit** | Mahdi's DEM chain works anywhere hydrologically, but `01_make_aoi.py` hard-codes `MARINE_BBOX` and `06_catchments.py` hard-codes `country == "Jordan"`. Parameterising those two constants is the actual porting task **[verified on `main`, 2026-08-02: `scripts/06_catchments.py:93` and `scripts/01_make_aoi.py:29`]** |
 | Land cover / soil / urban | ⚙️ Re-run | Pulga's scripts are global-source-driven |
 | Reef habitat | ⚙️ Re-run | Allen Coral Atlas is global |
 | Bathymetry / coastline | ⚙️ Re-run | GMRT/GEBCO global |

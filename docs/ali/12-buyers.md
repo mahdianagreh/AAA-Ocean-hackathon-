@@ -1,7 +1,23 @@
-
 # 12 · Business — Buyers, value and willingness to pay
 
 **Part C. Who signs the cheque, what they are actually buying, and what it is worth to them.**
+
+> **The short version.** **Four buyer types, and only two can fund development.** A dive centre is
+> a *user*, not a buyer — conflating the two is the most common way a good technical pitch fails
+> the business question.
+>
+> - **A · ASEZA** — the anchor. **$40–120k/yr**, but **price year one at zero** and grant-fund it.
+> - **B · NEOM / Red Sea Global** — the money. **$150–400k/yr**, straight commercial.
+> - **C · UNDP Jordan, IUCN, CORDAP, GEF** — pays for the first deployments. **Not a cold pitch:**
+>   every one of them is already working on the Aqaba Marine Reserve under two funded instruments.
+> - **D · Dive operators** — users. Give them a free tier; it is worth more than the licence fee.
+>
+> **What they are actually buying** is not a plume model: it is **which reef zone to sample
+> tomorrow morning**, an evidentiary record, and political cover.
+>
+> **The timing insight that matters most:** institutions like this **buy after an incident, not
+> before one.** So the system must already be running and already right when the next flood hits —
+> an argument for a cheap live deployment now, not a polished sales process.
 
 ---
 
@@ -55,7 +71,7 @@ grant-funded, not budget-funded.**
 
 **[assumption]** $40k–120k/yr once operational. But **year one should be priced at zero** and
 funded by a donor programme, with ASEZA contributing staff time and data access rather than
-cash — see [`14-business-funding-and-policy.md`](14-business-funding-and-policy.md).
+cash — see [`14-funding.md`](14-funding.md).
 
 ### The buying trigger
 
@@ -108,7 +124,7 @@ infrastructure.
 
 Not a customer in the commercial sense — the entity that **pays for the first deployments**
 so buyers A and B can see it working. Full detail in
-[`14-business-funding-and-policy.md`](14-business-funding-and-policy.md).
+[`14-funding.md`](14-funding.md).
 
 ### The named channel — this is not a cold introduction **[sourced]**
 
@@ -164,7 +180,7 @@ the metric to instrument from day one.
 
 ### 5.2 Avoided asset loss
 
-From [`11-business-market-sizing.md`](11-business-market-sizing.md) §5, Aqaba's reef is worth
+From [`11-market.md`](11-market.md) §5, Aqaba's reef is worth
 roughly **$0.6–3.8 million/yr** in direct-use terms **[derived from sourced ranges]**. A
 system in the tens of thousands protects an asset in the low millions — a ratio that holds up
 without inflating anything.
@@ -187,14 +203,30 @@ record satisfies cheaply.
 
 | Buyer | Blocking requirement | Currently exists? |
 |---|---|---|
-| Coastal authority | One validated historical backtest with honest metrics | ❌ blocked on Abd's imagery gate |
+| Coastal authority | One validated historical backtest with honest metrics | ❌ **the satellite route is now closed** — see below |
 | Coastal authority | Reef zones matching *their* official zonation, not ours | ⚠️ provisional zones exist; ACA export pending |
-| Mega-development | Catchment attribution — natural vs construction source | ⚠️ catchments exist on branch `mahdi`, unmerged |
+| Mega-development | Catchment attribution — natural vs construction source | ✅ **catchments merged to `main`** (5 catchments; AQ-C01 = 4,453 km² ±4%) |
 | Mega-development | Audit trail: every run stores parameters and inputs | ✅ manifest/summary JSON already written per run |
 | Donor programme | A named institutional partner and a work plan | ✅ ASEZA–UNDP relationship already exists |
 | Dive operators | A phone-readable alert, not a GIS dashboard | ❌ no frontend exists at all |
 
-**The pattern [judgement]:** three of the six blockers are the same three gaps identified in
-[`16-technical-build-state.md`](16-technical-build-state.md) — the imagery gate, the unmerged
-catchments, and the absent frontend. The commercial and technical critical paths are the same
-path.
+> ### ⚠️ Update 2026-08-02 — the validation blocker has changed shape
+>
+> **[sourced]** [`docs/event_audit.md`](../event_audit.md) §3 returns **NO-GO for image-based
+> validation** of the October 2016 event: the plume dispersed 2.5–3.5 days before any accessible
+> satellite pass, confirmed by Sentinel-2 and Landsat 8 independently. **It is a physical null,
+> not a data-quality problem** — so "wait for a better scene" is not a plan.
+>
+> **The documented pivot** is to validate against the Kalman et al. **in-situ mooring record**
+> (salinity −1.75 ‰, turbidity peak 2.18 g/L, 250 m offshore, 13 m depth). **[judgement]** For the
+> buyer table above, this is *better* news than it sounds: a quantitative comparison against
+> measured salinity and turbidity is a stronger evidentiary artefact for a coastal authority than
+> a visual mask overlay. But it is **not done yet**, and it now depends on the transport engine,
+> which does not exist. The blocker moved from *"can we find a picture?"* to *"can we build the
+> model that the measurements test?"*
+
+**The pattern [judgement]:** the blockers still track
+[`16-build-state.md`](16-build-state.md) almost exactly. Two of the original
+three have closed — the catchments merged, and the imagery gate was answered — but **the answer
+was negative, and the frontend still does not exist.** The commercial and technical critical
+paths remain the same path.
