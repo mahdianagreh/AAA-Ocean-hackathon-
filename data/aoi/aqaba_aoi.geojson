@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "name": "aqaba_analysis_aoi",
+  "properties": {
+    "status": "PROVISIONAL — starting proposal per tasks/00-contracts.md §1, not yet visually confirmed by Mahdi",
+    "crs_storage": "EPSG:4326",
+    "crs_analysis": "EPSG:32636",
+    "bbox_wsen": [34.90, 29.35, 35.05, 29.60]
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "aqaba_analysis_box"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [34.90, 29.35],
+          [35.05, 29.35],
+          [35.05, 29.60],
+          [34.90, 29.60],
+          [34.90, 29.35]
+        ]]
+      }
+    }
+  ]
+}

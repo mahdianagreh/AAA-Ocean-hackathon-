@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "name": "aqaba_padded_download_bbox",
+  "properties": {
+    "status": "padded superset box for all raw downloads, per tasks/00-contracts.md §1 — clip to aqaba_aoi.geojson at analysis time, not download time",
+    "crs_storage": "EPSG:4326",
+    "bbox_wsen": [34.80, 29.25, 35.15, 29.70]
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "aqaba_download_box"},
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[
+          [34.80, 29.25],
+          [35.15, 29.25],
+          [35.15, 29.70],
+          [34.80, 29.70],
+          [34.80, 29.25]
+        ]]
+      }
+    }
+  ]
+}

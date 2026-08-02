@@ -1,0 +1,25 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+backend/.venv/
+*.egg-info/
+
+# Data — raw downloads are large and fully reproducible from the ingestion scripts
+data/raw/**
+!data/raw/.gitkeep
+!**/.gitkeep
+
+# Processed large binary grids/rasters — reproducible, not hand-authored
+data/processed/**/*.tif
+data/processed/**/*.tiff
+data/processed/**/*.nc
+data/processed/**/*.zarr
+# Small vector files (provisional seeds, contracts) ARE committed — see tasks/00-contracts.md
+
+# OS
+.DS_Store

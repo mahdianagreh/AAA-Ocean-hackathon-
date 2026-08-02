@@ -239,7 +239,7 @@ Half a day, together, then everyone is independent.
 - [ ] **Mahdi:** P1 provisional catchments, P2 provisional outlets
 - [ ] **Pulga:** P4 provisional reef zones
 - [ ] **Anyone:** P3 event dates from the two papers → `docs/event_dates.md`
-- [ ] **Nizar:** P5 synthetic plume mask
+- [x] **Nizar:** P5 synthetic plume mask
 - [ ] Everyone registers their own accounts: NASA Earthdata · Copernicus CDS · Copernicus Data Space · Copernicus Marine · own GEE project
 - [ ] Everyone confirms they can start their stream **today** without needing anything from anyone
 
