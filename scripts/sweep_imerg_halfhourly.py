@@ -88,6 +88,54 @@ def event_window(day: pd.Timestamp, pad_days: int) -> tuple[str, str]:
     )
 
 
+def assert_existing_granules_match_extent(output_dir: Path, bbox) -> None:
+    """Refuse to resume into a directory fetched against a different extent.
+
+    Resume matches granules by FILENAME. A granule downloaded against the
+    retired bounding box has exactly the same name as the correct one, so a
+    naive resume skips it and silently mixes two extents in one dataset —
+    every timestamp present, every value real, and the grid quietly different
+    between them.
+
+    This is not hypothetical: every existing granule for AQ-2016-10-28 was
+    fetched against the old box and covers ~9 % of the terrain AOI.
+    """
+    if not output_dir.is_dir():
+        return
+    present = sorted(output_dir.glob("*.nc*"))
+    if not present:
+        return
+
+    try:
+        import xarray as xr
+
+        with xr.open_dataset(present[0], group="Grid", decode_times=False) as ds:
+            lat, lon = ds["lat"].values, ds["lon"].values
+    except Exception:  # noqa: BLE001 - unreadable sample is not proof of mismatch
+        logger.warning("could not read %s to verify its extent", present[0].name)
+        return
+
+    west, south, east, north = bbox
+    tol = 0.2  # one grid cell plus slack
+    matches = (
+        abs(float(lon.min()) - west) < tol
+        and abs(float(lon.max()) - east) < tol
+        and abs(float(lat.min()) - south) < tol
+        and abs(float(lat.max()) - north) < tol
+    )
+    if not matches:
+        raise SystemExit(
+            f"\n{output_dir} already holds {len(present)} granule(s) covering\n"
+            f"  lon {float(lon.min()):.2f}..{float(lon.max()):.2f}  "
+            f"lat {float(lat.min()):.2f}..{float(lat.max()):.2f}\n"
+            f"but this run requests\n"
+            f"  lon {west:.2f}..{east:.2f}  lat {south:.2f}..{north:.2f}\n\n"
+            "Resume matches on filename, so those files would be SKIPPED and the\n"
+            "dataset would silently mix two extents. Move or delete that\n"
+            "directory first — the granules are reproducible.\n"
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--events", type=Path, default=EVENTS)
@@ -99,15 +147,55 @@ def main() -> int:
                         help="a single event_id, e.g. AQ-2016-10-28")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--chunk-granules", type=int, default=200)
+    parser.add_argument(
+        "--literature", action="store_true",
+        help=("fetch the documented events from docs/event_dates.md instead of "
+              "the screened catalogue — they need no screening to be known"),
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    if not args.events.exists():
+    if args.literature:
+        # The literature events do not need the catalogue: their dates are
+        # documented, and AQ-2016-10-28 is the event the whole demo is built
+        # on. Fetching it early is what lets the ordering anomaly in
+        # docs/event_dates.md be resolved over the CORRECT extent — the
+        # existing granules for it were pulled against the retired box and
+        # cover ~9 % of the terrain AOI.
+        sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location(
+            "build_event_catalogue",
+            PROJECT_ROOT / "scripts" / "build_event_catalogue.py",
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+
+        found = module.literature_dates()
+        if not found:
+            logger.error("no resolved literature dates in docs/event_dates.md")
+            return 1
+        catalogue = pd.DataFrame(
+            [
+                {
+                    "event_id": item["event_id"],
+                    "date": item["date"],
+                    "rank": index + 1,
+                    "max_daily_mm": float("nan"),
+                    "is_exhaustive": True,  # not screened; taken from the literature
+                    "selection_reason": f"literature ({item['source']})",
+                }
+                for index, item in enumerate(found)
+            ]
+        )
+        logger.info("literature events: %s", ", ".join(catalogue["event_id"]))
+    elif not args.events.exists():
         logger.error("%s missing — run scripts/build_event_catalogue.py first",
                      args.events)
         return 1
-
-    catalogue = pd.read_parquet(args.events)
+    else:
+        catalogue = pd.read_parquet(args.events)
     if not bool(catalogue.get("is_exhaustive", pd.Series([False])).iloc[0]):
         logger.warning(
             "the catalogue is NOT exhaustive — it was built from a partial "
@@ -158,6 +246,7 @@ def main() -> int:
         start, end = event_window(pd.Timestamp(row["date"]), args.pad_days)
         out_dir = args.output_root / event_id
         expected = len(expected_granule_timestamps(start, end))
+        assert_existing_granules_match_extent(out_dir, TERRAIN_AOI.wsen)
         t0 = time.time()
         try:
             paths = fetch_imerg_window(
