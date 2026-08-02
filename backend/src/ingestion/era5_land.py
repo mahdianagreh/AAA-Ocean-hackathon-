@@ -35,6 +35,8 @@ reads, prints, logs, or stores the CDS token.
 
 from __future__ import annotations
 
+import calendar
+
 import logging
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
@@ -963,9 +965,10 @@ def _chunk_bounds(
     start: datetime, end: datetime, chunk_mode: str
 ) -> list[tuple[datetime, datetime]]:
     """Split [start, end] into chunks that never trip the CDS product rule."""
-    if chunk_mode not in ("daily", "monthly"):
+    if chunk_mode not in ("daily", "monthly", "yearly"):
         raise ERA5LandRequestError(
-            f"chunk_mode must be 'daily' or 'monthly', got {chunk_mode!r}"
+            f"chunk_mode must be 'daily', 'monthly' or 'yearly', "
+            f"got {chunk_mode!r}"
         )
 
     chunks: list[tuple[datetime, datetime]] = []
@@ -974,6 +977,20 @@ def _chunk_bounds(
         if chunk_mode == "daily":
             boundary = cursor.replace(
                 hour=23, minute=0, second=0, microsecond=0
+            )
+        elif chunk_mode == "yearly":
+            # A whole calendar year is the one span where CDS's
+            # `year x month x day x time` cross-product is EXACT: every month,
+            # every day and every hour is genuinely wanted, so nothing is
+            # over-requested. Any partial span would be, which is why the
+            # daily and monthly modes exist.
+            #
+            # It matters because CDS limits concurrent jobs per user, not job
+            # size. Twelve monthly requests queue twelve times; one yearly
+            # request queues once for the same data.
+            boundary = (
+                cursor.replace(year=cursor.year + 1, month=1, day=1, hour=0)
+                - timedelta(hours=1)
             )
         else:
             if cursor.month == 12:
@@ -991,6 +1008,31 @@ def _chunk_filename(start: datetime, stop: datetime) -> str:
     return (
         f"era5_land_{start:%Y%m%dT%H%M}_{stop:%Y%m%dT%H%M}.nc"
     )
+
+
+
+def impossible_date_hours(start: datetime, end: datetime) -> int:
+    """Hours in the year x month x day x time product that cannot exist.
+
+    CDS expands the request as a cross-product, so a whole-calendar-year
+    request always asks for 12 x 31 x 24 = 8,928 hours while the year holds
+    at most 8,784. The surplus is exactly 30 February, 31 April and friends —
+    dates that do not exist, which CDS simply does not return.
+
+    That surplus is harmless. A surplus of REAL hours is not: it means the
+    request reaches outside the window the caller asked for. Counting the
+    impossible dates lets the two be told apart instead of banning both.
+    """
+    import calendar
+
+    surplus = 0
+    for year in range(start.year, end.year + 1):
+        first = 1 if year > start.year else start.month
+        last = 12 if year < end.year else end.month
+        for month in range(first, last + 1):
+            days_in_month = calendar.monthrange(year, month)[1]
+            surplus += (31 - days_in_month) * 24
+    return surplus
 
 
 def fetch_era5_land_window(
@@ -1064,11 +1106,30 @@ def fetch_era5_land_window(
         )
         expected = request["_expected_timestamp_count"]
         cartesian = request["_cartesian_timestamp_count"]
-        if expected != cartesian:
-            raise ERA5LandRequestError(
-                f"Chunk {chunk_start.isoformat()}..{chunk_stop.isoformat()} "
-                f"would over-request: {expected} hours wanted but CDS would "
-                f"return {cartesian}. Use chunk_mode='daily'."
+        surplus = cartesian - expected
+        if surplus:
+            impossible = impossible_date_hours(chunk_start, chunk_stop)
+            covers_whole_months = (
+                chunk_start.day == 1 and chunk_start.hour == 0
+                and chunk_stop.hour == 23
+                and chunk_stop.day == calendar.monthrange(
+                    chunk_stop.year, chunk_stop.month
+                )[1]
+            )
+            # A surplus made up purely of dates that cannot exist (30 Feb,
+            # 31 Apr) is inert — CDS returns nothing for them. A surplus of
+            # real hours means the request reaches outside the window asked
+            # for, which is a genuine defect.
+            if not (covers_whole_months and surplus == impossible):
+                raise ERA5LandRequestError(
+                    f"Chunk {chunk_start.isoformat()}..{chunk_stop.isoformat()} "
+                    f"would over-request: {expected} hours wanted but CDS would "
+                    f"return {cartesian}. Use chunk_mode='daily'."
+                )
+            logger.info(
+                "Chunk %s..%s: CDS product includes %d impossible date-hour(s) "
+                "(30 Feb and similar). Inert — no real hour is over-requested.",
+                chunk_start.date(), chunk_stop.date(), surplus,
             )
 
         target = output_dir / _chunk_filename(chunk_start, chunk_stop)

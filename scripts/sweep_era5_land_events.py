@@ -35,10 +35,26 @@ The rule that keeps it honest
 `sro` and `ssro` are LABELS. They must never appear as features. Using a
 variable as both builds a tautology that scores 0.99 and predicts nothing.
 
+Two things NOT to try, both measured on 2 Aug 2026
+--------------------------------------------------
+**More workers.** CDS limits concurrent jobs per user and *rejects* the
+surplus rather than queueing it. Ten workers produced twenty consecutive
+`400 Bad Request` failures and poisoned the queue for several minutes. Four
+worked; two is used here for margin.
+
+**Whole-year requests.** Twelve monthly requests queue twelve times, so one
+yearly request looked like an obvious 12x saving. CDS refuses it outright:
+`403 Forbidden — cost limits exceeded, your request is too large`. Monthly is
+the largest granularity this variable count is allowed.
+
+The download is slow because CDS queues each job for 8-16 minutes regardless
+of size, and there is no lever on our side that changes that. It is slow and
+correct; both attempts to make it fast made it broken.
+
 Usage
 -----
     python scripts/sweep_era5_land_events.py --dry-run
-    python scripts/sweep_era5_land_events.py --workers 4
+    python scripts/sweep_era5_land_events.py
 """
 
 from __future__ import annotations
@@ -112,7 +128,12 @@ def main() -> int:
     parser.add_argument("--events", type=Path, default=EVENTS)
     parser.add_argument("--output-dir", type=Path, default=OUTPUT)
     parser.add_argument("--lookback-days", type=int, default=LOOKBACK_DAYS)
-    parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument(
+        "--workers", type=int, default=2,
+        help=("concurrent CDS jobs (default 2). CDS REJECTS surplus concurrent "
+              "jobs rather than queueing them — 10 workers had every request "
+              "rejected on 2 Aug 2026. Do not raise this."),
+    )
     parser.add_argument("--max-months", type=int, default=0)
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
