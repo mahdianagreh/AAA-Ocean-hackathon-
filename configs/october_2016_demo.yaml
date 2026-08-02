@@ -1,0 +1,65 @@
+# October 2016 Aqaba flash flood — ONE EXAMPLE CONFIGURATION.
+#
+# This event is a demonstration and regression case, not a requirement built
+# into the pipeline. Every value here is data, not code: point the same runner
+# at a different YAML and it processes a different event unchanged.
+#
+# Timing comes from docs/event_dates.md (Kalman et al. 2025). The IMERG window
+# is the literature-constrained scan window; the antecedent event time is the
+# documented flood arrival in UTC.
+
+event_id: AQ-2016-10-28
+description: >-
+  October 2016 Aqaba-Eilat flash flood. Canonical date is the UTC flood-arrival
+  date. Timing per docs/era5_land_temporal_semantics.md and docs/event_dates.md.
+
+spatial:
+  west: 34.80
+  south: 29.25
+  east: 35.15
+  north: 29.70
+
+imerg:
+  enabled: true
+  run_type: final
+  start_time: 2016-10-25T00:00:00Z
+  end_time: 2016-10-28T05:59:59Z
+  rolling_windows_hours: [1, 3, 6, 24]
+  max_granules: 500
+  chunk_granules: 48
+
+era5_land:
+  enabled: true
+  start_time: 2016-10-26T00:00:00Z
+  end_time: 2016-10-28T00:00:00Z
+  variables:
+    - total_precipitation
+    - surface_runoff
+    - subsurface_runoff
+    - soil_moisture
+  temporal_semantics_mode: auto
+  chunk_mode: daily
+  max_expected_timestamps: 2000
+  negative_tolerance_m: 1.0e-7
+
+  antecedent:
+    event_time: 2016-10-28T00:00:00Z
+    soil_moisture_offsets_hours: [24, 72]
+    precipitation_windows_hours: [24, 72, 168]
+    runoff_windows_hours: [24, 72, 168]
+    state_window_hours: 6
+
+outputs:
+  root_dir: data
+  save_netcdf: true
+  save_json: true
+  save_parquet: true
+
+validation:
+  minimum_data_completeness: 95.0
+  fail_on_missing_timestamps: true
+  # The ERA5 window is 48 h, so the 168 h antecedent windows cannot be fully
+  # covered. Partial windows are accepted here and reported honestly in the
+  # quality flags rather than silently zero-filled.
+  require_full_antecedent_windows: false
+  minimum_valid_fraction: 0.5

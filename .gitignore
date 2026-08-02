@@ -1,27 +1,31 @@
-# python
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Python environment
 .venv/
+backend/.venv/
 __pycache__/
 *.pyc
+*.egg-info/
 
-# data - rebuild with scripts/, never commit rasters or shapefiles
-data/**
-!data/**/
-!data/.gitkeep
-!data/**/.gitkeep
-!data/aoi/*.geojson
+# Raw downloads — reproducible with scripts/, large, not worth versioning
+data/raw/*
+!data/raw/aoi/
+!data/raw/aoi/**
+!data/raw/.gitkeep
+!**/.gitkeep
 
-# small shared handoff vectors - teammates need these without re-downloading
-# the 177 MB HydroBASINS source. Keep under ~1 MB each.
-!data/processed/vectors/*.gpkg
-!data/processed/features/*.parquet
-!data/interim/hydro/outlet_candidates.csv
+# Intermediates and the local catchment test fixture. The fixture MUST NOT be
+# shared — contract §4 P1 gives catchment ownership to Mahdi, and a second
+# AQ-C{NN} geometry in circulation is exactly what the ID contract prevents.
+data/interim/
+data/outputs/
 
-# os
+# data/aoi/ and data/processed/ ARE committed on purpose: they are the shared
+# contract paths from 00-contracts.md §3 that other people's code reads
+# (reef zones, coastline, depth field, feature tables). ~8 MB total.
+
+# OS
 .DS_Store
-
-# tile cache - re-fetchable
-data/interim/tiles/
-
-# SRTM working chain - regenerate with scripts/09_srtm_crosscheck.py
-data/interim/srtm/
-data/raw/srtm/
