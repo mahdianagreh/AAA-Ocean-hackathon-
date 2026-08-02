@@ -25,7 +25,24 @@ DEFAULT_FILE = (
 )
 
 # Aqaba padded box from the project contract
-WEST, SOUTH, EAST, NORTH = 34.80, 29.25, 35.15, 29.70
+
+# The spatial contract lives in backend/src/config/spatial.py. Load it by
+# location: this directory also contains a module called `config`, so a plain
+# import by name is ambiguous.
+def _spatial_contract():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "reefshield_spatial_contract",
+        Path(__file__).resolve().parents[1] / "backend" / "src" / "config" / "spatial.py",
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_AOI = _spatial_contract().TERRAIN_AOI
+
+WEST, SOUTH, EAST, NORTH = _AOI.wsen
 
 RULE = "=" * 72
 

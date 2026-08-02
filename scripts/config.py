@@ -1,9 +1,16 @@
-"""Single source of truth for spatial constants — ReefShield Aqaba, Pulga workstream.
+"""Spatial constants for the scripts/ chain — ReefShield Aqaba.
 
 Import from here. Never hardcode a bounding box or an EPSG code anywhere else.
-Authoritative source: tasks/00-contracts.md §1 (spatial contract) and §2 (ID contract).
+
+The numbers themselves now live in ``backend/src/config/spatial.py``, which is
+the project-wide contract. This module re-exports them so the scripts/ chain
+and the backend can never drift apart, and adds the ID and land-cover
+constants that only this chain needs.
+
+Authoritative source: tasks/00-contracts.md §1 (spatial) and §2 (IDs).
 """
 
+import importlib.util
 from pathlib import Path
 
 # --- Paths ------------------------------------------------------------------
@@ -19,18 +26,50 @@ DOCS = REPO_ROOT / "docs"
 QA = DOCS / "qa_screenshots"
 
 # --- Bounding boxes (contract §1) -------------------------------------------
-# Contract states the ordering explicitly as "W, S, E, N — EPSG:4326", which is
-# (lon_min, lat_min, lon_max, lat_max) — the same order shapely.geometry.box takes.
-DOWNLOAD_BBOX = (34.80, 29.25, 35.15, 29.70)  # padded superset; download against this
-ANALYSIS_BBOX = (34.90, 29.35, 35.05, 29.60)  # exact study area; UNVERIFIED per contract
+# Re-exported from the project-wide contract. Ordering is "W, S, E, N —
+# EPSG:4326", i.e. (lon_min, lat_min, lon_max, lat_max), the order
+# shapely.geometry.box takes.
+# Loaded by file path, not by name: this module is itself called `config`, and
+# so is the backend package, so a plain `from config.spatial import ...` would
+# resolve back to this half-initialised module. Importing by location is
+# unambiguous and works no matter which directory a script is run from.
+def _load_spatial_contract():
+    spec = importlib.util.spec_from_file_location(
+        "reefshield_spatial_contract",
+        REPO_ROOT / "backend" / "src" / "config" / "spatial.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
-# Alias kept because the implementation plan refers to AOI_BBOX. Points at the
-# padded box, which is what every download and clip in this workstream uses.
+
+_spatial = _load_spatial_contract()
+
+TERRAIN_AOI = _spatial.TERRAIN_AOI
+MARINE_AOI = _spatial.MARINE_AOI
+AQABA_AOI = _spatial.AQABA_AOI
+CRS_STORAGE = _spatial.CRS_STORAGE
+CRS_MEASURE = _spatial.CRS_MEASURE
+
+LAND_BBOX = TERRAIN_AOI.wsen      # DEM, hydrology, rainfall, land cover, soil
+MARINE_BBOX = MARINE_AOI.wsen     # bathymetry, coastline, reef zones, imagery
+DOWNLOAD_BBOX = AQABA_AOI.wsen    # the union — download against this or wider
+
+# Alias kept because the implementation plan refers to AOI_BBOX.
 AOI_BBOX = DOWNLOAD_BBOX
 
+# ⚠️  Superseded 2 Aug 2026. Everything under data/raw/ in this workstream was
+#     fetched against (34.80, 29.25, 35.15, 29.70) — a box that stops at 29.70 N
+#     and 35.15 E. The terrain AOI now reaches 30.30 N and 35.94 E, because
+#     Wadi Yutum drains ~90 km inland. Land-cover, soil and OSM extracts pulled
+#     against the old box therefore cover only part of AQ-C01.
+#
+#     Run `python scripts/check_aoi_coverage.py` for the current gap list, and
+#     re-pull anything it flags before trusting a per-catchment aggregate.
+
 # --- CRS (contract §1) ------------------------------------------------------
-AOI_CRS_STORAGE = "EPSG:4326"     # storage, exchange, GeoJSON
-AOI_CRS_PROJECTED = "EPSG:32636"  # UTM 36N — ALL area / distance / slope maths
+AOI_CRS_STORAGE = CRS_STORAGE     # EPSG:4326 — storage, exchange, GeoJSON
+AOI_CRS_PROJECTED = CRS_MEASURE   # EPSG:32636 — ALL area / distance / slope maths
 
 
 def geographic_aspect(lat: float = None) -> float:

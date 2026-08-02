@@ -35,7 +35,24 @@ PASSWORD = (os.getenv("EARTHDATA_PASSWORD") or "").strip()
 
 # --- request parameters ------------------------------------------------
 CONCEPT_ID = "C2723754847-GES_DISC"
-WEST, SOUTH, EAST, NORTH = 34.80, 29.25, 35.15, 29.70
+
+# The spatial contract lives in backend/src/config/spatial.py. Load it by
+# location: this directory also contains a module called `config`, so a plain
+# import by name is ambiguous.
+def _spatial_contract():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "reefshield_spatial_contract",
+        Path(__file__).resolve().parents[1] / "backend" / "src" / "config" / "spatial.py",
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_AOI = _spatial_contract().TERRAIN_AOI
+
+WEST, SOUTH, EAST, NORTH = _AOI.wsen
 START = datetime(2016, 10, 25, 0, 0, 0, tzinfo=timezone.utc)
 STOP = datetime(2016, 10, 25, 0, 29, 59, tzinfo=timezone.utc)
 VARIABLE_PATH = "Grid/precipitation"

@@ -26,7 +26,24 @@ DATASET = "reanalysis-era5-land"
 VARIABLE = "volumetric_soil_water_layer_1"
 YEAR, MONTH, DAY, TIME = "2016", "10", "27", "00:00"
 # CDS area order is [North, West, South, East].
-AREA = [29.70, 34.80, 29.25, 35.15]
+
+# The spatial contract lives in backend/src/config/spatial.py. Load it by
+# location: this directory also contains a module called `config`, so a plain
+# import by name is ambiguous.
+def _spatial_contract():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "reefshield_spatial_contract",
+        Path(__file__).resolve().parents[1] / "backend" / "src" / "config" / "spatial.py",
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+_AOI = _spatial_contract().TERRAIN_AOI
+
+AREA = list(_AOI.cds_area)
 
 DEST = PROJECT_ROOT / "data" / "raw" / "era5_land" / "smoke_test"
 OUTPUT = DEST / "era5_land_soil_water_l1_20161027_0000.nc"

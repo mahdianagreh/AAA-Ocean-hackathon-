@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -32,7 +33,13 @@ from dotenv import load_dotenv
 REPO_ROOT = Path(__file__).resolve().parents[3]
 load_dotenv(REPO_ROOT / "backend" / ".env")
 
-DOWNLOAD_BBOX = (34.80, 29.25, 35.15, 29.70)  # W, S, E, N — EPSG:4326, tasks/00-contracts.md §1
+# Make `backend/src` importable whether this module is imported as a
+# package, imported by the tests, or run directly as a file.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from config.spatial import MARINE_AOI  # noqa: E402
+
+#: Currents are the sea side of the contract: marine extent.
+DOWNLOAD_BBOX = MARINE_AOI.wsen
 RAW_DIR = REPO_ROOT / "data" / "raw" / "currents"
 MAX_DEPTH_M = 50  # "surface plus the upper depth levels" per nizar.md
 

@@ -15,6 +15,7 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "backend" / "src"))
 
+from config.spatial import TERRAIN_AOI  # noqa: E402
 from config.event_pipeline import (  # noqa: E402
     ConfigError,
     EventPipelineConfig,
@@ -26,7 +27,10 @@ DEMO = PROJECT_ROOT / "configs" / "october_2016_demo.yaml"
 
 BASE = {
     "event_id": "TEST-EVENT-01",
-    "spatial": {"west": 34.80, "south": 29.25, "east": 35.15, "north": 29.70},
+    "spatial": {
+        "west": TERRAIN_AOI.west, "south": TERRAIN_AOI.south,
+        "east": TERRAIN_AOI.east, "north": TERRAIN_AOI.north,
+    },
     "imerg": {
         "enabled": True,
         "run_type": "final",
@@ -117,8 +121,8 @@ def test_invalid_bbox_rejected(spatial) -> None:
 
 def test_bbox_order_conversion() -> None:
     config = build()
-    assert config.spatial.imerg_bbox == (34.80, 29.25, 35.15, 29.70)
-    assert config.spatial.cds_area == [29.70, 34.80, 29.25, 35.15]
+    assert config.spatial.imerg_bbox == TERRAIN_AOI.wsen
+    assert config.spatial.cds_area == TERRAIN_AOI.cds_area
 
 
 # --- time ------------------------------------------------------------------

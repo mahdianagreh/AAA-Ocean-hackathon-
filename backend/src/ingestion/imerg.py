@@ -41,10 +41,17 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 ENV_FILE = PROJECT_ROOT / ".env"
 
+# Make `backend/src` importable whether this module is imported as a package,
+# imported by the tests, or run directly as a file.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from config.spatial import TERRAIN_AOI  # noqa: E402
+
 # override=False so a real shell/CI variable always beats the file.
 load_dotenv(ENV_FILE, override=False)
 
-DOWNLOAD_BBOX = (34.80, 29.25, 35.15, 29.70)
+#: Rainfall must cover the full contributing catchments — Wadi Yutum reaches
+#: ~90 km inland. See config/spatial.py for why the old coastal box was wrong.
+DOWNLOAD_BBOX = TERRAIN_AOI.wsen
 IMERG_SHORT_NAME = "GPM_3IMERGHH"
 IMERG_VERSION = "07"
 

@@ -153,8 +153,22 @@ This performs a metadata search only — no files are downloaded.
 
 ## Area of interest
 
-The padded bounding box agreed in the project contract, used for all searches:
+The project uses **two extents, not one** — see `tasks/00-contracts.md` §1.
+Both are defined once, in `backend/src/config/spatial.py`; never retype them.
 
 ```
-(34.80, 29.25, 35.15, 29.70)      # lon_min, lat_min, lon_max, lat_max
+TERRAIN_AOI = 34.75, 29.15, 35.94, 30.30   # W, S, E, N — EPSG:4326
+              land side: DEM, hydrology, rainfall, land cover, soil
+
+MARINE_AOI  = 34.80, 29.25, 35.05, 29.60   # W, S, E, N — EPSG:4326
+              sea side: currents, bathymetry, imagery, reef zones
 ```
+
+Download against the union (`data/aoi/aqaba_aoi.geojson`) or wider, and clip
+to the relevant extent at analysis time.
+
+> **Superseded 2 August 2026.** The single padded box this section used to
+> name reached only 29.70 N and 35.15 E. Wadi Yutum drains ~90 km inland to
+> 35.89 E, so that box covered about 9 % of the terrain AOI. Anything fetched
+> before this date needs re-pulling — run `python scripts/check_aoi_coverage.py`
+> for the current gap list.

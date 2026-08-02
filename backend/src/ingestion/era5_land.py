@@ -38,6 +38,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from datetime import datetime, timedelta, timezone
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -67,8 +68,14 @@ ERA5_SHORT_NAMES = {
     "t2m": "temperature_2m",
 }
 
-#: CDS order: North, West, South, East.
-AREA = [29.70, 34.80, 29.25, 35.15]
+# Make `backend/src` importable whether this module is imported as a
+# package, imported by the tests, or run directly as a file.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from config.spatial import TERRAIN_AOI  # noqa: E402
+
+#: CDS order: North, West, South, East. Land reanalysis follows the
+#: catchments, so it uses the terrain extent.
+AREA = list(TERRAIN_AOI.cds_area)
 
 DATA_FORMAT = "netcdf"
 DOWNLOAD_FORMAT = "unarchived"

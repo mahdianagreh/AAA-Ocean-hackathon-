@@ -18,6 +18,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "backend" / "src"))
 
 import xarray as xr  # noqa: E402
 
+from config.spatial import TERRAIN_AOI  # noqa: E402
 from ingestion.imerg import (  # noqa: E402
     PRECIPITATION_UNITS,
     ROLLING_WINDOWS,
@@ -667,7 +668,7 @@ def test_safety_limit_blocks_oversized_window() -> None:
     with pytest.raises(ValueError, match="above max_granules"):
         fetch_imerg_window(
             "2016-01-01T00:00:00Z", "2016-12-31T23:59:59Z",
-            bbox=(34.8, 29.25, 35.15, 29.7),
+            bbox=TERRAIN_AOI.wsen,
             output_dir=Path("/tmp/never-used"),
             max_granules=10,
         )
@@ -692,7 +693,7 @@ def event_window_paths() -> list[Path]:
 def test_process_window_rolling_and_run_type(event_window_paths) -> None:
     result = process_imerg_window(
         event_window_paths, rolling_windows_hours=(1, 3),
-        run_type="final", bbox=(34.8, 29.25, 35.15, 29.7),
+        run_type="final", bbox=TERRAIN_AOI.wsen,
     )
     try:
         assert result.attrs["imerg_run_type"] == "final"

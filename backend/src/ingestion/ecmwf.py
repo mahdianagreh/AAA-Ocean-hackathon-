@@ -12,12 +12,20 @@ Deliverable: backend/src/ingestion/ecmwf.py + the GFS-vs-IFS agreement indicator
 from __future__ import annotations
 
 import datetime as dt
+import sys
 from pathlib import Path
 
 import xarray as xr
 from ecmwf.opendata import Client
 
-DOWNLOAD_BBOX = (34.80, 29.25, 35.15, 29.70)  # W, S, E, N — EPSG:4326, tasks/00-contracts.md §1
+# Make `backend/src` importable whether this module is imported as a
+# package, imported by the tests, or run directly as a file.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from config.spatial import TERRAIN_AOI  # noqa: E402
+
+#: Same extent as the GFS pull, so the agreement flag compares like
+#: with like: terrain extent.
+DOWNLOAD_BBOX = TERRAIN_AOI.wsen
 RAW_DIR = Path(__file__).resolve().parents[3] / "data" / "raw" / "forecasts" / "ecmwf"
 FORECAST_STEPS = list(range(0, 49, 3))  # 48 h lead, 3-hourly — matches the GFS pull
 

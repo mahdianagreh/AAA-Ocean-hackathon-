@@ -21,13 +21,20 @@ NOTE: exceedance is computed at the AOI grid-cell level for now. Per-catchment t
 from __future__ import annotations
 
 import datetime as dt
+import sys
 from pathlib import Path
 
 import numpy as np
 import xarray as xr
 from herbie import Herbie
 
-DOWNLOAD_BBOX = (34.80, 29.25, 35.15, 29.70)  # W, S, E, N — EPSG:4326, tasks/00-contracts.md §1
+# Make `backend/src` importable whether this module is imported as a
+# package, imported by the tests, or run directly as a file.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from config.spatial import TERRAIN_AOI  # noqa: E402
+
+#: Ensemble rainfall over the catchments: terrain extent.
+DOWNLOAD_BBOX = TERRAIN_AOI.wsen
 
 RAW_DIR = Path(__file__).resolve().parents[3] / "data" / "raw" / "forecasts" / "gefs"
 FORECAST_HOURS = list(range(3, 49, 3))  # 3-hourly APCP is an accumulation-since-last-step field

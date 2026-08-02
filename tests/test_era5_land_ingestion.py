@@ -20,6 +20,7 @@ import xarray as xr
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "backend" / "src"))
 
+from config.spatial import TERRAIN_AOI  # noqa: E402
 from ingestion.era5_land import (  # noqa: E402
     AREA,
     ERA5_LAND_DATASET,
@@ -122,7 +123,7 @@ def write_synthetic(dataset: xr.Dataset, tmp_path: Path) -> Path:
 
 def test_constants_match_contract() -> None:
     assert ERA5_LAND_DATASET == "reanalysis-era5-land"
-    assert AREA == [29.70, 34.80, 29.25, 35.15]
+    assert AREA == TERRAIN_AOI.cds_area
     assert ERA5_VARIABLES["soil_moisture"] == "volumetric_soil_water_layer_1"
     assert ERA5_VARIABLES["subsurface_runoff"] == "sub_surface_runoff"
     assert ERA5_SHORT_NAMES["swvl1"] == "soil_moisture"
@@ -335,7 +336,7 @@ def test_request_preserves_cds_area_order() -> None:
         datetime(2016, 10, 27, tzinfo=timezone.utc),
         datetime(2016, 10, 27, tzinfo=timezone.utc),
     )
-    assert request["area"] == [29.70, 34.80, 29.25, 35.15]
+    assert request["area"] == TERRAIN_AOI.cds_area
     north, west, south, east = request["area"]
     assert north > south and east > west
 
@@ -693,7 +694,7 @@ def test_seven_variable_request_counts_are_six() -> None:
     assert len(request["variable"]) == 7
     assert request["_expected_timestamp_count"] == 6
     assert request["_cartesian_timestamp_count"] == 6
-    assert request["area"] == [29.70, 34.80, 29.25, 35.15]
+    assert request["area"] == TERRAIN_AOI.cds_area
 
 
 def test_cross_day_window_would_fail_the_precheck() -> None:

@@ -14,10 +14,13 @@ event_id: EXAMPLE-EVENT-01          # becomes a directory name: no spaces or sla
 description: Annotated template showing every supported option.
 
 spatial:                            # plain degrees; converted to each API's order
-  west: 34.80
-  south: 29.25
-  east: 35.15
-  north: 29.70
+  # Terrain AOI per tasks/00-contracts.md §1. Rainfall must cover the FULL
+  # contributing catchments — Wadi Yutum reaches ~90 km inland, to 35.89 E.
+  # The old coastal box (34.80, 29.25, 35.15, 29.70) cut off ~85 % of it.
+  west: 34.75
+  south: 29.15
+  east: 35.94
+  north: 30.30
 
 imerg:
   enabled: true
