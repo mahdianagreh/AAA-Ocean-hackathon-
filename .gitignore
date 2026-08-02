@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+.cdsapirc
 
 # Python environment
 .venv/
@@ -9,6 +10,7 @@ backend/.venv/
 __pycache__/
 *.pyc
 *.egg-info/
+.pytest_cache/
 
 # Raw downloads — reproducible with scripts/, large, not worth versioning
 data/raw/*
@@ -17,15 +19,26 @@ data/raw/*
 !data/raw/.gitkeep
 !**/.gitkeep
 
-# Intermediates and the local catchment test fixture. The fixture MUST NOT be
-# shared — contract §4 P1 gives catchment ownership to Mahdi, and a second
-# AQ-C{NN} geometry in circulation is exactly what the ID contract prevents.
+# Intermediates. The local catchment test fixture MUST NOT be shared —
+# contract §4 P1 gives catchment ownership to Mahdi, and a second AQ-C{NN}
+# geometry in circulation is exactly what the ID contract prevents.
 data/interim/
 data/outputs/
 
+# ...except the outlet candidate list, which is a small shared reference:
+# all 72 discharge points the 30 m delineation resolved on Jordan's coast.
+!data/interim/hydro/
+!data/interim/hydro/outlet_candidates.csv
+
+# Working chains that regenerate from scripts/ — large and re-fetchable
+data/interim/srtm/
+data/interim/tiles/
+data/raw/srtm/
+
 # data/aoi/ and data/processed/ ARE committed on purpose: they are the shared
 # contract paths from 00-contracts.md §3 that other people's code reads
-# (reef zones, coastline, depth field, feature tables). ~8 MB total.
+# (catchments, outlets, reef zones, coastline, depth field, feature tables).
+# Keep individual files small — anything over a few MB belongs in Storage.
 
 # OS
 .DS_Store

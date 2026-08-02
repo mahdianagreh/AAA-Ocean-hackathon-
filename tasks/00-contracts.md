@@ -25,25 +25,49 @@ The cost of a rerun is minutes. The cost of waiting is days.
 
 ## 1. Spatial contract
 
-### Download box (generous, padded)
+> **Corrected 1 Aug 2026.** The first version of this contract proposed a single
+> 14 × 28 km box. That was wrong by roughly 37×. Wadi Yutum drains from **90 km
+> inland, out to 35.89 °E** — the old box cut off about 85% of it, which would have
+> made headwater rainfall invisible to the model. If you downloaded against the old
+> numbers, re-pull. The boxes below are unchanged since that correction.
 
-Download everything to a **padded box**, wider than the study area. Clipping to the exact analysis box happens at analysis time, not download time.
+**The project needs two extents, not one.** They are written by
+`scripts/01_make_aoi.py` and `scripts/02_provisional_catchments.py`.
+
+### Terrain AOI — land side
+
+`data/aoi/terrain_aoi.geojson` · **derived from the catchments, not guessed**
 
 ```text
-DOWNLOAD_BBOX = 34.80, 29.25, 35.15, 29.70   # W, S, E, N — EPSG:4326
+TERRAIN_BBOX = 34.75, 29.15, 35.94, 30.30   # W, S, E, N — EPSG:4326
+                                            # ~115 km × 128 km
 ```
 
-Because it's a superset, **nobody has to wait for the final AOI to start downloading.** If the analysis box shifts, your downloads are still valid.
+Must cover the **full contributing catchments**. Anything clipped tighter loses
+upstream drainage area. Used for: DEM, hydrology, rainfall, land cover, soil.
 
-### Analysis box (exact)
+### Marine AOI — sea side
 
-Committed Day 1 as `data/aoi/aqaba_aoi.geojson`. Starting proposal, to confirm visually — *not verified*:
+`data/aoi/marine_aoi.geojson` · hand-set, **unconfirmed**
 
 ```text
-ANALYSIS_BBOX = 34.90, 29.35, 35.05, 29.60   # W, S, E, N — EPSG:4326
+MARINE_BBOX = 34.80, 29.25, 35.05, 29.60    # W, S, E, N — EPSG:4326
+                                            # ~24 km × 39 km
 ```
 
-Must extend far enough seaward to hold a 24-hour plume, or particles run off the edge of the map.
+Must reach far enough seaward to hold a 24-hour plume, or particles run off the
+edge of the map. Used for: currents, bathymetry, satellite imagery, reef zones.
+
+### Download box — the union
+
+`data/aoi/aqaba_aoi.geojson` · **download against this or wider**
+
+```text
+AQABA_BBOX = 34.75, 29.15, 35.94, 30.30     # W, S, E, N — EPSG:4326
+```
+
+Because it's a superset of both, **nobody waits for a final AOI to start
+downloading.** Clip to the relevant extent at analysis time, not download time.
 
 ### CRS
 
@@ -63,12 +87,65 @@ These strings are the join keys for every table in the project. Renaming one lat
 | Entity | Format | Examples | Owner |
 |---|---|---|---|
 | Catchment | `AQ-C{NN}` | `AQ-C01` … `AQ-C05` | Mahdi |
-| Coastal outlet | `AQ-O{NN}` — matches its catchment number | `AQ-O01` ↔ `AQ-C01` | Mahdi |
+| Coastal outlet | `AQ-O{NN}` | `AQ-O01` … `AQ-O05` | Mahdi |
 | Reef zone | `R-{NN}` | `R-01` … `R-08` | Pulga |
 | Event | `AQ-{YYYY}-{MM}-{DD}` | `AQ-2016-10-25` | Karam |
 | Simulation run | `sim_{ULID}` | `sim_01JXYZ` | Nizar |
 
-**Count is fixed on Day 1 too.** Five catchments, five outlets, and a number of reef zones agreed up front. If the real delineation produces four catchments, `AQ-C05` is dropped — the other four keep their names.
+> **Settled 2 Aug 2026 by the 30 m delineation — outlets ARE 1:1 with catchments.**
+>
+> This flipped twice, so here is the history in one place. The original contract
+> assumed one outlet per catchment. HydroBASINS then suggested **two** outlets for
+> the whole Jordanian coast, and this section said so for a day. The Copernicus
+> GLO-30 run resolves **30 discharge points** on that coast — HydroBASINS was
+> lumping the small coastal wadis into a single strip basin. The five selected
+> catchments each have their own mouth.
+>
+> | Catchment | Outlet | Area | lon, lat |
+> |---|---|---:|---|
+> | `AQ-C01` — Wadi Yutum | `AQ-O01` | 4,453.1 km² | 34.97073, 29.54560 |
+> | `AQ-C02` | `AQ-O02` | 64.9 km² | 34.97643, 29.47270 |
+> | `AQ-C03` | `AQ-O03` | 59.9 km² | 34.96416, 29.38167 |
+> | `AQ-C04` | `AQ-O04` | 42.7 km² | 34.96622, 29.36052 |
+> | `AQ-C05` | `AQ-O05` | 35.6 km² | 34.95998, 29.35737 |
+>
+> 4,656 km² total — 97% of everything draining Jordan's Gulf coast.
+>
+> **Keep joining on `outlet_id` anyway.** It happens to equal the catchment number
+> today; hard-coding that assumption is how the previous two versions of this
+> section broke.
+>
+> **Nizar:** five release points. `AQ-O01` carries 96% of the discharge.
+
+> **Wadi Yutum is 4,453 km², not 6,458 km².** The larger figure appeared here on
+> 1 Aug and was wrong. It counted **1,767 km² of endorheic basins** — closed
+> depressions that drain to internal sinks and never reach the Gulf. HydroBASINS
+> flags them `ENDO>0`; the DEM only included them because depression-breaching ran
+> with `fill=True`, which forces closed basins to spill toward the coast. With that
+> off, the DEM gives 4,453 km² against HydroBASINS' independent exorheic figure of
+> 4,690 km² — agreement within 5%, where before they differed by 34%.
+>
+> **Karam:** rainfall falling on those 1,767 km² does not reach the sea. Averaging
+> it into the catchment would inflate every runoff prediction.
+>
+> **Confirmed 2 Aug by explicit masking.** `fill=False` was only a proxy for
+> "preserve closed basins", so the basins were identified directly instead — fill,
+> measure depression depth, keep those over 1 km² and 10 m, walk the D8 network
+> upstream, mask. That gives **4,349 km²**, within 2.3% of the published figure.
+> Three independent approaches now agree:
+>
+> | | Wadi Yutum |
+> |---|---:|
+> | Explicit endorheic masking | 4,349 km² |
+> | `fill=False` proxy | 4,453 km² ← published |
+> | HydroBASINS exorheic | 4,690 km² |
+>
+> **Use 4,453 km² ±4%.** Depth is what separates a playa from an artifact: the main
+> basin is 101.7 km² and 27.6 m deep and captures 1,562 km² on its own, while a
+> 1.8 km² depression only 3.8 m deep was trapping 459 km² — a road embankment
+> across a wadi, not a basin. Full working in `reports/endorheic/`.
+
+**Count is fixed.** Five catchments, five outlets, and an agreed number of reef zones. Delineated area matches upstream flow accumulation at every pour point to 0.0%.
 
 ---
 
@@ -169,12 +246,30 @@ Provisional data in the final demo would be a serious failure. Every swap is a t
 
 | # | Provisional | Replaced by | Owner of swap | Re-run cost | Done |
 |---:|---|---|---|---|:--:|
-| 1 | `catchments_PROVISIONAL.gpkg` | 30 m DEM delineation | Mahdi publishes; Karam + Pulga re-run | minutes | ☐ |
-| 2 | `outlets_PROVISIONAL.gpkg` | DEM outlets, checked vs imagery + OSM | Mahdi publishes; Nizar re-runs | minutes | ☐ |
+| 1 | `catchments_PROVISIONAL.gpkg` | **Done 2 Aug** → `catchments.gpkg` | Karam + Pulga re-run | minutes | ☑ |
+| 2 | `outlets_PROVISIONAL.gpkg` | **Done 2 Aug** → `outlets.gpkg` | Nizar re-runs | minutes | ☑ |
 | 3 | `reef_zones_PROVISIONAL.gpkg` | Allen Coral Atlas export | Pulga | minutes | ☐ |
 | 4 | `observed_plume_PROVISIONAL.gpkg` | Real Sentinel-2 derived mask | Abd publishes; Nizar re-calibrates | ~1 hour | ☐ |
 | 5 | `sensitivity_weight = 1.0` | Marine-scientist input, **or stays 1.0 and is labeled an assumption on the slide** | Pulga | none | ☐ |
 | 6 | Provisional AOI | Confirmed analysis box | Everyone re-clips | minutes | ☐ |
+
+### Swaps 1 and 2 have landed — action for Karam, Pulga, Nizar
+
+Real geometry is in the repo. Re-point and re-run; the schema is unchanged.
+
+```text
+data/processed/vectors/catchments.gpkg          5 catchments, catchment_id + outlet_id
+data/processed/vectors/outlets.gpkg             5 outlets, lon/lat
+data/processed/features/catchment_terrain.parquet   area, relief, slope, drainage density
+data/interim/hydro/outlet_candidates.csv        all 72 discharge points, for reference
+```
+
+**What actually changed, not just the file name:**
+
+- **Areas moved a lot.** The provisional set totalled 6,833 km²; the real one is 4,656 km². Any per-catchment rainfall total computed against the old polygons is wrong, not merely imprecise.
+- **`AQ-C01` is a different place.** It was a 1,767 km² endorheic basin. It is now Wadi Yutum at 4,453 km². Same ID, different geometry — this is the one that bites silently.
+- **Five outlets, not two.** Nizar releases from five points.
+- **The southern coast split.** One 376 km² lumped polygon became four separate wadis with separate mouths.
 
 **Day 12 gate:** grep the repo for `PROVISIONAL`. Anything still matching is either swapped or explicitly declared a known placeholder in the validation report. No silent placeholders.
 

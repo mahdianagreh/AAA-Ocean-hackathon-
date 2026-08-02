@@ -4,14 +4,14 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "aqaba_aoi",
+        "name": "aqaba_terrain_aoi",
         "bbox": [
           34.75,
           29.15,
           35.94,
           30.3
         ],
-        "note": "Union of terrain_aoi and marine_aoi. Use as the download superset."
+        "note": "Derived from the contributing catchments plus 0.05 deg pad. Covers full upstream area - clipping tighter cuts off Wadi Yutum's headwaters."
       },
       "geometry": {
         "type": "Polygon",
