@@ -31,7 +31,25 @@ You produce the geometry everyone else's work sits on. The catchment polygons de
 > 2. **Sea mask welded to the raster frame.** Reprojection fill shared the value 0 with sea level, so "largest polygon below sea level" returned the Gulf *plus* the frame — 1,080 km² against a true 623 km². Fixed by setting nodata and flood-filling from a seed in open water.
 > 3. **HydroSHEDS files the Middle East under `eu`, not `as`.** The Asia file returns zero basins for Aqaba.
 >
-> **Still open:** M2 SRTM cross-check, M3 MERIT stream validation. The outlets are DEM-derived and have **not** yet been checked by eye against imagery or Pulga's OSM culverts — see the warning under M1 about GLO-30 being a surface model.
+> ### Validation — all four checks done
+>
+> | Check | Result | Report |
+> |---|---|---|
+> | Internal consistency | Delineated area = flow accumulation, **0.0%** at every pour point | — |
+> | Outlets vs imagery | **2 of 5** verify; the other 3 route through port infrastructure | `reports/outlets/` |
+> | Stream network (M3) | **140 m** median offset vs HydroRIVERS, 84% within 500 m | `reports/streams/` |
+> | Second DEM (M2) | Every mouth within **600 m** on SRTM; areas diverge | `reports/srtm/` |
+> | Endorheic masking | 4,349 km² by explicit method, **2.3%** from the published figure | `reports/endorheic/` |
+>
+> **The contributing area is 4,453 km² ±4%** (range 4,349–4,690). Three independent approaches agree: explicit endorheic masking 4,349, the `fill=False` proxy 4,453, HydroBASINS exorheic 4,690.
+>
+> An earlier statement of ±1.7× was too pessimistic — it treated SRTM as an equal witness. SRTM finds **136,927 depressions to GLO-30's 20,352**, so its noise manufactures spurious sinks and it is unfit for depression-based analysis here. That is a measured claim, not a preference.
+>
+> ### Still open
+>
+> - **MERIT Hydro** — M3 was completed with HydroRIVERS instead. MERIT needs University of Tokyo registration or an authenticated Earth Engine project. Lower priority than it looks: HydroRIVERS is SRTM-derived while our DEM is TanDEM-X, so it was a genuinely independent check, and MERIT is partly SRTM too.
+> - **Three low-confidence outlets** — AQ-O02/O03/O04 route through the container terminal, tank farms and a harbour basin. Only local stormwater outfall data from ASEZA fixes this; it is Phase 2 in the concept doc.
+> - **Pulga's OSM culverts** — not yet cross-checked against the routed channels.
 
 **Nobody waited for you.** Read [`00-contracts.md`](00-contracts.md) first. The Day-1 job was to publish *provisional* versions of both so everyone else could start immediately, then replace them with the real thing. Both swaps are now done.
 

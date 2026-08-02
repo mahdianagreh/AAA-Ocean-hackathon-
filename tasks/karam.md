@@ -18,7 +18,9 @@ Two changes to what you may have expected:
 - **Event dates no longer come from you.** The two candidates (Oct 2016, Feb 2013) are named in the concept doc and their exact dates come from the literature, not from IMERG. Abd reads the papers himself on Day 1 and starts his audit immediately. Your IMERG ranking *confirms* those dates rather than discovering them.
 - **Mahdi's real catchments have landed (2 Aug).** Use `data/processed/vectors/catchments.gpkg` — five catchments, 4,656 km². If you already built against `catchments_PROVISIONAL.gpkg`, re-run: the schema is identical but the geometry is not. **`AQ-C01` is a different place** — it was a 1,767 km² endorheic basin, it is now Wadi Yutum at 4,453 km². Same ID, different polygon, no error raised.
 
-- **Endorheic area is excluded on purpose.** 1,767 km² of the Wadi Yutum system drains to internal sinks and never reaches the Gulf. Rain falling there produces no marine plume, so it is out of the catchment. Don't add it back from HydroBASINS — that file's `UP_AREA` includes it.
+- **Endorheic area is excluded on purpose.** Roughly 1,800–2,000 km² of the Wadi Yutum system drains to internal sinks and never reaches the Gulf. Rain falling there produces no marine plume, so it is out of the catchment. Don't add it back from HydroBASINS — that file's `UP_AREA` includes it. The exclusion was verified two ways and is documented in `reports/endorheic/`.
+
+- **Carry ±4% on the AQ-C01 area.** 4,453 km² is the working figure, with a defensible range of 4,349–4,690 km². The boundary shape is solid; the area has residual uncertainty from how closed basins are separated from DEM artifacts. Anything you compute as a per-catchment *total* rather than a *mean* inherits that — worth stating once in the model card rather than implying the area is exact.
 
 Start downloading IMERG on Day 1 using the padded download box from the contract.
 

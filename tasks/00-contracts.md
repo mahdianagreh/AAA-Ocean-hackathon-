@@ -127,6 +127,23 @@ These strings are the join keys for every table in the project. Renaming one lat
 >
 > **Karam:** rainfall falling on those 1,767 km² does not reach the sea. Averaging
 > it into the catchment would inflate every runoff prediction.
+>
+> **Confirmed 2 Aug by explicit masking.** `fill=False` was only a proxy for
+> "preserve closed basins", so the basins were identified directly instead — fill,
+> measure depression depth, keep those over 1 km² and 10 m, walk the D8 network
+> upstream, mask. That gives **4,349 km²**, within 2.3% of the published figure.
+> Three independent approaches now agree:
+>
+> | | Wadi Yutum |
+> |---|---:|
+> | Explicit endorheic masking | 4,349 km² |
+> | `fill=False` proxy | 4,453 km² ← published |
+> | HydroBASINS exorheic | 4,690 km² |
+>
+> **Use 4,453 km² ±4%.** Depth is what separates a playa from an artifact: the main
+> basin is 101.7 km² and 27.6 m deep and captures 1,562 km² on its own, while a
+> 1.8 km² depression only 3.8 m deep was trapping 459 km² — a road embankment
+> across a wadi, not a basin. Full working in `reports/endorheic/`.
 
 **Count is fixed.** Five catchments, five outlets, and an agreed number of reef zones. Delineated area matches upstream flow accumulation at every pour point to 0.0%.
 
