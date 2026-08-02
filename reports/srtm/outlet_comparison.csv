@@ -1,0 +1,6 @@
+outlet_id,glo30_km2,srtm_km2,area_diff_pct,outlet_shift_m,position_confidence
+AQ-O01,4453.08,2561.29,-42.5,579.0,high
+AQ-O02,64.85,67.03,3.4,547.0,low
+AQ-O03,59.9,59.89,-0.0,319.0,low
+AQ-O04,42.67,42.78,0.2,488.0,low
+AQ-O05,35.64,42.78,20.0,466.0,high

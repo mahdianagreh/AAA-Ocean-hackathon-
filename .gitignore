@@ -21,3 +21,7 @@ data/**
 
 # tile cache - re-fetchable
 data/interim/tiles/
+
+# SRTM working chain - regenerate with scripts/09_srtm_crosscheck.py
+data/interim/srtm/
+data/raw/srtm/

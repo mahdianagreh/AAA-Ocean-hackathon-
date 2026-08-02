@@ -5,14 +5,17 @@ in 07 only looked at the two coastal mouths; a trunk misrouted 40 km upstream
 would not have shown up there.
 
 HydroRIVERS is a published, hydrologically-conditioned river network from the
-HydroSHEDS family. Two caveats on how much this proves:
+HydroSHEDS family.
 
-  * ~500 m resolution against our 30 m, so an offset of a few hundred metres
-    is expected and means nothing.
-  * derived from the same SRTM lineage as our DEM, so it is not fully
-    independent. It catches gross misrouting, not systematic bias shared by
-    both. MERIT Hydro at 90 m would be the stronger check and needs an
-    authenticated Earth Engine project.
+The two sources are independent acquisitions, which is what gives this test
+its force: HydroSHEDS derives from SRTM (2000 shuttle radar), while
+Copernicus GLO-30 derives from TanDEM-X (2011-2015). Different satellites,
+different instruments, a decade apart.
+
+The one real limit is resolution: ~500 m against our 30 m, so an offset of a
+few hundred metres is expected and means nothing, and the reference cannot
+confirm channel position at anything finer. MERIT Hydro at 90 m would fix
+that and needs an authenticated Earth Engine project.
 
 Comparison is restricted to reaches HydroRIVERS actually maps: its smallest
 reaches carry ~10 km2 upstream, so our sub-10 km2 channels have nothing to be
