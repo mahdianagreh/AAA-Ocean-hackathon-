@@ -86,7 +86,19 @@ PARQUET_COLUMNS: tuple[str, ...] = (
 )
 
 #: Rename map from dataset variable names to Parquet column names.
+#:
+#: The default suits the half-hourly products, whose native rate is mm/hr.
+#: The DAILY product reports mm/day, so writing its values into a column
+#: called `precipitation_mm_hr` would put the wrong unit into the schema and
+#: hand the next reader a 24x error with a helpful-looking label on it.
+#: Callers on a non-hourly product pass `output_names` instead.
 OUTPUT_NAMES = {"precipitation": "precipitation_mm_hr"}
+
+#: Units-correct column names per IMERG rate unit, so no call site invents one.
+OUTPUT_NAMES_BY_RATE_UNIT = {
+    "mm/hr": {"precipitation": "precipitation_mm_hr"},
+    "mm/day": {"precipitation": "precipitation_mm_day"},
+}
 
 
 class MissingCatchmentsError(FileNotFoundError):
@@ -504,6 +516,7 @@ def aggregate_catchment_rainfall(
     event_id: str,
     geometry_status: str,
     variables: Sequence[str] = RAINFALL_VARIABLES,
+    output_names: dict[str, str] | None = None,
 ) -> pd.DataFrame:
     """Area-weighted catchment rainfall for every timestamp.
 
@@ -546,6 +559,11 @@ def aggregate_catchment_rainfall(
         for name in variables
     }
 
+    # Resolved once, at function scope: it is also needed after the loop when
+    # building the output schema, and a loop-local binding would break on an
+    # empty result set.
+    names = OUTPUT_NAMES if output_names is None else output_names
+
     frames: list[pd.DataFrame] = []
     for catchment_id, group in overlaps.groupby("catchment_id", sort=True):
         lat_index = group["lat_index"].to_numpy(dtype=int)
@@ -570,7 +588,7 @@ def aggregate_catchment_rainfall(
             valid_area = np.where(valid, areas, 0.0).sum(axis=1)
             with np.errstate(invalid="ignore", divide="ignore"):
                 mean = np.where(valid_area > 0, weighted / valid_area, np.nan)
-            record[OUTPUT_NAMES.get(name, name)] = mean
+            record[names.get(name, name)] = mean
             if name == BASE_VARIABLE:
                 valid_fraction = (
                     valid_area / total_area if total_area > 0
@@ -593,10 +611,22 @@ def aggregate_catchment_rainfall(
         ["timestamp_utc", "catchment_id"], kind="stable"
     ).reset_index(drop=True)
 
+    # The schema is fixed in order but not in spelling: when a caller renames
+    # a column to carry the right unit (mm/day rather than mm/hr), the schema
+    # must follow, or the reindex below silently drops the computed values and
+    # replaces them with an all-NaN column under the wrong name.
+    schema = []
     for column in PARQUET_COLUMNS:
+        variable = next(
+            (var for var, default in OUTPUT_NAMES.items() if default == column),
+            None,
+        )
+        schema.append(names.get(variable, column) if variable else column)
+
+    for column in schema:
         if column not in result.columns:
             result[column] = np.nan
-    return result[list(PARQUET_COLUMNS)]
+    return result[schema]
 
 
 # ---------------------------------------------------------------------------
