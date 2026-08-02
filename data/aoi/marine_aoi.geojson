@@ -1,0 +1,45 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "aqaba_marine_aoi",
+        "note": "Plume and reef extent. UNCONFIRMED - verify seaward reach against a 24 h drift at northern-Gulf current speeds.",
+        "bbox": [
+          34.8,
+          29.25,
+          35.05,
+          29.6
+        ]
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              34.8,
+              29.25
+            ],
+            [
+              35.05,
+              29.25
+            ],
+            [
+              35.05,
+              29.6
+            ],
+            [
+              34.8,
+              29.6
+            ],
+            [
+              34.8,
+              29.25
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

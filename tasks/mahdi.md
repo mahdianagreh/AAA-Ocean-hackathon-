@@ -11,7 +11,57 @@
 
 You produce the geometry everyone else's work sits on. The catchment polygons decide which rainfall cells Karam averages, and the **coastal outlet coordinates are the plume release point** for Nizar's current forcing and Abd's satellite validation.
 
-**But nobody waits for you.** Read [`00-contracts.md`](00-contracts.md) first. Your Day-1 job is to publish *provisional* versions of both so everyone else starts immediately, then replace them with the real thing.
+> ## Status — M1 complete, 2 Aug 2026
+>
+> Real catchments and outlets are published. `scripts/03_dem_fetch.py` → `05_flow_and_streams.py` → `06_catchments.py` reproduce everything from scratch.
+>
+> | ID | Area | Relief | Mean slope | Drainage density | Outlet lon, lat |
+> |---|---:|---:|---:|---:|---|
+> | AQ-C01 Wadi Yutum | 4,453.1 km² | 1,841 m | 10.8° | 0.81 | 34.97073, 29.54560 |
+> | AQ-C02 | 64.9 km² | 1,321 m | 16.6° | 0.71 | 34.97643, 29.47270 |
+> | AQ-C03 | 59.9 km² | 1,418 m | 16.7° | 0.74 | 34.96416, 29.38167 |
+> | AQ-C04 | 42.7 km² | 996 m | 8.3° | 1.01 | 34.96622, 29.36052 |
+> | AQ-C05 | 35.6 km² | 1,015 m | 6.8° | 1.29 | 34.95998, 29.35737 |
+>
+> 4,656 km² — 97% of the drainage reaching Jordan's Gulf coast. Delineated area matches upstream flow accumulation at every pour point to **0.0%**.
+>
+> **Three bugs the data caught**, each of which produced plausible-looking wrong output:
+>
+> 1. **Area inflated 34%.** `breach_depressions_least_cost(fill=True)` forces genuine endorheic basins to spill coastward, annexing 1,767 km² to Wadi Yutum. 6,282 km² with fill, 4,453 km² without; HydroBASINS independently says 4,690 km² exorheic. Runoff scales with area, so this would have reached the sediment class and plume magnitude.
+> 2. **Sea mask welded to the raster frame.** Reprojection fill shared the value 0 with sea level, so "largest polygon below sea level" returned the Gulf *plus* the frame — 1,080 km² against a true 623 km². Fixed by setting nodata and flood-filling from a seed in open water.
+> 3. **HydroSHEDS files the Middle East under `eu`, not `as`.** The Asia file returns zero basins for Aqaba.
+>
+> ### Validation — all four checks done
+>
+> | Check | Result | Report |
+> |---|---|---|
+> | Internal consistency | Delineated area = flow accumulation, **0.0%** at every pour point | — |
+> | Outlets vs imagery | **2 of 5** verify; the other 3 route through port infrastructure | `reports/outlets/` |
+> | Stream network (M3) | **140 m** median offset vs HydroRIVERS, 84% within 500 m | `reports/streams/` |
+> | Second DEM (M2) | Every mouth within **600 m** on SRTM; areas diverge | `reports/srtm/` |
+> | Endorheic masking | 4,349 km² by explicit method, **2.3%** from the published figure | `reports/endorheic/` |
+>
+> **The contributing area is 4,453 km² ±4%** (range 4,349–4,690). Three independent approaches agree: explicit endorheic masking 4,349, the `fill=False` proxy 4,453, HydroBASINS exorheic 4,690.
+>
+> An earlier statement of ±1.7× was too pessimistic — it treated SRTM as an equal witness. SRTM finds **136,927 depressions to GLO-30's 20,352**, so its noise manufactures spurious sinks and it is unfit for depression-based analysis here. That is a measured claim, not a preference.
+>
+> ### Deliverables — 5 of 5
+>
+> | # | Item | Status |
+> |---|---|---|
+> | 1 | Committed DEM with the reason recorded | ✅ GLO-30, `docs/data_dictionary.md` |
+> | 2 | Catchment polygons with snapped outlets | ✅ `catchments.gpkg`, `outlets.gpkg` |
+> | 3 | Per-catchment feature table | ✅ 17 columns incl. distance-to-coast and accumulation stats |
+> | 4 | Outlet coordinates published | ✅ lon/lat EPSG:4326, with `position_confidence` |
+> | 5 | Every source in `docs/data_dictionary.md` | ✅ — and the format is set for the rest of the team |
+>
+> ### Still open
+>
+> - **MERIT Hydro — satisfied by substitute, not outstanding.** The requirement was an independent published channel network to validate our streams against. **HydroRIVERS did that**, and did it well: 140 m median offset, 84% within 500 m. MERIT remains an optional refinement — at 90 m it could confirm channel position more finely than a ~500 m product — but it needs University of Tokyo registration or an authenticated Earth Engine project, and it is *partly SRTM-derived*, so it would be a **less** independent check than the one already done. Not a gap.
+> - **Three low-confidence outlets** — AQ-O02/O03/O04 route through the container terminal, tank farms and a harbour basin. Only local stormwater outfall data from ASEZA fixes this; it is Phase 2 in the concept doc.
+> - **Pulga's OSM culverts** — not yet cross-checked against the routed channels.
+
+**Nobody waited for you.** Read [`00-contracts.md`](00-contracts.md) first. The Day-1 job was to publish *provisional* versions of both so everyone else could start immediately, then replace them with the real thing. Both swaps are now done.
 
 ### Your two Day-1 provisional deliverables (~2 hours total)
 
