@@ -1,0 +1,35 @@
+{
+  "generated_utc": "2026-08-02T16:51:42Z",
+  "stage": "2 of 2 \u2014 half-hourly intensity",
+  "product": {
+    "short_name": "GPM_3IMERGHH",
+    "collection_id": "C2723754847-GES_DISC",
+    "rate_units": "mm/hr"
+  },
+  "bbox_wsen": [
+    34.75,
+    29.15,
+    35.94,
+    30.3
+  ],
+  "pad_days": 1,
+  "events_requested": 1,
+  "events_complete": 1,
+  "granules_on_disk": 144,
+  "elapsed_minutes": 5.8,
+  "events": [
+    {
+      "event_id": "AQ-2016-10-28",
+      "window": [
+        "2016-10-27T00:00:00Z",
+        "2016-10-29T23:30:00Z"
+      ],
+      "expected": 144,
+      "present": 144,
+      "completeness": 1.0,
+      "seconds": 348.4,
+      "status": "ok"
+    }
+  ],
+  "note": "Incomplete events are recorded as incomplete and not silently accepted. Missing granules are reported, never interpolated."
+}

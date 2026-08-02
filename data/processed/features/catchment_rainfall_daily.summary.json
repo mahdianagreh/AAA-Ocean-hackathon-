@@ -1,0 +1,43 @@
+{
+  "generated_utc": "2026-08-02T18:10:50Z",
+  "source_product": "GPM_3IMERGDF",
+  "collection_id": "C2723754864-GES_DISC",
+  "native_units": "mm/day",
+  "granules_used": 10135,
+  "rows": 50675,
+  "catchments": [
+    "AQ-C01",
+    "AQ-C02",
+    "AQ-C03",
+    "AQ-C04",
+    "AQ-C05"
+  ],
+  "bbox_wsen": [
+    34.75,
+    29.15,
+    35.94,
+    30.3
+  ],
+  "measurement_crs": "EPSG:32636",
+  "grid_coverage_by_catchment": {
+    "AQ-C01": 1.000002,
+    "AQ-C02": 0.999973,
+    "AQ-C03": 0.999973,
+    "AQ-C04": 1.000014,
+    "AQ-C05": 1.000014
+  },
+  "date_range_utc": [
+    "1998-01-01T00:00:00Z",
+    "2025-09-30T00:00:00Z"
+  ],
+  "caveats": [
+    "Daily screening resolution. Sub-daily intensity \u2014 what actually drives a flash flood \u2014 requires the half-hourly product (stage 2).",
+    "Rainfall over the ~2,000 km2 of endorheic basins is excluded by the catchment polygons themselves: it never reaches the Gulf.",
+    "Missing cells contribute to neither numerator nor denominator; see valid_area_fraction. Nothing is interpolated."
+  ],
+  "depth_mm": {
+    "min": 0.0,
+    "max": 21.5472560368737,
+    "mean": 0.106
+  }
+}

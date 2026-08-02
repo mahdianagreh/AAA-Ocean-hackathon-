@@ -1,0 +1,24 @@
+{
+  "event_id": "AQ-2016-10-28",
+  "event_time_utc": "2016-10-28T00:00:00Z",
+  "input_file": "data/processed/events/era5_land_hourly_20161026_20161027.nc",
+  "rows": 20,
+  "feature_count": 24,
+  "attributes": {
+    "event_time_utc": "2016-10-28T00:00:00Z",
+    "source_product": "ERA5-Land Hourly",
+    "temporal_semantics_mode": "unknown",
+    "temporal_semantics_evidence": "not recorded",
+    "missing_data_policy": "preserve_nan; missing hours are never zero",
+    "feature_window": "soil moisture offsets [24, 72] h; precipitation [24, 72, 168] h; runoff [24, 72, 168] h; state window 6 h",
+    "canonical_timezone": "UTC",
+    "wind_direction_convention": "Meteorological convention: degrees clockwise from north indicating the direction the wind blows FROM. 0/360 = northerly (from the north), 90 = easterly, 180 = southerly, 270 = westerly. Computed as (270 - degrees(atan2(v10, u10))) mod 360.",
+    "interpolation_performed": "no",
+    "minimum_valid_fraction": "0.5",
+    "history_hours_available": "47"
+  },
+  "quality_flag_counts": {
+    "NO_DATA": 3,
+    "PARTIAL_WINDOW": 17
+  }
+}

@@ -1,0 +1,206 @@
+{
+  "event_id": "AQ-2016-10-28",
+  "config_file": "configs/october_2016_demo.yaml",
+  "mode": "offline-process-only",
+  "started_utc": "2026-08-02T10:57:51Z",
+  "plan": {
+    "event_id": "AQ-2016-10-28",
+    "description": "October 2016 Aqaba-Eilat flash flood. Canonical date is the UTC flood-arrival date. Timing per docs/era5_land_temporal_semantics.md and docs/event_dates.md.",
+    "bbox_west_south_east_north": [
+      34.8,
+      29.25,
+      35.15,
+      29.7
+    ],
+    "cds_area_north_west_south_east": [
+      29.7,
+      34.8,
+      29.25,
+      35.15
+    ],
+    "sources": {
+      "imerg": {
+        "run_type": "final",
+        "short_name": "GPM_3IMERGHH",
+        "collection_id": "C2723754847-GES_DISC",
+        "suitable_for_training": true,
+        "start_utc": "2016-10-25T00:00:00Z",
+        "end_utc": "2016-10-28T05:59:59Z",
+        "expected_granules": 156,
+        "max_granules": 500,
+        "chunk_granules": 48,
+        "estimated_harmony_jobs": 4,
+        "rolling_windows_hours": [
+          1.0,
+          3.0,
+          6.0,
+          24.0
+        ],
+        "within_limit": true
+      },
+      "era5_land": {
+        "start_utc": "2016-10-26T00:00:00Z",
+        "end_utc": "2016-10-28T00:00:00Z",
+        "expected_timestamps": 49,
+        "variables": [
+          "total_precipitation",
+          "surface_runoff",
+          "subsurface_runoff",
+          "soil_moisture"
+        ],
+        "temporal_semantics_mode": "auto",
+        "chunk_mode": "daily",
+        "estimated_cds_requests": 3,
+        "within_limit": true,
+        "antecedent": {
+          "event_time_utc": "2016-10-28T00:00:00Z",
+          "soil_moisture_offsets_hours": [
+            24,
+            72
+          ],
+          "precipitation_windows_hours": [
+            24,
+            72,
+            168
+          ],
+          "runoff_windows_hours": [
+            24,
+            72,
+            168
+          ],
+          "state_window_hours": 6
+        }
+      }
+    },
+    "paths": {
+      "imerg_raw": "/Users/karambalasmeh/AI_ENG/AAA/data/raw/imerg/events/AQ-2016-10-28",
+      "era5_raw": "/Users/karambalasmeh/AI_ENG/AAA/data/raw/era5_land/events/AQ-2016-10-28",
+      "processed": "/Users/karambalasmeh/AI_ENG/AAA/data/processed/events/AQ-2016-10-28",
+      "outputs": "/Users/karambalasmeh/AI_ENG/AAA/data/outputs/AQ-2016-10-28"
+    },
+    "validation": {
+      "minimum_data_completeness": 95.0,
+      "fail_on_missing_timestamps": true,
+      "require_full_antecedent_windows": false,
+      "minimum_valid_fraction": 0.5
+    }
+  },
+  "reproducibility": {
+    "python": "3.11.9",
+    "numpy": "2.4.6",
+    "xarray": "2026.7.0",
+    "config_sha_note": "config content is the reproducibility key"
+  },
+  "imerg": {
+    "run_type": "final",
+    "expected_granules": 156,
+    "available_granules": 156,
+    "downloaded": 0,
+    "reused": 156,
+    "missing_timestamps": [],
+    "data_completeness_percent": 100.0,
+    "wettest_windows": {
+      "rain_1h_mm": {
+        "variable": "rain_1h_mm",
+        "window_hours": 1.0,
+        "interval_count": 2,
+        "max_mm": 6.760000228881836,
+        "window_start_utc": "2016-10-28T02:00:00Z",
+        "window_end_utc": "2016-10-28T03:00:00Z",
+        "label_timestamp_utc": "2016-10-28T02:30:00Z",
+        "lat": 29.44999885559082,
+        "lon": 35.04999923706055,
+        "time_index": 149,
+        "lat_index": 2,
+        "lon_index": 2
+      },
+      "rain_3h_mm": {
+        "variable": "rain_3h_mm",
+        "window_hours": 3.0,
+        "interval_count": 6,
+        "max_mm": 11.714999198913574,
+        "window_start_utc": "2016-10-28T02:30:00Z",
+        "window_end_utc": "2016-10-28T05:30:00Z",
+        "label_timestamp_utc": "2016-10-28T05:00:00Z",
+        "lat": 29.649999618530273,
+        "lon": 35.04999923706055,
+        "time_index": 154,
+        "lat_index": 4,
+        "lon_index": 2
+      },
+      "rain_6h_mm": {
+        "variable": "rain_6h_mm",
+        "window_hours": 6.0,
+        "interval_count": 12,
+        "max_mm": 12.989998817443848,
+        "window_start_utc": "2016-10-28T00:00:00Z",
+        "window_end_utc": "2016-10-28T06:00:00Z",
+        "label_timestamp_utc": "2016-10-28T05:30:00Z",
+        "lat": 29.649999618530273,
+        "lon": 35.04999923706055,
+        "time_index": 155,
+        "lat_index": 4,
+        "lon_index": 2
+      },
+      "rain_24h_mm": {
+        "variable": "rain_24h_mm",
+        "window_hours": 24.0,
+        "interval_count": 48,
+        "max_mm": 20.545001983642578,
+        "window_start_utc": "2016-10-27T05:30:00Z",
+        "window_end_utc": "2016-10-28T05:30:00Z",
+        "label_timestamp_utc": "2016-10-28T05:00:00Z",
+        "lat": 29.44999885559082,
+        "lon": 34.849998474121094,
+        "time_index": 154,
+        "lat_index": 2,
+        "lon_index": 0
+      }
+    },
+    "output_netcdf": "/Users/karambalasmeh/AI_ENG/AAA/data/processed/events/AQ-2016-10-28/AQ-2016-10-28_imerg.nc",
+    "attributes": {
+      "GridHeader": "BinMethod=ARITHMETIC_MEAN;\nRegistration=CENTER;\nLatitudeResolution=0.1;\nLongitudeResolution=0.1;\nNorthBoundingCoordinate=90;\nSouthBoundingCoordinate=-90;\nEastBoundingCoordinate=180;\nWestBoundingCoordinate=-180;\nOrigin=SOUTHWEST;\n",
+      "source_product": "NASA GPM IMERG V07 Final Run",
+      "bounds_available": "lat_bnds, lon_bnds, time_bnds",
+      "granule_count": "156",
+      "granule_interval_minutes": "30",
+      "window_start_utc": "2016-10-25T00:00:00Z",
+      "imerg_run_type": "final",
+      "imerg_short_name": "GPM_3IMERGHH",
+      "imerg_collection_id": "C2723754847-GES_DISC",
+      "imerg_version": "07",
+      "preliminary": "false",
+      "calibrated_final_product": "true",
+      "suitable_for_training": "true",
+      "first_timestamp_utc": "2016-10-25T00:00:00Z",
+      "last_timestamp_utc": "2016-10-28T05:30:00Z",
+      "rolling_windows_hours": "[1.0, 3.0, 6.0, 24.0]",
+      "total_valid_cells": "3120",
+      "total_missing_cells": "0",
+      "data_completeness_percent": "100.0",
+      "interpolation_performed": "no",
+      "bbox_west_south_east_north": "[34.8, 29.25, 35.15, 29.7]"
+    }
+  },
+  "era5_land": {
+    "expected_timestamps": 49,
+    "available_timestamps": 49,
+    "files": 3,
+    "downloaded": 0,
+    "reused": 3,
+    "temporal_semantics_mode": "cumulative",
+    "temporal_semantics_evidence": "GRIB_stepType='accum' on sro, ssro, tp; GRIB_dataType=['fc'] (ECMWF: accumulations run from 00 UTC to the forecast step, so the 00 UTC value is the previous day's 24-hour total)",
+    "output_netcdf": "/Users/karambalasmeh/AI_ENG/AAA/data/processed/events/AQ-2016-10-28/AQ-2016-10-28_era5_land.nc",
+    "antecedent": {
+      "event_time_utc": "2016-10-28T00:00:00Z",
+      "feature_count": 24,
+      "rows": 20,
+      "quality_flag_counts": {
+        "NO_DATA": 3,
+        "PARTIAL_WINDOW": 17
+      },
+      "output_parquet": "/Users/karambalasmeh/AI_ENG/AAA/data/processed/events/AQ-2016-10-28/AQ-2016-10-28_antecedent_features.parquet"
+    }
+  },
+  "finished_utc": "2026-08-02T10:57:51Z"
+}
