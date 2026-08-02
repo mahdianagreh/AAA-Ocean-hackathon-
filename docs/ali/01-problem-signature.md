@@ -68,10 +68,10 @@ to shore and close to urban activity, roads, drainage outlets and ports
 ### C4 · Narrow shelf or restricted-flushing basin
 
 A narrow, semi-enclosed basin keeps the plume in contact with habitat instead of diluting
-it into open ocean. The Gulf of Aqaba is roughly **15–25 km wide**
-([`tasks/nizar.md`](../../tasks/nizar.md)) **[sourced]** — which is also why global
-1/12° ocean models cannot resolve it, and why the platform must output probabilistic
-exposure zones rather than trajectories.
+it into open ocean. The Gulf of Aqaba is **~180 km long and 14–26 km wide, average depth
+800 m** ([GFCR concept note](https://mptf.undp.org/sites/default/files/documents/2022-12/gulf_of_aqaba_and_n_red_sea_reefs_programme_redacted.pdf))
+**[sourced]** — which is also why global 1/12° (~9 km) ocean models cannot resolve it, and
+why the platform must output probabilistic exposure zones rather than trajectories.
 
 | Score | Condition |
 |---|---|
@@ -169,12 +169,12 @@ Saying that out loud in the pitch is worth more than one extra pin on the map
 | C1 ephemeral drainage | 2 | 27 mm/yr, no perennial rivers **[sourced]** |
 | C2 intense episodic rainfall | 2 | 82% of rain in 18 h, Oct 2016 **[sourced]** |
 | C3 reef proximity | 2 | Fringing reef close to shore and to outlets **[sourced]** |
-| C4 confined basin | 2 | Gulf 15–25 km wide **[sourced]** |
+| C4 confined basin | 2 | Gulf 14–26 km wide **[sourced]** |
 | C5 development at outlet | 2 | Port, city, industry at the coast **[sourced]** |
 | C6 data-poor | 2 | No local gauges; global ocean models too coarse **[sourced]** |
 | **Total** | **12/12** | |
 | M1 economic exposure | Yes | Dive tourism, Aqaba Marine Reserve |
-| M2 transboundary | Yes | Four countries, one 15–25 km basin |
+| M2 transboundary | Yes | Four countries, one 14–26 km basin |
 
 Aqaba is a maximum-score site. **[derived]** That is a genuinely good thing to be able to
 say — the pilot was chosen well, and every other site in this scan is measured against it.

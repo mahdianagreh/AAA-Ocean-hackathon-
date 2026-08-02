@@ -6,7 +6,7 @@
 
 ## The headline
 
-The Gulf of Aqaba is roughly **15–25 km wide** and about 160 km long. Jordan, Israel, Egypt
+The Gulf of Aqaba is **14–26 km wide** ([GFCR concept note](https://mptf.undp.org/sites/default/files/documents/2022-12/gulf_of_aqaba_and_n_red_sea_reefs_programme_redacted.pdf)) and about 160 km long. Jordan, Israel, Egypt
 and Saudi Arabia all hold coastline on it. **A storm system over the northern Gulf produces
 flash floods in all four jurisdictions in the same 48 hours.**
 
@@ -34,7 +34,7 @@ data-poor. Everything else is identical.
 | C1 ephemeral | 2 | Mean rainfall **27 mm/yr**; no perennial rivers; ephemeral rivers discharge only during brief flooding events ([Kalman et al. 2025](https://nhess.copernicus.org/articles/25/3201/2025/)) **[sourced]** |
 | C2 intense episodic | 2 | Oct 2016: ≈66 h event, **≈82% of rainfall in 18 h** **[sourced]** |
 | C3 reef proximity | 2 | Coral-rich northern Gulf; the 2015 paper's title is literally "the coral-rich Gulf of Aqaba" **[sourced]** |
-| C4 confined basin | 2 | Same 15–25 km basin **[sourced]** |
+| C4 confined basin | 2 | Same 14–26 km basin **[sourced]** |
 | C5 development | 2 | Eilat city, port, tourism infrastructure **[sourced]** |
 | C6 data-poor | 1 | Better instrumented than Aqaba — offshore instruments recorded the 2016 salinity/turbidity response — but still no operational forecast system **[sourced]** |
 
@@ -158,7 +158,7 @@ one with real money attached.
 
 ## What the Gulf of Aqaba cluster means for the pitch
 
-**[derived]** Four adjacent sites, all Tier 1, all sharing one 15–25 km basin, with:
+**[derived]** Four adjacent sites, all Tier 1, all sharing one 14–26 km basin, with:
 
 - a documented event affecting all of them in the same 48 hours,
 - an existing bilateral monitoring MoU that covers monitoring but **not** forecasting,
