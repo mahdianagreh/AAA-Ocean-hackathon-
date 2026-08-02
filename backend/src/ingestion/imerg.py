@@ -357,15 +357,25 @@ def read_imerg_subset(path: Path) -> xr.Dataset:
 def precipitation_rate_to_depth(
     dataset: xr.Dataset,
     interval_hours: float = 0.5,
+    rate_period_hours: float = 1.0,
 ) -> xr.Dataset:
-    """Add rainfall depth in mm alongside the untouched ``mm/hr`` rate.
+    """Add rainfall depth in mm alongside the untouched native rate.
 
-    IMERG half-hourly granules report an average rate over 30 minutes, so
-    depth is ``rate * 0.5`` by default.
+    ``depth = rate * interval_hours / rate_period_hours``
+
+    The second term matters because IMERG's products do not share a rate
+    denominator. Half-hourly granules report **mm/hr** over 30 minutes, so
+    depth is ``rate * 0.5 / 1``. Daily granules report **mm/day** over 24
+    hours, so depth is ``rate * 24 / 24`` — the value already *is* the depth.
+    Applying the half-hourly rule to a daily granule understates it 48-fold,
+    and nothing about the result looks wrong.
 
     Args:
         dataset: Dataset from :func:`read_imerg_subset`.
-        interval_hours: Length of the accumulation window in hours.
+        interval_hours: Length of the granule's accumulation window, in hours.
+        rate_period_hours: Denominator of the rate's unit, in hours — 1.0 for
+            ``mm/hr``, 24.0 for ``mm/day``. Both come from the product
+            registry; do not guess them per call site.
 
     Returns:
         A new dataset with ``precipitation_depth_mm`` added; the original
@@ -381,19 +391,32 @@ def precipitation_rate_to_depth(
         raise ValueError(
             f"interval_hours must be positive, got {interval_hours!r}"
         )
+    if rate_period_hours <= 0:
+        raise ValueError(
+            f"rate_period_hours must be positive, got {rate_period_hours!r}"
+        )
 
     result = dataset.copy()
-    depth = result["precipitation"] * interval_hours
+    native_units = result["precipitation"].attrs.get("units", PRECIPITATION_UNITS)
+    factor = interval_hours / rate_period_hours
+    depth = result["precipitation"] * factor
     depth.attrs = {
         "units": "mm",
         "long_name": "Precipitation depth over the granule interval",
         "interval_hours": interval_hours,
-        "derived_from": "precipitation (mm/hr) * interval_hours",
+        "rate_period_hours": rate_period_hours,
+        "conversion_factor": factor,
+        "derived_from": (
+            f"precipitation ({native_units}) * interval_hours "
+            "/ rate_period_hours"
+        ),
     }
     result["precipitation_depth_mm"] = depth
 
     logger.info(
-        "Derived precipitation_depth_mm using interval_hours=%s", interval_hours
+        "Derived precipitation_depth_mm from %s: interval_hours=%s / "
+        "rate_period_hours=%s -> factor %s",
+        native_units, interval_hours, rate_period_hours, factor,
     )
     return result
 
@@ -422,6 +445,9 @@ IMERG_PRODUCTS: dict[str, dict] = {
         "capabilities_verified": True,
         "bbox_subset": True,
         "variable_subset": True,
+        "granule_minutes": 30,
+        "rate_units": "mm/hr",
+        "rate_period_hours": 1.0,
     },
     "early": {
         "short_name": "GPM_3IMERGHHE",
@@ -436,6 +462,47 @@ IMERG_PRODUCTS: dict[str, dict] = {
         "capabilities_verified": True,
         "bbox_subset": True,
         "variable_subset": True,
+        "granule_minutes": 30,
+        "rate_units": "mm/hr",
+        "rate_period_hours": 1.0,
+    },
+    # Daily Final. Stage 1 of the two-stage sweep: one file per day instead of
+    # 48, so 28 years costs ~10,000 granules rather than ~490,000.
+    #
+    # It differs from the half-hourly products in three ways, each of which
+    # would fail silently if assumed away:
+    #
+    #   1. The variable is `precipitation`, with NO `Grid/` prefix.
+    #   2. The units are mm/DAY, not mm/hr. Multiplying by 0.5 h — correct for
+    #      a half-hourly granule — understates a daily depth by 48x.
+    #   3. The file has no `Grid` group and declares no `_FillValue`.
+    #      `read_imerg_subset` masks the -9999.9 sentinel defensively anyway,
+    #      which is why that one is already safe.
+    #
+    # Resolved from CMR on 2026-08-02 (short_name GPM_3IMERGDF -> exactly one
+    # collection). Harmony's /capabilities endpoint was returning HTTP 500 for
+    # every IMERG product that day, including the two already verified, so
+    # capability was established two other ways instead: the collection carries
+    # the identical six service associations as the verified half-hourly
+    # product, and a real one-day subset request succeeded and returned a
+    # correctly clipped 12x13 grid. See docs/imerg_daily_capability.json.
+    "daily_final": {
+        "short_name": "GPM_3IMERGDF",
+        "version": "07",
+        "collection_id": "C2723754864-GES_DISC",
+        "variable": "precipitation",
+        "title": "GPM IMERG Final Precipitation L3 1 day 0.1 degree",
+        "run_type": "daily_final",
+        "preliminary": False,
+        "calibrated_final_product": True,
+        "suitable_for_training": True,
+        "capabilities_verified": True,
+        "bbox_subset": True,
+        "variable_subset": True,
+        "granule_minutes": 1440,
+        "rate_units": "mm/day",
+        "rate_period_hours": 24.0,
+        "screening_only": True,
     },
 }
 
@@ -475,9 +542,16 @@ def _as_utc_datetime(value: str | datetime, label: str) -> datetime:
 
 
 def expected_granule_count(
-    start_time: str | datetime, end_time: str | datetime
+    start_time: str | datetime,
+    end_time: str | datetime,
+    granule_minutes: int = GRANULE_MINUTES,
 ) -> int:
-    """Half-hourly granules whose start falls inside [start, end]."""
+    """Granules whose start falls inside [start, end].
+
+    `granule_minutes` is the product's cadence: 30 for the half-hourly
+    products, 1440 for daily. Defaulting to 30 keeps every existing caller
+    unchanged.
+    """
     start = _as_utc_datetime(start_time, "start_time")
     end = _as_utc_datetime(end_time, "end_time")
     if end < start:
@@ -486,16 +560,18 @@ def expected_granule_count(
             f"({start.isoformat()})"
         )
     span = (end - start).total_seconds()
-    return int(span // (GRANULE_MINUTES * 60)) + 1
+    return int(span // (granule_minutes * 60)) + 1
 
 
 def expected_granule_timestamps(
-    start_time: str | datetime, end_time: str | datetime
+    start_time: str | datetime,
+    end_time: str | datetime,
+    granule_minutes: int = GRANULE_MINUTES,
 ) -> list[datetime]:
-    """Every half-hourly granule start in the window."""
+    """Every granule start in the window, at the product's cadence."""
     start = _as_utc_datetime(start_time, "start_time")
     end = _as_utc_datetime(end_time, "end_time")
-    step = timedelta(minutes=GRANULE_MINUTES)
+    step = timedelta(minutes=granule_minutes)
     stamps, cursor = [], start
     while cursor <= end:
         stamps.append(cursor)
@@ -526,10 +602,12 @@ def existing_granules(directory: Path) -> dict[datetime, Path]:
     return found
 
 
-def _contiguous_runs(stamps: list[datetime]) -> list[tuple[datetime, datetime]]:
+def _contiguous_runs(
+    stamps: list[datetime], granule_minutes: int = GRANULE_MINUTES
+) -> list[tuple[datetime, datetime]]:
     if not stamps:
         return []
-    step = timedelta(minutes=GRANULE_MINUTES)
+    step = timedelta(minutes=granule_minutes)
     runs, run_start, previous = [], stamps[0], stamps[0]
     for stamp in stamps[1:]:
         if stamp - previous != step:
@@ -541,9 +619,11 @@ def _contiguous_runs(stamps: list[datetime]) -> list[tuple[datetime, datetime]]:
 
 
 def _chunk_run(
-    run: tuple[datetime, datetime], chunk_granules: int
+    run: tuple[datetime, datetime],
+    chunk_granules: int,
+    granule_minutes: int = GRANULE_MINUTES,
 ) -> list[tuple[datetime, datetime]]:
-    step = timedelta(minutes=GRANULE_MINUTES)
+    step = timedelta(minutes=granule_minutes)
     start, end = run
     chunks, cursor = [], start
     while cursor <= end:
@@ -592,7 +672,10 @@ def fetch_imerg_window(
         HarmonySubsetError: a Harmony job failed.
     """
     product = get_imerg_product(run_type)
-    wanted = expected_granule_timestamps(start_time, end_time)
+    granule_minutes = product.get("granule_minutes", GRANULE_MINUTES)
+    wanted = expected_granule_timestamps(
+        start_time, end_time, granule_minutes=granule_minutes
+    )
     if len(wanted) > max_granules:
         raise ValueError(
             f"Window spans {len(wanted)} granules, above max_granules="
@@ -609,13 +692,15 @@ def fetch_imerg_window(
         product["run_type"], len(wanted), len(present), len(missing),
     )
 
-    for run in _contiguous_runs(missing):
-        for chunk_start, chunk_stop in _chunk_run(run, chunk_granules):
+    for run in _contiguous_runs(missing, granule_minutes=granule_minutes):
+        for chunk_start, chunk_stop in _chunk_run(
+            run, chunk_granules, granule_minutes=granule_minutes
+        ):
             try:
                 download_imerg_subset(
                     start_time=chunk_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
                     end_time=(
-                        chunk_stop + timedelta(minutes=GRANULE_MINUTES - 1,
+                        chunk_stop + timedelta(minutes=granule_minutes - 1,
                                                seconds=59)
                     ).strftime("%Y-%m-%dT%H:%M:%SZ"),
                     output_dir=output_dir,
