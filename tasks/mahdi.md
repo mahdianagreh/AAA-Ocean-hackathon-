@@ -11,7 +11,29 @@
 
 You produce the geometry everyone else's work sits on. The catchment polygons decide which rainfall cells Karam averages, and the **coastal outlet coordinates are the plume release point** for Nizar's current forcing and Abd's satellite validation.
 
-**But nobody waits for you.** Read [`00-contracts.md`](00-contracts.md) first. Your Day-1 job is to publish *provisional* versions of both so everyone else starts immediately, then replace them with the real thing.
+> ## Status — M1 complete, 2 Aug 2026
+>
+> Real catchments and outlets are published. `scripts/03_dem_fetch.py` → `05_flow_and_streams.py` → `06_catchments.py` reproduce everything from scratch.
+>
+> | ID | Area | Relief | Mean slope | Drainage density | Outlet lon, lat |
+> |---|---:|---:|---:|---:|---|
+> | AQ-C01 Wadi Yutum | 4,453.1 km² | 1,841 m | 10.8° | 0.81 | 34.97073, 29.54560 |
+> | AQ-C02 | 64.9 km² | 1,321 m | 16.6° | 0.71 | 34.97643, 29.47270 |
+> | AQ-C03 | 59.9 km² | 1,418 m | 16.7° | 0.74 | 34.96416, 29.38167 |
+> | AQ-C04 | 42.7 km² | 996 m | 8.3° | 1.01 | 34.96622, 29.36052 |
+> | AQ-C05 | 35.6 km² | 1,015 m | 6.8° | 1.29 | 34.95998, 29.35737 |
+>
+> 4,656 km² — 97% of the drainage reaching Jordan's Gulf coast. Delineated area matches upstream flow accumulation at every pour point to **0.0%**.
+>
+> **Three bugs the data caught**, each of which produced plausible-looking wrong output:
+>
+> 1. **Area inflated 34%.** `breach_depressions_least_cost(fill=True)` forces genuine endorheic basins to spill coastward, annexing 1,767 km² to Wadi Yutum. 6,282 km² with fill, 4,453 km² without; HydroBASINS independently says 4,690 km² exorheic. Runoff scales with area, so this would have reached the sediment class and plume magnitude.
+> 2. **Sea mask welded to the raster frame.** Reprojection fill shared the value 0 with sea level, so "largest polygon below sea level" returned the Gulf *plus* the frame — 1,080 km² against a true 623 km². Fixed by setting nodata and flood-filling from a seed in open water.
+> 3. **HydroSHEDS files the Middle East under `eu`, not `as`.** The Asia file returns zero basins for Aqaba.
+>
+> **Still open:** M2 SRTM cross-check, M3 MERIT stream validation. The outlets are DEM-derived and have **not** yet been checked by eye against imagery or Pulga's OSM culverts — see the warning under M1 about GLO-30 being a surface model.
+
+**Nobody waited for you.** Read [`00-contracts.md`](00-contracts.md) first. The Day-1 job was to publish *provisional* versions of both so everyone else could start immediately, then replace them with the real thing. Both swaps are now done.
 
 ### Your two Day-1 provisional deliverables (~2 hours total)
 

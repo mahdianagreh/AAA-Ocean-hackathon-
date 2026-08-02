@@ -16,7 +16,9 @@ You decide **which historical event the whole demo is built on**. Abd cannot sta
 Two changes to what you may have expected:
 
 - **Event dates no longer come from you.** The two candidates (Oct 2016, Feb 2013) are named in the concept doc and their exact dates come from the literature, not from IMERG. Abd reads the papers himself on Day 1 and starts his audit immediately. Your IMERG ranking *confirms* those dates rather than discovering them.
-- **You don't wait for Mahdi's catchments.** He publishes `catchments_PROVISIONAL.gpkg` on Day 1 from HydroBASINS. Build your entire per-catchment aggregation pipeline against it. When his real 30 m delineation lands, you re-run the same script — same IDs, same schema, minutes of work.
+- **Mahdi's real catchments have landed (2 Aug).** Use `data/processed/vectors/catchments.gpkg` — five catchments, 4,656 km². If you already built against `catchments_PROVISIONAL.gpkg`, re-run: the schema is identical but the geometry is not. **`AQ-C01` is a different place** — it was a 1,767 km² endorheic basin, it is now Wadi Yutum at 4,453 km². Same ID, different polygon, no error raised.
+
+- **Endorheic area is excluded on purpose.** 1,767 km² of the Wadi Yutum system drains to internal sinks and never reaches the Gulf. Rain falling there produces no marine plume, so it is out of the catchment. Don't add it back from HydroBASINS — that file's `UP_AREA` includes it.
 
 Start downloading IMERG on Day 1 using the padded download box from the contract.
 

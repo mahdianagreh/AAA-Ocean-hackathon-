@@ -21,7 +21,17 @@ You also own the project's most important honest caveat. The current products ar
 Read [`00-contracts.md`](00-contracts.md) first — **you start Day 1 and wait for nobody.**
 
 - [ ] **Copernicus Marine account** registered → needed for the primary currents. **Day 1** — don't leave this to Day 8.
-- [ ] **Use `outlets_PROVISIONAL.gpkg`** — Mahdi publishes hand-clicked outlet points on Day 1. Build the particle engine against them; swapping in his real coordinates later is a config change, not a rebuild.
+- [ ] **Real outlets have landed (2 Aug)** — use `data/processed/vectors/outlets.gpkg`. **Five release points, not the two the contract said for a day.** The 30 m DEM resolves 30 discharge points on Jordan's coast where HydroBASINS saw two; the five selected each have their own mouth.
+
+  | Outlet | Catchment | lon, lat | Upstream |
+  |---|---|---|---:|
+  | `AQ-O01` | `AQ-C01` Wadi Yutum | 34.97073, 29.54560 | 4,453.1 km² |
+  | `AQ-O02` | `AQ-C02` | 34.97643, 29.47270 | 64.9 km² |
+  | `AQ-O03` | `AQ-C03` | 34.96416, 29.38167 | 59.9 km² |
+  | `AQ-O04` | `AQ-C04` | 34.96622, 29.36052 | 42.7 km² |
+  | `AQ-O05` | `AQ-C05` | 34.95998, 29.35737 | 35.6 km² |
+
+  `AQ-O01` carries 96% of the discharge — if you only wire up one release point for the demo, wire that one. The other four are within 13 km of each other on the southern coast, so their plumes will overlap and should be modelled together rather than as independent events.
 - [ ] **Pull your own GEBCO copy.** It's a 10-minute download with no dependencies — don't wait for Pulga's coastline and depth field. Two people having their own is fine.
 - [ ] **Event dates** are in `docs/event_dates.md` from Day 1, straight from the literature. You don't need Karam's IMERG ranking to know which windows to pull.
 - [ ] **Publish P5 · synthetic plume mask on Day 1 (~30 min):** a plain ellipse offset from an outlet, saved in the exact format Abd's real mask will use → `data/processed/plume/observed_plume_PROVISIONAL.gpkg`. This is what lets you build and test the entire calibration parameter search before any satellite mask exists.
