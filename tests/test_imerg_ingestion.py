@@ -676,7 +676,86 @@ def test_safety_limit_blocks_oversized_window() -> None:
 
 def test_default_max_granules_is_sane() -> None:
     assert DEFAULT_MAX_GRANULES == 500
-    assert set(IMERG_PRODUCTS) == {"final", "early"}
+    assert set(IMERG_PRODUCTS) == {"final", "early", "daily_final"}
+
+
+# --- daily Final: stage 1 of the two-stage sweep ---------------------------
+#
+# Every assertion below guards a difference from the half-hourly products
+# that would fail silently rather than raise.
+
+
+def test_daily_product_is_registered_and_verified() -> None:
+    daily = get_imerg_product("daily_final")
+    assert daily["short_name"] == "GPM_3IMERGDF"
+    assert daily["collection_id"] == "C2723754864-GES_DISC"
+    assert daily["capabilities_verified"] is True
+    assert daily["suitable_for_training"] is True
+    assert daily["preliminary"] is False
+
+
+def test_daily_variable_has_no_grid_prefix() -> None:
+    """Half-hourly is `Grid/precipitation`; daily is bare `precipitation`."""
+    assert get_imerg_product("daily_final")["variable"] == "precipitation"
+    assert get_imerg_product("final")["variable"] == "Grid/precipitation"
+
+
+def test_daily_rate_units_differ_from_half_hourly() -> None:
+    """mm/day vs mm/hr. Treating one as the other is a 48x error."""
+    assert get_imerg_product("daily_final")["rate_units"] == "mm/day"
+    assert get_imerg_product("final")["rate_units"] == "mm/hr"
+    assert get_imerg_product("early")["rate_units"] == "mm/hr"
+
+
+def test_daily_cadence_is_one_granule_per_day() -> None:
+    assert get_imerg_product("daily_final")["granule_minutes"] == 1440
+    assert get_imerg_product("final")["granule_minutes"] == 30
+
+
+def test_daily_is_flagged_screening_only() -> None:
+    """Stage 1 finds candidate days; intensity still needs half-hourly."""
+    assert get_imerg_product("daily_final")["screening_only"] is True
+    assert "screening_only" not in get_imerg_product("final")
+
+
+def test_granule_timestamps_respect_the_daily_cadence() -> None:
+    stamps = expected_granule_timestamps(
+        "2016-10-25T00:00:00Z", "2016-10-28T00:00:00Z", granule_minutes=1440
+    )
+    assert len(stamps) == 4
+    assert (stamps[1] - stamps[0]).total_seconds() == 86400
+
+    half_hourly = expected_granule_timestamps(
+        "2016-10-25T00:00:00Z", "2016-10-25T02:00:00Z"
+    )
+    assert len(half_hourly) == 5  # default cadence unchanged
+
+
+def test_granule_count_respects_the_daily_cadence() -> None:
+    assert expected_granule_count(
+        "1998-01-01T00:00:00Z", "1998-12-31T00:00:00Z", granule_minutes=1440
+    ) == 365
+    assert expected_granule_count(
+        "2016-10-25T00:00:00Z", "2016-10-25T02:00:00Z"
+    ) == 5
+
+
+def test_daily_depth_conversion_is_not_the_half_hourly_one() -> None:
+    """20 mm/day is 20 mm of rain. 20 mm/hr over 30 min is 10 mm.
+
+    Same number in, different depth out, because the rate's denominator
+    differs. Applying the half-hourly rule to a daily granule understates
+    the depth 48-fold and nothing raises.
+    """
+    grid = make_synthetic(n_time=1, rate_value=20.0)
+
+    daily = precipitation_rate_to_depth(
+        grid, interval_hours=24.0, rate_period_hours=24.0
+    )
+    assert float(daily["precipitation_depth_mm"].max()) == pytest.approx(20.0)
+
+    half_hourly = precipitation_rate_to_depth(grid, interval_hours=0.5)
+    assert float(half_hourly["precipitation_depth_mm"].max()) == pytest.approx(10.0)
 
 
 @pytest.fixture(scope="module")

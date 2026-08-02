@@ -1,0 +1,64 @@
+{
+  "recorded_utc": "2026-08-02T13:11:21Z",
+  "product": "GPM_3IMERGDF",
+  "version": "07",
+  "collection_id": "C2723754864-GES_DISC",
+  "resolution_method": "CMR short_name search \u2014 exactly one collection returned; not guessed.",
+  "harmony_capabilities_endpoint": {
+    "status": "HTTP 500",
+    "note": "The /capabilities endpoint returned 500 for EVERY IMERG product on this date, including GPM_3IMERGHH and GPM_3IMERGHHE which were already verified. This is a service outage, not a statement about the daily product. Capability was therefore established two other ways, below."
+  },
+  "evidence_1_service_associations": {
+    "half_hourly_final": [
+      "S2164732315-XYZ_PROV",
+      "S2874702816-XYZ_PROV",
+      "S3385907677-GES_DISC",
+      "S2786683405-GES_DISC",
+      "S2739607260-GES_DISC",
+      "S4057306097-XYZ_PROV"
+    ],
+    "daily_final": [
+      "S2874702816-XYZ_PROV",
+      "S4057306097-XYZ_PROV",
+      "S2739607260-GES_DISC",
+      "S2786683405-GES_DISC",
+      "S3385907677-GES_DISC",
+      "S2164732315-XYZ_PROV"
+    ],
+    "verdict": "Identical six services. Nothing available to one and not the other."
+  },
+  "evidence_2_live_subset_request": {
+    "window": "2016-10-28T00:00:00Z .. 2016-10-28T23:59:59Z",
+    "bbox_wsen": [
+      34.75,
+      29.15,
+      35.94,
+      30.3
+    ],
+    "result": "1 granule, 35,975 bytes",
+    "grid": "12 lat x 13 lon at 0.1 deg, clipped to the terrain AOI",
+    "extent_returned": {
+      "lat": [
+        29.15,
+        30.25
+      ],
+      "lon": [
+        34.75,
+        35.95
+      ]
+    },
+    "values_mm_per_day": {
+      "min": 0.0,
+      "max": 18.83,
+      "mean": 5.2836
+    },
+    "verdict": "bbox subsetting and variable subsetting both work."
+  },
+  "differences_from_half_hourly": [
+    "Variable is `precipitation`; the half-hourly path is `Grid/precipitation`.",
+    "Units are mm/day, not mm/hr. Applying the 0.5 h rule understates depth 48x.",
+    "No `Grid` group \u2014 data sits at the file root.",
+    "No _FillValue declared. read_imerg_subset masks -9999.9 defensively regardless, so this one was already safe."
+  ],
+  "record_start": "1998-01-01 (two years earlier than the half-hourly record)"
+}
