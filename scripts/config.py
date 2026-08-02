@@ -45,6 +45,17 @@ def _load_spatial_contract():
 
 _spatial = _load_spatial_contract()
 
+
+def load_spatial_contract():
+    """Public accessor for the backend spatial-contract module.
+
+    Exposed because `from config.spatial import ...` cannot work from scripts/ —
+    `config` resolves to THIS module, which is not a package. Anything in scripts/
+    that needs the contract's own helpers (BBox methods, verify_against_files)
+    should call this rather than re-inventing the by-path import.
+    """
+    return _spatial
+
 TERRAIN_AOI = _spatial.TERRAIN_AOI
 MARINE_AOI = _spatial.MARINE_AOI
 AQABA_AOI = _spatial.AQABA_AOI

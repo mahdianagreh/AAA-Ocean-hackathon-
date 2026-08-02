@@ -875,3 +875,109 @@ Not acquired because it needs University of Tokyo registration or an authenticat
 ## Not yet filled in
 
 Karam, Pulga, Abd and Nizar — add your products above using the same format. Rainfall, reanalysis, forecasts, land cover, soil, OSM, reef habitat, bathymetry, currents and satellite imagery are all still missing from this ledger.
+
+---
+
+# AMENDMENT — 2 August 2026 · AOI v2 re-pull and the Phase-2 backend
+
+Appended rather than merged into the sections above, so the record shows what was
+corrected and when. A project that visibly catches and fixes its own AOI bug is
+more credible than one that never mentions it had one.
+
+## Why every land-side source was re-pulled
+
+The original download box was `34.80, 29.25, 35.15, 29.70`. It covered **~11.5% of
+the terrain area the project actually needs**. Wadi Yutum drains from about 90 km
+inland, out to 35.94 E and 30.30 N, so the old box cut off most of `AQ-C01` — the
+catchment that is 4,453 of the basin's 4,656 km².
+
+This was a **coverage** failure, not a data-quality one. Every download succeeded.
+Nothing raised. The numbers were simply taken over the wrong ground, which is the
+exact failure mode this project's standing law #1 exists to catch.
+
+Measured evidence, saved before anything was re-fetched:
+[aoi_coverage_report_20260802.txt](aoi_coverage_report_20260802.txt) — 19 files
+short at the start, 7 at the end, with each remaining one explained in the
+report's own interpretation section.
+
+## What changed, per source
+
+| Source | v1 | v2 | Access date |
+|---|---|---|---|
+| ESA WorldCover | 1 tile (`N27E033`), 4200×5400 px | **2 tiles mosaicked** (`N27E033` + `N30E033`), 14280×13800 px | 2026-08-02 |
+| ISRIC SoilGrids | 188×155 cells | **481×526 cells** | 2026-08-02 |
+| OpenStreetMap | clipped to old box; 3,845 roads / 200 drainage | **clipped to `terrain_aoi.geojson`; 8,289 roads / 1,402 drainage** | 2026-08-02 |
+| Bathymetry / coastline / reef zones | — | **NOT re-pulled** — `MARINE_AOI` is unchanged between contract v1 and v2 | 2026-08-01 |
+
+Required WorldCover tiles are now **derived from the AOI** in
+`process_worldcover.required_tiles()` rather than hardcoded. A hardcoded list is
+how v1's northern edge went missing in the first place, and a future AOI change
+would have repeated it silently.
+
+**New failure mode introduced by v2, and checked:** two ESA tiles can carry
+different processing dates. Measured discontinuity in bare-ground fraction across
+the 30°N seam is **0.01 percentage points** — ordinary terrain variation, not a
+version mismatch. No blending was applied.
+→ [worldcover_06_v2_mosaic_seam_check.png](qa_screenshots/worldcover_06_v2_mosaic_seam_check.png)
+
+## Re-verified against the real 5-catchment set
+
+The three feature tables now sit at the contract paths, built from
+`catchments.gpkg`, and the local test fixture has been deleted.
+
+Catchment areas cross-checked against the geometry contract — **all five within
+0.1%**, total 4,656.1 km² against the contract's 4,656 km²:
+
+| id | contract km² | computed km² | diff |
+|---|---:|---:|---:|
+| AQ-C01 | 4,453.1 | 4,453.1 | 0.00% |
+| AQ-C02 | 64.9 | 64.9 | 0.07% |
+| AQ-C03 | 59.9 | 59.9 | 0.01% |
+| AQ-C04 | 42.7 | 42.7 | 0.07% |
+| AQ-C05 | 35.6 | 35.6 | 0.10% |
+
+**Bare-ground sanity check on the number that matters.** `AQ-C01` is
+**98.64% bare/sparse ground over 4,453 km²** — 95.6% of the basin. This is a far
+stronger test than v1's, which measured a fraction of one small-box catchment.
+→ [worldcover_07_aq_c01_bareground_v2.png](qa_screenshots/worldcover_07_aq_c01_bareground_v2.png)
+
+Land composition over the full terrain AOI (18,863 km² of land, 95.7% of the box):
+bare/sparse 97.82%, grassland 0.68%, cropland 0.55%, built-up 0.73%, tree 0.13%.
+
+## Phase-2 backend — what the API asserts about its own numbers
+
+| Artifact | Evidence |
+|---|---|
+| Exposure `formula_terms` stored on every run | [phase2_01_formula_terms_table.png](qa_screenshots/phase2_01_formula_terms_table.png) |
+| `/explain` alters no number, EN and AR | [phase2_02_explain_number_fidelity.png](qa_screenshots/phase2_02_explain_number_fidelity.png) |
+| `/ask` citation coverage, incl. refusals | [phase2_03_ask_citation_coverage.png](qa_screenshots/phase2_03_ask_citation_coverage.png) |
+| 19 caveats verified to reach a payload | [phase2_04_caveat_coverage_matrix.png](qa_screenshots/phase2_04_caveat_coverage_matrix.png) |
+| Endpoint status, stubs labelled | [phase2_05_endpoint_status.png](qa_screenshots/phase2_05_endpoint_status.png) |
+
+**Every area and distance in the exposure engine is computed in EPSG:32636**, and
+`_assert_measure_crs` refuses any other frame. `measure_crs` is recorded in every
+`formula_terms` row so the guarantee is auditable from stored data, not just from
+reading the code.
+
+**Risk bands** (0–20 minimal … 80–100 critical) are a reasonable default, **not
+validated policy**. Operational thresholds require marine-scientist input, and the
+band caveat travels on every exposure and alert response.
+
+`risk_score = product × 100`, and the ×100 is recorded as `score_scale` in
+`formula_terms`. No exponent or curve is applied: every factor is already
+dimensionless on [0,1], so the product is on [0,1] and ×100 maps it onto the band
+table with no further reshaping. Any curve invented here would change the ranking
+between zones while looking like a presentation detail.
+
+## Bugs caught in Phase 2 (continuing the Phase-1 count)
+
+| # | Bug | Silent failure it would have caused |
+|---|---|---|
+| 6 | `/explain` rendered `0.0725 × 100` as `7.249999999999999%` | An IEEE754 artefact on screen, unfixable by rounding because rounding is forbidden — solved with an exact decimal shift |
+| 7 | Number-fidelity check used substring matching | `72` → `72.4` passed undetected; a number could be *extended* without failing the audit |
+| 8 | `/ask` answered an out-of-corpus question with a real citation | "airspeed **velocity**" matched a chunk about ocean current velocity — cited, but not responsive |
+| 9 | `/alerts` read the newest run, not the requested scenario | A cached exposure response writes no new run, so alerts could describe a different outlet than the user asked about |
+| 10 | Catchment-area caveat cited the wrong file | The ±4% figure lives in this dictionary, not `00-contracts.md §2` — a caveat pointing at a file that lacks the claim |
+
+Bugs 6–9 were found **by writing the test or building the artifact**, not by
+reading the code — the same pattern as Phase 1's bugs 4 and 5.

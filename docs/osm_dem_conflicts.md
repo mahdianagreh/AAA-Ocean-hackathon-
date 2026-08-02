@@ -3,7 +3,7 @@
 **From:** Pulga (Workstream A+B) · **To:** Mahdi (terrain / outlets)  
 **Source:** `data/processed/vectors/osm_aqaba.gpkg`, layer `drainage_features`  
 **Extract:** Geofabrik `jordan-latest.osm.pbf`, clipped to the padded AOI  
-**Features:** 200 drainage lines, of which 27 are tagged `tunnel=culvert`
+**Features:** 1402 drainage lines, of which 46 are tagged `tunnel=culvert`
 
 > **Read this before using anything below.** Absence of a mapped drainage
 > feature in OSM is **not** evidence that no channel exists. OSM completeness
@@ -49,6 +49,25 @@ DEM puts it.
 | 25 | 29.5669 | 35.08029 | river | 42 | 8806 | الطريق الصحراوي |
 | 26 | 29.62227 | 35.02463 | drain | 47 | 9745 | — |
 | 27 | 29.62194 | 35.0259 | drain | 14 | 9782 | — |
+| 28 | 29.60086 | 35.16645 | stream | 81 | 17959 | Desert Highway |
+| 29 | 29.80248 | 35.0679 | stream | 22 | 29790 | Jordan Valley Highway |
+| 30 | 29.9275 | 35.12065 | river | 22 | 44550 | Jordan Valley Highway |
+| 31 | 29.99417 | 35.14806 | stream | 35 | 52390 | Jordan Valley Highway |
+| 32 | 29.94921 | 35.35041 | stream | 10 | 57436 | — |
+| 33 | 29.94678 | 35.36572 | stream | 18 | 58113 | — |
+| 34 | 29.96124 | 35.35869 | stream | 10 | 58984 | — |
+| 35 | 30.10537 | 35.38592 | stream | 14 | 73678 | — |
+| 36 | 30.24973 | 35.20859 | stream | 16 | 81177 | Jordan Valley Highway |
+| 37 | 30.20159 | 35.36559 | stream | 12 | 81908 | — |
+| 38 | 30.20515 | 35.36479 | stream | 12 | 82221 | — |
+| 39 | 30.21992 | 35.36682 | stream | 12 | 83764 | — |
+| 40 | 30.2285 | 35.3635 | stream | 14 | 84463 | — |
+| 41 | 30.2393 | 35.35851 | stream | 16 | 85326 | — |
+| 42 | 30.23943 | 35.35846 | stream | 15 | 85335 | — |
+| 43 | 30.24041 | 35.35751 | stream | 12 | 85395 | — |
+| 44 | 30.17784 | 35.77511 | stream | 31 | 103738 | — |
+| 45 | 30.1424 | 35.8424 | stream | 22 | 106005 | — |
+| 46 | 30.1157 | 35.87296 | stream | 24 | 106480 | — |
 
 ## 2. Drainage features within 1500 m of the shoreline
 
@@ -114,9 +133,42 @@ locally-recognised channel rather than an incidental ditch.
 | وادي الشلالة | 29.52216 | 35.02369 | stream | 932 |
 | נחל שחורת | 29.60268 | 34.98292 | stream | 5274 |
 | وادي اليتيم | 29.61292 | 35.04721 | river | 7329 |
-| وادي اليتيم | 29.57879 | 35.1228 | river | 8642 |
+| وادي اليتيم | 29.61793 | 35.16398 | river | 8642 |
 | وادي اليتيم | 29.5669 | 35.08029 | river | 8806 |
-| Wadi Umran | 29.52383 | 35.13633 | stream | 12617 |
+| Wadi Umran | 29.52264 | 35.13732 | stream | 12617 |
+| وادي الغضيا | 29.31547 | 35.29432 | river | 32082 |
+| נחל יטבתה | 29.83351 | 35.06221 | stream | 32634 |
+| נחל שעלב | 29.95244 | 35.08845 | stream | 38904 |
+| Great Siq | 29.57632 | 35.40892 | stream | 39823 |
+| Wadi Aheimar | 29.98747 | 35.2377 | river | 40009 |
+| وادي رم | 29.62289 | 35.43735 | stream | 41295 |
+| Wadi Flajeh | 29.83216 | 35.46859 | stream | 49413 |
+| נחל קטורה | 29.99463 | 35.08907 | stream | 49730 |
+| وادي سلادح | 29.25689 | 35.51933 | river | 51650 |
+| נחל חיון | 30.14909 | 35.00951 | stream | 52750 |
+| Wadi eth Thilāja | 29.77746 | 35.5075 | wadi | 53140 |
+| وادي عامود | 29.7695 | 35.55728 | wadi | 53980 |
+| وادي القناصية | 29.72135 | 35.57181 | wadi | 56144 |
+| Wadi Al-Seeq | 30.05537 | 35.22605 | river | 57682 |
+| Wadi Rakiya | 30.02894 | 35.27351 | stream | 58622 |
+| وادي ابا الحار | 29.26441 | 35.64957 | river | 59192 |
+| وادي رابغ | 29.76841 | 35.58273 | wadi | 61173 |
+| s | 30.02293 | 35.37525 | stream | 65060 |
+| Wadi Gseib | 30.10791 | 35.21274 | stream | 65560 |
+| Wadi Gseib | 30.11496 | 35.27392 | stream | 66596 |
+| נחל הערבה | 30.22504 | 35.1479 | river | 68764 |
+| נחל פארן | 30.22904 | 34.8053 | river | 69774 |
+| Wadi Mshazza | 30.1588 | 35.29027 | stream | 72145 |
+| Wadi al-Saif | 30.16765 | 35.286 | stream | 74946 |
+| وادي الشبيكي | 29.22906 | 35.76709 | river | 76478 |
+| Wadi Abu O-rouq | 30.21487 | 35.39859 | stream | 81082 |
+| Wadi Sabra | 30.23412 | 35.32149 | stream | 81628 |
+| נחל מנוחה | 30.29936 | 35.13456 | stream | 84785 |
+| Wadi Sabra | 30.25693 | 35.39496 | stream | 85012 |
+| Wadi Sabra | 30.24041 | 35.35751 | stream | 85395 |
+| Wadi al-Tiben | 30.24988 | 35.41679 | stream | 88317 |
+| Wadi Al-Raqi | 30.28963 | 35.4317 | stream | 92184 |
+| قنات | 30.19706 | 35.69725 | canal | 99582 |
 
 ## 4. DEM flow paths vs OSM drainage
 

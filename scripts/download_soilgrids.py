@@ -1,4 +1,18 @@
-"""Download ISRIC SoilGrids v2.0 rasters for the padded AOI via WCS.
+"""Download ISRIC SoilGrids v2.0 rasters for TERRAIN_AOI via WCS.
+
+Re-pulled 2 Aug 2026 against the corrected terrain box. The previous pull used the
+retired box described in backend/src/config/spatial.py, which covered only ~11.5%
+of the area AQ-C01 actually drains — see docs/aoi_coverage_report_20260802.txt.
+
+The retired coordinates are deliberately NOT repeated here.
+tests/test_spatial_contract.py fails the build if any source file reintroduces
+that literal, and a bounding box sitting in a comment is exactly what gets
+copy-pasted back into live code under deadline pressure.
+
+Uses LAND_BBOX (= TERRAIN_AOI) explicitly rather than DOWNLOAD_BBOX. The two
+happen to be equal today because terrain is the larger of the two extents, but
+relying on that coincidence would silently shrink this pull the moment the
+marine box grows.
 
 Writes data/raw/soilgrids/<variable>_<depth>_mean.tif (EPSG:4326, ~250 m).
 
@@ -12,7 +26,7 @@ import time
 
 import requests
 
-from config import DOWNLOAD_BBOX, RAW
+from config import LAND_BBOX, RAW
 
 VARIABLES = ["clay", "sand", "silt", "soc", "bdod", "cfvo"]
 DEPTHS = ["0-5cm", "5-15cm"]
@@ -22,7 +36,7 @@ OUT = RAW / "soilgrids"
 
 
 def download(variable: str, depth: str, retries: int = 3) -> bool:
-    minx, miny, maxx, maxy = DOWNLOAD_BBOX
+    minx, miny, maxx, maxy = LAND_BBOX
     coverage = f"{variable}_{depth}_mean"
     params = {
         "map": f"/map/{variable}.map",

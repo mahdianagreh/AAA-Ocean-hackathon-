@@ -24,6 +24,7 @@ changes, which is exactly the contract's "cost of a rerun is minutes" claim.
 """
 
 import sys
+from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
@@ -41,7 +42,7 @@ from config import (
 )
 from soilgrids_units import CONVERSIONS, DEPTHS, load_converted, raw_path
 
-WORLDCOVER_CLIP = INTERIM / "worldcover_aqaba_clip.tif"
+WORLDCOVER_CLIP = INTERIM / "worldcover_terrain_v2_clip.tif"
 OSM_GPKG = VECTORS / "osm_aqaba.gpkg"
 
 CATCHMENT_CANDIDATES = [
@@ -52,6 +53,20 @@ CATCHMENT_CANDIDATES = [
 
 
 def resolve_catchments():
+    # An explicit --input wins over the search order: the plan calls this script
+    # with a path, and silently ignoring it would be the worst kind of surprise.
+    for i, a in enumerate(sys.argv):
+        if a == "--input" and i + 1 < len(sys.argv):
+            path = Path(sys.argv[i + 1])
+            if not path.exists():
+                sys.exit(f"--input {path} does not exist")
+            gdf = gpd.read_file(path)
+            if "catchment_id" not in gdf.columns and "id" in gdf.columns:
+                gdf = gdf.rename(columns={"id": "catchment_id"})
+            fixture = "FIXTURE" in path.name
+            print(f"catchments: {path.name}  [--input, {len(gdf)} features]")
+            return gdf, "explicit", not fixture
+
     for path, kind, publishable in CATCHMENT_CANDIDATES:
         if path.exists():
             gdf = gpd.read_file(path)

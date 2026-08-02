@@ -31,32 +31,32 @@
   },
   "osm_01_roads_over_satellite.png": {
     "caption": "3,845 road features against imagery. Roads tracing visible carriageways confirms the clip is correctly georeferenced \u2014 a CRS or clip error would show as a systematic offset from the imagery.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:33 UTC",
     "source": "Land chain"
   },
   "osm_02_buildings_over_satellite.png": {
     "caption": "10,099 building footprints. Density concentrating on Aqaba city and the southern resort strip matches the imagery, and supports osm_building_frac as an independent impervious-surface estimate alongside WorldCover's built_up class.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:33 UTC",
     "source": "Land chain"
   },
   "osm_03_waterways_drainage_over_satellite.png": {
     "caption": "Mapped drainage against imagery. The dendritic network east of the city is Wadi Al-Yutum's system, visibly following real wadi floors in the imagery \u2014 the strongest available evidence that these features are genuine channels.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:33 UTC",
     "source": "Land chain"
   },
   "osm_04_culverts_all_27_numbered.png": {
     "caption": "Every culvert individually numbered, ordered by distance to the shoreline. Numbers match the table in docs/osm_dem_conflicts.md \u00a71 so Mahdi can go from the map to the row and back. Culvert 1 is 39 m from the sea under King Hussein Street.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:33 UTC",
     "source": "Land chain"
   },
   "osm_05_culvert_top5_insets.png": {
     "caption": "Zoomed to the five culverts closest to the sea. At this scale the road embankment each culvert passes under is visible in the imagery \u2014 that is the structure a DEM routes flow around instead of through, which is exactly why these are outlet corrections.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:34 UTC",
     "source": "Land chain"
   },
   "osm_06_dive_poi_and_marine_park.png": {
     "caption": "Added in the expansion pass: 75 dive/tourism POIs (7 scuba sites, 3 dive centres) and the Aqaba Marine Park boundary (protect_class=4). These are the operators the alert product serves, and the park is an independent reference for reef extent.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:33 UTC",
     "source": "Land chain"
   },
   "overview_01_master_all_layers.png": {
@@ -68,6 +68,31 @@
     "caption": "Full provenance for every deliverable. The purple box records that GEBCO is unreachable and GMRT was substituted \u2014 drawn into the diagram so nobody 'corrects' the pipeline back to a broken GEBCO call. Red boxes are the two human blockers: Earth Engine browser auth and Mahdi's catchments.",
     "generated": "2026-07-31 21:59 UTC",
     "source": "Cross-cutting"
+  },
+  "phase2_01_formula_terms_table.png": {
+    "caption": "The audit trail behind 4 scored zones from AQ-O02. Risk falls and arrival is later with distance, which is the circular-buffer sanity check passing. measure_crs is EPSG:32636 on every row \u2014 the guard against the EPSG:3857 measurement bug this workstream already shipped once. plume_source reads SYNTHETIC_STUB, so nobody can mistake these for real transport output.",
+    "generated": "2026-08-02 17:57 UTC",
+    "source": "Phase 2 backend"
+  },
+  "phase2_02_explain_number_fidelity.png": {
+    "caption": "Input probability beside the rendered percentage, both languages. Every number in source_numbers appears verbatim in the output \u2014 no rounding, no hedging words, and identical figures across EN and AR.",
+    "generated": "2026-08-02 17:57 UTC",
+    "source": "Phase 2 backend"
+  },
+  "phase2_03_ask_citation_coverage.png": {
+    "caption": "Every judge-style question returns citations; nonsense and out-of-corpus questions are refused rather than answered from a single common word. docs/ali/* is excluded from the corpus by an explicit allowlist plus an independent directory guard.",
+    "generated": "2026-08-02 17:57 UTC",
+    "source": "Phase 2 backend"
+  },
+  "phase2_04_caveat_coverage_matrix.png": {
+    "caption": "19 caveats, the condition that triggers each, and confirmation that it actually appears in a live response. AQ-O04's enclosed-harbour warning fires on three separate endpoints, so it cannot be missed by taking a different route to the same number.",
+    "generated": "2026-08-02 17:57 UTC",
+    "source": "Phase 2 backend"
+  },
+  "phase2_05_endpoint_status.png": {
+    "caption": "All 15 routes of the concept \u00a717 surface. Two are stubs with final shapes; the exposure engine, the audit trail, /explain and /ask are real. The 'waiting on' column names exactly what each stub needs.",
+    "generated": "2026-08-02 17:57 UTC",
+    "source": "Phase 2 backend"
   },
   "reef_01_provisional_over_satellite.png": {
     "caption": "All 8 zones on satellite imagery. Every zone must lie on the water side of the visible shoreline \u2014 this is the check that caught the first attempt placing R-03\u2013R-05 on dry land. The fringing-reef shelf is visible as the pale strip hugging the coast.",
@@ -91,57 +116,57 @@
   },
   "soilgrids_01_clay_both_depths.png": {
     "caption": "clay at both depths in converted % (plausible range 0.0\u2013100.0). White is the undeclared 0-nodata over the sea, masked to NaN \u2014 its outline matching the gulf is the evidence that those zeros were nodata, not measurements.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "soilgrids_02_sand_both_depths.png": {
     "caption": "sand at both depths in converted % (plausible range 0.0\u2013100.0). White is the undeclared 0-nodata over the sea, masked to NaN \u2014 its outline matching the gulf is the evidence that those zeros were nodata, not measurements.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "soilgrids_03_silt_both_depths.png": {
     "caption": "silt at both depths in converted % (plausible range 0.0\u2013100.0). White is the undeclared 0-nodata over the sea, masked to NaN \u2014 its outline matching the gulf is the evidence that those zeros were nodata, not measurements.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "soilgrids_04_soc_both_depths.png": {
     "caption": "soc at both depths in converted g/kg (plausible range 0.0\u2013600.0). White is the undeclared 0-nodata over the sea, masked to NaN \u2014 its outline matching the gulf is the evidence that those zeros were nodata, not measurements.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "soilgrids_05_bdod_both_depths.png": {
     "caption": "bdod at both depths in converted kg/dm3 (plausible range 0.1\u20132.5). White is the undeclared 0-nodata over the sea, masked to NaN \u2014 its outline matching the gulf is the evidence that those zeros were nodata, not measurements.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "soilgrids_06_cfvo_both_depths.png": {
     "caption": "cfvo at both depths in converted vol% (plausible range 0.0\u2013100.0). White is the undeclared 0-nodata over the sea, masked to NaN \u2014 its outline matching the gulf is the evidence that those zeros were nodata, not measurements.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "soilgrids_07_texture_triangle_by_catchment.png": {
-    "caption": "Catchment-mean texture on the standard triangle. Points landing inside the triangle is what makes the 100.00% sum physically meaningful rather than an arithmetic coincidence: all catchments cluster as clay-loam, plausible for arid alluvium. CATCHMENTS ARE A LOCAL TEST FIXTURE, NOT MAHDI'S DELIVERABLE \u2014 geometry is 5 latitude bands, not a watershed delineation.",
-    "generated": "2026-07-31 21:58 UTC",
+    "caption": "Catchment-mean texture on the standard triangle. Points landing inside the triangle is what makes the 100.00% sum physically meaningful rather than an arithmetic coincidence: all catchments cluster as clay-loam, plausible for arid alluvium.",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "soilgrids_08_unit_conversion_before_after.png": {
     "caption": "Left: raw scaled integers reaching 556, which would be a nonsensical 556% clay if read directly. Middle: after \u00f710 and nodata masking. Right: the converted distribution sits entirely below the 100% physical ceiling \u2014 had the divisor been wrong, values would spill past the red line.",
-    "generated": "2026-07-31 21:58 UTC",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "soilgrids_09_within_catchment_variance.png": {
-    "caption": "Added in the expansion pass: the runoff model builder gets spread, not just a point estimate. A catchment whose clay spans 18\u201356% is a different object from one uniformly at 35%, and the mean alone hides that. CATCHMENTS ARE A LOCAL TEST FIXTURE, NOT MAHDI'S DELIVERABLE \u2014 geometry is 5 latitude bands, not a watershed delineation.",
-    "generated": "2026-07-31 21:58 UTC",
+    "caption": "Added in the expansion pass: the runoff model builder gets spread, not just a point estimate. A catchment whose clay spans 18\u201356% is a different object from one uniformly at 35%, and the mean alone hides that.",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "urban_01_road_density_choropleth.png": {
-    "caption": "Road density per catchment \u2014 the impervious-surface runoff feature. The gradient tracks the city and the coastal strip. CATCHMENTS ARE A LOCAL TEST FIXTURE, NOT MAHDI'S DELIVERABLE \u2014 geometry is 5 latitude bands, not a watershed delineation.",
-    "generated": "2026-07-31 21:59 UTC",
+    "caption": "Road density per catchment \u2014 the impervious-surface runoff feature. The gradient tracks the city and the coastal strip.",
+    "generated": "2026-08-02 17:34 UTC",
     "source": "Land chain"
   },
   "urban_02_builtup_fraction_choropleth.png": {
-    "caption": "Built-up fraction from WorldCover. Compare against osm_building_frac: WorldCover is systematically higher because its built_up class includes roads, yards and parking while OSM maps roofs only. The disagreement is expected, not a bug. CATCHMENTS ARE A LOCAL TEST FIXTURE, NOT MAHDI'S DELIVERABLE \u2014 geometry is 5 latitude bands, not a watershed delineation.",
-    "generated": "2026-07-31 21:59 UTC",
+    "caption": "Built-up fraction from WorldCover. Compare against osm_building_frac: WorldCover is systematically higher because its built_up class includes roads, yards and parking while OSM maps roofs only. The disagreement is expected, not a bug.",
+    "generated": "2026-08-02 17:34 UTC",
     "source": "Land chain"
   },
   "worldcover_01_raw_tile_before_clip.png": {
@@ -149,24 +174,39 @@
     "generated": "2026-07-31 21:58 UTC",
     "source": "Land chain"
   },
+  "worldcover_01_raw_tiles_before_mosaic.png": {
+    "caption": "The 2 raw tiles TERRAIN_AOI requires. The AOI rectangle visibly spans the N27/N30 boundary, which is why v1 \u2014 built from N27E033 alone \u2014 stopped dead at 30 deg N and lost most of AQ-C01.",
+    "generated": "2026-08-02 17:32 UTC",
+    "source": "Land chain"
+  },
   "worldcover_02_clipped_to_aoi.png": {
-    "caption": "After windowed clip to the padded box. Grey bare/sparse ground dominates; the blue gulf outline should match the independently-derived bathymetry water mask, which it does (23.89% vs 23.3% water).",
-    "generated": "2026-07-31 21:58 UTC",
+    "caption": "The v2 two-tile mosaic clipped to TERRAIN_AOI. Grey bare/sparse ground dominates (97.8% of land). Compare the extent against v1, which stopped at 29.70 N / 35.15 E and covered ~11.5% of this area.",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "worldcover_03_catchment_boundaries_overlay.png": {
-    "caption": "The exact polygons zonal_stats aggregates within, drawn over the classified raster. Any catchment straddling the coast will pick up water pixels \u2014 visible here rather than hidden in the parquet. CATCHMENTS ARE A LOCAL TEST FIXTURE, NOT MAHDI'S DELIVERABLE \u2014 geometry is 5 latitude bands, not a watershed delineation.",
-    "generated": "2026-07-31 21:58 UTC",
+    "caption": "The exact polygons zonal_stats aggregates within, drawn over the classified raster. Any catchment straddling the coast will pick up water pixels \u2014 visible here rather than hidden in the parquet.",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "worldcover_04_class_fractions_by_catchment.png": {
-    "caption": "Stacked composition per catchment. Bars must reach exactly 100% \u2014 the same closure the assert in aggregate_catchments.py enforces, shown visually. CATCHMENTS ARE A LOCAL TEST FIXTURE, NOT MAHDI'S DELIVERABLE \u2014 geometry is 5 latitude bands, not a watershed delineation.",
-    "generated": "2026-07-31 21:58 UTC",
+    "caption": "Stacked composition per catchment. Bars must reach exactly 100% \u2014 the same closure the assert in aggregate_catchments.py enforces, shown visually.",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   },
   "worldcover_05_bareground_sanity_annotated.png": {
-    "caption": "Every catchment against the three reference lines. All bars sit far above the 50% assert threshold and bracket the concept doc's ~74% baseline, so the non-sequential class mapping (10,20,...,95,100) is correct. CATCHMENTS ARE A LOCAL TEST FIXTURE, NOT MAHDI'S DELIVERABLE \u2014 geometry is 5 latitude bands, not a watershed delineation.",
-    "generated": "2026-07-31 21:58 UTC",
+    "caption": "Every catchment against the three reference lines. All bars sit far above the 50% assert threshold and bracket the concept doc's ~74% baseline, so the non-sequential class mapping (10,20,...,95,100) is correct.",
+    "generated": "2026-08-02 17:32 UTC",
+    "source": "Land chain"
+  },
+  "worldcover_06_v2_mosaic_seam_check.png": {
+    "caption": "The N27/N30 join at 30\u00b0N, the new failure mode v2 introduces. Bare-ground fraction differs by 0.0 percentage points across the seam, which is ordinary terrain variation rather than a processing discontinuity \u2014 a version mismatch would show as an abrupt step on the red line in both panels. No blending was applied.",
+    "generated": "2026-08-02 17:32 UTC",
+    "source": "Land chain"
+  },
+  "worldcover_07_aq_c01_bareground_v2.png": {
+    "caption": "Re-verified against the real catchments and the v2 mosaic. AQ-C01 is 98.6% bare/sparse ground over 4,453 km\u00b2 \u2014 95.6% of the basin \u2014 comfortably above the 50% assert and above the concept doc's ~74% baseline. This is a far stronger test than v1's, which measured a fraction of one small-box catchment.",
+    "generated": "2026-08-02 17:32 UTC",
     "source": "Land chain"
   }
 }
