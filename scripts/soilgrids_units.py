@@ -11,10 +11,32 @@ the texture-sum identity (clay + sand + silt = 100%) pins the texture divisor
 exactly, because a 10x error would land the sum at 1000 or 10 instead of 100.
 """
 
+import importlib.util
+from pathlib import Path
+
 import numpy as np
 import rasterio
 
-from config import RAW
+
+def _scripts_config():
+    """Load scripts/config.py by location, not by name.
+
+    `from config import RAW` resolves to whichever `config` is first on
+    sys.path. This directory has one; so does backend/src, as a package. When
+    the test suite runs, backend/src is already on the path from other test
+    modules, so the plain import silently picks up the wrong `config` and
+    fails with "cannot import name 'RAW'". Importing by file path removes the
+    ambiguity without renaming either module.
+    """
+    spec = importlib.util.spec_from_file_location(
+        "reefshield_scripts_config", Path(__file__).resolve().parent / "config.py"
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+RAW = _scripts_config().RAW
 
 # variable -> (divisor, converted unit, plausible physical range after conversion)
 CONVERSIONS = {

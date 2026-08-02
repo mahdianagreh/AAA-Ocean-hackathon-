@@ -15,7 +15,26 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from soilgrids_units import CONVERSIONS, DEPTHS, load_converted  # noqa: E402
+from soilgrids_units import CONVERSIONS, DEPTHS, RAW, load_converted  # noqa: E402
+
+# The SoilGrids rasters are git-ignored (~250 m x 12 variables), so they exist
+# only on a machine that has run scripts/download_soilgrids.py. Absent data is
+# a skip, not a failure — the same convention the other data-dependent suites
+# in this repo use, so a fresh clone still reports green.
+_SOILGRIDS_PRESENT = (RAW / "soilgrids").is_dir() and any(
+    (RAW / "soilgrids").glob("*.tif")
+)
+
+try:  # pytest is optional: this file is also run directly, per its docstring
+    import pytest
+
+    pytestmark = pytest.mark.skipif(
+        not _SOILGRIDS_PRESENT,
+        reason=("SoilGrids rasters absent — run scripts/download_soilgrids.py. "
+                "They are git-ignored, so this is expected on a fresh clone."),
+    )
+except ImportError:  # pragma: no cover
+    pytest = None
 
 FAILURES = []
 
