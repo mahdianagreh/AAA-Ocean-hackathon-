@@ -72,6 +72,13 @@ to the **flood reaching the sea**.
 | Flood arrival in UTC | **2016-10-28T00:00:00Z** | Timezone-converted |
 | Offshore instrument response | **2016-10-28 09:50 local** | Reported by paper |
 | Offshore instrument response in UTC | **2016-10-28T06:50:00Z** | Timezone-converted |
+| Turbidity/salinity cleared (mooring) | **2016-10-29 17:15 local** | Reported by paper |
+| Turbidity/salinity cleared in UTC | **2016-10-29T14:15:00Z** | Timezone-converted |
+| Elevated turbidity duration | **31.42 h** (06:50Z Oct 28 → 14:15Z Oct 29) | Timezone-converted, then differenced — see note below |
+| Peak suspended sediment (mooring) | **2.18 g/L**, near seafloor | Reported by paper |
+| Mooring salinity minimum | **38.75 ‰** | Reported by paper |
+| Mooring 9-month background salinity mean | **40.53 ‰** | Reported by paper |
+| Mooring salinity anomaly | **−1.75 ‰, 19σ below background** | Reported by paper |
 
 **Widespread rainfall reference (2016-10-27T06:00:00Z)** means: by this time,
 showers and rainstorms had been registered across the Negev region. It is a
@@ -82,6 +89,25 @@ peak.
 turbidity began fluctuating. This is the **marine signal**, **not the rainfall
 peak** — it lags the rainfall by design and is a validation target, not an
 input.
+
+**Turbidity/salinity cleared (17:15 local, Oct 29)** is when the mooring's
+salinity/turbidity signal returned to background (Kalman et al. 2025, Fig. 6).
+Both this and the 09:50 Oct 28 onset are within IDT (UTC+3) — DST does not end
+until 2016-10-30, so both convert with the same offset; converted independently
+with `ZoneInfo("Asia/Jerusalem")`, not assumed. **31.42 h** is the *paper's own
+duration figure, reproduced by differencing the two converted timestamps* —
+the paper separately states "~31 hours" in prose; the two agree, which is a
+consistency check, not two different measurements.
+
+**Mooring location.** The paper gives only "~250 m offshore the Kinnet Canal
+outlet, 13 m depth" — no decimal coordinate. A position was derived from Fig. 1b
+plus the project's own coastline and bathymetry data:
+[`docs/mooring_coordinate_derivation.md`](mooring_coordinate_derivation.md).
+**Read the uncertainty radius (1.5 km) before using that coordinate for
+anything.** That document also surfaces a correction: the Kinnet Canal
+discharges on the **Eilat (Israel) shoreline**, not at Mahdi's Jordanian
+`AQ-O01` pour point — the two are related (same trans-national watershed) but
+are not the same point, and are 1.40 km apart.
 
 ### Timezone conversion (performed, not assumed)
 
@@ -308,6 +334,10 @@ When resolved, note that **February is outside DST**: Israel is on IST
 | ≈66 h duration · ≈51 h pre-arrival accumulation · ≈82 % in 18 h · ≈50 h to sea · ≈3 h rain-end-to-arrival | **Directly reported by the paper** |
 | Flood arrival `2016-10-28T00:00:00Z` | **Timezone-converted** (`ZoneInfo("Asia/Jerusalem")`, IDT UTC+3) |
 | Offshore response `2016-10-28T06:50:00Z` | **Timezone-converted** (`ZoneInfo("Asia/Jerusalem")`, IDT UTC+3) |
+| Turbidity/salinity cleared `2016-10-29T14:15:00Z` | **Timezone-converted** (`ZoneInfo("Asia/Jerusalem")`, IDT UTC+3) |
+| Elevated turbidity duration `31.42 h` | **Derived** — differenced from the two converted timestamps above; agrees with the paper's own "~31 h" prose |
+| Peak suspended sediment `2.18 g/L` · salinity minimum `38.75 ‰` · background mean `40.53 ‰` · anomaly `19σ` | **Directly reported by the paper** |
+| Mooring coordinate `34.98151, 29.53799 ± 1.5 km` | **Derived** — see `docs/mooring_coordinate_derivation.md`; not a reported coordinate |
 | Canonical ID `AQ-2016-10-28` | **Project convention** — UTC flood-arrival date |
 | Scan window `2016-10-25T00:00:00Z → 2016-10-28T06:00:00Z` | **Engineering analysis window** — conservative, padded around the ≈66 h duration |
 | Smoke-test window `2016-10-27T03:00:00Z → 2016-10-27T05:59:59Z` | **Engineering analysis window** — pipeline testing only |
@@ -334,16 +364,31 @@ primary_event:
     flood_arrival_local: 2016-10-28T03:00:00
     flood_arrival_timezone: Asia/Jerusalem
     offshore_instrument_response_local: 2016-10-28T09:50:00
+    turbidity_salinity_cleared_local: 2016-10-29T17:15:00
     rainfall_duration_hours: 66
     accumulation_before_arrival_hours: 51
     concentrated_spell_hours: 18
     concentrated_spell_fraction: 0.82
     rain_start_to_sea_hours: 50
     rain_end_to_arrival_hours: 3
+    peak_suspended_sediment_g_l: 2.18
+    peak_suspended_sediment_location: near seafloor
+    salinity_minimum_psu: 38.75
+    salinity_background_mean_psu: 40.53
+    salinity_anomaly_sigma: 19
   converted:
     flood_arrival_utc: 2016-10-28T00:00:00Z
     offshore_instrument_response_utc: 2016-10-28T06:50:00Z
+    turbidity_salinity_cleared_utc: 2016-10-29T14:15:00Z
     tz_rule: IDT (UTC+3); DST ended 2016-10-30
+  derived:
+    elevated_turbidity_duration_hours: 31.42
+    duration_method: "differenced from offshore_instrument_response_utc and turbidity_salinity_cleared_utc; agrees with paper's own '~31 h' prose"
+    mooring_position:
+      lon: 34.98151
+      lat: 29.53799
+      uncertainty_radius_m: 1500
+      full_derivation: docs/mooring_coordinate_derivation.md
   engineering:
     imerg_scan_window_utc:
       start: 2016-10-25T00:00:00Z

@@ -1,0 +1,61 @@
+{
+  "event_id": "AQ-2016-10-28",
+  "source_citation": "Kalman, A., Katz, T., Vincze, M., Longenecker, J., Mathalon, A., Hill, P., and Goodman-Tchernov, B. (2025). Anatomy of a Flash Flood in a Hyperarid Environment: From Atmospheric Masses to Sediment Dispersal in the Sea. Natural Hazards and Earth System Sciences, 25, 3201-3219.",
+  "source_doi": "10.5194/nhess-25-3201-2025",
+  "source_file": "data/raw/literature/kalman_et_al_2025_fulltext_ATC1.pdf",
+  "_read_this_first": "Every field below is tagged 'reported' or 'derived' in provenance. Never treat a 'derived' value as a paper-reported number. See docs/event_dates.md and docs/mooring_coordinate_derivation.md for the full derivation of anything marked derived.",
+
+  "position": {
+    "lon": 34.98151,
+    "lat": 29.53799,
+    "crs": "EPSG:4326",
+    "depth_m": -13,
+    "uncertainty_radius_m": 1500,
+    "provenance": "derived",
+    "derivation_doc": "docs/mooring_coordinate_derivation.md",
+    "note": "Paper states only '~250 m offshore the Kinnet Canal outlet, 13 m depth', no decimal coordinate. Do not use to more precision than the 1.5 km radius implies. Do not substitute AQ-O01 (Wadi Yutum, Jordan) for this point -- see derivation doc §0."
+  },
+
+  "timing_utc": {
+    "turbidity_onset": "2016-10-28T06:50:00Z",
+    "turbidity_cleared": "2016-10-29T14:15:00Z",
+    "elevated_duration_hours": 31.42,
+    "provenance": {
+      "turbidity_onset": "reported (timezone-converted from 09:50 local, IDT UTC+3, via ZoneInfo)",
+      "turbidity_cleared": "reported (timezone-converted from 17:15 local Oct 29, IDT UTC+3, via ZoneInfo)",
+      "elevated_duration_hours": "derived (differenced from the two timestamps above; matches paper's own '~31 h' prose statement)"
+    }
+  },
+
+  "magnitude": {
+    "peak_suspended_sediment_g_l": 2.18,
+    "peak_suspended_sediment_location": "near seafloor",
+    "salinity_minimum_psu": 38.75,
+    "salinity_background_mean_psu": 40.53,
+    "salinity_anomaly_delta_psu": -1.75,
+    "salinity_anomaly_sigma": 19,
+    "sediment_mass_total_t": 24400,
+    "provenance": "reported"
+  },
+
+  "transport_regime": {
+    "alternates_hypopycnal_hyperpycnal": true,
+    "evidence": "Kalman et al. 2025 Fig. 8c: bottom-water density calculations cross into hyperpycnal (denser-than-seawater) territory for part of the event. Fig. 6B shows TSS-river discharge and sea-bottom TSS (0.15 m above bed) and mid-column TSS (8 m) with distinct, non-coincident peak timing, consistent with the plume alternating which layer carries the sediment mass.",
+    "note": "Katz et al. (2015) found these floods predominantly form hyperpycnal flows -- the mooring at 13 m near the seafloor is measuring the dominant pathway, not a surface film. The particle engine's hypopycnal/hyperpycnal toggle should be evaluated against this target, and the calibration winner's regime should be stated as a verdict.",
+    "provenance": "reported"
+  },
+
+  "instrument_geometry": {
+    "buoy_depth_m": 10,
+    "top_obs_depth_m": 8,
+    "bottom_obs_ctd_depth_m": 0.15,
+    "note": "Depths are 'below buoy' per Kalman et al. 2025 Fig. 1c schematic -- top OBS at 8 m below the buoy, bottom OBS+CTD at 0.15 m above the seafloor. Water column depth at the mooring is ~13 m.",
+    "provenance": "reported"
+  },
+
+  "calibration_use": {
+    "objective_targets": ["arrival_time_error", "duration_error", "peak_timing_error"],
+    "never_compute": ["iou", "dice", "centroid_distance"],
+    "why_never": "No real observed plume mask exists for AQ-2016-10-28 (the Sentinel-2 extraction is a documented artifact, not ground truth -- see docs/pitch_limitations.md and docs/event_audit.md). Spatial metrics against this target would be meaningless."
+  }
+}

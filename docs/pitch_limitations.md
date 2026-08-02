@@ -148,6 +148,69 @@ states this in its own header so it cannot be misread downstream.
 
 ---
 
+## 9. Our satellite-based plume validation failed — and we can say exactly why
+
+We built a full Sentinel-2 extraction pipeline to validate the marine plume model against
+a real satellite-observed mask for the October 2016 flood. **It found nothing, for a good
+physical reason, and we are more confident in the result because of that than we would
+have been in a weak positive.**
+
+**The evidence — three independent lines, not one:**
+
+1. Two independent sensors, both cloud-free over the AOI water (0.07% cloud/shadow):
+   Sentinel-2 (2016-11-02, +5 days) and Landsat 8 (2016-11-01, +4 days). Neither shows any
+   sediment discoloration near the outlet or shoreline.
+2. The Kalman et al. (2025) in-situ mooring — 250 m offshore the flood's actual discharge
+   point, sampling every 5 minutes through the whole event — shows the turbidity/salinity
+   signal lasted **~31 hours** and had returned to background by **17:15 local, 29 October**.
+   Both satellite passes are **2.5–3.5 days after that** — the plume was physically gone
+   before either sensor had a chance to see it. This is not a cloud-cover failure or a
+   revisit-timing accident we could have engineered around; a single-satellite ~5-day
+   revisit cadence cannot catch a plume that disperses in a day and a half.
+3. We ran the extraction anyway, end to end, to see what a naive approach would show. It
+   surfaced a plausible-looking anomaly — and it turned out to be an artifact, not a plume
+   (next section).
+
+**What that means:** we did not fail to find a plume. We found that no visible plume could
+have existed in the imagery available to us, and confirmed it with a second, independent,
+quantitative signal.
+
+**What we did with the negative result:** we did not discard the null result and we did
+not report a weak positive to have something to show. We pivoted validation to the mooring
+record — a continuous, quantitative, satellite-independent measurement of exactly what
+this project claims to predict, and arguably a **better** calibration target than a
+hand-drawn mask from a fuzzy image would ever have been. See
+`docs/mooring_coordinate_derivation.md` and
+`data/processed/marine/mooring_target_AQ-2016-10-28.json` for that pivot in full, including
+the honestly-stated 1.5 km position uncertainty on the mooring's own coordinate (the paper
+never publishes it as a decimal lat/lon either).
+
+### The methodology finding — worth stating on its own
+
+Naive per-pixel differencing of Sentinel-2 L2A reflectance over open water, even between a
+same-season baseline and the event date, produces a **coastline-hugging anomaly** that
+survives an 80 m coastal buffer. It is not a plume. Sen2Cor's atmospheric correction is
+land-optimised; sun-angle and residual aerosol differences between acquisition dates swamp
+the genuinely subtle water-leaving radiance signal a real sediment plume would produce at
+basin scale. **This is a real, generalisable lesson for anyone trying the same thing**, not
+a mistake specific to this dataset — and we would rather be the team that found and named
+it than the team that shipped it as a detection.
+
+**What we kept, and why it isn't wasted:** the extraction pipeline itself
+(`backend/src/models/plume_segmentation.py`) is built, documented, and runs credential-free
+against Microsoft Planetary Computer. It stays in the system as the **live/operational**
+path — the thing that runs automatically the next time a flood is caught with better revisit
+luck (an early-warning tasking request, or a future higher-cadence constellation). It is
+not the validation method for a flood that already happened and already dispersed.
+
+**`observed_plume.gpkg` and `observed_plume_probability.tif` are flagged everywhere they
+appear** (`docs/data_dictionary.md` §8, `docs/mooring_coordinate_derivation.md`,
+`backend/src/models/backtest_metrics.py`'s `assert_spatial_metrics_allowed`) as a documented
+artifact, not ground truth. No spatial metric (IoU, Dice, centroid distance) is computed
+against it for this event, in code, not just in a comment.
+
+---
+
 ## Why we are telling you all this
 
 We caught **five silent bugs** in our own data during this build: reef zones placed on
