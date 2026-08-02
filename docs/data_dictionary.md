@@ -655,6 +655,41 @@ anywhere in this codebase.
 
 ---
 
+## 8. Sentinel-2 / Landsat — plume validation imagery (Abd)
+
+Full audit and methodology: [event_audit.md](event_audit.md). Access method
+verified 2026-08-02: Microsoft Planetary Computer STAC
+(`planetarycomputer.microsoft.com/api/stac/v1`), anonymous SAS-token signing
+via the `planetary-computer` package — no Copernicus Data Space / Earth
+Engine login needed. Search box: `ANALYSIS_BBOX` (`scripts/config.py`).
+
+| Product/version | Access date | Scene ID(s) | Role |
+|---|---|---|---|
+| Sentinel-2 L2A | 2026-08-02 | `S2A_MSIL2A_20161102T082112_R121_T36RXT_20210213T163836` | Post-event candidate, AQ-2016-10-28. Cloud 3.6% (scene), 0.07% (AOI water). **No plume visible** — see event_audit.md §1a. |
+| Sentinel-2 L2A | 2026-08-02 | `S2A_MSIL2A_20161023T082012_*_T36RXT/T36RYT` | Pre-event, in-window — 82–85% cloud, unusable |
+| Sentinel-2 L2A ×8 | 2026-08-02 | `20161013T082002`, `20161003T081752`, `20160923T082002`, `20160913T081602`, `20160903T082012`, `20160824T081602`, `20160814T082012`, `20160725T082012` (all `T36RXT`) | Baseline composite (median), <1.1% cloud each |
+| Landsat 8 C2 L2 | 2026-08-02 | `LC08_L2SP_174039_20161101_02_T1` | Independent post-event corroboration, +4 days, 0.47% cloud (tile 174040 was 32.8%, unused) |
+| Landsat 7 C2 L2 ×4 | 2026-08-02 | `LE07_L2SP_174039_20130202_02_T1`, `LE07_L2SP_174040_20130202_02_T1`, `LE07_L2SP_174039_20130218_02_T1`, `LE07_L2SP_174040_20130218_02_T1` | Feb 2013 backup event candidates — SLC-off gaps, exact event date still unresolved (event_audit.md §2) |
+
+**Outputs:** `data/processed/plume/baseline_composite.tif`,
+`data/processed/plume/observed_plume_probability.tif`,
+`data/processed/vectors/observed_plume.gpkg`.
+
+**⚠️ The probability raster and vector polygons are a documented artifact,
+not a validated plume detection** — differencing Sentinel-2 L2A reflectance
+over open water across dates produces a coastline-hugging anomaly from
+atmospheric-correction/sun-angle noise, confirmed by testing a same-season
+baseline and a much larger coastal buffer without it going away (full
+reasoning: event_audit.md §1a). Two independent sensors' true-color imagery
+and the Kalman et al. (2025) in-situ mooring timing all agree the real plume
+had already dispersed before either satellite pass. **Do not consume these
+two files as ground truth without reading that section first.**
+
+**Reproduce:** `cd scripts && ../.venv/bin/python run_plume_extraction.py`
+(pipeline code: `backend/src/models/plume_segmentation.py`).
+
+---
+
 ## 8. Nizar — Weather Forecasts & Ocean Currents
 
 **Owner:** Nizar · **Feeds:** Component A (forecast mode), Component F (plume transport)

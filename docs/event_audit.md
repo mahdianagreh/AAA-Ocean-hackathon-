@@ -51,26 +51,111 @@ tile's ~10-day revisit, not the ~5-day revisit possible today.
 | 2016-10-23 | 36RXT, 36RYT | −5 (pre) | 82.8% / 85.4% | pre-event — **too cloudy to use** |
 | **2016-11-02** | 36RXT, 36RYT | **+5 (post)** | **3.9% / 4.2%** | **post-event candidate** |
 
-**Preliminary read:** 2016-11-02 numerically clears the gate (§1 of `abd.md`:
-within ~5 days, <20% cloud) on scene-level metadata alone. This is the
-strongest lead in the project for the demo event.
+**Numerically clears the gate** (§1 of `abd.md`: within ~5 days, <20% cloud) —
+but see §1a below: **the visual/plume-visibility half of the gate fails.**
 
-**Why this is preliminary, not a verdict:** scene-level cloud % is explicitly
-*not* the metric the gate requires — it includes land, and can hide a locally
-clouded AOI even at a low scene average (or vice versa). Plume visibility and
-sun glint have not been checked at all; both require actually looking at the
-scene. See §4.
-
-**Product IDs** (for reproducibility, Copernicus Data Space `Id`):
+**Product IDs** (Copernicus Data Space `Id`, and the Planetary Computer STAC
+IDs actually used for pixel access — see §1a):
 - `S2A_MSIL2A_20161102T082112_N0500_R121_T36RYT_20231026T122456` — id
   `6ea1d505-8d0a-4bc4-aa28-2e0ce64e8b26`
 - `S2A_MSIL2A_20161102T082112_N0500_R121_T36RXT_20231026T122456` — id
-  `bc4a6f07-9dcb-4408-875e-e36fdc01607c`
+  `bc4a6f07-9dcb-4408-875e-e36fdc01607c` — Planetary Computer:
+  `S2A_MSIL2A_20161102T082112_R121_T36RXT_20210213T163836`
 
-**Baseline composite note:** the pre-event scene in-window (2016-10-23) is
-unusable, so the 5–10 clear pre-event scenes for the baseline composite must
-be pulled from further back (outside the ±10-day gate window — that window is
-only for the post-event gate check, not the baseline). Not yet done.
+### 1a. Pixel-level QC — done, using Microsoft Planetary Computer (no credentials needed)
+
+**Unblocked without Copernicus/Earth Engine credentials.** The AWS Earth
+Search mirror has no Sentinel-2 scenes for this tile before 2017 (§0), and
+Copernicus Data Space needs a login for actual pixel bytes — but **Microsoft
+Planetary Computer's STAC API (`planetarycomputer.microsoft.com/api/stac/v1`)
+serves both Sentinel-2 L2A and Landsat Collection 2 L2 publicly**, with
+per-asset SAS tokens issued anonymously via the `planetary-computer` Python
+package (`pip install planetary-computer`, `pc.sign(item)`). This is how every
+pixel-level result below was produced — reproducible via
+`scripts/run_plume_extraction.py`.
+
+**AOI-water cloud % (the actual gate metric, not scene-level metadata):**
+computed from the post-event scene's own SCL band, restricted to a stable
+water mask (SCL class 6, majority vote across 8 clear 2016 baseline scenes —
+see §1b). Result: **0.07% cloud/shadow over AOI water, 0.71% suspected glint.**
+Both trivially clear. This part of the gate is genuinely satisfied.
+
+**Visual inspection — no plume visible.** True-color mosaics were pulled for
+both the full AOI and a tight crop on the head of the gulf (where the Kinnet
+outlet is) for **two independent sensors**:
+- Sentinel-2, 2016-11-02 (+5 days, 10 m) — clean, cloud-free, no visible
+  sediment discoloration anywhere near the outlet or the shoreline.
+- Landsat 8, 2016-11-01 (+4 days, 30 m, tile 174039 only — the other half of
+  the scene, tile 174040, was 32.8% cloud) — same result, one day closer to
+  the event, independently confirms no visible plume.
+
+**Why: the plume was already gone before either satellite pass.** The Kalman
+et al. (2025) mooring record (§6a) shows the turbidity/salinity anomaly at
+250 m offshore lasted from 09:50 Oct 28 to ~17:15 Oct 29 — about 31 hours.
+Both satellite passes are **2.5–3.5 days after that signal had already
+returned to background.** The absence of a visible plume in imagery isn't a
+failed detection — it's the physically expected outcome given how fast this
+particular flood's plume dispersed relative to the ~5-day revisit gap
+(single-satellite S2A cadence in 2016; abd.md's own "Watch out" already
+flagged 24–72 h dispersal against a 5-day revisit as the central risk here).
+
+**Spectral-anomaly attempt confirms this, and surfaces a real methodology
+lesson.** Ran the full pipeline (§4/§1c below): baseline composite (8 clear
+2016 scenes, median) vs. the 2016-11-02 scene, four candidate indices
+(NDSSI, NSMI, red/green ratio, plain red-band reflectance anomaly). The
+result was **not a localized signal near the outlet** — it was a large,
+uniform anomaly hugging the **entire coastline on both shores**, including
+stretches tens of kilometers from any wadi outlet (see
+`docs/qa_screenshots/plume_index_comparison_AQ-2016-10-28.png` and
+`plume_polygons_over_baseline.png`-equivalent inspection). Repeating with a
+same-season single-scene baseline (Oct 13, only 20 days before) and a much
+larger coastal buffer (80 m erosion) did **not** remove this — ruling out
+"seasonal mismatch" as the explanation. This is a **mixed-pixel /
+atmospheric-correction artifact inherent to differencing Sentinel-2 L2A
+reflectance over open water across dates** (Sen2Cor's atmospheric correction
+is land-optimized; sun-angle and residual aerosol differences between
+acquisitions swamp subtle water-leaving-radiance signals at basin scale). Not
+a bug in the water mask or index math — a documented limitation of naive
+per-pixel differencing over water, worth remembering before trusting this
+pipeline's raw anomaly output as "the plume" on any other event.
+
+**Manual QC figure:** `docs/qa_screenshots/plume_manual_qc_AQ-2016-10-28.png`
+— true color vs. the raw anomaly side by side, with this caveat captioned
+directly on the figure.
+
+**Verdict on this scene: NO real plume detected, by three independent lines
+of evidence** (two-sensor visual inspection, in-situ mooring timing, and a
+spectral anomaly check that itself only surfaces an artifact, not a
+localized signal). See §3 for what this means for the project.
+
+### 1b. Baseline composite — built
+
+8 clear Sentinel-2 scenes, all <1.1% cloud, S2A-only (2016 pre-dates S2B),
+2016-06-25 through 2016-10-13 (search window widened past the post-event
+±10-day gate on purpose — that window is only for the post-event gate check,
+per abd.md; the baseline just needs clear pre-event scenes, however far back):
+
+`S2A_MSIL2A_20161013T082002`, `20161003T081752`, `20160923T082002`,
+`20160913T081602`, `20160903T082012`, `20160824T081602`, `20160814T082012`,
+`20160725T082012` — all tile T36RXT, Planetary Computer IDs, median-composited
+per band. Saved: `data/processed/plume/baseline_composite.tif`.
+
+### 1c. Pipeline code
+
+- `backend/src/models/plume_segmentation.py` — reusable functions: scene
+  search/load (Planetary Computer), stable SCL-based water mask, unusable/
+  glint masks, the four spectral indices, baseline compositing, anomaly,
+  percentile-stretch "probability," polygon vectorization.
+- `scripts/run_plume_extraction.py` — runs the whole thing end to end for
+  AQ-2016-10-28 and writes every output file.
+- Outputs exist (`data/processed/plume/observed_plume_probability.tif`,
+  `data/processed/vectors/observed_plume.gpkg`, 110 polygons, ~2.0 km² total)
+  **but per §1a these represent the coastal artifact, not a validated plume —
+  do not hand these to Nizar or the backtest as ground truth without that
+  caveat attached.** Grade: **not gradable Gold/Silver/Bronze — this is a
+  null result**, not a weak-but-real detection (§12.4 doesn't have a category
+  for "pipeline ran, found nothing real"; recommend the team add one, or just
+  say so plainly in the demo).
 
 ---
 
@@ -129,11 +214,55 @@ Day 5, per the escalation principle in `abd.md` §"Why your stream matters."
 
 ---
 
-## 3. Go / no-go — preliminary
+## 3. Go / no-go — FINAL, pixel-level QC complete
 
-**Primary event (Oct 2016): promising, not yet confirmed.** 2016-11-02
-clears the numeric gate on scene metadata. Visual QC required before calling
-it Gold/Silver/Bronze (§12.4).
+**Primary event (Oct 2016): NO-GO for image-based validation.** The only
+candidate post-event scene (2016-11-02, +5 days) numerically clears the gate
+(cloud, timing) but **fails the visual-plume criterion** — confirmed by two
+independent sensors (Sentinel-2 + Landsat 8) and explained by the in-situ
+mooring record showing the plume signal had already dispersed 2.5–3.5 days
+before either satellite pass (§1a). This is not a weak/marginal result to
+grade Silver or Bronze — it's a genuine null: **no plume is present in any
+imagery this project can access for this event**, for a real physical reason
+(dispersal faster than the revisit gap), not a data-quality problem.
+
+**Backup event (Feb 2013): weaker still.** No Sentinel-2 possible at all
+(pre-launch); Landsat 8 unavailable (pre-commissioning); only degraded
+Landsat 7 remains, and even that can't be properly scored until the exact
+date resolves (§2).
+
+**What this means, concretely, per `abd.md`'s own escalation framing
+("different event, a weaker label, or repositioning around forecast
+capability"):**
+
+1. **A different event doesn't obviously help.** Feb 2013 is strictly worse
+   on sensor availability, and nothing else in the literature so far names a
+   third candidate event with better satellite timing.
+2. **There is no "weaker label" to fall back to** — Silver/Bronze (§12.4)
+   describe a plume that's partially obscured or uncertain, not a plume
+   that's provably absent from every accessible scene.
+3. **Recommended pivot: use the in-situ mooring record as the validation
+   target instead of a satellite-derived mask.** The Kalman et al. (2025)
+   mooring 250 m offshore the outlet recorded salinity and turbidity every
+   5 minutes through the whole event (§6a) — a quantitative, continuous,
+   satellite-independent measurement of exactly what this project wants to
+   validate: did sediment-laden water reach the sea, how much, for how long.
+   This is arguably a **stronger** validation target than a qualitative
+   satellite plume mask would have been, and it already exists — no further
+   imagery work unlocks it. Concretely: Nizar's transport model can be
+   checked against *measured* salinity drop (−1.75 ‰) and turbidity peak
+   (2.18 g/L) at a known point (250 m offshore, 13 m depth) and time
+   (turbidity onset 09:50 Oct 28, cleared ~17:15 Oct 29) — a real
+   quantitative comparison, not a visual judgment call.
+4. **The plume-extraction pipeline itself is still a real deliverable**,
+   independent of whether this specific event has a detectable plume — it's
+   built, documented, and ready to point at a different scene/event if one
+   ever does show a clear signal (e.g., if a future real-time flood is
+   caught with better revisit timing).
+
+**This needs to go to the team today**, per `abd.md`'s own instruction that a
+bad answer found early leaves time to react — this is that bad answer, found
+now rather than at a later demo rehearsal.
 
 **Backup event (Feb 2013): weaker than assumed.** No Sentinel-2 possible at
 all; Landsat 8 is not an option (contra the task doc); only degraded Landsat 7
@@ -146,22 +275,23 @@ Landsat can't validate [Feb 2013], there is effectively no backup and Oct
 
 ---
 
-## 4. Blockers — need input to proceed
+## 4. Blockers
 
-1. **Pixel-level access for visual QC.** Metadata search is anonymous, but
-   downloading actual bands/thumbnails (to compute AOI-water-specific cloud %,
-   check sun glint, and confirm the plume is visible) requires a real
-   Copernicus Data Space login. `.env` currently holds only placeholder values
-   for `CDSE_USERNAME` / `CDSE_PASSWORD` (2 characters each — not real
-   credentials). Registration: https://dataspace.copernicus.eu/. Google Earth
-   Engine (`EARTHENGINE_PROJECT` also a placeholder) is an alternative fast
-   path per `tasks/abd.md` §"Before you start," but needs the shared GEE
-   project Mahdi's task list assigns him to create — not yet visible as
-   configured either.
-2. **Katz et al. (2015) full text**, for the exact February 2013 date. Needed
-   from someone with journal access (or the original authors). Until then,
-   the February event stays a whole-month coarse scan rather than a scored
-   ±10-day window.
+1. ~~Pixel-level access for visual QC~~ — **RESOLVED without needing
+   Copernicus Data Space or Earth Engine credentials.** Microsoft Planetary
+   Computer (`planetarycomputer.microsoft.com/api/stac/v1`) serves both
+   Sentinel-2 L2A and Landsat C2 L2 pixels publicly, anonymous SAS-token
+   signing via `pip install planetary-computer`. `.env`'s `CDSE_*` /
+   `EARTHENGINE_PROJECT` placeholders are no longer blocking this workstream
+   — see §1a. (Still worth registering for real if another workstream needs
+   Copernicus Data Space specifically, e.g. Copernicus Marine for Nizar.)
+2. **Still open: Katz et al. (2015) full text**, for the exact February 2013
+   date. Needed from someone with journal access (or the original authors).
+   Until then, the February event stays a whole-month coarse scan rather
+   than a scored ±10-day window, and its Landsat 7 candidate stays
+   unresolved between two structurally different dates (§2).
+3. **Still open: site-photo provenance** (§6c) — capture date/location
+   unconfirmed, EXIF stripped.
 
 ---
 
@@ -247,16 +377,26 @@ what calm, non-flood conditions look like right at the outlet strengthens the
 "is a plume really visible and distinguishable from normal" judgment call the
 gate criteria in §1 requires.
 
-## 7. Next steps once unblocked
+## 7. Remaining open items
 
-- [ ] Pull SCL band for the two 2016-11-02 tiles, clip to AOI, compute cloud %
-      over the water mask specifically (not scene-level).
-- [ ] Pull true-color visual asset for 2016-11-02 and confirm a plume is
-      visible and glint is tolerable.
-- [ ] If 2016-11-02 passes: pull 5–10 clear pre-event Sentinel-2 scenes
-      (outside the Oct 2016 gate window) for the baseline composite.
-- [ ] Once the Feb 2013 date resolves: re-run the Landsat search as a proper
-      ±10-day window instead of a whole-month scan, and check the SLC-off gap
-      position against the coastline.
-- [ ] Escalate this file's verdicts to the team the same day either is
-      confirmed — this is the Day-2 gate `abd.md` describes.
+- [x] ~~Pull SCL band, compute AOI-water cloud %~~ — done, §1a (0.07%).
+- [x] ~~Pull true-color visual asset, confirm plume visibility~~ — done, §1a
+      (no plume, two independent sensors).
+- [x] ~~Pull 5–10 clear pre-event scenes, build baseline composite~~ — done,
+      §1b (8 scenes).
+- [x] ~~Build the plume-extraction pipeline~~ — done, §1c
+      (`backend/src/models/plume_segmentation.py`,
+      `scripts/run_plume_extraction.py`, `notebooks/03_plume_extraction.ipynb`).
+- [x] ~~Final go/no-go~~ — done, §3: **NO-GO**, escalated in this file.
+- [ ] **Feb 2013 exact date** — confirmed unreachable through free/legitimate
+      channels (ScienceDirect 403, academia.edu blocked, ADS empty, OpenAlex
+      confirms zero open-access copies exist anywhere). Needs a teammate with
+      institutional/journal access, or direct contact with the authors.
+      Once resolved: re-run the Landsat search as a proper ±10-day window
+      instead of a whole-month scan, and check the SLC-off gap position
+      against the coastline.
+- [ ] **Site-photo provenance** (§6c) — capture date/location unconfirmed.
+- [ ] **Team decision needed**: which pivot from §3 to take (mooring record as
+      Nizar's validation target is the recommendation) — this is a
+      product/demo-scope call for the whole team, not something to decide
+      unilaterally from this file.
