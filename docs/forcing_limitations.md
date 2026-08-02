@@ -31,9 +31,21 @@ from the concept doc:
 
 **Does not invalidate:** the forecasting and event-detection pipeline (GFS/GEFS/ECMWF),
 which operates on atmospheric grids at a different, generally adequate resolution for
-catchment-scale rainfall. It also does not invalidate the historical backtesting method —
-IoU/centroid comparisons against Abd's real satellite mask are still meaningful because
-they measure the model's actual skill, uncertainty included.
+catchment-scale rainfall.
+
+**Correction (2026-08-02):** an earlier version of this section said IoU/centroid
+comparisons against "Abd's real satellite mask" were still meaningful for historical
+backtesting. That is no longer accurate and must not be repeated. The Sentinel-2/Landsat
+extraction for `AQ-2016-10-28` is a documented coastline artifact, not a validated plume —
+two independent sensors show no visible plume, and the in-situ mooring record shows the
+signal had already returned to background 2.5–3.5 days before either satellite pass (full
+reasoning: `docs/event_audit.md`, `docs/pitch_limitations.md`). Spatial metrics (IoU, Dice,
+centroid distance) are not computed for this event at all —
+`backend/src/models/backtest_metrics.py`'s `assert_spatial_metrics_allowed` refuses to.
+**The historical backtest for `AQ-2016-10-28` validates against the Kalman et al. (2025)
+mooring time series instead** — arrival-time, duration and peak-timing error, per
+`docs/mooring_coordinate_derivation.md` and `data/processed/marine/mooring_target_AQ-2016-10-28.json`.
+Does not invalidate the backtesting method itself — only which target it compares against.
 
 **Does invalidate:** any claim that the plume position, arrival time, or shape is exact.
 Never present a single trajectory line on the dashboard. Always show:
