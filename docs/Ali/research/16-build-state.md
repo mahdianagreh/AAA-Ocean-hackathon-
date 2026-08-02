@@ -101,7 +101,7 @@ had to do.
 | **A — Rainfall & reanalysis** | Karam | ✅ **Complete** | 2,450 lines ingestion + processing; event-agnostic; config-driven |
 | **A/B — Land, soil, habitat, bathymetry** | Pulga | ✅ **Complete** | Full script chain, 34 QA figures, provenance ledger, honest limitations page |
 | **A — Terrain & hydrology** | Mahdi | ✅ **Complete and merged** | `catchments.gpkg` (5 catchments, 4,656 km²), `outlets.gpkg`, `catchment_terrain.parquet`, plus the `spatial.py` two-AOI contract and its guard test |
-| **B — Remote sensing / plume** | Abd | ⚠️ **Started; audit complete, verdict negative** | `models/plume_segmentation.py` (178 lines), `notebooks/03_plume_extraction.ipynb`, plume rasters, and **[`docs/event_audit.md`](../event_audit.md) — which returns NO-GO for image-based validation.** See §3.1 |
+| **B — Remote sensing / plume** | Abd | ⚠️ **Started; audit complete, verdict negative** | `models/plume_segmentation.py` (178 lines), `notebooks/03_plume_extraction.ipynb`, plume rasters, and **[`docs/event_audit.md`](../../event_audit.md) — which returns NO-GO for image-based validation.** See §3.1 |
 | **A/C — Forecasts & currents** | Nizar | ⚠️ **Started** | `gfs.py`, `gefs.py`, `ecmwf.py`, `ocean_currents.py` all exist (108–193 lines each). **No particle engine yet** |
 | **D — Product & platform** | — | ❌ **Not started** | No API, no DB, no frontend, no container |
 | **E — Research & pitch** | — | ⚠️ **Partial** | Concept doc and limitations pages are strong; this research set adds the market side |
@@ -112,7 +112,7 @@ as an engineering one.
 
 ### 3.1 · The imagery audit has run, and it failed
 
-**[sourced]** [`docs/event_audit.md`](../event_audit.md) §3 records a **NO-GO for image-based
+**[sourced]** [`docs/event_audit.md`](../../event_audit.md) §3 records a **NO-GO for image-based
 validation of the October 2016 event.** The only candidate post-event scene (2016-11-02, +5
 days) clears the cloud and timing gate but **fails the visual-plume criterion**, confirmed
 independently by Sentinel-2 and Landsat 8, because the in-situ mooring record shows the plume

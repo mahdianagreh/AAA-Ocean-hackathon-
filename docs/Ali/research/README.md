@@ -4,6 +4,16 @@
 
 **Author:** Ali · **Date:** 2026-08-02 · **20 documents, ~36,400 words, 51 sources**
 
+> ### Scope — read this before wiring anything to these files
+>
+> This folder is **pitch and market material**. It is **not an app surface** and it is **not in the
+> RAG corpus**. It backs the market slide and answers *"is this only for Aqaba?"* in Q&A.
+> Building it into the UI would spend frontend days on something one slide already covers.
+> See [`00-phase2-plan.md`](../../../tasks/phase2/00-phase2-plan.md) §Sources and
+> [`06-ali.md`](../../../tasks/phase2/06-ali.md) §One note on the research documents.
+>
+> Frontend build documentation lives in [`../frontend/`](../frontend/) — a different thing entirely.
+
 > ### 👉 New here? Read [`00-summary.md`](00-summary.md) first
 >
 > It explains the whole research set **in plain English, on one page** — what the problem is, who
@@ -17,7 +27,7 @@
 
 ## Why this exists
 
-The concept doc, [`reefshield_aqaba_concept.md`](../../reefshield_aqaba_concept.md) §5.2,
+The concept doc, [`reefshield_aqaba_concept.md`](../../../reefshield_aqaba_concept.md) §5.2,
 forbids claiming novelty without doing the search:
 
 > The team should **not** claim global uniqueness unless a formal patent and literature
@@ -84,7 +94,7 @@ manifest, and the test suite has still never been run on this machine.
 
 ### 6 · The imagery gate has resolved — and it failed
 
-**[sourced]** The project's own audit ([`docs/event_audit.md`](../event_audit.md) §3) returns
+**[sourced]** The project's own audit ([`docs/event_audit.md`](../../event_audit.md) §3) returns
 **NO-GO for image-based validation**: the October 2016 plume dispersed **2.5–3.5 days before any
 accessible satellite pass**, confirmed by Sentinel-2 and Landsat 8 independently. A **physical
 null**, not a data-quality problem. The documented pivot is to validate against the Kalman et al.
@@ -153,7 +163,7 @@ null**, not a data-quality problem. The documented pivot is to validate against 
 
 ## How to read the evidence markers
 
-Follows the project's source-vs-derived discipline ([`docs/event_dates.md`](../event_dates.md) §3):
+Follows the project's source-vs-derived discipline ([`docs/event_dates.md`](../../event_dates.md) §3):
 
 | Marker | Meaning |
 |---|---|
@@ -172,10 +182,10 @@ a wrong number reaching a slide.
 
 | # | Repo doc | Issue |
 |---|---|---|
-| 1 | [`tasks/nizar.md`](../../tasks/nizar.md) | States the gulf is "~15–25 km wide". Authoritative figure is **14–26 km, ~180 km long, average depth 800 m** |
-| 2 | [`docs/event_dates.md`](../event_dates.md) | The 82%/18 h figure is **water volume (109 million m³) across both the Eilat *and* Wadi Yutum catchments** — not rainfall depth over the Aqaba box |
-| 3 | [`docs/pitch_limitations.md`](../pitch_limitations.md) | **Transmission loss is missing** — 20–85% of a Negev flood can infiltrate the wadi bed and never reach the sea |
-| 4 | [`docs/pipeline_capability_report.md`](../pipeline_capability_report.md) §4.7 | The "Oct 2016 ordering anomaly" is **explained**: Kalman et al. name Wadi Yutum (= `AQ-C01`, 4,453 km²) as a generating catchment, and the download box is ~1,700 km² |
+| 1 | [`tasks/nizar.md`](../../../tasks/nizar.md) | States the gulf is "~15–25 km wide". Authoritative figure is **14–26 km, ~180 km long, average depth 800 m** |
+| 2 | [`docs/event_dates.md`](../../event_dates.md) | The 82%/18 h figure is **water volume (109 million m³) across both the Eilat *and* Wadi Yutum catchments** — not rainfall depth over the Aqaba box |
+| 3 | [`docs/pitch_limitations.md`](../../pitch_limitations.md) | **Transmission loss is missing** — 20–85% of a Negev flood can infiltrate the wadi bed and never reach the sea |
+| 4 | [`docs/pipeline_capability_report.md`](../../pipeline_capability_report.md) §4.7 | The "Oct 2016 ordering anomaly" is **explained**: Kalman et al. name Wadi Yutum (= `AQ-C01`, 4,453 km²) as a generating catchment, and the download box is ~1,700 km² |
 | 5 | Concept doc §19 | The published repo structure describes **8 directories that do not exist**. Do not show §9.1's architecture diagram as though it is the system |
 
 ---

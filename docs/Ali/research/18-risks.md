@@ -31,7 +31,7 @@ Scoring: **P** = probability, **I** = impact if it lands. **[judgement]** throug
 ## 1 · Risks the project has NOT yet documented
 
 These are the additions. Each one is either absent from
-[`docs/pitch_limitations.md`](../pitch_limitations.md) and concept doc §24–25, or present
+[`docs/pitch_limitations.md`](../../pitch_limitations.md) and concept doc §24–25, or present
 but under-weighted.
 
 ### R1 · Transmission loss — the biggest unmodelled scientific gap
@@ -63,14 +63,14 @@ the limitations page.
 | ~~Certain~~ | ~~High~~ | ✅ **Contract resolved 2026-08-02** — data re-run still outstanding |
 
 **What the risk was.** Mahdi's delineation gives **AQ-C01 (Wadi Yutum) = 4,453 km² ±4%
-(range 4,349–4,690)** ([`tasks/mahdi.md`](../../tasks/mahdi.md)) **[sourced]**, and the catchment
+(range 4,349–4,690)** ([`tasks/mahdi.md`](../../../tasks/mahdi.md)) **[sourced]**, and the catchment
 layer extends to **35.90°E / 30.03°N**. The old `DOWNLOAD_BBOX` (34.80–35.15 E, 29.25–29.70 N)
 covered roughly **1,700 km²** **[derived]** — so **the generating catchment was ~2.6× the entire
 area rainfall was downloaded for.**
 
 This was the documented cause of the October 2016 ordering anomaly — the derived rainfall peak
 falling *after* the flood arrival, which is physically backwards
-([`docs/pipeline_capability_report.md`](../pipeline_capability_report.md) §4.7). Kalman et al.
+([`docs/pipeline_capability_report.md`](../../pipeline_capability_report.md) §4.7). Kalman et al.
 explicitly name **Wadi Yutum** as one of the two generating catchments
 **[sourced, verified verbatim]**.
 
@@ -168,10 +168,10 @@ who owns the repository, the relationships, or the ABOFA follow-up.
 
 `.env` was tracked on `main` (commit `2f0a6d6`, "chore: add .env with team credentials")
 containing Earthdata, CDS, Copernicus Marine and CDSE credentials. Already flagged in
-[`docs/MASTER_TASK_SUMMARY.md`](../MASTER_TASK_SUMMARY.md) §20.7 as needing rotation.
+[`docs/MASTER_TASK_SUMMARY.md`](../../MASTER_TASK_SUMMARY.md) §20.7 as needing rotation.
 
 **What has changed [measured 2026-08-02].** `.env` has been **deleted from tracking** and
-replaced by [`backend/.env.example`](../../backend/.env.example); it is now gitignored.
+replaced by [`backend/.env.example`](../../../backend/.env.example); it is now gitignored.
 
 **What has not changed — and this is the part that matters.** **The credentials are still
 recoverable from git history** (`git show 1819b3e:.env`). Removing a file from the tip does not
@@ -188,7 +188,7 @@ history, and "we removed the file" is not an answer.
 
 | Concept doc risk (§25) | Original | Re-scored | Why changed |
 |---|---|---|---|
-| Main 2016 scene cloudy/unavailable | Med / High | ⬛ **Materialised — Certain / Critical** | **This risk has landed.** [`docs/event_audit.md`](../event_audit.md) §3 returns NO-GO: the scene is *clear*, but the plume had already dispersed. Worse than the risk as written, because no better scene exists. See §1.5 |
+| Main 2016 scene cloudy/unavailable | Med / High | ⬛ **Materialised — Certain / Critical** | **This risk has landed.** [`docs/event_audit.md`](../../event_audit.md) §3 returns NO-GO: the scene is *clear*, but the plume had already dispersed. Worse than the risk as written, because no better scene exists. See §1.5 |
 | Ocean currents too coarse | High / High | **High / High** — unchanged | Confirmed: gulf is **14–26 km** wide **[sourced]** vs ~9 km model resolution |
 | Too few labelled runoff events | High / Med | **High / High** | Compounded by the imagery null: there may be **no** satellite-labelled event for this coast |
 | Team overbuilds full physics | Med / High | **Low / High** | Forecast/current *ingestion* now exists; the simulation engine still does not. Opposite risk still materialised |
@@ -200,7 +200,7 @@ history, and "we removed the file" is not an answer.
 ### 1.5 · The gate has resolved, negatively
 
 **[sourced]** The single most important change since the first audit.
-[`docs/event_audit.md`](../event_audit.md) §3 records **NO-GO for image-based validation of
+[`docs/event_audit.md`](../../event_audit.md) §3 records **NO-GO for image-based validation of
 October 2016**. The candidate scene (2016-11-02, +5 days) clears cloud and timing but fails the
 visual-plume criterion — confirmed by **Sentinel-2 and Landsat 8 independently** — because the
 mooring record shows the plume had **dispersed 2.5–3.5 days before either pass**. A **genuine
@@ -244,7 +244,7 @@ dependency manifest.
 ## 4 · What to put on the limitations slide
 
 **[judgement]** The project's existing honesty discipline is its strongest asset — 
-[`docs/pitch_limitations.md`](../pitch_limitations.md) is genuinely unusual for a hackathon.
+[`docs/pitch_limitations.md`](../../pitch_limitations.md) is genuinely unusual for a hackathon.
 Three additions:
 
 - **Transmission loss (R1)** — "between 20% and 85% of a desert flood can infiltrate the wadi
@@ -257,7 +257,7 @@ Three additions:
 - **The ~11 km IMERG cell vs convective storms** — already in the docs, but it belongs on the
   slide, not just in the repo.
 - **AQ-C01's area carries ±4%** (4,349–4,690 km²) — anything reported as a per-catchment *total*
-  rather than a *mean* inherits that ([`tasks/mahdi.md`](../../tasks/mahdi.md)).
+  rather than a *mean* inherits that ([`tasks/mahdi.md`](../../../tasks/mahdi.md)).
 
 **[judgement]** Adding a limitation you found yourself is worth more than removing one. The
 pitch_limitations page already says this better than I can: *"we would rather show you the

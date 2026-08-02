@@ -115,7 +115,7 @@ else's budget.
 Global shallow-reef geomorphic and benthic habitat mapping at 5 m in the Earth Engine
 product (concept doc §11.11) **[sourced]**. It is an **input** to ReefShield — Pulga's
 Component G depends on it — not a competitor. It maps **habitat, not sensitivity**, as
-[`docs/pitch_limitations.md`](../pitch_limitations.md) §5 already states honestly.
+[`docs/pitch_limitations.md`](../../pitch_limitations.md) §5 already states honestly.
 
 ---
 
@@ -167,7 +167,7 @@ should we sample tomorrow morning?" That question is unowned everywhere I looked
 
 ### The defensible novelty statement
 
-Replacing the placeholder in [`reefshield_aqaba_concept.md`](../../reefshield_aqaba_concept.md)
+Replacing the placeholder in [`reefshield_aqaba_concept.md`](../../../reefshield_aqaba_concept.md)
 §5.2, this is what the search supports:
 
 > **Every component of ReefShield exists somewhere.** Flood forecasting, plume transport

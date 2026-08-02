@@ -40,7 +40,7 @@ sites. Every buyer in [`12-buyers.md`](12-buyers.md)
 §6 has "one validated historical backtest" as a blocking requirement.
 
 > **Update 2026-08-02 — the contingency below has fired.** The imagery audit has run and
-> returned **NO-GO**: [`docs/event_audit.md`](../event_audit.md) §3 shows the October 2016 plume
+> returned **NO-GO**: [`docs/event_audit.md`](../../event_audit.md) §3 shows the October 2016 plume
 > dispersed 2.5–3.5 days before any accessible satellite pass, confirmed by Sentinel-2 and
 > Landsat 8. **A physical null, not a data-quality problem.**
 >
@@ -107,7 +107,7 @@ coordination). None of these buy; all of them decide who gets in the room.
 **InterUniversity Institute in Eilat** already run joint surveys **[sourced]**; **CORDAP**
 is a named GFCR co-implementer. An endorsement from a marine scientist is what converts
 `sensitivity_weight = 1.0` from a placeholder into a defensible parameter — the exact gap
-[`docs/pitch_limitations.md`](../pitch_limitations.md) §5 flags.
+[`docs/pitch_limitations.md`](../../pitch_limitations.md) §5 flags.
 
 **Delivery partners.** For sites outside Jordan, a local geospatial or environmental
 consultancy does the site onboarding. This is how a small team serves twelve coastlines
@@ -129,7 +129,7 @@ Scored **[judgement]**. Probability × impact, highest first.
 | 6 | **Customer concentration** — one Saudi contract dominates revenue | Med | Med | Accept early; diversify by year 3 |
 | 7 | **A free alternative appears** — NOAA or a national agency generalises | Low–Med | High | Genuinely possible. Defence is institutional embedding and the local validation record, not technology. |
 | 8 | **Validation labour never falls with scale** | Med | Med | Build the labelled plume-mask library from day one so segmentation can be automated later |
-| 9 | **Placeholder data reaches a real customer** | Low | **Critical** | The `_PROVISIONAL` naming convention and the day-12 grep gate in [`tasks/00-contracts.md`](../../tasks/00-contracts.md) §5 already handle this. **Keep that discipline after the hackathon** — it becomes more important with a paying customer, not less. |
+| 9 | **Placeholder data reaches a real customer** | Low | **Critical** | The `_PROVISIONAL` naming convention and the day-12 grep gate in [`tasks/00-contracts.md`](../../../tasks/00-contracts.md) §5 already handle this. **Keep that discipline after the hackathon** — it becomes more important with a paying customer, not less. |
 | 10 | **Over-claiming in the pitch** | Med | High | The `[sourced]/[derived]/[judgement]` discipline across this doc set exists for this. One inflated number discredits the honest ones. |
 
 **[judgement]** Risks 1 and 4 are the real ones. Everything else is manageable. Risk 4 — the

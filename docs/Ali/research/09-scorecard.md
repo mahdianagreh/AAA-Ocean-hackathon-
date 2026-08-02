@@ -98,7 +98,7 @@ recalibrating plume detection for naturally turbid water.
 ## What actually changes per site
 
 **[judgement]** Reusability of the current codebase, from
-[`docs/pipeline_capability_report.md`](../pipeline_capability_report.md) §2:
+[`docs/pipeline_capability_report.md`](../../pipeline_capability_report.md) §2:
 
 | Component | Reusable as-is? | Notes |
 |---|---|---|

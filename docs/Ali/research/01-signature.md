@@ -54,7 +54,7 @@ NHESS](https://nhess.copernicus.org/articles/25/3201/2025/)) **[sourced]**.
 
 The site gets convective or cyclonic rainfall that concentrates a year's water into hours.
 Aqaba's October 2016 event delivered **≈82% of total rainfall in a concentrated 18-hour
-spell** within a ≈66-hour event ([`docs/event_dates.md`](../event_dates.md), from Kalman et
+spell** within a ≈66-hour event ([`docs/event_dates.md`](../../event_dates.md), from Kalman et
 al. 2025) **[sourced]**.
 
 | Score | Condition |
@@ -67,7 +67,7 @@ al. 2025) **[sourced]**.
 
 The plume has to be able to reach the habitat before it disperses. Aqaba's reefs sit close
 to shore and close to urban activity, roads, drainage outlets and ports
-([concept doc §3.3](../../reefshield_aqaba_concept.md)) **[sourced]**.
+([concept doc §3.3](../../../reefshield_aqaba_concept.md)) **[sourced]**.
 
 | Score | Condition |
 |---|---|

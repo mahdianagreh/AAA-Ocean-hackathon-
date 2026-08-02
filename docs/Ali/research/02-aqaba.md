@@ -62,7 +62,7 @@ data-poor. Everything else is identical.
   sinks and travels along the seabed rather than floating as a surface plume — in the
   coral-rich Gulf of Aqaba, despite the Red Sea's high salinity ([Katz et al.
   2015](https://www.sciencedirect.com/science/article/abs/pii/S0012821X15001119))
-  **[sourced]**. This is the caveat [`tasks/nizar.md`](../../tasks/nizar.md) already flags:
+  **[sourced]**. This is the caveat [`tasks/nizar.md`](../../../tasks/nizar.md) already flags:
   surface currents may be the wrong forcing for part of the sediment mass.
 - **Generalisability, stated by the authors themselves.** Kalman et al. explicitly frame
   their work as a template: *"Developing a framework that traces the entire sequence of
@@ -82,13 +82,13 @@ data-poor. Everything else is identical.
 >
 > 1. **The 82% / 18 h figure is about water volume across *both* the Eilat and Wadi Yutum
 >    catchments — 109 million m³ — not rainfall depth over the Aqaba box alone.**
->    [`docs/event_dates.md`](../event_dates.md) currently records it as *"≈82% of total
+>    [`docs/event_dates.md`](../../event_dates.md) currently records it as *"≈82% of total
 >    rainfall fell during a concentrated 18-hour spell"*, which is a fair paraphrase but
 >    loses the volume basis and the two-catchment scope. Worth tightening before it reaches
 >    a slide.
 > 2. **The paper explicitly names Wadi Yutum**, which is Mahdi's `AQ-C01`. That is direct
 >    literature support for the catchment the delineation identifies as **4,453 km² ±4%
->    (range 4,349–4,690)** ([`tasks/mahdi.md`](../../tasks/mahdi.md)) **[sourced]** — and it was
+>    (range 4,349–4,690)** ([`tasks/mahdi.md`](../../../tasks/mahdi.md)) **[sourced]** — and it was
 >    the evidence that the original ~1,700 km² download box was too small. **That box has since
 >    been retired** in favour of a `TERRAIN_AOI` of ~14,700 km²; see
 >    [`18-risks.md`](18-risks.md) R2.

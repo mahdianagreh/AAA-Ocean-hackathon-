@@ -26,7 +26,7 @@ takes.**
 **The platform's input data is free.** IMERG, ERA5-Land, GFS, GEFS, ECMWF open data,
 Sentinel-2, HLS, Copernicus DEM, SRTM, WorldCover, SoilGrids, OSM, GEBCO/GMRT, Allen Coral
 Atlas and Copernicus Marine are all open or free-on-registration
-([concept doc §11](../../reefshield_aqaba_concept.md)) **[sourced]**.
+([concept doc §11](../../../reefshield_aqaba_concept.md)) **[sourced]**.
 
 **[judgement]** Three consequences that shape the whole business:
 
@@ -86,7 +86,7 @@ Toliara this is the *only* viable model, and for Aqaba it is the likely first-ye
 project: committed processed data is **17 MB** (was 7.6 MB before two 4 MB plume rasters landed
 on 2 Aug); the 156-granule October 2016 IMERG event occupies a few hundred MB raw and produces a
 **126 KB** processed NetCDF; an ERA5-Land event file is **166 KB**; the antecedent feature
-Parquet is **21.6 KB** ([`docs/MASTER_TASK_SUMMARY.md`](../MASTER_TASK_SUMMARY.md) §12)
+Parquet is **21.6 KB** ([`docs/MASTER_TASK_SUMMARY.md`](../../MASTER_TASK_SUMMARY.md) §12)
 **[sourced]**. Full current breakdown in
 [`17-scaling.md`](17-scaling.md) §1.
 
@@ -197,7 +197,7 @@ first paid contract.**
 **[judgement]** The Open Database Licence is **share-alike**: a "derived database" built from
 OSM must itself be offered under ODbL. Pulga's chain uses OSM for road density, built-up
 fraction, and — most valuably — the **27 mapped culverts that correct outlet positions**
-([`docs/osm_dem_conflicts.md`](../osm_dem_conflicts.md)) **[sourced]**.
+([`docs/osm_dem_conflicts.md`](../../osm_dem_conflicts.md)) **[sourced]**.
 
 If catchment feature tables containing OSM-derived columns are delivered to a paying
 customer, the share-alike obligation plausibly attaches to that table. Three options:
@@ -211,7 +211,7 @@ customer, the share-alike obligation plausibly attaches to that table. Three opt
    which is the single most useful thing OSM contributes.
 
 **Recommendation:** option 1, decided explicitly and recorded in the data dictionary —
-which already tracks licence per source ([`docs/data_dictionary.md`](../data_dictionary.md))
+which already tracks licence per source ([`docs/data_dictionary.md`](../../data_dictionary.md))
 **[sourced]**. That ledger is the right place for this decision, and it is already built.
 
 ### Attribution as a product feature

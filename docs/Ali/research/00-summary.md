@@ -237,7 +237,7 @@ The plan was to prove the system works by finding a satellite photo of the Octob
 and comparing it to what the model predicts.
 
 **There is no such photo.** The team checked properly and wrote it up in
-[`docs/event_audit.md`](../event_audit.md).
+[`docs/event_audit.md`](../../event_audit.md).
 
 The nearest clear satellite pass was **five days after the flood** — and by then the muddy water
 had **already dispersed and vanished, two to three days earlier.** Two different satellites
@@ -310,12 +310,12 @@ All 51 sources are listed in [`10`](10-sources.md).
 
 Small fixes that stop a wrong number reaching a slide:
 
-1. **[`tasks/nizar.md`](../../tasks/nizar.md)** — the gulf is **14–26 km** wide, not 15–25.
-2. **[`docs/event_dates.md`](../event_dates.md)** — the "82% in 18 hours" figure is about **water
+1. **[`tasks/nizar.md`](../../../tasks/nizar.md)** — the gulf is **14–26 km** wide, not 15–25.
+2. **[`docs/event_dates.md`](../../event_dates.md)** — the "82% in 18 hours" figure is about **water
    volume across two catchments**, not rainfall depth over Aqaba.
-3. **[`docs/pitch_limitations.md`](../pitch_limitations.md)** — **the soaking-into-the-ground
+3. **[`docs/pitch_limitations.md`](../../pitch_limitations.md)** — **the soaking-into-the-ground
    problem is missing entirely.**
-4. **[`docs/pipeline_capability_report.md`](../pipeline_capability_report.md)** — the odd timing in
+4. **[`docs/pipeline_capability_report.md`](../../pipeline_capability_report.md)** — the odd timing in
    the October 2016 data is **explained now, not unresolved.**
 5. **The concept document** describes **8 folders that do not exist.** Don't show the architecture
    diagram as if it's the real system.

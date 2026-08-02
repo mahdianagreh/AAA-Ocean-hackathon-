@@ -101,7 +101,7 @@ why Ningaloo exists in that configuration.
    screen sites instead of claiming the whole desert."
 
 > ### Recommendation to the team
-> Transmission loss should appear in [`docs/pitch_limitations.md`](../pitch_limitations.md)
+> Transmission loss should appear in [`docs/pitch_limitations.md`](../../pitch_limitations.md)
 > as a named limitation. The pipeline currently derives rainfall over the catchment and
 > treats it as a runoff driver; between 13% and 98% of that water may never arrive at the
 > coast depending on the site. For Aqaba specifically, the Negev range (20–85%) is the best

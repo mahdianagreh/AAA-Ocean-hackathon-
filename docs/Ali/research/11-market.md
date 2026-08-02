@@ -147,7 +147,7 @@ software product**, not a startup. Which is exactly what the funding landscape i
    contract there exceeds the entire rest of the pipeline.
 2. **Contracts are sticky.** Once reef zone IDs and catchment IDs are embedded in an
    agency's reporting, switching means invalidating the historical record. The ID contract
-   in [`tasks/00-contracts.md`](../../tasks/00-contracts.md) is accidentally also a
+   in [`tasks/00-contracts.md`](../../../tasks/00-contracts.md) is accidentally also a
    commercial moat **[judgement]**.
 3. **The cost base is tiny.** The platform runs on free open data — see
    [`17-scaling.md`](17-scaling.md). Gross margin is
@@ -175,7 +175,7 @@ From the GFCR Gulf of Aqaba concept note and the AMR management plan:
 | **Aqaba Marine Reserve** | **2.45 km², covering 7 km of the 27 km coastline** — about **2.6% of Jordan's marine area** |
 | Dive sites monitored/partly managed by the park | **19** |
 
-> **Correction to the project's own docs:** [`tasks/nizar.md`](../../tasks/nizar.md) states
+> **Correction to the project's own docs:** [`tasks/nizar.md`](../../../tasks/nizar.md) states
 > the gulf is "~15–25 km wide". The authoritative figure is **14–26 km**. Immaterial to the
 > argument — the resolution problem is identical — but worth fixing before it reaches a
 > slide.
@@ -186,9 +186,9 @@ From the GFCR Gulf of Aqaba concept note and the AMR management plan:
 
 - **Aqaba Marine Reserve: 2.45 km²** **[sourced]** — the legally protected area, 7 km of coast.
 - **Jordan's full fringing reef:** >25 km of coast × ~250 m band **[assumption, matching
-  Pulga's documented 250 m assumption in [`docs/pitch_limitations.md`](../pitch_limitations.md) §4]**
+  Pulga's documented 250 m assumption in [`docs/pitch_limitations.md`](../../pitch_limitations.md) §4]**
   → **~6.25 km²**. Cross-check: the committed `reef_zones_PROVISIONAL.gpkg` totals **5.69 km²**
-  across 8 zones ([`docs/README_pulga.md`](../README_pulga.md)) **[sourced]** — within 10%,
+  across 8 zones ([`docs/README_pulga.md`](../../README_pulga.md)) **[sourced]** — within 10%,
   so the assumption is not wild.
 
 **Applying the sourced value ranges:**

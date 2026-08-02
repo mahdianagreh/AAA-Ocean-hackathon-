@@ -212,7 +212,7 @@ record satisfies cheaply.
 
 > ### ⚠️ Update 2026-08-02 — the validation blocker has changed shape
 >
-> **[sourced]** [`docs/event_audit.md`](../event_audit.md) §3 returns **NO-GO for image-based
+> **[sourced]** [`docs/event_audit.md`](../../event_audit.md) §3 returns **NO-GO for image-based
 > validation** of the October 2016 event: the plume dispersed 2.5–3.5 days before any accessible
 > satellite pass, confirmed by Sentinel-2 and Landsat 8 independently. **It is a physical null,
 > not a data-quality problem** — so "wait for a better scene" is not a plan.

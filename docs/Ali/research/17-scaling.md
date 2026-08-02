@@ -26,7 +26,7 @@ actually involves.**
 ## 1 · Measured data volumes
 
 **[sourced]** All figures measured from the repository or reported in
-[`docs/MASTER_TASK_SUMMARY.md`](../MASTER_TASK_SUMMARY.md) §12.
+[`docs/MASTER_TASK_SUMMARY.md`](../../MASTER_TASK_SUMMARY.md) §12.
 
 | Artefact | Size |
 |---|---|
@@ -70,7 +70,7 @@ project's two documents disagree** — flagged rather than smoothed over:
 | Per-granule basis | Source | 26-year total |
 |---|---|---|
 | ~7.6 MB | `imerg.py` module docstring | **~3.3 TB** |
-| ~30 MB | [`data-model.md`](../../data-model.md) line 117 | **~13 TB** |
+| ~30 MB | [`data-model.md`](../../../data-model.md) line 117 | **~13 TB** |
 
 **[judgement]** The gap is almost certainly *which* IMERG product: a single-variable HDF5 slice
 versus the full V07 granule with every variable. Both conclusions are the same — **server-side
@@ -187,7 +187,7 @@ fee in [`13-economics.md`](13-economics.md)
 > ### ⚠️ Porting risk this understates — revised 2026-08-02
 >
 > The table assumes a validation event *can* be found with effort. Aqaba is the counterexample:
-> [`docs/event_audit.md`](../event_audit.md) §3 concluded that **no accessible satellite imagery
+> [`docs/event_audit.md`](../../event_audit.md) §3 concluded that **no accessible satellite imagery
 > shows the October 2016 plume at all**, because it dispersed 2.5–3.5 days before the nearest
 > pass. That is not a cloud problem or a search problem — it is **revisit cadence versus plume
 > lifetime**, and it will recur on any coast where plumes clear in under ~3 days.

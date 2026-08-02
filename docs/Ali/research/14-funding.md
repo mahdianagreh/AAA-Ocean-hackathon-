@@ -28,7 +28,7 @@ obligation to buy.**
 ## 1 · The macro case, with verified numbers
 
 The hackathon briefing asks teams to ground the pitch in official statistics
-([`blue-horizons-hackathon-briefing.md`](../../blue-horizons-hackathon-briefing.md) §6).
+([`blue-horizons-hackathon-briefing.md`](../../../blue-horizons-hackathon-briefing.md) §6).
 Those figures check out, and several can be stated more precisely:
 
 | Claim | Verified status |

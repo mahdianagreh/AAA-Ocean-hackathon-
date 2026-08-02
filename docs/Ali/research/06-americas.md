@@ -57,7 +57,7 @@ customer.**
 ### Why the customer transfers so well
 
 **[judgement]** Bonaire's economy is **dive tourism**, in the same way Aqaba's is. The buyer
-persona from [`reefshield_aqaba_concept.md`](../../reefshield_aqaba_concept.md) §7.4 — a
+persona from [`reefshield_aqaba_concept.md`](../../../reefshield_aqaba_concept.md) §7.4 — a
 dive centre wanting an inspection or temporary-closure window — exists here in larger
 numbers and with more purchasing power. Bonaire National Marine Park is a well-established,
 funded manager. Of every site outside MENA, **this is the one where the product could be
