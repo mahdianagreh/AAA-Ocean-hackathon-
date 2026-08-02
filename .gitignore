@@ -13,6 +13,8 @@ data/**
 # small shared handoff vectors - teammates need these without re-downloading
 # the 177 MB HydroBASINS source. Keep under ~1 MB each.
 !data/processed/vectors/*.gpkg
+!data/processed/features/*.parquet
+!data/interim/hydro/outlet_candidates.csv
 
 # os
 .DS_Store

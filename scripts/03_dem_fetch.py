@@ -37,6 +37,17 @@ TILES = [
 UTM = "EPSG:32636"
 TARGET_RES = 30.0
 
+# Must be set, and must not be 0. Copernicus GLO-30 encodes the sea surface as
+# exactly 0.0, so leaving nodata unset makes reprojection fill indistinguishable
+# from the Gulf: the tilted data quadrilateral leaves 0-filled wedges in the
+# corners of the UTM bounding box, and any "cells <= 0" sea mask then merges the
+# real coastline with the raster frame into one 1,080 km2 blob.
+NODATA = -9999.0
+
+# DEFLATE only. PREDICTOR=3 (floating-point predictor) is rejected outright by
+# the WhiteboxTools GeoTIFF reader, which every downstream hydrology step uses.
+CREATE_OPTS = dict(compress="deflate", tiled=True, nodata=NODATA)
+
 
 def tile_name(lat, lon):
     return f"Copernicus_DSM_COG_10_{lat}_00_{lon}_00_DEM"
@@ -70,15 +81,14 @@ def main():
     srcs = [rasterio.open(p) for p in paths]
     res = srcs[0].res
     print(f"  source res (deg): {res[0]:.8f} x {res[1]:.8f}")
-    mosaic, transform = merge(srcs, bounds=(w, s, e, n))
+    mosaic, transform = merge(srcs, bounds=(w, s, e, n), nodata=NODATA)
     meta = srcs[0].meta.copy()
-    nodata = srcs[0].nodata
     for src in srcs:
         src.close()
 
     meta.update(
         driver="GTiff", height=mosaic.shape[1], width=mosaic.shape[2],
-        transform=transform, compress="deflate", tiled=True, predictor=3,
+        transform=transform, **CREATE_OPTS,
     )
     with rasterio.open(OUT_MOSAIC, "w", **meta) as dst:
         dst.write(mosaic)
@@ -91,12 +101,13 @@ def main():
         )
         kw = src.meta.copy()
         kw.update(crs=UTM, transform=dst_transform, width=dst_w, height=dst_h,
-                  compress="deflate", tiled=True, predictor=3)
+                  **CREATE_OPTS)
         OUT_UTM.parent.mkdir(parents=True, exist_ok=True)
         with rasterio.open(OUT_UTM, "w", **kw) as dst:
             reproject(
                 source=rasterio.band(src, 1), destination=rasterio.band(dst, 1),
                 src_transform=src.transform, src_crs=src.crs,
+                src_nodata=NODATA, dst_nodata=NODATA,
                 dst_transform=dst_transform, dst_crs=UTM,
                 resampling=Resampling.bilinear,
             )
