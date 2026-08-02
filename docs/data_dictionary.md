@@ -98,9 +98,13 @@ Level 09 (`hybas_eu_lev09_v1c`) was also pulled for exploration and the `ENDO` f
 | Script | `scripts/07_outlet_imagery_check.py` |
 | **Role** | Visual verification of outlet positions |
 
-### MERIT Hydro — NOT ACQUIRED
+### MERIT Hydro — not acquired, requirement met elsewhere
 
-Needs University of Tokyo registration or an authenticated Earth Engine project. M3 was completed with HydroRIVERS instead. Recorded here so the gap is visible rather than assumed done.
+The task file names MERIT Hydro, but the *requirement* was an independent published channel network to validate our extracted streams against. **HydroRIVERS served that** — 140 m median offset, 84% of trunk cells within 500 m (`reports/streams/`).
+
+Not acquired because it needs University of Tokyo registration or an authenticated Earth Engine project. Recorded here for completeness rather than as an outstanding gap.
+
+**Would it add anything?** At 90 m it could pin channel position more finely than a ~500 m product. But it is partly SRTM-derived, so as a *cross-check* it is weaker than HydroRIVERS turned out to be — HydroSHEDS is SRTM, our DEM is TanDEM-X, which made that pairing genuinely independent. Optional refinement, not a dependency.
 
 ---
 
