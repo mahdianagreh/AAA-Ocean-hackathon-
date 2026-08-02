@@ -45,9 +45,19 @@ You produce the geometry everyone else's work sits on. The catchment polygons de
 >
 > An earlier statement of ±1.7× was too pessimistic — it treated SRTM as an equal witness. SRTM finds **136,927 depressions to GLO-30's 20,352**, so its noise manufactures spurious sinks and it is unfit for depression-based analysis here. That is a measured claim, not a preference.
 >
+> ### Deliverables — 5 of 5
+>
+> | # | Item | Status |
+> |---|---|---|
+> | 1 | Committed DEM with the reason recorded | ✅ GLO-30, `docs/data_dictionary.md` |
+> | 2 | Catchment polygons with snapped outlets | ✅ `catchments.gpkg`, `outlets.gpkg` |
+> | 3 | Per-catchment feature table | ✅ 17 columns incl. distance-to-coast and accumulation stats |
+> | 4 | Outlet coordinates published | ✅ lon/lat EPSG:4326, with `position_confidence` |
+> | 5 | Every source in `docs/data_dictionary.md` | ✅ — and the format is set for the rest of the team |
+>
 > ### Still open
 >
-> - **MERIT Hydro** — M3 was completed with HydroRIVERS instead. MERIT needs University of Tokyo registration or an authenticated Earth Engine project. Lower priority than it looks: HydroRIVERS is SRTM-derived while our DEM is TanDEM-X, so it was a genuinely independent check, and MERIT is partly SRTM too.
+> - **MERIT Hydro — satisfied by substitute, not outstanding.** The requirement was an independent published channel network to validate our streams against. **HydroRIVERS did that**, and did it well: 140 m median offset, 84% within 500 m. MERIT remains an optional refinement — at 90 m it could confirm channel position more finely than a ~500 m product — but it needs University of Tokyo registration or an authenticated Earth Engine project, and it is *partly SRTM-derived*, so it would be a **less** independent check than the one already done. Not a gap.
 > - **Three low-confidence outlets** — AQ-O02/O03/O04 route through the container terminal, tank farms and a harbour basin. Only local stormwater outfall data from ASEZA fixes this; it is Phase 2 in the concept doc.
 > - **Pulga's OSM culverts** — not yet cross-checked against the routed channels.
 

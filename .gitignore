@@ -40,5 +40,11 @@ data/raw/srtm/
 # (catchments, outlets, reef zones, coastline, depth field, feature tables).
 # Keep individual files small — anything over a few MB belongs in Storage.
 
+# Large rasters under data/processed/ — the contract paths are committed, but
+# the 30 m DEM alone is 65 MB. Regenerate with scripts/03_dem_fetch.py; the
+# vectors and feature tables stay committed.
+data/processed/dem/*.tif
+data/processed/**/*.tif
+
 # OS
 .DS_Store

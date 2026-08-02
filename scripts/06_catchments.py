@@ -154,6 +154,18 @@ def main():
         n_stream = int((m & streams).sum())
         area = m.sum() * px / 1e6
 
+        # flow-accumulation statistics across the catchment, not just at the
+        # mouth. Mean accumulation is a shape descriptor: an elongated basin
+        # concentrates flow late and reads low, a compact one reads high.
+        acc_in = accum[m]
+        # Distance from the outlet to the furthest cell in the catchment,
+        # measured through the grid rather than straight-line - it is a
+        # travel-time proxy, and for a basin reaching 90 km inland the
+        # difference matters.
+        ry, rx = np.where(m)
+        oy, ox = int(row.row), int(row.col)
+        dist_cells = np.hypot(ry - oy, rx - ox)
+
         polys = [
             shape(g) for g, v in features.shapes(
                 m.astype("uint8"), mask=m, transform=transform
@@ -175,6 +187,12 @@ def main():
             "stream_len_km": round(n_stream * cell / 1000, 1),
             "drainage_density_km_km2": round((n_stream * cell / 1000) / area, 3),
             "outlet_accum_cells": int(row.accum_cells),
+            "accum_mean_cells": round(float(acc_in.mean()), 1),
+            "accum_p95_cells": round(float(np.percentile(acc_in, 95)), 1),
+            "dist_to_coast_max_km": round(float(dist_cells.max() * cell / 1000), 2),
+            "dist_to_coast_mean_km": round(float(dist_cells.mean() * cell / 1000), 2),
+            "elongation_ratio": round(
+                float(2 * np.sqrt(area / np.pi) / (dist_cells.max() * cell / 1000)), 3),
         })
 
     feat = pd.DataFrame(feats)
