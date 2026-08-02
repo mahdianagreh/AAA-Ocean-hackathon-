@@ -1,26 +1,8 @@
 {
-  "type": "FeatureCollection",
-  "name": "aqaba_analysis_aoi",
-  "properties": {
-    "status": "PROVISIONAL — starting proposal per tasks/00-contracts.md §1, not yet visually confirmed by Mahdi",
-    "crs_storage": "EPSG:4326",
-    "crs_analysis": "EPSG:32636",
-    "bbox_wsen": [34.90, 29.35, 35.05, 29.60]
-  },
-  "features": [
-    {
-      "type": "Feature",
-      "properties": {"name": "aqaba_analysis_box"},
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[
-          [34.90, 29.35],
-          [35.05, 29.35],
-          [35.05, 29.60],
-          [34.90, 29.60],
-          [34.90, 29.35]
-        ]]
-      }
-    }
-  ]
+"type": "FeatureCollection",
+"name": "aqaba_aoi",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "name": "aqaba_analysis_box", "verified": false, "area_km2": 403.19418848961504 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 35.05, 29.35 ], [ 35.05, 29.6 ], [ 34.9, 29.6 ], [ 34.9, 29.35 ], [ 35.05, 29.35 ] ] ] } }
+]
 }

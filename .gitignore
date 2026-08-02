@@ -3,23 +3,29 @@
 .env.*
 !.env.example
 
-# Python
+# Python environment
+.venv/
+backend/.venv/
 __pycache__/
 *.pyc
-backend/.venv/
 *.egg-info/
 
-# Data — raw downloads are large and fully reproducible from the ingestion scripts
-data/raw/**
+# Raw downloads — reproducible with scripts/, large, not worth versioning
+data/raw/*
+!data/raw/aoi/
+!data/raw/aoi/**
 !data/raw/.gitkeep
 !**/.gitkeep
 
-# Processed large binary grids/rasters — reproducible, not hand-authored
-data/processed/**/*.tif
-data/processed/**/*.tiff
-data/processed/**/*.nc
-data/processed/**/*.zarr
-# Small vector files (provisional seeds, contracts) ARE committed — see tasks/00-contracts.md
+# Intermediates and the local catchment test fixture. The fixture MUST NOT be
+# shared — contract §4 P1 gives catchment ownership to Mahdi, and a second
+# AQ-C{NN} geometry in circulation is exactly what the ID contract prevents.
+data/interim/
+data/outputs/
+
+# data/aoi/ and data/processed/ ARE committed on purpose: they are the shared
+# contract paths from 00-contracts.md §3 that other people's code reads
+# (reef zones, coastline, depth field, feature tables). ~8 MB total.
 
 # OS
 .DS_Store
