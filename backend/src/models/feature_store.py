@@ -60,6 +60,11 @@ REAL_CATCHMENTS = {
 class FeatureStore(ABC):
     """One method. Everything downstream depends on nothing more."""
 
+    #: True only for sources that fabricate their rows. Callers branch on this
+    #: to decide where output may be written - never on string-matching
+    #: provenance, which is a description and not a guarantee.
+    is_synthetic: bool = False
+
     @abstractmethod
     def _read(self) -> pd.DataFrame: ...
 
@@ -129,8 +134,12 @@ class StubFeatureStore(FeatureStore):
     A model that cannot recover a rule we wrote ourselves is broken, so this
     doubles as a test of the harness rather than of hydrology.
 
-    IT IS NOT DATA. Every result from it is labelled synthetic.
+    IT IS NOT DATA. Every result from it is labelled synthetic, it can only be
+    selected by asking for it by name, and nothing it produces may be written
+    to a path that serving or the pitch reads.
     """
+
+    is_synthetic = True
 
     def __init__(self, n_events: int = 220, seed: int = 20260803,
                  positive_rate: float = 0.12):
@@ -224,9 +233,29 @@ class StubFeatureStore(FeatureStore):
 
 
 def get_feature_store(source: str | None = None) -> FeatureStore:
+    """Resolve a feature source. Synthetic is never chosen implicitly.
+
+    `auto` used to fall back to the stub when the real matrix was absent, which
+    meant running the trainer before Karam delivered produced a synthetic model
+    and no error. A model trained on fabricated rows is worse than no model,
+    because it looks exactly like one that works. So auto now resolves to the
+    real matrix or fails, and the stub has to be asked for by name.
+    """
     source = (source or os.environ.get("REEFSHIELD_FEATURE_SOURCE") or "auto").lower()
     if source == "auto":
-        source = "parquet" if DEFAULT_PARQUET.exists() else "stub"
+        if not DEFAULT_PARQUET.exists():
+            raise FileNotFoundError(
+                f"The real feature matrix is not here yet:\n"
+                f"  {DEFAULT_PARQUET}\n\n"
+                "Karam delivers it (Phase 2, rainfall stream). Until then there is\n"
+                "nothing legitimate to train on, and auto will not substitute\n"
+                "synthetic rows for it.\n\n"
+                "To exercise the harness deliberately:\n"
+                "    REEFSHIELD_FEATURE_SOURCE=stub  or  --source stub\n"
+                "Synthetic runs cannot write docs/model_card.md or a servable\n"
+                "artifact - see scripts/11_train_runoff_model.py."
+            )
+        source = "parquet"
     if source == "parquet":
         return ParquetFeatureStore()
     if source == "supabase":

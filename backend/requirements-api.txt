@@ -1,0 +1,17 @@
+# API image. Serving only - no geospatial stack, which keeps this image small
+# and fast to rebuild. It is the layer that gets iterated on most.
+#
+# Pinned exactly, and resolved by pip against python:3.12-slim rather than
+# written by hand - the first attempt invented pandas==2.3.4, which does not
+# exist. Re-resolve with:
+#   docker run --rm python:3.12-slim sh -c "pip install -q <pkgs> && pip freeze"
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+pydantic==2.13.4
+pandas==2.3.3
+numpy==2.4.6
+pyarrow==25.0.0
+scikit-learn==1.9.0
+scipy==1.18.0
+xgboost==3.3.0
+shap==0.52.0
