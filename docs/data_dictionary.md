@@ -251,23 +251,24 @@ and that is what surfaced the **27 culverts**, the **Aqaba Marine Park**, and th
 
 ---
 
-## 4. Reef zones (provisional — Allen Coral Atlas pending)
+## 4. Reef zones (real — Allen Coral Atlas v2.0, swap-in #3 CLOSED 2026-08-03)
 
 | Field | Value |
 |---|---|
-| **Product/version** | **PROVISIONAL**, derived. Allen Coral Atlas v2.0 export is swap-in #3. |
-| **Access date** | 2026-08-01 (provisional build) |
-| **Access method** | Derived from the water mask + published dive-site positions |
-| **Coverage** | Jordanian coast, 29.356–29.530 N |
-| **License** | n/a (own derivation). ACA is CC BY 4.0 when swapped in. |
-| **Reproduce** | `../.venv/bin/python make_reef_zones_provisional.py` (needs `process_bathymetry.py` first) |
-| **Output** | `data/processed/vectors/reef_zones_PROVISIONAL.gpkg` |
+| **Product/version** | `ACA/reef_habitat/v2_0` — Allen Coral Atlas v2.0, `benthic` + `geomorphic` bands, via Google Earth Engine |
+| **Access date** | 2026-08-03 (Earth Engine batch export to Drive, task `WJKEYOKSLGKFF2VSEIK5RWCD` / full-box predecessor) |
+| **Access method** | `export_aca.py submit` → Drive → `export_aca.py build`. Exported at native **5 m**, CRS EPSG:32636, over the download superset box |
+| **Coverage** | Export covers the full padded box; **only reef within 100 m of the Jordanian zone chain is used**. 6.09 km² of the 7.32 km² exported lies in Egyptian, Saudi and Israeli water and is deliberately discarded |
+| **License** | CC BY 4.0 — Allen Coral Atlas (Arizona State University / Planet / Vulcan) |
+| **Reproduce** | `../.venv/bin/python export_aca.py build` (needs the GeoTIFF in `data/raw/aca/` and `process_bathymetry.py` + `extract_osm.sh` already run) |
+| **Output** | `data/processed/vectors/reef_zones.gpkg`, plus `aca_fragments_BEFORE_MERGE.gpkg` (raw polygonized ACA) and `aca_pieces_ASSIGNED.gpkg` (audit trail of which piece went to which zone) |
+| **Superseded** | `reef_zones_PROVISIONAL.gpkg` is retained for the before/after comparison only. **Do not read it as current geometry** — `qa_marine.py` now prefers the final file automatically |
 
 **QA figures**
 
 | figure | claim it makes checkable |
 |---|---|
-| [reef_01_provisional_over_satellite.png](qa_screenshots/reef_01_provisional_over_satellite.png) | every zone is seaward of the visible shoreline |
+| [reef_01_provisional_over_satellite.png](qa_screenshots/reef_01_provisional_over_satellite.png) | every zone is seaward of the visible shoreline. **Filename retains "provisional" for link stability — the figure now shows ACA geometry, and its caption states which file it was drawn from** |
 | [reef_02_per_zone_insets.png](qa_screenshots/reef_02_per_zone_insets.png) | each zone individually, with area/park/depth |
 | [reef_03_overlap_bug_before_after.png](qa_screenshots/reef_03_overlap_bug_before_after.png) | **bug fixed** — 1.46 ha double-count removed |
 | [reef_04_marine_park_validation.png](qa_screenshots/reef_04_marine_park_validation.png) | **independent validation** against the Marine Park |
@@ -281,52 +282,88 @@ already, with the same names and types, so the exposure engine is built once:
 | `reef_zone_id` | str | `R-01`…`R-08`, contract §2. **Never renumber.** |
 | `id` | str | Duplicate of `reef_zone_id` — contract §3 names the column `id`, the implementation plan uses `reef_zone_id`. Both carried so either join key works. |
 | `zone_name` | str | Human-readable coastal stretch |
-| `habitat_class` | str | `unknown` until ACA lands |
-| `sensitivity_weight` | float | **1.0 placeholder for every zone** |
+| `habitat_class` | str | **Real ACA benthic class, as a readable name** (`Coral/Algae`, `Rock`, …). Dominant class **by area**, not by piece count |
+| `habitat_class_code` | int | The raw ACA integer beside the name, so provenance back to the raster survives |
+| `habitat_class_mix` | str | Full benthic composition as area percentages, e.g. `Coral/Algae:89%;Rock:11%` |
+| `geomorphic_class`, `geomorphic_class_code` | str, int | ACA geomorphic band, same treatment |
+| `sensitivity_weight` | float | **Still 1.0 placeholder for every zone** — ACA maps habitat, not sensitivity |
 | `sensitivity_weight_status` | str | `PLACEHOLDER_PENDING_MARINE_SCIENTIST` — in the schema itself, not only the docs |
-| `provisional` | bool | `True` |
+| `provisional` | bool | `False` |
 | `geom_basis` | str | How the geometry was derived |
 | `area_km2` | float | From UTM 36N, never degrees |
-| `depth_median_m`, `depth_min_m` | float | Context only — see caveat |
-| `marine_park_overlap_pct` | float | **Real measured data**, added this pass |
+| `depth_median_m`, `depth_min_m` | float | Over **water cells only**; `NaN` where no water cell exists — see caveat |
+| `depth_land_cell_pct` | float | Share of bathymetry cells under the zone that read as land. Carries the 50 m / 5 m resolution mismatch with the number instead of hiding it |
+| `marine_park_overlap_pct` | float | **Real measured data**, recomputed for the ACA geometry |
 
-**Zones** (north → south, total 5.69 km², consistent with published estimates of
-Jordan's reef area of ~5–13 km²):
+**Zones** (north → south, total **1.24 km²**). Note this is *below* the published
+~5–13 km² range for Jordan's reef, and the provisional figure of 5.69 km² sat inside
+it — but the provisional number was the area of hand-drawn 250 m-wide boxes, not of
+reef. 1.24 km² is what ACA actually maps as benthic habitat within 100 m of the
+Jordanian chain. The published range covers a wider definition of reef area and
+includes the deeper habitat ACA does not map (limitation 1).
 
-| id | stretch | area km² | median depth m | in Marine Park |
-|---|---|---:|---:|---:|
-| R-01 | North Aqaba / Ayla & Public Beach | 0.85 | −44.8 | 0% |
-| R-02 | Port frontage / First Bay & Power Station | 0.81 | −312.2 | 0% |
-| R-03 | Tourist Camp / north Marine Park boundary | 0.62 | −220.6 | 0% |
-| R-04 | Marine Science Station / Cedar Pride | 0.42 | −103.7 | **71.3%** |
-| R-05 | Japanese Garden / Gorgonian | 0.39 | −36.6 | **66.6%** |
-| R-06 | Black Rock / Blue Coral | 0.54 | −21.6 | **84.5%** |
-| R-07 | Tala Bay / Seven Sisters | 0.61 | −19.9 | **79.1%** |
-| R-08 | Royal Diving Club / Yamanieh to Saudi border | 1.44 | −29.4 | 7.8% |
+| id | stretch | area km² | median depth m | land cells | dominant habitat | in Marine Park |
+|---|---|---:|---:|---:|---|---:|
+| R-01 | North Aqaba / Ayla & Public Beach | 0.46 | −7.4 | 39% | Coral/Algae 89% | 0% |
+| R-02 | Port frontage / First Bay & Power Station | 0.04 | *n/a* | 100% | Coral/Algae 100% | 0% |
+| R-03 | Tourist Camp / north Marine Park boundary | 0.01 | −179.7 | 0% | Coral/Algae 100% | 0% |
+| R-04 | Marine Science Station / Cedar Pride | 0.15 | −44.0 | 19% | Coral/Algae 99% | **96.9%** |
+| R-05 | Japanese Garden / Gorgonian | 0.07 | −17.4 | 0% | Coral/Algae 99% | **100%** |
+| R-06 | Black Rock / Blue Coral | 0.19 | −6.4 | 52% | Coral/Algae 91% | **100%** |
+| R-07 | Tala Bay / Seven Sisters | 0.13 | −14.9 | 75% | Rock 86% | **92.4%** |
+| R-08 | Royal Diving Club / Yamanieh to Saudi border | 0.20 | −13.9 | 51% | Rock 66% | 10.3% |
 
-**Independent validation.** The Aqaba Marine Park boundary (from OSM,
-`protect_class=4`, 3.45 km², spanning 29.397–29.460 N) was **never used as an input
-to zone placement**, yet R-04–R-07 land 67–85% inside it. That is genuine
-corroboration that the dive-site latitudes are right. R-01–R-03 falling outside is
-consistent with them being city and port frontage.
+**Independent validation, and it got stronger.** The Aqaba Marine Park boundary (from
+OSM, `protect_class=4`, 3.45 km², spanning 29.397–29.460 N) was **never used as an
+input to zone placement or to the ACA merge**. Against the hand-drawn boxes R-04–R-07
+landed 67–85% inside it; against real ACA habitat they land **92–100%**. Independent
+corroboration improving when the geometry is replaced by measured data is the
+strongest evidence in this section. R-01–R-03 falling outside remains consistent with
+city and port frontage.
 
-**What is trustworthy in this geometry, and what is not.** A first attempt placed
-these as boxes on a hand-fitted straight-line shoreline. Checked against the
-bathymetry it was ~600 m too far east at R-03–R-05 (those boxes sat on dry land at
-+7 to +18 m elevation) and too far west at R-07–R-08 (in 250–400 m of open water).
-- **Along-shore position is data-derived** from the water mask, reliable to ~50 m,
-  and an `assert` now requires every zone's median depth to be below sea level.
-- **Seaward width is a flat 250 m assumption**, deliberately *not* derived from depth
-  contours: the Gulf of Aqaba drop-off is far steeper than the bathymetry's ~450 m
-  true resolution can resolve, so those contours would dress an artefact up as a
-  measurement. `area_km2` is therefore order-of-magnitude only.
-- The implausibly deep medians at R-02/R-03 are that same artefact, not evidence of
-  300 m-deep reef.
+**The dominant-habitat result also corroborates the placement.** Coral/Algae dominates
+R-01–R-06 (the Marine Park stretch) and Rock dominates R-07–R-08. Nothing in the merge
+knows where the park is.
+
+**What is trustworthy in this geometry, and what is not.** Both the outline *and* the
+width are now measured: the geometry is ACA's own 5 m benthic polygons, so the flat
+250 m width assumption that made the provisional `area_km2` order-of-magnitude only
+is **gone**. What remains judgement is which zone a piece of reef belongs to:
+
+- **Fragments are cut at zone boundaries, not assigned whole.** ACA polygonizes
+  Aqaba's continuous fringing reef into a few very long shapes that run through
+  several zones. Assigning each to the zone it overlapped *most* gave R-05 (Japanese
+  Garden, a well-known reef) **475 m²** while 0.068 km² of reef sat inside its box,
+  credited to R-04 and R-06 — which were in turn credited with reef outside theirs.
+  No error and no missing data, just a wrong area per zone, which is exactly what the
+  exposure engine consumes. An area-conservation assert now guards this.
+- **Reef within 100 m of a zone but inside none is snapped to the nearest zone.** The
+  boxes were hand-drawn outlines of dive sites and the reef strip runs past them:
+  0.71 km² sits within 100 m of a box against 0.52 km² inside one. The eight zones are
+  a contiguous chain 24–50 m apart (R-07/R-08 touch), so 15 pieces totalling 0.011 km²
+  are near two zones and take the nearer — reported by the build, and asserted to
+  occur only between *adjacent* zones. The tolerance is 100 m against >5 km to the
+  nearest foreign reef, so it cannot reach across a border.
+- **Dominant habitat is by area, not by piece count.** Polygonizing a raster yields one
+  large patch plus a scatter of single-pixel specks; counting pieces let 25 rock specks
+  outvote the coral patch that *is* the zone. R-08 reads `Rock:59 / Coral-Algae:47` by
+  count — a meaningless near-tie — versus `Rock:66% / Coral-Algae:34%` by area.
+- **Depth is now the weakest field, not the geometry.** The bathymetry is 50 m and the
+  reef strip is 20–50 m wide, so 39–100% of the cells under a zone read as land.
+  Depths are medians over water cells only; R-02 has no water cell at all and is
+  reported `NaN`, never 0 and never the +10 m the raw cells would give. R-03's −179.7 m
+  comes from just 2 cells over a 0.01 km² zone and should not be quoted. Use
+  `depth_land_cell_pct` before trusting any depth here.
+- **Class labels are read off the live Earth Engine asset**, not from documentation,
+  and `export_aca.py verify-classes` re-checks them on every build. Guessing is a real
+  trap: geomorphic `22` is *Reef Slope*, and the plausible guess (*Back Reef Slope*,
+  which is `24`) would have mislabelled five of the eight zones with no error.
 
 **Known limitations**
 
-1. **Allen Coral Atlas maps shallow reef only**, so once swapped in, deeper habitat
-   remains unrepresented and the exposure model is silent about it.
+1. **Allen Coral Atlas maps shallow reef only**, so deeper habitat is unrepresented and
+   the exposure model is silent about it. This is the main reason 1.24 km² sits below
+   the published ~5–13 km² range.
 2. **`sensitivity_weight` reflects team assumptions, not Atlas data and not
    scientific measurement**; assigning real weights is a Phase 2 item requiring
    marine-scientist input, and this must be said out loud on the slide because
@@ -335,13 +372,19 @@ bathymetry it was ~600 m too far east at R-03–R-05 (those boxes sat on dry lan
    and not converted into a sensitivity weight**, because that conversion is the
    marine scientist's judgement call and inventing it from protection status would
    repeat the exact error limitation 2 warns about.
-4. **R-01 and R-02 cover developed beach and port frontage** where reef presence is
-   doubtful; per contract §2, if ACA yields fewer real zones the extras are dropped
-   and the remaining IDs keep their names, never renumbered.
-5. R-08 is **2.4× the median zone area** and straddles the park boundary, making it
-   the obvious candidate for a split once real habitat data exists — but splitting it
-   now would change the zone count and break the ID contract, so it is flagged as a
-   recommendation rather than done unilaterally.
+4. **R-01 and R-02 cover developed beach and port frontage** where reef presence was
+   expected to be doubtful. ACA maps habitat in both, so per contract §2 no zone was
+   dropped and all eight IDs survive. R-02 is now the smallest zone at 0.04 km² and
+   R-03 at 0.01 km²; both are thin enough that per-zone exposure for them should be
+   quoted with the area beside it.
+5. R-08 is no longer the outlier it was — at 0.20 km² against a 0.14 km² median it is
+   **1.4×** the median rather than 2.4×, so the case for splitting it has weakened.
+   Splitting would still change the zone count and break the ID contract, so it stays
+   a recommendation, not a unilateral change.
+6. **`sensitivity_weight` did not become derivable when real habitat arrived.** It is
+   still 1.0 everywhere. `habitat_class` and `marine_park_overlap_pct` are exactly the
+   measured inputs a marine scientist needs in order to set it — handing them over is
+   useful, converting them into a weight ourselves is the error limitation 2 names.
 
 ---
 

@@ -6,10 +6,11 @@ Includes before/after evidence for three of the four bugs already caught, becaus
 "we fixed it" is a claim, and a claim without a picture is exactly what this phase
 is meant to eliminate.
 
-The Allen Coral Atlas figures are NOT here: they require an authenticated Earth
-Engine session, which needs a browser. export_aca.py produces them the moment
-auth exists. No placeholder is drawn for them — a fake ACA figure would be worse
-than a missing one.
+Since 3 Aug the reef figures are drawn from the real Allen Coral Atlas geometry
+(`reef_zones.gpkg`) whenever export_aca.py has produced it, and fall back to the
+provisional boxes otherwise. Which file was used is printed at the end of the run
+and stated in the figure captions — the geometry a figure describes is not
+something a reader should have to infer from a filename.
 """
 
 import geopandas as gpd
@@ -35,8 +36,17 @@ from qa_common import CRS_BASEMAP, add_satellite, save_fig
 
 DEPTH = PROCESSED / "bathymetry" / "depth_utm36n.tif"
 COAST = VECTORS / "coastline.gpkg"
-REEF = VECTORS / "reef_zones_PROVISIONAL.gpkg"
 SRC = "Marine chain"
+
+# Prefer the real ACA-derived zones once export_aca.py build has run, and fall back
+# to the provisional boxes before that. Pinning the provisional path meant the whole
+# reef figure set silently kept showing hand-drawn boxes after real habitat landed —
+# the figures would have looked fine and described geometry nobody uses any more.
+REEF_FINAL = VECTORS / "reef_zones.gpkg"
+REEF_PROVISIONAL = VECTORS / "reef_zones_PROVISIONAL.gpkg"
+REEF = REEF_FINAL if REEF_FINAL.exists() else REEF_PROVISIONAL
+REEF_IS_FINAL = REEF == REEF_FINAL
+REEF_LABEL = "ACA-derived" if REEF_IS_FINAL else "Provisional"
 
 
 def water_mask():
@@ -60,9 +70,13 @@ def reef_01_over_satellite():
                     fontsize=9.5, weight="bold", color="white", va="center",
                     bbox=dict(boxstyle="round,pad=0.3", fc="black", alpha=0.6))
     add_satellite(ax, zoom=13)
-    ax.set_title("Provisional reef zones R-01…R-08 over Esri WorldImagery")
+    ax.set_title(f"{REEF_LABEL} reef zones R-01…R-08 over Esri WorldImagery")
     ax.set_xticks([]); ax.set_yticks([])
+    # The filename keeps the word "provisional" because four docs link to it by name,
+    # so the caption has to carry the geometry basis instead — otherwise the one thing
+    # a reader takes from it is that these are still hand-drawn boxes.
     save_fig(fig, "reef_01_provisional_over_satellite",
+             f"GEOMETRY: {REEF_LABEL} ({REEF.name}). "
              "All 8 zones on satellite imagery. Every zone must lie on the water side of the "
              "visible shoreline — this is the check that caught the first attempt placing "
              "R-03–R-05 on dry land. The fringing-reef shelf is visible as the pale strip "
@@ -85,7 +99,7 @@ def reef_02_zone_insets():
                      f"{r['area_km2']:.2f} km², park {r['marine_park_overlap_pct']:.0f}%, "
                      f"med depth {r['depth_median_m']:.0f} m", fontsize=9)
         ax.set_xticks([]); ax.set_yticks([])
-    fig.suptitle("Per-zone detail — each provisional reef zone on imagery", fontsize=14)
+    fig.suptitle(f"Per-zone detail — each {REEF_LABEL} reef zone on imagery", fontsize=14)
     save_fig(fig, "reef_02_per_zone_insets",
              "Each zone individually against imagery, annotated with area, Marine Park "
              "overlap and median depth. R-01/R-02 visibly cover developed beach and port "
@@ -445,5 +459,8 @@ if __name__ == "__main__":
     if dists is not None:
         print(f"  coastline vs OSM: median {np.median(dists):.0f} m, p90 "
               f"{np.percentile(dists, 90):.0f} m")
-    print("\nNOT PRODUCED: Allen Coral Atlas figures — require Earth Engine auth "
-          "(browser). See export_aca.py.")
+    if REEF_IS_FINAL:
+        print(f"\n  reef geometry:    {REEF.name} (Allen Coral Atlas v2.0 benthic)")
+    else:
+        print("\nNOT PRODUCED: Allen Coral Atlas figures — require Earth Engine auth "
+              "(browser). See export_aca.py.")
