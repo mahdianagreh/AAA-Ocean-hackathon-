@@ -269,17 +269,43 @@ and that is what surfaced the **46 culverts**, the **Aqaba Marine Park**, and th
 
 ---
 
-## 4. Reef zones (provisional — Allen Coral Atlas pending)
+## 4. Reef zones — Allen Coral Atlas v2.0 (swap-in #3 COMPLETE)
 
 | Field | Value |
 |---|---|
-| **Product/version** | **PROVISIONAL**, derived. Allen Coral Atlas v2.0 export is swap-in #3. |
-| **Access date** | 2026-08-01 (provisional build) |
-| **Access method** | Derived from the water mask + published dive-site positions |
+| **Product/version** | **Allen Coral Atlas v2.0** — Earth Engine asset `ACA/reef_habitat/v2_0` (an `ee.Image`, not an ImageCollection) |
+| **Access date** | **2026-08-03** (Earth Engine auth completed by Karam the same day) |
+| **Access method** | `reduceToVectors` at native **5 m** over `MARINE_AOI`, server-side; living-reef benthic classes (Coral/Algae, Seagrass) clipped to each zone's along-shore band |
 | **Coverage** | Jordanian coast, 29.356–29.530 N |
-| **License** | n/a (own derivation). ACA is CC BY 4.0 when swapped in. |
-| **Reproduce** | `../.venv/bin/python make_reef_zones_provisional.py` (needs `process_bathymetry.py` first) |
-| **Output** | `data/processed/vectors/reef_zones_PROVISIONAL.gpkg` |
+| **License** | CC BY 4.0 (Allen Coral Atlas) |
+| **Reproduce** | `../.venv/bin/python export_aca.py build` |
+| **Output** | `data/processed/vectors/reef_zones.gpkg` (real) · `aca_fragments_BEFORE_MERGE.gpkg` (every patch, pre-merge) · `reef_zones_PROVISIONAL.gpkg` retained for the swap-in diff |
+| **Superseded** | The provisional derivation (water mask + dive-site positions, accessed 2026-08-01). Kept on disk, not deleted, because `verify_against_provisional()` diffs against it. |
+
+**Swap-in #3 result — 2026-08-03**
+
+| check | result |
+|---|---|
+| zone IDs | **8/8 continuous**, no new IDs (contract §2) |
+| worst centroid drift | **0.655 km** against a 5 km assert bound |
+| zones disjoint | asserted — summed area **==** union |
+| schema continuity | asserted — all 14 provisional columns present, 2 added |
+| `sensitivity_weight` | **still 1.0**, still `PLACEHOLDER_PENDING_MARINE_SCIENTIST` |
+
+**Area correction — the headline of this swap.** The provisional strips claimed 5.69 km²;
+the Atlas gives **0.742 km² across the 8 zones**, which is **7.7× smaller**. The strips
+assumed a uniform 250 m width along the whole coastline, and that assumption was the error.
+Any figure derived from the provisional area is an overestimate.
+
+**Scope.** 0.742 km² is **86.8%** of the living reef the Atlas maps on Jordan's coastal
+corridor (0.855 km²). A further **3.338 km²** sits inside the same marine bounding box on
+the Egyptian and Israeli shores — 80% of the box total — and is deliberately out of scope.
+An earlier draft of this entry said coverage was "only 40%"; that measured against every
+reef in the box including other nations' waters, and was wrong.
+
+**Habitat classes now populated** from the asset's own property tables (read on 2026-08-03,
+not transcribed): benthic `Coral/Algae` dominates every zone; geomorphic is `Outer Reef
+Flat` for six zones and `Reef Slope` for R-02 and R-03.
 
 **QA figures**
 
