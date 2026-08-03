@@ -83,3 +83,10 @@ frontend/.env.local
 # particular are what scripts/13_extract_sro_all_days.py reads.
 /raw/
 /era5/
+
+# Model artifacts: the .joblib is 331 KB and the ledger is the index.
+# Both committed on purpose - a stored prediction references a version id, and
+# the artifact behind it must be retrievable or the prediction is unreproducible.
+!data/models/
+!data/models/*.joblib
+!data/models/*.jsonl
