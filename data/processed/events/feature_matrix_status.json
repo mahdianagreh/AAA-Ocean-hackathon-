@@ -1,9 +1,9 @@
 {
-  "generated_utc": "2026-08-03T08:24:51Z",
+  "generated_utc": "2026-08-03T09:28:32Z",
   "rows": 500,
   "events": 100,
   "catchments": 5,
-  "columns": 128,
+  "columns": 139,
   "sources_present": {
     "terrain": {
       "path": "data/processed/features/catchment_terrain.parquet",
@@ -20,6 +20,16 @@
     "urban": {
       "path": "data/processed/features/urban_by_catchment.parquet",
       "columns": 9
+    },
+    "antecedent": {
+      "path": "data/processed/features/event_antecedents.parquet",
+      "columns": 11,
+      "labels_withheld": [
+        "label_surface_runoff_mm",
+        "label_subsurface_runoff_mm"
+      ],
+      "rows_with_values": 395,
+      "rows_without_values": 105
     }
   },
   "sources_missing": {},
