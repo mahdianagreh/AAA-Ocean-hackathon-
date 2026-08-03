@@ -143,6 +143,10 @@ def load_outlets() -> int:
             method = (
                 f"{row['method']} (confidence: {row['position_confidence']})"
                 + (f" — {row['imagery_note']}" if row.get("imagery_note") else "")
+                # Mahdi's OSM-culvert cross-check (added 2026-08-03) — no dedicated column
+                # on `outlets` for this, folded into `method` rather than lost, same
+                # pattern as the confidence/imagery_note fields above.
+                + (f" | culvert check: {row['culvert_verdict']}" if row.get("culvert_verdict") else "")
             )
             session.execute(
                 UPSERT_OUTLET_SQL,
