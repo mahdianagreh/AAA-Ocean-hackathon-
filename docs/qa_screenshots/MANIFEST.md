@@ -76,3 +76,9 @@ not captioned here. Listed so the directory is fully accounted for.
 - [plume_index_comparison_AQ-2016-10-28.png](plume_index_comparison_AQ-2016-10-28.png)
 - [plume_manual_qc_AQ-2016-10-28.png](plume_manual_qc_AQ-2016-10-28.png)
 
+## Forcing chain (Nizar)
+
+| figure | what it shows | generated |
+|---|---|---|
+| [currents_01_hycom_vs_copernicus.png](currents_01_hycom_vs_copernicus.png) | Left: HYCOM (blue) and Copernicus Marine (orange) surface-current vectors over the resolved portion of the AOI. The provisional outlet (red X) has no vector from either model — both independently mask that exact cell as unresolved/land, which is the concrete evidence behind the ~9km resolution limitation in docs/forcing_limitations.md. Right: at the nearest point both models resolve (34.90, 29.40), direction agreement is 6.0° (52.9° vs 46.9°, from-direction) and speeds are within 20% (6.9 vs 8.3 cm/s) — two independent global ocean models broadly agreeing is what makes the plume-direction claim defensible. | 2026-08-03 UTC |
+

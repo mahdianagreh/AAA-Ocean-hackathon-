@@ -1,0 +1,65 @@
+{
+  "generated_utc": "2026-08-02T18:04:56Z",
+  "event_id": "AQ-2016-10-28",
+  "question": "Does the derived rainfall peak precede the documented flood arrival once computed over the real catchments rather than the retired coastal box?",
+  "reported_flood_arrival_utc": "2016-10-28 00:00:00+00:00",
+  "reported_offshore_response_utc": "2016-10-28 06:50:00+00:00",
+  "extent": {
+    "terrain_aoi_wsen": [
+      34.75,
+      29.15,
+      35.94,
+      30.3
+    ]
+  },
+  "granules_used": 144,
+  "old_result_over_retired_box": {
+    "peak_3h_start_utc": "2016-10-28T02:30:00Z",
+    "peak_3h_mm": 11.715,
+    "precedes_flood_arrival": false
+  },
+  "per_catchment": [
+    {
+      "catchment_id": "AQ-C01",
+      "peak_3h_start_utc": "2016-10-27T14:00:00Z",
+      "peak_3h_end_utc": "2016-10-27T17:00:00Z",
+      "peak_3h_mm": 4.539,
+      "hours_before_flood_arrival": 10.0,
+      "precedes_flood_arrival": true
+    },
+    {
+      "catchment_id": "AQ-C02",
+      "peak_3h_start_utc": "2016-10-28T01:00:00Z",
+      "peak_3h_end_utc": "2016-10-28T04:00:00Z",
+      "peak_3h_mm": 7.6147,
+      "hours_before_flood_arrival": -1.0,
+      "precedes_flood_arrival": false
+    },
+    {
+      "catchment_id": "AQ-C03",
+      "peak_3h_start_utc": "2016-10-28T00:00:00Z",
+      "peak_3h_end_utc": "2016-10-28T03:00:00Z",
+      "peak_3h_mm": 6.1786,
+      "hours_before_flood_arrival": 0.0,
+      "precedes_flood_arrival": false
+    },
+    {
+      "catchment_id": "AQ-C04",
+      "peak_3h_start_utc": "2016-10-28T00:00:00Z",
+      "peak_3h_end_utc": "2016-10-28T03:00:00Z",
+      "peak_3h_mm": 7.9874,
+      "hours_before_flood_arrival": 0.0,
+      "precedes_flood_arrival": false
+    },
+    {
+      "catchment_id": "AQ-C05",
+      "peak_3h_start_utc": "2016-10-28T00:00:00Z",
+      "peak_3h_end_utc": "2016-10-28T03:00:00Z",
+      "peak_3h_mm": 7.8305,
+      "hours_before_flood_arrival": 0.0,
+      "precedes_flood_arrival": false
+    }
+  ],
+  "resolved": true,
+  "note": "Computed over catchment polygons, not a bounding box. AQ-C01 is decisive: it carries 96 % of the discharge and Kalman et al. (2025) name Wadi Yutum explicitly as a generating catchment."
+}

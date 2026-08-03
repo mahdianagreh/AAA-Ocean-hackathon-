@@ -48,3 +48,11 @@ data/processed/**/*.tif
 
 # OS
 .DS_Store
+
+# Per-event processed outputs regenerate from scripts/ and are large. The
+# committed contract paths under data/processed/events/ are the small shared
+# artefacts only: the catalogue, the climatology, and the sweep manifests.
+data/processed/events/AQ-*/
+data/processed/events/AQ-*.nc
+data/processed/events/AQ-*.parquet
+data/processed/events/*.nc

@@ -19,12 +19,30 @@ DESIGN NOTES THAT MATTER MORE THAN THE ROUTES
 
 * Missing is missing. If an artifact is absent the endpoint says so — it does not
   invent a plausible placeholder to keep its shape.
+
+MERGE NOTE, 3 Aug 2026
+----------------------
+origin/main carried a deliberately thin API whose own docstring said "Pulga owns the
+real backend; this exists so `docker compose up` answers on day one". This file
+supersedes it, but four things from it were kept rather than discarded because they
+are deployment contract, not scaffolding:
+
+  * `/health` at the UNVERSIONED path — the Dockerfile HEALTHCHECK targets it
+  * CORS origins from `REEFSHIELD_CORS_ORIGINS`, which Compose already sets
+  * `REEFSHIELD_ROOT` for the container data volume
+  * `/api/v1/models` and the real `runoff_model.predict_one` wiring
+
+`/runoff/predict` now tries the real model first and falls back to the stub only when
+no artifact is registered, so it upgrades itself when training lands.
 """
 
 from __future__ import annotations
 
 import math
+import os
+import subprocess
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -84,12 +102,82 @@ app = FastAPI(
 )
 
 # The frontend is a separate origin during development.
+# Origins come from the environment so the container can be locked down without a
+# code change. Carried over from origin/main's API, which Docker Compose already
+# configures this way; defaulting to the Vite dev port keeps local work unchanged.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o for o in os.environ.get(
+        "REEFSHIELD_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173",
+    ).split(",") if o],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------- ops liveness (Docker)
+
+ROOT = Path(os.environ.get("REEFSHIELD_ROOT", Path(__file__).resolve().parents[3]))
+
+
+def git_sha() -> str:
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+            text=True, stderr=subprocess.DEVNULL).strip()
+    except Exception:
+        return os.environ.get("GIT_SHA", "unknown")
+
+
+@app.get("/health", tags=["ops"])
+def ops_health():
+    """Liveness for the container. Kept at the UNVERSIONED path on purpose.
+
+    The Dockerfile's HEALTHCHECK hits `/health`, so this path is part of the
+    deployment contract and must not move to /api/v1. It stays cheap and must not
+    depend on Supabase — a network blip should not restart the API — and it must
+    survive the model layer being unimportable, hence the guarded lookup.
+
+    `/api/v1/health` is the richer, artifact-aware version for the dashboard.
+    """
+    try:
+        from ..models import artifacts
+        model_available = artifacts.latest_version() is not None
+    except Exception:
+        model_available = False
+
+    return {
+        "status": "ok",
+        "version": API_VERSION,
+        "commit": git_sha(),
+        "time_utc": datetime.now(timezone.utc).isoformat(),
+        "model_available": model_available,
+        "data_volume_mounted": (ROOT / "data/processed/vectors/catchments.gpkg").exists(),
+    }
+
+
+@app.get(f"{PREFIX}/models", tags=["model"])
+def models():
+    """What is being served, and whether it is real.
+
+    From origin/main: the dashboard shows provenance rather than asserting a number
+    is trustworthy. 503 rather than an empty object, so a caller cannot mistake
+    absence for a healthy default.
+    """
+    try:
+        from ..models.runoff_model import available_versions, model_info
+    except Exception as exc:
+        raise HTTPException(503, {
+            "error": "model layer unavailable",
+            "why": f"{type(exc).__name__}: {exc}",
+        }) from exc
+    try:
+        info = model_info()
+    except FileNotFoundError as exc:
+        raise HTTPException(503, {
+            "error": "no trained model registered", "why": str(exc),
+        }) from exc
+    return {"serving": info, "versions": [v["id"] for v in available_versions()]}
 
 
 # ---------------------------------------------------------------------- health
@@ -243,12 +331,44 @@ def get_event(event_id: str):
 
 @app.post(f"{PREFIX}/runoff/predict", response_model=RunoffPrediction, tags=["model"])
 def runoff_predict(req: RunoffRequest):
-    """STUB. Shape is final; numbers are not predictions.
+    """Real model when a trained artifact is registered; stub otherwise.
 
-    Swaps for Mahdi's real predict function without the response shape changing.
+    Mahdi's model layer is built and validated, but it is blocked on the feature
+    matrix (`event_catchment_features.parquet`) while rainfall is re-pulled against
+    the corrected AOI. So this tries the real predictor FIRST and falls back to the
+    stub only when nothing is registered — that way the endpoint upgrades itself the
+    moment training lands, with no change here and no change to the response shape.
+
+    The import is local, not module-scope: the real predictor pulls xgboost and shap,
+    and the API must still boot and answer /health when the model layer cannot load.
     """
     if not any(c["catchment_id"] == req.catchment_id for c in da.catchments()):
         raise HTTPException(404, f"unknown catchment {req.catchment_id}")
+
+    try:
+        from ..models.runoff_model import predict_one
+
+        real = predict_one(req.model_dump(exclude_none=True))
+    except (FileNotFoundError, ImportError, ModuleNotFoundError):
+        real = None            # nothing registered yet — fall through to the stub
+    except KeyError as exc:    # unknown version id explicitly requested
+        raise HTTPException(404, str(exc)) from exc
+
+    if real is not None:
+        # Trust the model's own numbers; do not re-derive or rescale them here.
+        return RunoffPrediction(
+            catchment_id=req.catchment_id,
+            predicted_runoff_m3=float(real.get("predicted_runoff_m3", 0.0)),
+            relative_sediment_intensity=float(
+                real.get("relative_sediment_intensity",
+                         real.get("runoff_probability", 0.0))),
+            sediment_class=real.get("sediment_class", "moderate"),
+            model_version=str(real.get("model_version", "runoff-real")),
+            is_stub=False,
+            provenance=[Provenance(kind="derived",
+                                   detail=f"Mahdi's runoff model {real.get('model_version')}")],
+            caveats=cav.landcover_epoch() + cav.soil_is_modelled(),
+        )
 
     lc = da.landcover_for(req.catchment_id) or {}
     bare = lc.get("frac_bare_sparse_vegetation")

@@ -1,0 +1,25 @@
+{
+  "generated_utc": "2026-08-03T07:03:45Z",
+  "days_screened": 10135,
+  "date_range": "1998-01-01 .. 2025-09-30",
+  "candidates_selected": 100,
+  "top_n": 100,
+  "wet_day_threshold_mm": 1.0,
+  "ranking_percentile": 0.99,
+  "percentile_basis": "wet days only (ETCCDI R99p convention)",
+  "is_exhaustive": true,
+  "forced_from_literature": [
+    "AQ-2016-10-28"
+  ],
+  "wet_day_p99_mm_by_catchment": {
+    "AQ-C01": 14.3057,
+    "AQ-C02": 15.475,
+    "AQ-C03": 15.5913,
+    "AQ-C04": 15.5268,
+    "AQ-C05": 15.4371
+  },
+  "caveats": [
+    "Ranked on DAILY totals. A short violent burst on an otherwise modest day can be under-ranked; intensity, not daily depth, is what floods a wadi. Mitigated by a generous top-N and by forcing in the literature dates \u2014 not eliminated. Belongs in the model card.",
+    "Percentiles are per catchment. AQ-C01 reaches the Ma'an highlands and AQ-C05 is a coastal wadi; a shared threshold would describe neither."
+  ]
+}

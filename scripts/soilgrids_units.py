@@ -14,6 +14,14 @@ exactly, because a 10x error would land the sum at 1000 or 10 instead of 100.
 import numpy as np
 import rasterio
 
+# RAW is re-exported so callers (and tests) can locate data/raw/soilgrids without
+# importing the settings module themselves.
+#
+# origin/main carried an importlib-by-path shim here to dodge a name collision:
+# `from config import RAW` resolved to whichever `config` landed on sys.path first,
+# and backend/src has a `config` package, so under pytest it picked the wrong one.
+# That workaround is no longer needed — the ambiguity was removed at the root by
+# renaming this chain's settings module to `pulga_config`. See conftest.py.
 from pulga_config import RAW
 
 # variable -> (divisor, converted unit, plausible physical range after conversion)

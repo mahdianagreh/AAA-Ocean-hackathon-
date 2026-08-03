@@ -36,7 +36,7 @@ import argparse
 import json
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -48,6 +48,7 @@ from config.spatial import CRS_MEASURE, TERRAIN_AOI  # noqa: E402
 from ingestion.imerg import (  # noqa: E402
     combine_imerg_subsets,
     get_imerg_product,
+    granule_timestamp_from_name,
     precipitation_rate_to_depth,
 )
 from processing.catchment_rainfall import (  # noqa: E402
@@ -145,12 +146,40 @@ def main() -> int:
                 product["rate_units"], product["rate_period_hours"])
     logger.info("  weighting   area-weighted overlap in %s", CRS_MEASURE)
 
+    # Split into CONTIGUOUS runs before batching. combine_imerg_subsets
+    # validates that granule spacing is regular, and it is right to: stitching
+    # across a gap would silently concatenate two different periods into one
+    # series. But the real record does have gaps — a day genuinely absent from
+    # the archive, or a sweep still in progress — so the aggregation groups
+    # around them rather than refusing to run.
+    step = timedelta(minutes=product["granule_minutes"])
+    runs: list[list[Path]] = []
+    current: list[Path] = []
+    previous = None
+    for path in paths:
+        stamp = granule_timestamp_from_name(path.name)
+        if stamp is None:
+            continue
+        if previous is not None and stamp - previous != step:
+            runs.append(current)
+            current = []
+        current.append(path)
+        previous = stamp
+    if current:
+        runs.append(current)
+
+    if len(runs) > 1:
+        logger.info("  %d contiguous run(s) — the record has gaps, so each is "
+                    "aggregated separately rather than stitched", len(runs))
+
     frames: list[pd.DataFrame] = []
-    for start in range(0, len(paths), args.batch):
-        batch = paths[start : start + args.batch]
-        frames.append(aggregate_batch(batch, catchments, product))
-        logger.info("  batch %d-%d of %d done",
-                    start + 1, start + len(batch), len(paths))
+    processed = 0
+    for run in runs:
+        for start in range(0, len(run), args.batch):
+            batch = run[start : start + args.batch]
+            frames.append(aggregate_batch(batch, catchments, product))
+            processed += len(batch)
+            logger.info("  %d/%d granule(s) aggregated", processed, len(paths))
 
     table = pd.concat(frames, ignore_index=True)
     table = table.sort_values(["timestamp_utc", "catchment_id"]).reset_index(drop=True)

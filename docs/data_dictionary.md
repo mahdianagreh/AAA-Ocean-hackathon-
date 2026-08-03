@@ -726,7 +726,7 @@ Spatial contract as above (§ intro). All sources below pulled live and cached u
 | NOAA GEFS (atmos.5, pgrb2a) | NOAA NCEP / AWS Open Data (`noaa-gefs-pds`) | 2026-08-02 00Z cycle | padded box, F03–F48 (3h steps), 30 members | 2026-08-02 | US Government work, public domain | Pulled via Herbie, one GRIB subset per member per lead hour (480 total, full production run confirmed). Computes AOI-level ensemble exceedance probability against a placeholder 3h rain threshold (15mm) — swap for Karam's real per-catchment percentile once `rainfall_candidates.parquet` lands. Result: 0.00 exceedance across all 16 lead hours (correct — dry day, all 30 members agree). → `backend/src/ingestion/gefs.py`, cached at `data/raw/forecasts/gefs/latest_gefs_exceedance.nc`. |
 | ECMWF IFS Open Data | ECMWF Open Data portal (rolling archive) | latest available run, 2026-08-02 | Global 0.25°, clipped locally to AOI, steps 0–48h (3h) | 2026-08-02 | CC BY 4.0 (attribute ECMWF) | Pulled via `ecmwf-opendata` client (`type=fc, stream=oper`). Variables: tp, 10u, 10v. Rolling archive only — never use for historical backfill. Feeds GFS-vs-IFS agreement flag (100% agreement on this dry day — both models correctly show no rain over the AOI). → `backend/src/ingestion/ecmwf.py`, cached at `data/raw/forecasts/ecmwf/latest_ifs_aoi_forecast.nc`. |
 | HYCOM GLBy0.08 (FMRC best) | US Navy / hycom.org public THREDDS OPeNDAP | `GLBy0.08/latest` | padded box, depth 0–50m, ±24h around access time | 2026-08-02 | Approved for public release, unlimited distribution | Lazy-opened via OPeNDAP (no full 2TB download). Variables: water_u/water_v → `u`/`v`. Confirmed the resolution limitation directly: the provisional outlet cell (34.96, 29.54) is masked/nan in this grid; nearest resolved open water is ~6km further into the gulf mouth. → `backend/src/ingestion/ocean_currents.py`, cached at `data/raw/currents/hycom_aoi_recent.nc`. |
-| Copernicus Marine (GLOBAL_ANALYSISFORECAST_PHY_001_024) | Copernicus Marine Service | `cmems_mod_glo_phy_anfc_0.083deg_PT1H-m` | padded box, depth 0–50m | — | Copernicus Marine license (free w/ registration) | **Not yet pulled — no Copernicus Marine credentials available as of 2026-08-02.** Fetch/cache functions written and ready (`fetch_copernicus_marine`, `cache_copernicus_marine`); same output schema as HYCOM so the interpolator is source-agnostic. Register at https://data.marine.copernicus.eu/ and add credentials to activate. |
+| Copernicus Marine (GLOBAL_ANALYSISFORECAST_PHY_001_024) | Copernicus Marine Service | `cmems_mod_glo_phy_anfc_0.083deg_PT1H-m` | MARINE_AOI, depth: single level ~0.49m (this product tier is surface/near-surface hourly-mean, not the requested 0-50m column — a deeper 3D product would be needed for true sub-surface levels) | 2026-08-03 | Copernicus Marine license (free w/ registration) | **Pulled successfully — account registered and activated 2026-08-03.** Same output schema as HYCOM (interpolator is source-agnostic). At the provisional outlet (34.96, 29.54): masked/nan — same as HYCOM, two independent models agree this exact cell is unresolved. At the gulf mouth (34.90, 29.40): resolved, u=-0.061 m/s, v=-0.057 m/s. → `backend/src/ingestion/ocean_currents.py`. |
 
 **Note on the root `.env`:** commit `2f0a6d6` added a real `.env` at the repo root
 containing live NASA Earthdata credentials in plaintext, despite its own header saying
@@ -734,6 +734,28 @@ containing live NASA Earthdata credentials in plaintext, despite its own header 
 here — flagging it so it doesn't get missed: **rotate the Earthdata password**, and
 make sure no `.gitignore` gap lets it happen again (`.env` and `.env.*` must always be
 excluded before any commit touches this repo).
+
+### Phase 2 update — 2026-08-03
+
+- **Copernicus Marine activated.** Registered account, real u/v pulled for MARINE_AOI.
+  `compare_hycom_vs_copernicus()` added to `ocean_currents.py`. At (34.90, 29.40):
+  HYCOM dir_from=52.9°, Copernicus Marine dir_from=46.9° — **6.0° disagreement**, good
+  agreement between two independent global ocean models. Both models mask the exact
+  provisional outlet cell (34.96, 29.54) as unresolved/land — corroborating evidence for
+  the resolution limitation, not a single-source artifact.
+- **GEFS exceedance repointed** from the Phase 1 placeholder (flat 15mm/3h) to Karam's
+  real per-catchment p99 climatology (`catchment_rainfall_climatology`, window_hours=24,
+  source `imerg_v07_final`). Karam's delivered climatology is daily-resolution only (no
+  1h/3h/6h windows were computed), so the exceedance window is 24h, not 3h as originally
+  scoped — documented here rather than silently assumed. Ensemble precipitation is now
+  sampled at each of the 5 catchment centroids (not one AOI-wide mean), since TERRAIN_AOI
+  is large enough (~115×128km) for GFS/GEFS grid cells to meaningfully differ by catchment.
+  Real per-catchment exceedance now writes to `forecast_runs` / `forecast_catchment_rainfall`
+  / `forecast_exceedance` in Postgres — see `backend/src/db/loaders/forecast_pipeline.py`.
+- **Old bounding box purged.** `gfs.py`/`gefs.py`/`ecmwf.py`/`ocean_currents.py` now import
+  `TERRAIN_AOI`/`MARINE_AOI` from the shared `config.spatial` module instead of a hardcoded
+  bbox — done as part of the team's Day-0 merge, not by this workstream, but confirmed
+  working post-merge.
 
 
 ---

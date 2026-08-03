@@ -1,0 +1,35 @@
+{
+  "generated_utc": "2026-08-02T19:57:27Z",
+  "purpose": "antecedent features and runoff labels for the candidate events",
+  "bbox_wsen": [
+    34.75,
+    29.15,
+    35.94,
+    30.3
+  ],
+  "lookback_days": 9,
+  "feature_variables": [
+    "soil_moisture",
+    "total_precipitation",
+    "u10",
+    "v10",
+    "temperature_2m"
+  ],
+  "label_variables": [
+    "surface_runoff",
+    "subsurface_runoff"
+  ],
+  "years_requested": 1,
+  "years_complete": 0,
+  "elapsed_minutes": 0.0,
+  "years": [
+    {
+      "year": 1998,
+      "files": 0,
+      "seconds": 0.7,
+      "status": "failed: ERA5LandDownloadError: ERA5-Land retrieval failed: HTTPError: 403 Client Error: Forbidden for url: https://cds.climate.copernicus.eu/api/retrieve/v1/processes/reanalysis-era5-land/execution\ncost limits exceeded\nYour request is too large, please reduce your selection."
+    }
+  ],
+  "scope_note": "Event months only, not the whole record. The candidates are already the top ~1 % of days by rainfall, so labelling them against a whole-record percentile would make the target ~95 % positive and uninformative. Labelled within the candidate set, the target separates storms that generated runoff from storms that soaked into the wadi bed \u2014 the transmission-loss question, which is the discriminating signal.",
+  "label_rule": "surface_runoff and subsurface_runoff are LABELS ONLY. Using them as features builds a tautology that scores near-perfectly and predicts nothing."
+}
