@@ -41,7 +41,7 @@
     "outlets": "Coastal outlets",
     "reefZones": "Reef zones",
     "unnamed": "unnamed",
-    "reefProvisional": "Provisional zones. Sensitivity is 1.0 on all eight, pending marine-science review — so exposure varies only through the hazard term, and these zones do not differ in sensitivity.",
+    "reefProvisional": "Reef geometry is real Allen Coral Atlas habitat (v2.0). Sensitivity weighting is still 1.0 on all eight zones pending marine-science review — so exposure varies only through the hazard term, and these zones do not differ in sensitivity.",
     "coverage": "Basemap coverage",
     "coverageNote": "The dashed boundary is where the OpenStreetMap extract ends, at 35.0°E. Catchment AQ-C01 continues past it — Wadi Yutum drains from 90 km inland — so the absence of detail out there is a gap in the basemap, not empty desert.",
     "risk": "Exposure by catchment",
@@ -128,7 +128,7 @@
     "reef": "Reef zones",
     "relativeDensity": "relative density",
     "densityCaveat": "Peak-normalised relative density, not a probability of impact. A 0.50 band is half the peak density of this simulation, which describes the cloud's own shape — not a chance the water reaches that place.",
-    "reefEqualSensitivity": "All eight zones carry the same sensitivity (1.0), pending marine-science review. Exposure varies only through the hazard term, so a darker zone means more hazard reaching it — not a more fragile reef."
+    "reefEqualSensitivity": "Geometry is Allen Coral Atlas habitat. All eight zones still carry the same sensitivity (1.0) pending marine-science review, so a darker zone means more hazard reaching it — not a more fragile reef."
   },
   "layers": {
     "title": "Layers",
@@ -235,5 +235,10 @@
   "states": {
     "errorTitle": "Something did not load",
     "stale": "Last updated {{age}} ago — this may no longer be current."
+  },
+  "reef": {
+    "habitat": "Habitat",
+    "geomorphic": "Geomorphic zone",
+    "source": "Source"
   }
 }

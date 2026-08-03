@@ -18,7 +18,7 @@
   ],
   [
    "**License**",
-   "n/a (own derivation). ACA is CC BY 4.0 when swapped in."
+   "CC BY 4.0 — Allen Coral Atlas (Arizona State University / Planet / Vulcan)"
   ],
   [
    "**License**",
@@ -35,6 +35,22 @@
   [
    "Registration required",
    "Yes — NASA Earthdata account **plus** one-time approval of *NASA GESDISC DATA ARCHIVE*"
+  ],
+  [
+   "Citation",
+   "https://gpm.nasa.gov/data/imerg"
+  ],
+  [
+   "Source organization",
+   "NASA / JAXA (GPM mission), distributed by NASA GES DISC"
+  ],
+  [
+   "Access method",
+   "NASA Harmony spatial + variable subsetting (`harmony-py`), auth via `earthaccess`"
+  ],
+  [
+   "Registration required",
+   "Same as the half-hourly product — Earthdata account + *NASA GESDISC DATA ARCHIVE* approval"
   ],
   [
    "Citation",
@@ -104,10 +120,28 @@
    "Copernicus Marine (GLOBAL_ANALYSISFORECAST_PHY_001_024)",
    "Copernicus Marine Service",
    "`cmems_mod_glo_phy_anfc_0.083deg_PT1H-m`",
-   "padded box, depth 0–50m",
-   "—",
+   "MARINE_AOI, depth: single level ~0.49m (this product tier is surface/near-surface hourly-mean — live/rolling window only, no historical reach)",
+   "2026-08-03",
    "Copernicus Marine license (free w/ registration)",
-   "**Not yet pulled — no Copernicus Marine credentials available as of 2026-08-02.** Fetch/cache functions written and ready (`fetch_copernicus_marine`, `cache_copernicus_marine`); same output schema as HYCOM so the interpolator is source-agnostic. Register at https://data.marine.copernicus.eu/ and add credentials to activate."
+   "**Pulled successfully — account registered and activated 2026-08-03.** Same output schema as HYCOM (interpolator is source-agnostic). At the provisional outlet (34.96, 29.54): masked/nan — same as HYCOM, two independent models agree this exact cell is unresolved. Live only — use the reanalysis row below for the demo event. → `backend/src/ingestion/ocean_currents.py`."
+  ],
+  [
+   "HYCOM GLBu0.08 expt_91.2 (historical)",
+   "US Navy / hycom.org public THREDDS OPeNDAP",
+   "`GLBu0.08/expt_91.2/uv3z`",
+   "MARINE_AOI, depth 0–50m (real levels: 0,2,4,...50m), 2016-04-18 to 2018-11-20 coverage",
+   "2026-08-03",
+   "Approved for public release, unlimited distribution",
+   "Operational-analysis archive — NOT the same product as the \"latest\" FMRC endpoint above, which has zero 2016 data. Pulled for the demo event window (26–31 Oct 2016). → `backend/src/ingestion/ocean_currents.py::fetch_hycom_historical`, cached at `data/raw/currents/hycom_aoi_AQ-2016-10-28.nc`."
+  ],
+  [
+   "Copernicus Marine GLORYS12V1 reanalysis",
+   "Copernicus Marine Service (Mercator Ocean)",
+   "`cmems_mod_glo_phy_my_0.083deg_P1D-m`",
+   "MARINE_AOI, depth 0–50m (18 real levels, 0.49–47.4m), multiyear reanalysis covering 2016",
+   "2026-08-03",
+   "Copernicus Marine license (free w/ registration)",
+   "The correct product for both the historical date AND real sub-surface depth levels — the \"anfc\" live tier above has neither. Pulled for the demo event window (26–31 Oct 2016). → `backend/src/ingestion/ocean_currents.py::fetch_copernicus_marine_historical`, cached at `data/raw/currents/copernicus_marine_aoi_AQ-2016-10-28.nc`."
   ],
   [
    "Product",
@@ -128,6 +162,12 @@
   [
    "Licence",
    "Public domain"
+  ],
+  [
+   "OpenStreetMap",
+   "clipped to old box; 3,845 roads / 200 drainage / 27 culverts",
+   "**clipped to `terrain_aoi.geojson`; 8,289 roads / 1,402 drainage / 46 culverts**",
+   "2026-08-02"
   ]
  ],
  "source": "docs/data_dictionary.md",

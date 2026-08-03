@@ -17,14 +17,63 @@ that is simply the wrong class, and nothing would crash.
 """
 
 import numpy as np
+import pathlib
+
 import rasterio
 import rasterio.windows
 import matplotlib.colors as mcolors  # colour table for the GPKG/GeoTIFF palette only
 
-from config import DOWNLOAD_BBOX, INTERIM, RAW, WORLDCOVER_CLASSES
+from pulga_config import DOWNLOAD_BBOX, INTERIM, RAW, WORLDCOVER_CLASSES
 
-TILE = RAW / "worldcover" / "ESA_WorldCover_10m_2021_v200_N27E033_Map.tif"
+WORLDCOVER_DIR = RAW / "worldcover"
 CLIP = INTERIM / "worldcover_aqaba_clip.tif"
+
+#: ESA WorldCover ships 3x3 degree tiles named for their SOUTH-WEST corner.
+#: The terrain AOI reaches 30.30 N, so it now straddles the N27/N30 boundary and
+#: a single tile can no longer cover it — the assert in clip_to_aoi() catches
+#: that, and this derives the full set instead of naming one.
+TILE_URL = (
+    "https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/"
+    "ESA_WorldCover_10m_2021_v200_{tile}_Map.tif"
+)
+
+
+def tiles_for(bbox) -> list[str]:
+    """Every 3x3 degree WorldCover tile name intersecting `bbox`."""
+    minx, miny, maxx, maxy = bbox
+    names = []
+    lat = (int(miny) // 3) * 3
+    while lat <= maxy:
+        lon = (int(minx) // 3) * 3
+        while lon <= maxx:
+            ns, ew = ("N", "S")[lat < 0], ("E", "W")[lon < 0]
+            names.append(f"{ns}{abs(lat):02d}{ew}{abs(lon):03d}")
+            lon += 3
+        lat += 3
+    return names
+
+
+def ensure_tiles(bbox) -> list[pathlib.Path]:
+    """Download any WorldCover tile the AOI needs and is missing."""
+    import urllib.request
+
+    WORLDCOVER_DIR.mkdir(parents=True, exist_ok=True)
+    paths = []
+    for tile in tiles_for(bbox):
+        target = WORLDCOVER_DIR / f"ESA_WorldCover_10m_2021_v200_{tile}_Map.tif"
+        if not target.exists() or target.stat().st_size == 0:
+            url = TILE_URL.format(tile=tile)
+            print(f"  fetching {tile} ...", flush=True)
+            try:
+                urllib.request.urlretrieve(url, target)
+            except Exception as exc:
+                target.unlink(missing_ok=True)
+                # Not every 3x3 cell exists — WorldCover has no tile over open
+                # ocean. A missing tile is only fatal if the AOI needs its land.
+                print(f"  {tile}: unavailable ({type(exc).__name__}) — skipped")
+                continue
+        paths.append(target)
+    return paths
 
 # Rough visual palette, close to ESA's own legend so the QA plot is comparable
 # against the official viewer.
@@ -36,23 +85,44 @@ CLASS_COLORS = {
 
 
 def clip_to_aoi():
-    """Windowed read — the source tile is 36000x36000, do not read it whole."""
-    minx, miny, maxx, maxy = DOWNLOAD_BBOX
-    with rasterio.open(TILE) as src:
-        # Guard: a tile that does not fully cover the AOI would silently truncate
-        # the eastern or western catchments.
-        b = src.bounds
-        assert b.left <= minx and b.right >= maxx and b.bottom <= miny and b.top >= maxy, (
-            f"tile {b} does not cover AOI {DOWNLOAD_BBOX} — another tile is needed"
-        )
+    """Windowed read across every tile the AOI needs, mosaicked.
 
-        win = rasterio.windows.from_bounds(minx, miny, maxx, maxy, src.transform)
-        data = src.read(1, window=win)
-        meta = src.meta.copy()
+    Each source tile is 36000x36000, so the read stays windowed. The AOI spans
+    two tiles now (it reaches 30.30 N), which is why this merges rather than
+    reading one.
+    """
+    from rasterio.merge import merge
+
+    minx, miny, maxx, maxy = DOWNLOAD_BBOX
+    tiles = ensure_tiles(DOWNLOAD_BBOX)
+    if not tiles:
+        raise SystemExit(f"no WorldCover tile available for {DOWNLOAD_BBOX}")
+
+    handles = [rasterio.open(path) for path in tiles]
+    try:
+        # Guard kept, now against the UNION of tiles: partial cover would
+        # silently truncate the northern or eastern catchments.
+        union = (
+            min(h.bounds.left for h in handles), min(h.bounds.bottom for h in handles),
+            max(h.bounds.right for h in handles), max(h.bounds.top for h in handles),
+        )
+        assert (union[0] <= minx and union[2] >= maxx
+                and union[1] <= miny and union[3] >= maxy), (
+            f"tiles {[p.name for p in tiles]} span {union}, which does not cover "
+            f"AOI {DOWNLOAD_BBOX}"
+        )
+        data, transform = merge(handles, bounds=(minx, miny, maxx, maxy))
+        data = data[0]
+        meta = handles[0].meta.copy()
         meta.update(
             height=data.shape[0], width=data.shape[1],
-            transform=src.window_transform(win), compress="deflate",
+            transform=transform, compress="deflate",
         )
+        print(f"  mosaicked {len(tiles)} tile(s): "
+              f"{', '.join(p.name.split('_')[-2] for p in tiles)}")
+    finally:
+        for h in handles:
+            h.close()
     CLIP.parent.mkdir(parents=True, exist_ok=True)
     with rasterio.open(CLIP, "w", **meta) as dst:
         dst.write(data, 1)
@@ -113,7 +183,8 @@ def sanity_check(rows):
 
 
 if __name__ == "__main__":
-    print(f"WorldCover source: {TILE.name}")
+    print(f"WorldCover source: {len(tiles_for(DOWNLOAD_BBOX))} tile(s) "
+          f"{tiles_for(DOWNLOAD_BBOX)}")
     data = clip_to_aoi()
     rows, land_total = composition(data)
     sanity_check(rows)

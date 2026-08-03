@@ -48,7 +48,7 @@ from shapely.geometry import LineString, MultiPolygon
 from shapely.geometry import box as shp_box
 from shapely.ops import unary_union
 
-from config import (
+from pulga_config import (
     AOI_CRS_PROJECTED,
     AOI_CRS_STORAGE,
     DOWNLOAD_BBOX,

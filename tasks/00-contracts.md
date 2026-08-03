@@ -248,7 +248,7 @@ Provisional data in the final demo would be a serious failure. Every swap is a t
 |---:|---|---|---|---|:--:|
 | 1 | `catchments_PROVISIONAL.gpkg` | **Done 2 Aug** → `catchments.gpkg` | Karam + Pulga re-run | minutes | ☑ |
 | 2 | `outlets_PROVISIONAL.gpkg` | **Done 2 Aug** → `outlets.gpkg` | Nizar re-runs | minutes | ☑ |
-| 3 | `reef_zones_PROVISIONAL.gpkg` | Allen Coral Atlas export | Pulga | minutes | ☐ |
+| 3 | `reef_zones_PROVISIONAL.gpkg` | **Done 3 Aug** → `reef_zones.gpkg` (Allen Coral Atlas v2.0) | Pulga re-runs exposure | minutes | ☑ |
 | 4 | `observed_plume_PROVISIONAL.gpkg` | Real Sentinel-2 derived mask | Abd publishes; Nizar re-calibrates | ~1 hour | ☐ |
 | 5 | `sensitivity_weight = 1.0` | Marine-scientist input, **or stays 1.0 and is labeled an assumption on the slide** | Pulga | none | ☐ |
 | 6 | Provisional AOI | Confirmed analysis box | Everyone re-clips | minutes | ☐ |
@@ -270,6 +270,33 @@ data/interim/hydro/outlet_candidates.csv        all 72 discharge points, for ref
 - **`AQ-C01` is a different place.** It was a 1,767 km² endorheic basin. It is now Wadi Yutum at 4,453 km². Same ID, different geometry — this is the one that bites silently.
 - **Five outlets, not two.** Nizar releases from five points.
 - **The southern coast split.** One 376 km² lumped polygon became four separate wadis with separate mouths.
+
+### Swap 3 has landed — action for Pulga
+
+`data/processed/vectors/reef_zones.gpkg` — real Allen Coral Atlas v2.0 benthic
+habitat, all 8 IDs intact, no renumbering. Schema is a **superset** of the
+provisional one, so existing code keeps working. Re-run the exposure engine.
+
+**What actually changed, not just the file name:**
+
+- **Total reef area fell from 5.69 km² to 1.24 km².** The provisional number was the
+  area of hand-drawn 250 m-wide boxes; this is the area ACA maps as benthic habitat.
+  Any absolute exposure figure computed against the old polygons is wrong, not merely
+  imprecise. Relative rankings between zones changed too.
+- **`habitat_class` is now a real readable class** (`Coral/Algae`, `Rock`, …) instead of
+  `unknown`, with `habitat_class_mix` giving the full composition by area. Coral/Algae
+  dominates R-01–R-06; Rock dominates R-07–R-08.
+- **`marine_park_overlap_pct` was recomputed** and rose sharply — R-04/R-05/R-06 go from
+  71/67/85% to 97/100/100%. The old values described the boxes, not the reef.
+- **Depths are less usable, not more.** The bathymetry is 50 m and the reef strip is
+  20–50 m wide, so 39–100% of cells under a zone read as land. Depths are now medians
+  over water cells only and **R-02 is `NaN`**. Check the new `depth_land_cell_pct`
+  before using any depth. Do not quote R-03's −179.7 m — it rests on 2 cells.
+- **`sensitivity_weight` is still 1.0** everywhere (swap 5 is unaffected). ACA maps
+  habitat, not sensitivity.
+- New audit files alongside it: `aca_fragments_BEFORE_MERGE.gpkg` (raw ACA polygons) and
+  `aca_pieces_ASSIGNED.gpkg` (which piece went to which zone, and whether by overlap or
+  by snap).
 
 **Day 12 gate:** grep the repo for `PROVISIONAL`. Anything still matching is either swapped or explicitly declared a known placeholder in the validation report. No silent placeholders.
 

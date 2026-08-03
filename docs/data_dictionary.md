@@ -4,10 +4,10 @@
 
 **Spatial contract:** download box `34.80, 29.25, 35.15, 29.70` (W, S, E, N, EPSG:4326).
 Storage CRS **EPSG:4326**, all area/distance maths in **EPSG:32636** (UTM 36N).
-Constants live in [scripts/config.py](../scripts/config.py) — nothing hardcodes a bbox.
+Constants live in [scripts/pulga_config.py](../scripts/pulga_config.py) — nothing hardcodes a bbox.
 
 **Reproduce from zero:** [README_pulga.md](README_pulga.md).
-**All 34 QA figures with captions:** [qa_screenshots/MANIFEST.md](qa_screenshots/MANIFEST.md).
+**All 42 QA figures with captions:** [qa_screenshots/MANIFEST.md](qa_screenshots/MANIFEST.md).
 **Judge-facing limitations:** [pitch_limitations.md](pitch_limitations.md).
 
 > **Standing rule for this workstream.** Every dataset, transformation, join and
@@ -39,7 +39,7 @@ tile CRS — but measuring there inflates ground distance by 1/cos(lat) = **1.14
 this latitude, which is exactly how culvert #1 was briefly reported as 45 m from the
 coast when the true distance is 39 m. Draw in 3857; measure in 32636.
 
-Figures drawn in EPSG:4326 pass `config.geographic_aspect()` to `set_aspect()`.
+Figures drawn in EPSG:4326 pass `pulga_config.geographic_aspect()` to `set_aspect()`.
 `imshow` defaults to `aspect='equal'`, which would draw 1° longitude the same length
 as 1° latitude — at 29.4 °N that is ~97 km against ~111 km, making the figure **14.9%
 too wide**. A distorted picture is a real defect when the picture is the evidence.
@@ -76,27 +76,45 @@ uncertainty and is not worth correcting.
 | [worldcover_04_class_fractions_by_catchment.png](qa_screenshots/worldcover_04_class_fractions_by_catchment.png) | fractions close to 100% per catchment |
 | [worldcover_05_bareground_sanity_annotated.png](qa_screenshots/worldcover_05_bareground_sanity_annotated.png) | every catchment clears the 50% assert and brackets the ~74% baseline |
 
-**Measured composition** (padded AOI, 4200×5400 px @ 10 m):
+**Measured composition** (padded AOI, 14280×13800 px @ 10 m):
 
 | class | % of AOI | % of land |
 |---|---:|---:|
-| bare / sparse vegetation | 72.53 | **95.30** |
-| built-up | 3.15 | 4.14 |
-| permanent water | 23.89 | (sea) |
-| tree cover | 0.25 | 0.33 |
-| grassland | 0.07 | 0.09 |
-| cropland | 0.06 | 0.08 |
-| shrubland | 0.04 | 0.06 |
+| bare / sparse vegetation | 93.63 | **97.82** |
+| permanent water | 4.28 | (sea) |
+| built-up | 0.70 | 0.73 |
+| grassland | 0.65 | 0.68 |
+| cropland | 0.52 | 0.55 |
+| tree cover | 0.12 | 0.13 |
+| shrubland | 0.09 | 0.10 |
 | herbaceous wetland | 0.00 | 0.00 |
 
-**Sanity check: PASSED.** Bare/sparse ground is 95.3% of the land surface. The check
-is an `assert`, so a wrong class mapping halts the pipeline rather than quietly
-poisoning the runoff model. Class codes are **not sequential** (10, 20, …, 95, 100)
-and are declared once in `config.py`.
+Land is 18,863 km², 95.7% of the terrain extent. Note how different this is from the
+v1 figures: the old box was largely sea, so water was 23.89% of it and bare ground
+72.53%. The terrain box reaches 90 km inland, so it is overwhelmingly desert. Both
+sets of numbers are correct for their own extent — which is exactly why an extent has
+to be quoted alongside any fraction.
 
-**Independent corroboration.** WorldCover puts water at 23.89% of the AOI; the
-bathymetry water mask independently gives 23.3%. Two unrelated products agreeing to
-within 0.6 pp is good evidence both clips are correctly georeferenced.
+**Sanity check: PASSED.** Bare/sparse ground is 97.82% of the land surface, above the
+concept doc's ~74% baseline and far above the 50% assert threshold. The check is an
+`assert`, so a wrong class mapping halts the pipeline rather than quietly poisoning
+the runoff model. Class codes are **not sequential** (10, 20, …, 95, 100) and are
+declared once in `pulga_config.py`.
+
+**Independent corroboration, recomputed for v2.** Comparing water fraction between
+WorldCover and the bathymetry water mask only means something over a *common* extent.
+Measured inside `MARINE_AOI`:
+
+| product | resolution | water |
+|---|---|---:|
+| ESA WorldCover class 80 | 10 m | 42.91% |
+| Bathymetry water mask (elev < 0) | 50 m | 41.29% |
+
+**Agreement: 1.62 pp** between two products that share no lineage — one an optical
+land-cover classifier, the other a bathymetric grid. That is good evidence both clips
+are correctly georeferenced. The v1 version of this check compared 23.89% against
+23.3% over the old box; it is superseded, not deleted, because the old box no longer
+defines either product's extent.
 
 **Known limitations**
 
@@ -121,7 +139,7 @@ within 0.6 pp is good evidence both clips are correctly georeferenced.
 | **Access date** | 2026-08-01 |
 | **Access method** | WCS 2.0.1 `GetCoverage` per variable/depth, `https://maps.isric.org/mapserv?map=/map/<var>.map` |
 | **Spatial resolution** | 250 m |
-| **Coverage** | Padded box, 155×188 cells |
+| **Coverage** | Padded box, 526×481 cells |
 | **License** | CC BY 4.0 |
 | **Reproduce** | `../.venv/bin/python download_soilgrids.py` then `.venv/bin/python tests/test_soilgrids_units.py` |
 | **Outputs** | `data/raw/soilgrids/*.tif` (12 rasters), `data/processed/features/soil_by_catchment.parquet` (73 columns) |
@@ -204,7 +222,7 @@ at 35%, and the mean alone hides that.
 | [osm_01_roads_over_satellite.png](qa_screenshots/osm_01_roads_over_satellite.png) | roads align with visible carriageways — georeferencing is right |
 | [osm_02_buildings_over_satellite.png](qa_screenshots/osm_02_buildings_over_satellite.png) | footprints match built-up areas in imagery |
 | [osm_03_waterways_drainage_over_satellite.png](qa_screenshots/osm_03_waterways_drainage_over_satellite.png) | drainage follows real wadi floors |
-| [osm_04_culverts_all_27_numbered.png](qa_screenshots/osm_04_culverts_all_27_numbered.png) | all 27 culverts, numbered to match the handoff table |
+| [osm_04_culverts_all_numbered.png](qa_screenshots/osm_04_culverts_all_numbered.png) | all 46 culverts, numbered to match the handoff table |
 | [osm_05_culvert_top5_insets.png](qa_screenshots/osm_05_culvert_top5_insets.png) | each top culvert sits under a visible road embankment |
 | [osm_06_dive_poi_and_marine_park.png](qa_screenshots/osm_06_dive_poi_and_marine_park.png) | dive sites and the Marine Park boundary |
 | [urban_01_road_density_choropleth.png](qa_screenshots/urban_01_road_density_choropleth.png) | road density per catchment |
@@ -214,10 +232,10 @@ at 35%, and the mean alone hides that.
 
 | layer | features | purpose |
 |---|---:|---|
-| roads | 3 845 | impervious surface, runoff |
-| buildings | 10 099 | independent built-up estimate |
+| roads | 8 289 | impervious surface, runoff |
+| buildings | 12 570 | independent built-up estimate |
 | waterways | 206 | drainage network |
-| drainage_features | 200 | **outlet correction** — 27 culverts |
+| drainage_features | 200 | **outlet correction** — 46 culverts |
 | industrial | 32 | sediment/contaminant source proxy |
 | port | 1 | port frontage |
 | dive_tourism_poi | 75 | who the alert product serves |
@@ -231,9 +249,9 @@ at 35%, and the mean alone hides that.
 `industrial`, `natural` or `protect_class` as columns — they sit inside the
 `other_tags` HSTORE where SQL cannot filter them cleanly.
 [scripts/osmconf_reefshield.ini](../scripts/osmconf_reefshield.ini) promotes them,
-and that is what surfaced the **27 culverts**, the **Aqaba Marine Park**, and the
+and that is what surfaced the **46 culverts**, the **Aqaba Marine Park**, and the
 **OSM coastline**. `drainage_features` composition: 89 stream, 57 drain, 41 canal,
-9 river, 4 ditch; 27 `tunnel=culvert`; 102 `intermittent=yes`; 9 named, including
+9 river, 4 ditch; 27 `tunnel=culvert`; 102 `intermittent=yes`; 42 named, including
 **وادي اليتيم (Wadi Al-Yutum)**, the major wadi draining to Aqaba.
 
 **Known limitations**
@@ -251,23 +269,56 @@ and that is what surfaced the **27 culverts**, the **Aqaba Marine Park**, and th
 
 ---
 
-## 4. Reef zones (provisional — Allen Coral Atlas pending)
+## 4. Reef zones (real — Allen Coral Atlas v2.0, swap-in #3 CLOSED 2026-08-03)
 
 | Field | Value |
 |---|---|
-| **Product/version** | **PROVISIONAL**, derived. Allen Coral Atlas v2.0 export is swap-in #3. |
-| **Access date** | 2026-08-01 (provisional build) |
-| **Access method** | Derived from the water mask + published dive-site positions |
-| **Coverage** | Jordanian coast, 29.356–29.530 N |
-| **License** | n/a (own derivation). ACA is CC BY 4.0 when swapped in. |
-| **Reproduce** | `../.venv/bin/python make_reef_zones_provisional.py` (needs `process_bathymetry.py` first) |
-| **Output** | `data/processed/vectors/reef_zones_PROVISIONAL.gpkg` |
+| **Product/version** | `ACA/reef_habitat/v2_0` — Allen Coral Atlas v2.0, `benthic` + `geomorphic` bands, via Google Earth Engine |
+| **Access date** | 2026-08-03 (Earth Engine batch export to Drive, task `WJKEYOKSLGKFF2VSEIK5RWCD` / full-box predecessor) |
+| **Access method** | `export_aca.py submit` → Drive → `export_aca.py build`. Exported at native **5 m**, CRS EPSG:32636, over the download superset box |
+| **Coverage** | Export covers the full padded box; **only reef within 100 m of the Jordanian zone chain is used**. 6.09 km² of the 7.32 km² exported lies in Egyptian, Saudi and Israeli water and is deliberately discarded |
+| **License** | CC BY 4.0 — Allen Coral Atlas (Arizona State University / Planet / Vulcan) |
+| **Reproduce** | `../.venv/bin/python export_aca.py build` (needs the GeoTIFF in `data/raw/aca/` and `process_bathymetry.py` + `extract_osm.sh` already run) |
+| **Output** | `data/processed/vectors/reef_zones.gpkg`, plus `aca_fragments_BEFORE_MERGE.gpkg` (raw polygonized ACA) and `aca_pieces_ASSIGNED.gpkg` (audit trail of which piece went to which zone) |
+| **Superseded** | `reef_zones_PROVISIONAL.gpkg` is retained for the before/after comparison only. **Do not read it as current geometry** — `qa_marine.py` now prefers the final file automatically |
+
+**Swap-in #3 result — verified 2026-08-03**
+
+| check | result |
+|---|---|
+| zone IDs | **8/8 survived**, none renumbered, none dropped (contract §2) |
+| worst centroid drift | **982 m** against a 5 km assert bound |
+| piece assignment | cut at zone boundaries, guarded by an area-conservation assert |
+| `sensitivity_weight` | **still 1.0**, still `PLACEHOLDER_PENDING_MARINE_SCIENTIST` |
+
+**Area correction — the headline of this swap.** The provisional strips claimed 5.69 km²;
+the Atlas outline gives **1.24 km²**, roughly **4.6× smaller**. The strips assumed a uniform
+250 m width along the whole coastline, and that assumption was the error. Any exposure
+figure computed against the provisional areas is wrong rather than merely imprecise, and the
+per-zone *ranking* changed too, not only the totals.
+
+**The 250 m width caveat is now obsolete.** The outline is ACA's own 5 m polygons, so an
+absolute km² is defensible. Expressing exposure as a fraction of a named zone is still
+preferable, but for a different reason: ACA maps optically shallow reef only, so deeper
+habitat inside a zone is unrepresented and an absolute "km² affected" understates the real
+habitat at risk.
+
+**Depth is now the weakest field, not the geometry.** The bathymetry is 50 m while the reef
+strip is 20–50 m wide, so 39–100% of the cells under a zone read as land. `depth_land_cell_pct`
+records that share and must be checked before any depth reaches a formula or a screen.
+`R-02` is **NaN** — it contains no water cell at all — and must be handled explicitly, never
+coerced to 0. R-03's −179.7 m rests on 2 cells over a 0.01 km² zone and should not be quoted.
+
+**Habitat classes** are read off the live Earth Engine asset's own property tables and
+re-verified on every build, not transcribed. Dominant class is computed **by area, not by
+piece count**: polygonizing a raster yields one large patch plus a scatter of single-pixel
+specks, and counting pieces let 25 rock specks outvote the coral patch that is the zone.
 
 **QA figures**
 
 | figure | claim it makes checkable |
 |---|---|
-| [reef_01_provisional_over_satellite.png](qa_screenshots/reef_01_provisional_over_satellite.png) | every zone is seaward of the visible shoreline |
+| [reef_01_provisional_over_satellite.png](qa_screenshots/reef_01_provisional_over_satellite.png) | every zone is seaward of the visible shoreline. **Filename retains "provisional" for link stability — the figure now shows ACA geometry, and its caption states which file it was drawn from** |
 | [reef_02_per_zone_insets.png](qa_screenshots/reef_02_per_zone_insets.png) | each zone individually, with area/park/depth |
 | [reef_03_overlap_bug_before_after.png](qa_screenshots/reef_03_overlap_bug_before_after.png) | **bug fixed** — 1.46 ha double-count removed |
 | [reef_04_marine_park_validation.png](qa_screenshots/reef_04_marine_park_validation.png) | **independent validation** against the Marine Park |
@@ -281,52 +332,110 @@ already, with the same names and types, so the exposure engine is built once:
 | `reef_zone_id` | str | `R-01`…`R-08`, contract §2. **Never renumber.** |
 | `id` | str | Duplicate of `reef_zone_id` — contract §3 names the column `id`, the implementation plan uses `reef_zone_id`. Both carried so either join key works. |
 | `zone_name` | str | Human-readable coastal stretch |
-| `habitat_class` | str | `unknown` until ACA lands |
-| `sensitivity_weight` | float | **1.0 placeholder for every zone** |
+| `habitat_class` | str | **Real ACA benthic class, as a readable name** (`Coral/Algae`, `Rock`, …). Dominant class **by area**, not by piece count |
+| `habitat_class_code` | int | The raw ACA integer beside the name, so provenance back to the raster survives |
+| `habitat_class_mix` | str | Full benthic composition as area percentages, e.g. `Coral/Algae:89%;Rock:11%` |
+| `geomorphic_class`, `geomorphic_class_code` | str, int | ACA geomorphic band, same treatment |
+| `sensitivity_weight` | float | **Still 1.0 placeholder for every zone** — ACA maps habitat, not sensitivity |
 | `sensitivity_weight_status` | str | `PLACEHOLDER_PENDING_MARINE_SCIENTIST` — in the schema itself, not only the docs |
-| `provisional` | bool | `True` |
+| `provisional` | bool | `False` |
 | `geom_basis` | str | How the geometry was derived |
 | `area_km2` | float | From UTM 36N, never degrees |
-| `depth_median_m`, `depth_min_m` | float | Context only — see caveat |
-| `marine_park_overlap_pct` | float | **Real measured data**, added this pass |
+| `depth_median_m`, `depth_min_m` | float | Over **water cells only**; `NaN` where no water cell exists — see caveat |
+| `depth_land_cell_pct` | float | Share of bathymetry cells under the zone that read as land. Carries the 50 m / 5 m resolution mismatch with the number instead of hiding it |
+| `marine_park_overlap_pct` | float | **Real measured data**, recomputed for the ACA geometry |
 
-**Zones** (north → south, total 5.69 km², consistent with published estimates of
-Jordan's reef area of ~5–13 km²):
+**Zones** (north → south, total **1.24 km²**). Note this is *below* the published
+~5–13 km² range for Jordan's reef, and the provisional figure of 5.69 km² sat inside
+it — but the provisional number was the area of hand-drawn 250 m-wide boxes, not of
+reef. 1.24 km² is what ACA actually maps as benthic habitat within 100 m of the
+Jordanian chain. The published range covers a wider definition of reef area and
+includes the deeper habitat ACA does not map (limitation 1).
 
-| id | stretch | area km² | median depth m | in Marine Park |
-|---|---|---:|---:|---:|
-| R-01 | North Aqaba / Ayla & Public Beach | 0.85 | −44.8 | 0% |
-| R-02 | Port frontage / First Bay & Power Station | 0.81 | −312.2 | 0% |
-| R-03 | Tourist Camp / north Marine Park boundary | 0.62 | −220.6 | 0% |
-| R-04 | Marine Science Station / Cedar Pride | 0.42 | −103.7 | **71.3%** |
-| R-05 | Japanese Garden / Gorgonian | 0.39 | −36.6 | **66.6%** |
-| R-06 | Black Rock / Blue Coral | 0.54 | −21.6 | **84.5%** |
-| R-07 | Tala Bay / Seven Sisters | 0.61 | −19.9 | **79.1%** |
-| R-08 | Royal Diving Club / Yamanieh to Saudi border | 1.44 | −29.4 | 7.8% |
+| id | stretch | area km² | median depth m | land cells | dominant habitat | in Marine Park |
+|---|---|---:|---:|---:|---|---:|
+| R-01 | North Aqaba / Ayla & Public Beach | 0.46 | −7.4 | 39% | Coral/Algae 89% | 0% |
+| R-02 | Port frontage / First Bay & Power Station | 0.04 | *n/a* | 100% | Coral/Algae 100% | 0% |
+| R-03 | Tourist Camp / north Marine Park boundary | 0.01 | −179.7 | 0% | Coral/Algae 100% | 0% |
+| R-04 | Marine Science Station / Cedar Pride | 0.15 | −44.0 | 19% | Coral/Algae 99% | **96.9%** |
+| R-05 | Japanese Garden / Gorgonian | 0.07 | −17.4 | 0% | Coral/Algae 99% | **100%** |
+| R-06 | Black Rock / Blue Coral | 0.19 | −6.4 | 52% | Coral/Algae 91% | **100%** |
+| R-07 | Tala Bay / Seven Sisters | 0.13 | −14.9 | 75% | Rock 86% | **92.4%** |
+| R-08 | Royal Diving Club / Yamanieh to Saudi border | 0.20 | −13.9 | 51% | Rock 66% | 10.3% |
 
-**Independent validation.** The Aqaba Marine Park boundary (from OSM,
-`protect_class=4`, 3.45 km², spanning 29.397–29.460 N) was **never used as an input
-to zone placement**, yet R-04–R-07 land 67–85% inside it. That is genuine
-corroboration that the dive-site latitudes are right. R-01–R-03 falling outside is
-consistent with them being city and port frontage.
+**Independent validation, and it got stronger.** The Aqaba Marine Park boundary (from
+OSM, `protect_class=4`, 3.45 km², spanning 29.397–29.460 N) was **never used as an
+input to zone placement or to the ACA merge**. Against the hand-drawn boxes R-04–R-07
+landed 67–85% inside it; against real ACA habitat they land **92–100%**. Independent
+corroboration improving when the geometry is replaced by measured data is the
+strongest evidence in this section. R-01–R-03 falling outside remains consistent with
+city and port frontage.
 
-**What is trustworthy in this geometry, and what is not.** A first attempt placed
-these as boxes on a hand-fitted straight-line shoreline. Checked against the
-bathymetry it was ~600 m too far east at R-03–R-05 (those boxes sat on dry land at
-+7 to +18 m elevation) and too far west at R-07–R-08 (in 250–400 m of open water).
-- **Along-shore position is data-derived** from the water mask, reliable to ~50 m,
-  and an `assert` now requires every zone's median depth to be below sea level.
-- **Seaward width is a flat 250 m assumption**, deliberately *not* derived from depth
-  contours: the Gulf of Aqaba drop-off is far steeper than the bathymetry's ~450 m
-  true resolution can resolve, so those contours would dress an artefact up as a
-  measurement. `area_km2` is therefore order-of-magnitude only.
-- The implausibly deep medians at R-02/R-03 are that same artefact, not evidence of
-  300 m-deep reef.
+**The dominant-habitat result also corroborates the placement.** Coral/Algae dominates
+R-01–R-06 (the Marine Park stretch) and Rock dominates R-07–R-08. Nothing in the merge
+knows where the park is.
+
+**Two independent exports agree, and the wider one is the more complete.** The same ACA
+asset was exported twice on 3 Aug — once over the download superset box (task
+`HL3VYSAJRVN6TLKEAXR3CEH2`) and once over the marine AOI only
+(`WJKEYOKSLGKFF2VSEIK5RWCD`), submitted in parallel because the wide one was slow and
+the deadline was real. Compared over the 39,038,220 pixels they share:
+
+| | |
+|---|---|
+| identical | 39,036,538 px — **99.9957%** |
+| differing | 1,682 px (0.042 km², **3.4%** of the 1.24 km² used) |
+| direction | **always** reef in the wide export and `Unmapped` in the narrow one; never the reverse |
+| location | every differing pixel lies within 380 m of the *narrow* export's own boundary (median 140 m), on its south and west edges |
+
+That one-directional, boundary-hugging pattern is a clip artefact in the narrower
+request: Earth Engine loads fewer source tiles for a smaller region, so pixels near the
+clip edge that need a neighbouring tile return `Unmapped`. Two independently submitted
+exports matching to 4 decimal places across 39 M pixels is strong evidence the export
+path is sound; the 3.4% shortfall is why `find_export()` **selects the widest available
+GeoTIFF and prints which one it used and which it ignored**, rather than taking the
+first of a sorted glob. Had the narrow file been chosen silently, every zone area would
+have been up to 3.4% low with nothing to indicate it.
+
+**What is trustworthy in this geometry, and what is not.** Both the outline *and* the
+width are now measured: the geometry is ACA's own 5 m benthic polygons, so the flat
+250 m width assumption that made the provisional `area_km2` order-of-magnitude only
+is **gone**. What remains judgement is which zone a piece of reef belongs to:
+
+- **Fragments are cut at zone boundaries, not assigned whole.** ACA polygonizes
+  Aqaba's continuous fringing reef into a few very long shapes that run through
+  several zones. Assigning each to the zone it overlapped *most* gave R-05 (Japanese
+  Garden, a well-known reef) **475 m²** while 0.068 km² of reef sat inside its box,
+  credited to R-04 and R-06 — which were in turn credited with reef outside theirs.
+  No error and no missing data, just a wrong area per zone, which is exactly what the
+  exposure engine consumes. An area-conservation assert now guards this.
+- **Reef within 100 m of a zone but inside none is snapped to the nearest zone.** The
+  boxes were hand-drawn outlines of dive sites and the reef strip runs past them:
+  0.71 km² sits within 100 m of a box against 0.52 km² inside one. The eight zones are
+  a contiguous chain 24–50 m apart (R-07/R-08 touch), so 15 pieces totalling 0.011 km²
+  are near two zones and take the nearer — reported by the build, and asserted to
+  occur only between *adjacent* zones. The tolerance is 100 m against >5 km to the
+  nearest foreign reef, so it cannot reach across a border.
+- **Dominant habitat is by area, not by piece count.** Polygonizing a raster yields one
+  large patch plus a scatter of single-pixel specks; counting pieces let 25 rock specks
+  outvote the coral patch that *is* the zone. R-08 reads `Rock:59 / Coral-Algae:47` by
+  count — a meaningless near-tie — versus `Rock:66% / Coral-Algae:34%` by area.
+- **Depth is now the weakest field, not the geometry.** The bathymetry is 50 m and the
+  reef strip is 20–50 m wide, so 39–100% of the cells under a zone read as land.
+  Depths are medians over water cells only; R-02 has no water cell at all and is
+  reported `NaN`, never 0 and never the +10 m the raw cells would give. R-03's −179.7 m
+  comes from just 2 cells over a 0.01 km² zone and should not be quoted. Use
+  `depth_land_cell_pct` before trusting any depth here.
+- **Class labels are read off the live Earth Engine asset**, not from documentation,
+  and `export_aca.py verify-classes` re-checks them on every build. Guessing is a real
+  trap: geomorphic `22` is *Reef Slope*, and the plausible guess (*Back Reef Slope*,
+  which is `24`) would have mislabelled five of the eight zones with no error.
 
 **Known limitations**
 
-1. **Allen Coral Atlas maps shallow reef only**, so once swapped in, deeper habitat
-   remains unrepresented and the exposure model is silent about it.
+1. **Allen Coral Atlas maps shallow reef only**, so deeper habitat is unrepresented and
+   the exposure model is silent about it. This is the main reason 1.24 km² sits below
+   the published ~5–13 km² range.
 2. **`sensitivity_weight` reflects team assumptions, not Atlas data and not
    scientific measurement**; assigning real weights is a Phase 2 item requiring
    marine-scientist input, and this must be said out loud on the slide because
@@ -335,13 +444,19 @@ bathymetry it was ~600 m too far east at R-03–R-05 (those boxes sat on dry lan
    and not converted into a sensitivity weight**, because that conversion is the
    marine scientist's judgement call and inventing it from protection status would
    repeat the exact error limitation 2 warns about.
-4. **R-01 and R-02 cover developed beach and port frontage** where reef presence is
-   doubtful; per contract §2, if ACA yields fewer real zones the extras are dropped
-   and the remaining IDs keep their names, never renumbered.
-5. R-08 is **2.4× the median zone area** and straddles the park boundary, making it
-   the obvious candidate for a split once real habitat data exists — but splitting it
-   now would change the zone count and break the ID contract, so it is flagged as a
-   recommendation rather than done unilaterally.
+4. **R-01 and R-02 cover developed beach and port frontage** where reef presence was
+   expected to be doubtful. ACA maps habitat in both, so per contract §2 no zone was
+   dropped and all eight IDs survive. R-02 is now the smallest zone at 0.04 km² and
+   R-03 at 0.01 km²; both are thin enough that per-zone exposure for them should be
+   quoted with the area beside it.
+5. R-08 is no longer the outlier it was — at 0.20 km² against a 0.14 km² median it is
+   **1.4×** the median rather than 2.4×, so the case for splitting it has weakened.
+   Splitting would still change the zone count and break the ID contract, so it stays
+   a recommendation, not a unilateral change.
+6. **`sensitivity_weight` did not become derivable when real habitat arrived.** It is
+   still 1.0 everywhere. `habitat_class` and `marine_park_overlap_pct` are exactly the
+   measured inputs a marine scientist needs in order to set it — handing them over is
+   useful, converting them into a weight ourselves is the error limitation 2 names.
 
 ---
 
@@ -397,8 +512,10 @@ prevent.
   while the mask was wrong elsewhere. The expansion immediately caught two points
   wrongly assumed to be mid-gulf that are in fact Wadi Araba land at +533 m and
   +241 m.
-- Depth range −907.1 m to +1542.3 m; 23.3% of the AOI below sea level (WorldCover
-  independently: 23.89%).
+- Depth range −907.1 m to +1542.3 m; 23.3% of the bathymetry raster's own extent
+  below sea level. Within `MARINE_AOI` specifically it is 41.29%, which is the figure
+  to compare against WorldCover's 42.91% — see the cross-check in §1. The two extents
+  differ, so the two percentages are not interchangeable.
 - The water mask polygonises to **one** 397.3 km² sea body — no spurious interior
   lakes in dry wadi floors, which would punch false holes in the particle barrier.
 - **Single nodata representation.** GMRT ships 1 917 cells (~0.3%) as bare NaN with
@@ -459,7 +576,7 @@ Five so far. Each has a figure or a test, because a fix without evidence is a cl
 | 2 | **Mixed NaN / −32768** nodata in depth field | NaN particle positions, no exception | [depth_03](qa_screenshots/depth_03_nodata_bug_before_after.png) |
 | 3 | **Undeclared 0-nodata** in SoilGrids over sea | coastal catchment means dragged to zero | [soilgrids_08](qa_screenshots/soilgrids_08_unit_conversion_before_after.png), 21 tests |
 | 4 | **1.46 ha overlap** between R-04 and R-05 | reef area double-counted, inflated headline | [reef_03](qa_screenshots/reef_03_overlap_bug_before_after.png) |
-| 5 | Culvert distances measured in **EPSG:3857** | every distance overstated by 14.8% | [osm_04](qa_screenshots/osm_04_culverts_all_27_numbered.png) now matches the report |
+| 5 | Culvert distances measured in **EPSG:3857** | every distance overstated by 14.8% | [osm_04](qa_screenshots/osm_04_culverts_all_numbered.png) now matches the report |
 
 Bugs 4 and 5 were both found *by building the figure*, not by reading the code.
 # ReefShield Data Dictionary
@@ -490,7 +607,7 @@ windows) and **2026-07-31 / 2026-08-01** (IMERG Final Oct 2016 window).
 | Temporal resolution | 30 minutes |
 | Time availability | 2000-06 → present (Final lags ~3.5 months) |
 | Spatial resolution | 0.1° (~11 km) |
-| Geographic extent used | 34.80–35.15 °E, 29.25–29.70 °N (5 lat × 4 lon cells) |
+| Geographic extent used | **`TERRAIN_AOI` = 34.75–35.94 °E, 29.15–30.30 °N.** Was documented as 34.80–35.15 / 29.25–29.70 — that box was **retired on 2 Aug 2026** for cutting off ~85% of Wadi Yutum. Any file fetched before then covers the wrong area; see `scripts/check_aoi_coverage.py` |
 | Raw path | `data/raw/imerg/events/<event_id>/` |
 | Processed path | `data/processed/events/<event_id>/<event_id>_imerg.nc` |
 | Citation | https://gpm.nasa.gov/data/imerg |
@@ -508,6 +625,69 @@ windows) and **2026-07-31 / 2026-08-01** (IMERG Final Oct 2016 window).
 Aqaba flash floods — a documented product limitation, not a pipeline defect.
 The delivered array is `(time, lon, lat)`; index-order errors are silent.
 Harmony does **not** concatenate — one file per granule.
+
+---
+
+## 1b. NASA GPM IMERG V07 — Daily Final (stage-1 screening)
+
+The half-hourly product above is the one used for storm *intensity*. This daily one is
+what made a 27.7-year search affordable: half-hourly IMERG for the whole record is
+~455,000 Harmony requests, which is weeks of wall time. Daily is ~10,000, and it is only
+ever used to **decide which days deserve half-hourly detail** — never to measure
+intensity.
+
+| Field | Value |
+|---|---|
+| Source organization | NASA / JAXA (GPM mission), distributed by NASA GES DISC |
+| Dataset name | GPM IMERG Final Precipitation L3 **1 day** 0.1° |
+| Product / version | `GPM_3IMERGDF`, version **07** |
+| Collection concept ID | `C2723754864-GES_DISC` |
+| Run type | **final** — gauge-adjusted, calibrated |
+| Suitable for training | Yes, for daily totals only — `screening_only: true` in the registry |
+| Access method | NASA Harmony spatial + variable subsetting (`harmony-py`), auth via `earthaccess` |
+| Access date | 2026-08-02 (sweep manifest `generated_utc` 2026-08-02T18:08:36Z) |
+| Registration required | Same as the half-hourly product — Earthdata account + *NASA GESDISC DATA ARCHIVE* approval |
+| Licence / terms status | Accepted (EULA approved 2026-08-01) |
+| Temporal resolution | 1 day (`granule_minutes: 1440`) |
+| Period swept | **1998 → 2026**, 10,321 days expected |
+| Spatial resolution | 0.1° (~11 km) |
+| Geographic extent used | `TERRAIN_AOI` = 34.75–35.94 °E, 29.15–30.30 °N |
+| Raw path | `data/raw/imerg/daily_final/` |
+| Processed path | `data/processed/features/catchment_rainfall_daily.parquet`, `catchment_rainfall_climatology.parquet` |
+| Manifest | `data/processed/events/daily_sweep_manifest.json` |
+| Reproduce | `./scripts/run_daily_sweep.sh` → `python scripts/aggregate_daily_to_catchments.py` → `python scripts/build_event_catalogue.py` |
+| Citation | https://gpm.nasa.gov/data/imerg |
+
+**Completeness: 10,135 of 10,321 days = 98.2%.**
+
+The 186 missing days are **contiguous — 2025-10-01 to 2026-04-04** — and every one of
+them is after the last day the Final Run had been produced at the access date. This is
+the product's ~3.5-month gauge-adjustment latency, not a gap in the sweep, which is why
+the event catalogue records `search_scope_end_utc = 2025-09-30` rather than today's date.
+Per the data rules the days are **reported and never interpolated**; the full list is in
+the manifest.
+
+| Variable | Internal name | Units | Notes |
+|---|---|---|---|
+| `precipitation` | `precipitation` | **mm/day** | **No `Grid/` prefix** — unlike the half-hourly product |
+| derived | `precipitation_depth_mm` | mm | `rate × interval_hours / rate_period_hours`, i.e. × 1 for a daily granule |
+
+**The units trap.** Daily is **mm/day** and half-hourly is **mm/hr**, and the daily
+variable has **no `Grid/` prefix**. Applying the half-hourly convention to daily data
+understates depth by **48×** and raises no error — the numbers just come out small and
+plausible. Both the variable name and the rate period come from `IMERG_PRODUCTS` in
+`backend/src/ingestion/imerg.py`; neither is ever written as a literal.
+
+**Limitations.**
+
+1. **A daily total cannot rank a flash flood.** Aqaba's damaging events are short,
+   intense bursts; two storms with the same daily total can differ severalfold in peak
+   3-hour intensity. That is the entire reason stage 2 exists, and it is measurable —
+   re-ranking the catalogue by peak 3-hour intensity moved the demo event from 14th to
+   **8th**. Stage 1 output is a *candidate list*, never a severity ranking.
+2. The generous top-N (≥100) is the mitigation for exactly that under-ranking.
+3. ~11 km cells smooth localized convective storms — inherited from the product, same as
+   the half-hourly run.
 
 ---
 
@@ -610,6 +790,47 @@ Produced by `backend/src/processing/antecedent_features.py`; written to
 Missing hours are excluded from sums and reduce the valid fraction — never
 treated as zero.
 
+### The cross-event table, and the target definition
+
+`scripts/extract_event_antecedents.py` rolls the per-event files into one table at
+`data/processed/features/event_antecedents.parquet`, one row per (event × catchment),
+with the two ERA5 runoff targets prefixed `label_`.
+
+| | |
+|---|---|
+| Rows / events | **395 rows, 79 events** (as of 2026-08-03) |
+| Events skipped | 21 — their ERA5 month has not downloaded yet; the sweep is at 74 of 84 months |
+| Label columns | `label_surface_runoff_mm`, `label_subsurface_runoff_mm` |
+| Label window | 24 h from the event hour |
+| Distribution | published in `event_antecedents.summary.json` under `label_distribution` |
+
+**Do not binarise the label at `> 0`.** The candidates are already the top ~1% of days by
+rainfall, so nearly every one produces *some* ERA5 runoff: **98% of rows are positive at a
+zero threshold.** A model predicting "runoff" always would score ~98% and have learned
+nothing — the same tautology the label rule exists to prevent, reached from the other
+direction, and it would present as a good result rather than as a bug.
+
+The **magnitude** is what discriminates. It spans four orders of magnitude, and within a
+single catchment the maximum is ~19× the median:
+
+| percentile | mm | binary balance if used as threshold |
+|---|---:|---:|
+| p10 | 0.00014 | — |
+| p50 | 0.00584 | **50% positive** |
+| p75 | 0.01624 | 25% positive |
+| p90 | 0.03897 | 10% positive |
+| p99 | 0.13343 | — |
+
+So the usable formulations are regression on the value (log scale) or a binary split at a
+candidate-set percentile. Whichever is chosen, **the threshold is a modelling decision and
+belongs in the model card**, not buried in a script.
+
+**Leakage warning.** Per-catchment median runoff orders monotonically with catchment area
+— AQ-C01 0.0104 mm (4,453 km²) descending to AQ-C05 0.0047 mm. Combined with static
+features that are constant per catchment, random CV will memorise catchment identity and
+report a meaningless score. This is the concrete reason **leave-one-catchment-out *and* a
+temporal holdout are both mandatory**, not merely advisable.
+
 ---
 
 ## 5. Rainfall candidates
@@ -661,7 +882,7 @@ Full audit and methodology: [event_audit.md](event_audit.md). Access method
 verified 2026-08-02: Microsoft Planetary Computer STAC
 (`planetarycomputer.microsoft.com/api/stac/v1`), anonymous SAS-token signing
 via the `planetary-computer` package — no Copernicus Data Space / Earth
-Engine login needed. Search box: `ANALYSIS_BBOX` (`scripts/config.py`).
+Engine login needed. Search box: `ANALYSIS_BBOX` (`scripts/pulga_config.py`).
 
 | Product/version | Access date | Scene ID(s) | Role |
 |---|---|---|---|
@@ -701,12 +922,14 @@ Spatial contract as above (§ intro). All sources below pulled live and cached u
 
 | Product | Provider | Version | Extent | Access Date | License | Citation / Notes |
 |---|---|---|---|---|---|---|
-| GEBCO Bathymetry (GeoTIFF) | GEBCO / gebco.net | GEBCO 2026 Global | padded download box | 2026-08-02 | GEBCO Grid Terms of Use (free, cite GEBCO) | Requested via https://download.gebco.net/ subsetting app; download link emailed (async, may take a while to generate). Layer: Bathymetry only. → `data/raw/bathymetry/gebco_aqaba.tif` once retrieved. |
+| GEBCO Bathymetry (GeoTIFF) | GEBCO / gebco.net | GEBCO 2026 Global | padded download box | 2026-08-02 | GEBCO Grid Terms of Use (free, cite GEBCO) | **Superseded, 2026-08-03 — do not chase this further.** Requested via the web subsetter on Day 1 (email delivery), but the file never landed and this is now moot: Pulga's team independently substituted GMRT project-wide ("every programmatic GEBCO route closed" — `tasks/phase2/00-phase2-plan.md`). The depth field the particle engine actually uses is `gmrt_bathymetry` (see §5 "Bathymetry — depth field and coastline" above), already loaded into `raster_assets`. |
 | NOAA GFS (pgrb2.0p25) | NOAA NCEP / AWS Open Data (`noaa-gfs-bdp-pds`) | 2026-08-02 00Z cycle | padded box, F00–F48 (3h steps) | 2026-08-02 | US Government work, public domain | Pulled via Herbie (GRIB .idx byte-range subset, no full-file download). Variables: APCP surface (→ `tp`), UGRD/VGRD 10 m (→ `u10`/`v10`). → `backend/src/ingestion/gfs.py`, cached at `data/raw/forecasts/gfs/latest_gfs_aoi_forecast.nc`. |
 | NOAA GEFS (atmos.5, pgrb2a) | NOAA NCEP / AWS Open Data (`noaa-gefs-pds`) | 2026-08-02 00Z cycle | padded box, F03–F48 (3h steps), 30 members | 2026-08-02 | US Government work, public domain | Pulled via Herbie, one GRIB subset per member per lead hour (480 total, full production run confirmed). Computes AOI-level ensemble exceedance probability against a placeholder 3h rain threshold (15mm) — swap for Karam's real per-catchment percentile once `rainfall_candidates.parquet` lands. Result: 0.00 exceedance across all 16 lead hours (correct — dry day, all 30 members agree). → `backend/src/ingestion/gefs.py`, cached at `data/raw/forecasts/gefs/latest_gefs_exceedance.nc`. |
 | ECMWF IFS Open Data | ECMWF Open Data portal (rolling archive) | latest available run, 2026-08-02 | Global 0.25°, clipped locally to AOI, steps 0–48h (3h) | 2026-08-02 | CC BY 4.0 (attribute ECMWF) | Pulled via `ecmwf-opendata` client (`type=fc, stream=oper`). Variables: tp, 10u, 10v. Rolling archive only — never use for historical backfill. Feeds GFS-vs-IFS agreement flag (100% agreement on this dry day — both models correctly show no rain over the AOI). → `backend/src/ingestion/ecmwf.py`, cached at `data/raw/forecasts/ecmwf/latest_ifs_aoi_forecast.nc`. |
 | HYCOM GLBy0.08 (FMRC best) | US Navy / hycom.org public THREDDS OPeNDAP | `GLBy0.08/latest` | padded box, depth 0–50m, ±24h around access time | 2026-08-02 | Approved for public release, unlimited distribution | Lazy-opened via OPeNDAP (no full 2TB download). Variables: water_u/water_v → `u`/`v`. Confirmed the resolution limitation directly: the provisional outlet cell (34.96, 29.54) is masked/nan in this grid; nearest resolved open water is ~6km further into the gulf mouth. → `backend/src/ingestion/ocean_currents.py`, cached at `data/raw/currents/hycom_aoi_recent.nc`. |
-| Copernicus Marine (GLOBAL_ANALYSISFORECAST_PHY_001_024) | Copernicus Marine Service | `cmems_mod_glo_phy_anfc_0.083deg_PT1H-m` | padded box, depth 0–50m | — | Copernicus Marine license (free w/ registration) | **Not yet pulled — no Copernicus Marine credentials available as of 2026-08-02.** Fetch/cache functions written and ready (`fetch_copernicus_marine`, `cache_copernicus_marine`); same output schema as HYCOM so the interpolator is source-agnostic. Register at https://data.marine.copernicus.eu/ and add credentials to activate. |
+| Copernicus Marine (GLOBAL_ANALYSISFORECAST_PHY_001_024) | Copernicus Marine Service | `cmems_mod_glo_phy_anfc_0.083deg_PT1H-m` | MARINE_AOI, depth: single level ~0.49m (this product tier is surface/near-surface hourly-mean — live/rolling window only, no historical reach) | 2026-08-03 | Copernicus Marine license (free w/ registration) | **Pulled successfully — account registered and activated 2026-08-03.** Same output schema as HYCOM (interpolator is source-agnostic). At the provisional outlet (34.96, 29.54): masked/nan — same as HYCOM, two independent models agree this exact cell is unresolved. Live only — use the reanalysis row below for the demo event. → `backend/src/ingestion/ocean_currents.py`. |
+| HYCOM GLBu0.08 expt_91.2 (historical) | US Navy / hycom.org public THREDDS OPeNDAP | `GLBu0.08/expt_91.2/uv3z` | MARINE_AOI, depth 0–50m (real levels: 0,2,4,...50m), 2016-04-18 to 2018-11-20 coverage | 2026-08-03 | Approved for public release, unlimited distribution | Operational-analysis archive — NOT the same product as the "latest" FMRC endpoint above, which has zero 2016 data. Pulled for the demo event window (26–31 Oct 2016). → `backend/src/ingestion/ocean_currents.py::fetch_hycom_historical`, cached at `data/raw/currents/hycom_aoi_AQ-2016-10-28.nc`. |
+| Copernicus Marine GLORYS12V1 reanalysis | Copernicus Marine Service (Mercator Ocean) | `cmems_mod_glo_phy_my_0.083deg_P1D-m` | MARINE_AOI, depth 0–50m (18 real levels, 0.49–47.4m), multiyear reanalysis covering 2016 | 2026-08-03 | Copernicus Marine license (free w/ registration) | The correct product for both the historical date AND real sub-surface depth levels — the "anfc" live tier above has neither. Pulled for the demo event window (26–31 Oct 2016). → `backend/src/ingestion/ocean_currents.py::fetch_copernicus_marine_historical`, cached at `data/raw/currents/copernicus_marine_aoi_AQ-2016-10-28.nc`. |
 
 **Note on the root `.env`:** commit `2f0a6d6` added a real `.env` at the repo root
 containing live NASA Earthdata credentials in plaintext, despite its own header saying
@@ -714,6 +937,50 @@ containing live NASA Earthdata credentials in plaintext, despite its own header 
 here — flagging it so it doesn't get missed: **rotate the Earthdata password**, and
 make sure no `.gitignore` gap lets it happen again (`.env` and `.env.*` must always be
 excluded before any commit touches this repo).
+
+### Phase 2 update — 2026-08-03
+
+- **Copernicus Marine activated.** Registered account, real u/v pulled for MARINE_AOI.
+  `compare_hycom_vs_copernicus()` added to `ocean_currents.py`. At the gulf mouth
+  (34.90, 29.40), **today's** conditions: under 5° direction disagreement between HYCOM
+  and Copernicus Marine (drifts hour to hour with live currents — see
+  `docs/qa_screenshots/currents_01_hycom_vs_copernicus.png` top row for the exact
+  snapshot). Both models mask the exact provisional outlet cell (34.96, 29.54) as
+  unresolved/land — corroborating evidence for the resolution limitation, not a
+  single-source artifact.
+- **Historical pull added — the actual demo event window.** The live products above only
+  cover a rolling recent window; neither reaches back to 2016. Added
+  `fetch_hycom_historical()` (HYCOM `GLBu0.08/expt_91.2`) and
+  `fetch_copernicus_marine_historical()` (Copernicus Marine GLORYS12V1 reanalysis,
+  `cmems_mod_glo_phy_my_0.083deg_P1D-m`) — see the two new rows above. **Finding:** the two
+  models' resolved (non-masked) footprints in the narrow gulf barely overlap at all — a
+  0.01°-resolution scan of the full MARINE_AOI found zero shared points; the nearest point
+  both resolve is (34.85, 29.30), 6km from the outlet. There, at the mooring's
+  peak-response time (2016-10-28 06:50 UTC), HYCOM and Copernicus Marine disagree by
+  **65.8°** on current direction — see `docs/qa_screenshots/currents_01_hycom_vs_copernicus.png`
+  bottom row and `docs/forcing_limitations.md` for the full writeup. This is materially
+  worse than the live agreement and is the uncertainty figure that actually applies to
+  the backtest, not the "today" number.
+- **Interpolator bug fixed.** `CurrentFieldInterpolator` requested `depth=0.0` by default,
+  but GLORYS12V1's shallowest coordinate is 0.494m — linearly interpolating below a
+  dataset's minimum silently returns `nan` rather than raising. Fixed by clipping the
+  requested depth into the dataset's own `[depth.min(), depth.max()]` range before
+  interpolating. This was masking real data as a false "unresolved" cell for any product
+  whose shallowest level isn't exactly 0m — worth checking if any other depth-aware
+  interpolation in the project has the same assumption.
+- **GEFS exceedance repointed** from the Phase 1 placeholder (flat 15mm/3h) to Karam's
+  real per-catchment p99 climatology (`catchment_rainfall_climatology`, window_hours=24,
+  source `imerg_v07_final`). Karam's delivered climatology is daily-resolution only (no
+  1h/3h/6h windows were computed), so the exceedance window is 24h, not 3h as originally
+  scoped — documented here rather than silently assumed. Ensemble precipitation is now
+  sampled at each of the 5 catchment centroids (not one AOI-wide mean), since TERRAIN_AOI
+  is large enough (~115×128km) for GFS/GEFS grid cells to meaningfully differ by catchment.
+  Real per-catchment exceedance now writes to `forecast_runs` / `forecast_catchment_rainfall`
+  / `forecast_exceedance` in Postgres — see `backend/src/db/loaders/forecast_pipeline.py`.
+- **Old bounding box purged.** `gfs.py`/`gefs.py`/`ecmwf.py`/`ocean_currents.py` now import
+  `TERRAIN_AOI`/`MARINE_AOI` from the shared `config.spatial` module instead of a hardcoded
+  bbox — done as part of the team's Day-0 merge, not by this workstream, but confirmed
+  working post-merge.
 
 
 ---
@@ -875,3 +1142,109 @@ Not acquired because it needs University of Tokyo registration or an authenticat
 ## Not yet filled in
 
 Karam, Pulga, Abd and Nizar — add your products above using the same format. Rainfall, reanalysis, forecasts, land cover, soil, OSM, reef habitat, bathymetry, currents and satellite imagery are all still missing from this ledger.
+
+---
+
+# AMENDMENT — 2 August 2026 · AOI v2 re-pull and the Phase-2 backend
+
+Appended rather than merged into the sections above, so the record shows what was
+corrected and when. A project that visibly catches and fixes its own AOI bug is
+more credible than one that never mentions it had one.
+
+## Why every land-side source was re-pulled
+
+The original download box was `34.80, 29.25, 35.15, 29.70`. It covered **~11.5% of
+the terrain area the project actually needs**. Wadi Yutum drains from about 90 km
+inland, out to 35.94 E and 30.30 N, so the old box cut off most of `AQ-C01` — the
+catchment that is 4,453 of the basin's 4,656 km².
+
+This was a **coverage** failure, not a data-quality one. Every download succeeded.
+Nothing raised. The numbers were simply taken over the wrong ground, which is the
+exact failure mode this project's standing law #1 exists to catch.
+
+Measured evidence, saved before anything was re-fetched:
+[aoi_coverage_report_20260802.txt](aoi_coverage_report_20260802.txt) — 19 files
+short at the start, 7 at the end, with each remaining one explained in the
+report's own interpretation section.
+
+## What changed, per source
+
+| Source | v1 | v2 | Access date |
+|---|---|---|---|
+| ESA WorldCover | 1 tile (`N27E033`), 4200×5400 px | **2 tiles mosaicked** (`N27E033` + `N30E033`), 14280×13800 px | 2026-08-02 |
+| ISRIC SoilGrids | 188×155 cells | **481×526 cells** | 2026-08-02 |
+| OpenStreetMap | clipped to old box; 3,845 roads / 200 drainage / 27 culverts | **clipped to `terrain_aoi.geojson`; 8,289 roads / 1,402 drainage / 46 culverts** | 2026-08-02 |
+| Bathymetry / coastline / reef zones | — | **NOT re-pulled** — `MARINE_AOI` is unchanged between contract v1 and v2 | 2026-08-01 |
+
+Required WorldCover tiles are now **derived from the AOI** in
+`process_worldcover.required_tiles()` rather than hardcoded. A hardcoded list is
+how v1's northern edge went missing in the first place, and a future AOI change
+would have repeated it silently.
+
+**New failure mode introduced by v2, and checked:** two ESA tiles can carry
+different processing dates. Measured discontinuity in bare-ground fraction across
+the 30°N seam is **0.01 percentage points** — ordinary terrain variation, not a
+version mismatch. No blending was applied.
+→ [worldcover_06_v2_mosaic_seam_check.png](qa_screenshots/worldcover_06_v2_mosaic_seam_check.png)
+
+## Re-verified against the real 5-catchment set
+
+The three feature tables now sit at the contract paths, built from
+`catchments.gpkg`, and the local test fixture has been deleted.
+
+Catchment areas cross-checked against the geometry contract — **all five within
+0.1%**, total 4,656.1 km² against the contract's 4,656 km²:
+
+| id | contract km² | computed km² | diff |
+|---|---:|---:|---:|
+| AQ-C01 | 4,453.1 | 4,453.1 | 0.00% |
+| AQ-C02 | 64.9 | 64.9 | 0.07% |
+| AQ-C03 | 59.9 | 59.9 | 0.01% |
+| AQ-C04 | 42.7 | 42.7 | 0.07% |
+| AQ-C05 | 35.6 | 35.6 | 0.10% |
+
+**Bare-ground sanity check on the number that matters.** `AQ-C01` is
+**98.64% bare/sparse ground over 4,453 km²** — 95.6% of the basin. This is a far
+stronger test than v1's, which measured a fraction of one small-box catchment.
+→ [worldcover_07_aq_c01_bareground_v2.png](qa_screenshots/worldcover_07_aq_c01_bareground_v2.png)
+
+Land composition over the full terrain AOI (18,863 km² of land, 95.7% of the box):
+bare/sparse 97.82%, grassland 0.68%, cropland 0.55%, built-up 0.73%, tree 0.13%.
+
+## Phase-2 backend — what the API asserts about its own numbers
+
+| Artifact | Evidence |
+|---|---|
+| Exposure `formula_terms` stored on every run | [phase2_01_formula_terms_table.png](qa_screenshots/phase2_01_formula_terms_table.png) |
+| `/explain` alters no number, EN and AR | [phase2_02_explain_number_fidelity.png](qa_screenshots/phase2_02_explain_number_fidelity.png) |
+| `/ask` citation coverage, incl. refusals | [phase2_03_ask_citation_coverage.png](qa_screenshots/phase2_03_ask_citation_coverage.png) |
+| 19 caveats verified to reach a payload | [phase2_04_caveat_coverage_matrix.png](qa_screenshots/phase2_04_caveat_coverage_matrix.png) |
+| Endpoint status, stubs labelled | [phase2_05_endpoint_status.png](qa_screenshots/phase2_05_endpoint_status.png) |
+
+**Every area and distance in the exposure engine is computed in EPSG:32636**, and
+`_assert_measure_crs` refuses any other frame. `measure_crs` is recorded in every
+`formula_terms` row so the guarantee is auditable from stored data, not just from
+reading the code.
+
+**Risk bands** (0–20 minimal … 80–100 critical) are a reasonable default, **not
+validated policy**. Operational thresholds require marine-scientist input, and the
+band caveat travels on every exposure and alert response.
+
+`risk_score = product × 100`, and the ×100 is recorded as `score_scale` in
+`formula_terms`. No exponent or curve is applied: every factor is already
+dimensionless on [0,1], so the product is on [0,1] and ×100 maps it onto the band
+table with no further reshaping. Any curve invented here would change the ranking
+between zones while looking like a presentation detail.
+
+## Bugs caught in Phase 2 (continuing the Phase-1 count)
+
+| # | Bug | Silent failure it would have caused |
+|---|---|---|
+| 6 | `/explain` rendered `0.0725 × 100` as `7.249999999999999%` | An IEEE754 artefact on screen, unfixable by rounding because rounding is forbidden — solved with an exact decimal shift |
+| 7 | Number-fidelity check used substring matching | `72` → `72.4` passed undetected; a number could be *extended* without failing the audit |
+| 8 | `/ask` answered an out-of-corpus question with a real citation | "airspeed **velocity**" matched a chunk about ocean current velocity — cited, but not responsive |
+| 9 | `/alerts` read the newest run, not the requested scenario | A cached exposure response writes no new run, so alerts could describe a different outlet than the user asked about |
+| 10 | Catchment-area caveat cited the wrong file | The ±4% figure lives in this dictionary, not `00-contracts.md §2` — a caveat pointing at a file that lacks the claim |
+
+Bugs 6–9 were found **by writing the test or building the artifact**, not by
+reading the code — the same pattern as Phase 1's bugs 4 and 5.

@@ -15,8 +15,8 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
-from config import PROCESSED, VECTORS
-from qa_common import CRS_BASEMAP, add_satellite, fixture_warning, resolve_catchments, save_fig
+from pulga_config import PROCESSED, VECTORS
+from qa_common import CRS_BASEMAP, add_satellite, provenance_warning, resolve_catchments, save_fig
 
 DEPTH = PROCESSED / "bathymetry" / "depth_utm36n.tif"
 OSM = VECTORS / "osm_aqaba.gpkg"
@@ -103,9 +103,9 @@ def master_map(catchments, kind):
     ax.set_xticks([]); ax.set_yticks([])
     save_fig(fig, "overview_01_master_all_layers",
              "Every Pulga deliverable in one frame: catchment boundaries, GMRT-derived "
-             "coastline, 3,845 roads, 200 mapped drainage features with 27 culverts marked, "
+             "coastline, every mapped road, the full drainage network with culverts marked, "
              "the Aqaba Marine Park, and reef zones R-01–R-08. Pitch-deck ready."
-             + fixture_warning(kind), SRC, dpi=175)
+             + provenance_warning(kind), SRC, dpi=175)
 
 
 def lineage_diagram():
@@ -147,7 +147,7 @@ def lineage_diagram():
     # ---- row 3: OSM
     s3 = box(1, 57, 17, 8, "OpenStreetMap\nGeofabrik jordan-latest\n30 MB, ODbL 1.0", C_SRC)
     p3 = box(24, 57, 18, 8, "extract_osm.sh\ncustom osmconf promotes\ntunnel + industrial", C_PROC)
-    o3 = box(48, 57, 18, 8, "osm_aqaba.gpkg\n12 layers, 27 culverts", C_OUT)
+    o3 = box(48, 57, 18, 8, "osm_aqaba.gpkg\n12 layers incl. culverts", C_OUT)
 
     # ---- row 4: bathymetry, with the substitution called out
     sub = box(1, 43, 17, 10,

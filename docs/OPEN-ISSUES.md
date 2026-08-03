@@ -262,6 +262,60 @@ finds it in the history — where *"we removed the file"* is not an answer.
 
 ---
 
+---
+
+## Found while merging `main` into `frontend` — 2026-08-03
+
+### 21 · Pulga / Karam — **the API does not start.** 🔴
+
+`docker compose up` brings the api container up unhealthy, and the worker will not
+start behind it because of `depends_on: service_healthy`:
+
+```
+File "/app/backend/src/api/main.py", line 51, in <module>
+    from ..exposure import engine, store
+ImportError: attempted relative import beyond top-level package
+```
+
+`backend/src/exposure/` exists, so the package is not missing — the **relative**
+import is wrong. The container runs uvicorn with `--app-dir /app/backend/src`, which
+makes `api` the top-level package, so `from ..exposure` reaches above it. The same
+applies to the `..rag` imports on the following lines.
+
+Absolute imports (`from exposure import engine, store`) would resolve, since
+`/app/backend/src` is on the path. Not fixed here because it is backend code and one
+of you owns it — but **nothing in the compose stack starts right now**, so this
+outranks everything else on this list.
+
+Workaround while it stands: `docker compose run --rm --no-deps worker …`.
+
+### 22 · Karam — two parallel GeoJSON exports 🟠
+
+`scripts/export_web_layers.py` (yours) writes nine layers to `data/processed/web/`
+and gitignores them. `scripts/13_frontend_basemap.py` (mine) writes twelve to
+`frontend/public/basemap/` and commits them.
+
+Mine cannot be gitignored the same way, and that is the constraint rather than a
+preference: the compose build context is `./frontend`, so nothing under `data/` is
+reachable at image-build time, and DoD item 9 needs the layers present in the image
+rather than regenerable. Yours is the better default for everything else.
+
+They should be reconciled so one script feeds both — probably yours, with an output
+path flag. Until then two derivations of the same boundaries can drift, which is
+exactly what your handoff note warns about.
+
+### 23 · Anyone — `scripts/config.py` was deleted with no replacement 🟠
+
+The spatial constants moved to `backend/src/config/spatial.py`, but the path
+constants (`DATA`, `PROCESSED`, `VECTORS`, `FEATURES`) went nowhere, so every script
+now resolves its own. `export_web_layers.py` does it inline; my two derivation
+scripts now do the same.
+
+That is three copies of `ROOT / "data" / "processed" / "vectors"`. Worth one small
+module before it becomes ten.
+
+---
+
 ## How to close an item
 
 Edit this file in the same commit that fixes the thing, move the item to the log below, and say
@@ -269,4 +323,13 @@ what changed. An open-issues list nobody prunes stops being read.
 
 ### Closed
 
-*(nothing yet — this file was opened 2026-08-03)*
+**17 (partly) · reef geometry — closed by contract swap-in #3.** `reef_zones.gpkg`
+now carries real Allen Coral Atlas habitat (`ACA/reef_habitat/v2_0`) with
+`habitat_class` and `geomorphic_class` populated. Total reef area drops from
+5.685 km² to **1.235 km²** — 4.6x smaller — because the provisional 250 m strip was
+far more generous than the mapped habitat. The frontend was rebuilt on the new file;
+anything still drawing the provisional one overstates the reef by that factor.
+
+**Still open in 17:** `sensitivity_weight` remains 1.0 on all eight zones with status
+`PLACEHOLDER_PENDING_MARINE_SCIENTIST`. The geometry and the weighting are two
+separate claims and the UI copy now says so separately.

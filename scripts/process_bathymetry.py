@@ -38,7 +38,7 @@ import rasterio.warp
 import geopandas as gpd
 from shapely.geometry import shape
 
-from config import AOI_CRS_PROJECTED, AOI_CRS_STORAGE, PROCESSED, RAW, VECTORS
+from pulga_config import AOI_CRS_PROJECTED, AOI_CRS_STORAGE, PROCESSED, RAW, VECTORS
 
 # Control points for the sign-convention assertion. Every one was established by
 # SAMPLING the grid, not by assuming — an inverted mask would make the particle
@@ -128,6 +128,44 @@ def verify_sign_convention(path, verbose=False):
     return results
 
 
+def _refuse_to_shrink(dst_path, new_bounds, new_crs):
+    """Abort if this run would replace a shared artifact with a smaller extent.
+
+    Added 3 Aug 2026 after this script nearly did exactly that. `depth_utm36n.tif` on
+    main is 2358x2600 and covers the terrain extent, because someone re-downloaded
+    GMRT over a wider box. Re-running this script against the older, marine-only
+    `gmrt_aqaba.tif` in data/raw/ silently overwrote it with a 699x1013 file — an 8x
+    smaller product, same filename, same CRS, same 50 m resolution, no error.
+
+    Nizar's particle engine reads this file as its land barrier, so a quietly
+    shrunken extent would put particles "outside the grid" over water that used to be
+    represented. The failure is invisible: the file opens, the numbers look sane, and
+    only the bounds changed.
+
+    Set REEFSHIELD_ALLOW_SHRINK=1 to override deliberately.
+    """
+    import os
+
+    if not dst_path.exists() or os.environ.get("REEFSHIELD_ALLOW_SHRINK"):
+        return
+    with rasterio.open(dst_path) as old:
+        if old.crs != new_crs:
+            return  # different frame; not comparable, let it through
+        ob = old.bounds
+    o_area = (ob.right - ob.left) * (ob.top - ob.bottom)
+    n_area = ((new_bounds[2] - new_bounds[0]) * (new_bounds[3] - new_bounds[1]))
+    if n_area < o_area * 0.95:
+        raise SystemExit(
+            f"REFUSING to shrink {dst_path.name}.\n"
+            f"  existing extent : {tuple(round(x) for x in ob)}  ({o_area / 1e6:,.0f} km2)\n"
+            f"  this run would  : {tuple(round(x) for x in new_bounds)}  ({n_area / 1e6:,.0f} km2)\n"
+            f"That is {100 * (1 - n_area / o_area):.0f}% smaller. The raw input in "
+            "data/raw/bathymetry/ probably covers a narrower box than the one this file\n"
+            "was last built from. Re-download GMRT over the wider box, or set\n"
+            "REEFSHIELD_ALLOW_SHRINK=1 if the shrink is genuinely intended."
+        )
+
+
 def reproject_to_utm(src_path, dst_path):
     """Reproject the elevation grid to UTM 36N at TARGET_RES_M.
 
@@ -158,6 +196,10 @@ def reproject_to_utm(src_path, dst_path):
             src.crs, AOI_CRS_PROJECTED, src.width, src.height, *src.bounds,
             resolution=TARGET_RES_M,
         )
+        from rasterio.transform import array_bounds
+        _refuse_to_shrink(dst_path, array_bounds(height, width, transform),
+                          rasterio.crs.CRS.from_string(AOI_CRS_PROJECTED))
+
         meta = src.meta.copy()
         meta.update(
             crs=AOI_CRS_PROJECTED, transform=transform, width=width, height=height,

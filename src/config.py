@@ -83,7 +83,7 @@ class Settings:
     )
 
     # 5. Google Earth Engine
-    earthengine_project: str = _get("EARTHENGINE_PROJECT")
+    earthengine_project: str = _get("EARTHENGINE_PROJECT", "reefshield-aqaba-504407")
     google_credentials: str = _get("GOOGLE_APPLICATION_CREDENTIALS")
 
     # Project paths

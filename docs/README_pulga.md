@@ -3,7 +3,7 @@
 **Owner:** Pulga · land cover, soil, urban, marine habitat, bathymetry
 
 - Provenance, licences, limitations: [data_dictionary.md](data_dictionary.md)
-- All 34 QA figures with captions: [qa_screenshots/MANIFEST.md](qa_screenshots/MANIFEST.md)
+- Every QA figure, captioned and counted: [qa_screenshots/MANIFEST.md](qa_screenshots/MANIFEST.md)
 - Judge-facing honesty page: [pitch_limitations.md](pitch_limitations.md)
 - Handoff to the terrain lead: [osm_dem_conflicts.md](osm_dem_conflicts.md)
 - Visual provenance map: [overview_02_data_lineage_diagram.png](qa_screenshots/overview_02_data_lineage_diagram.png)
@@ -104,7 +104,7 @@ prevent.
 
 ### 0.6 Build, in dependency order
 
-Scripts import `config.py` as a sibling module, so run them from `scripts/`.
+Scripts import `pulga_config.py` as a sibling module, so run them from `scripts/`.
 
 ```bash
 cd scripts
@@ -129,7 +129,7 @@ cd .. && .venv/bin/python tests/test_soilgrids_units.py && cd scripts
 ../.venv/bin/python make_catchments_fixture.py     # only while Mahdi's are pending
 ../.venv/bin/python aggregate_catchments.py
 
-# 7. All 34 QA figures + the manifest
+# 7. All QA figures + the manifest
 ../.venv/bin/python qa_land.py
 ../.venv/bin/python qa_marine.py
 ../.venv/bin/python qa_overview.py
@@ -143,13 +143,13 @@ cd .. && .venv/bin/python tests/test_soilgrids_units.py && cd scripts
 
 | check | expected |
 |---|---|
-| WorldCover bare/sparse ground | **95.30%** of land, 72.53% of AOI |
+| WorldCover bare/sparse ground | **97.82%** of land, 93.63% of AOI |
 | SoilGrids unit tests | **21/21 pass**, texture median exactly 100.00 |
-| OSM layers | **12**, incl. 27 culverts and 2 protected areas |
+| OSM layers | **12**, incl. 46 culverts and 6 protected areas |
 | Depth field | min **−907.1 m**, max **+1542.3 m**, 23.3% below sea level |
 | Sign-convention controls | **22/22 pass** |
 | Coastline | **1** water polygon, **397.3 km²** |
-| Reef zones | **8**, total **5.69 km²**, all median depth < 0 |
+| Reef zones | **8**, total **1.235 km²** (Allen Coral Atlas v2.0; the 5.69 km² figure was the hand-drawn 250 m boxes) |
 | Coastline vs OSM | median **62 m**, p90 337 m |
 | QA figures | **34** in `docs/qa_screenshots/manifest.json` |
 
@@ -273,6 +273,6 @@ Recorded so nobody pays for them twice.
 | GDAL's default osmconf hides `tunnel`, `industrial`, `natural`, `protect_class` in `other_tags` | SQL filters silently return 0 rows | use [osmconf_reefshield.ini](../scripts/osmconf_reefshield.ini) |
 | pandas stores missing strings as float `NaN`, which is **truthy** | markdown tables print literal `nan` | `pd.isna()`, never `value or default` |
 | EPSG:3857 inflates distance by 1/cos(lat) | culvert distances 14.8% too large | measure in UTM 36N, draw in 3857 |
-| `imshow` defaults to `aspect='equal'` | degree-extent figures 14.9% too wide | `config.geographic_aspect()` |
+| `imshow` defaults to `aspect='equal'` | degree-extent figures 14.9% too wide | `pulga_config.geographic_aspect()` |
 | SoilGrids WCS returns XML errors with HTTP 200 | a "successful" download that is not a raster | check the TIFF magic bytes |
 | GMRT ships bare `NaN` with no nodata tag | NaN propagates through interpolation without raising | gap-fill, then one declared sentinel |

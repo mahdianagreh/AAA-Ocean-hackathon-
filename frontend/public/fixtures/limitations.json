@@ -29,12 +29,12 @@
   {
    "n": 6,
    "title": "Allen Coral Atlas maps shallow reef only",
-   "body": "Once the real habitat export lands, it still only covers optically shallow reef.\nDeeper habitat is not in the product, so our exposure map is **silent** about it —\nwhich is different from saying it is safe.\n\n---"
+   "body": "The real habitat export landed on 2026-08-03, and it still only covers optically shallow reef.\nDeeper habitat is not in the product, so our exposure map is **silent** about it —\nwhich is different from saying it is safe.\n\n---"
   },
   {
    "n": 7,
    "title": "OpenStreetMap tells us what is mapped, not what exists",
-   "body": "We use OSM for roads, buildings and — most valuably — 27 mapped culverts that correct\nwhere wadis actually reach the sea. A DEM routes water *around* a road embankment; a\nculvert carries it *through*.\n\n**But OSM completeness in Aqaba is unverified.** So we adopted a one-way rule: a\nmapped feature is positive evidence, and an unmapped one is *no* evidence. We never\nuse OSM's silence to rule a channel out. Our conflict report for the terrain lead\nstates this in its own header so it cannot be misread downstream.\n\n---"
+   "body": "We use OSM for roads, buildings and — most valuably — 46 mapped culverts that correct\nwhere wadis actually reach the sea. A DEM routes water *around* a road embankment; a\nculvert carries it *through*.\n\n**But OSM completeness in Aqaba is unverified.** So we adopted a one-way rule: a\nmapped feature is positive evidence, and an unmapped one is *no* evidence. We never\nuse OSM's silence to rule a channel out. Our conflict report for the terrain lead\nstates this in its own header so it cannot be misread downstream.\n\n---"
   },
   {
    "n": 8,

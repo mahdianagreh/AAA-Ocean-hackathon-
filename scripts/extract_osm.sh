@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # OpenStreetMap Jordan extract -> clipped, layered GeoPackage for the AOI.
 #
+# Re-clipped 2 Aug 2026 against TERRAIN_AOI. The previous clip used the old
+# (34.80, 29.25, 35.15, 29.70) box and covered ~5% of the terrain extent, missing
+# nearly all of Wadi Yutum's road and drainage network.
+#
 # Produces data/processed/vectors/osm_aqaba.gpkg with layers:
 #   roads, buildings, waterways, drainage_features, industrial, port
 #
@@ -17,12 +21,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PBF="data/raw/osm/jordan-latest.osm.pbf"
-AOI="data/raw/aoi/aqaba_padded_box.geojson"
+AOI="data/aoi/terrain_aoi.geojson"   # contract-owned; see backend/src/config/spatial.py
 OUT="data/processed/vectors/osm_aqaba.gpkg"
 export OSM_CONFIG_FILE="scripts/osmconf_reefshield.ini"
 
 [[ -f "$PBF" ]] || { echo "missing $PBF"; exit 1; }
-[[ -f "$AOI" ]] || { echo "missing $AOI — run make_aoi.py first"; exit 1; }
+[[ -f "$AOI" ]] || { echo "missing $AOI — the spatial contract owns this file"; exit 1; }
 rm -f "$OUT"
 
 # $1=src layer  $2=dst layer  $3=WHERE
@@ -44,7 +48,7 @@ extract() {
   printf "  %-20s %s features\n" "$dst" "${n:-0}"
 }
 
-echo "extracting OSM layers for the padded AOI..."
+echo "extracting OSM layers for TERRAIN_AOI..."
 
 extract lines         roads      "highway IS NOT NULL"
 extract multipolygons buildings  "building IS NOT NULL"

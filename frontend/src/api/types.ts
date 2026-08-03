@@ -118,10 +118,19 @@ export interface ReefZone {
   marine_park_overlap_pct: number;
   /** 1.0 on all eight zones, and flagged PLACEHOLDER_PENDING_MARINE_SCIENTIST.
    *  Exposure therefore varies only through the hazard term, and the legend must
-   *  not imply the zones differ. OPEN-ISSUES.md item 17. */
+   *  not imply the zones differ. OPEN-ISSUES.md item 17.
+   *
+   *  Note the split: contract swap-in #3 landed, so the GEOMETRY is now real Allen
+   *  Coral Atlas habitat (source `ACA/reef_habitat/v2_0`) while the WEIGHTING is
+   *  still a placeholder. Two separate claims, and the copy says so separately. */
   sensitivity_weight: number;
   sensitivity_weight_status: string;
   provisional: boolean;
+  /** Only meaningful since the ACA swap — the provisional file had 'unknown' on all
+   *  eight zones. e.g. "Coral/Algae" over an "Outer Reef Flat". */
+  habitat_class?: string;
+  geomorphic_class?: string;
+  source?: string;
 }
 
 /** AQ-O01 carries 96% of the discharge and is the demo path.

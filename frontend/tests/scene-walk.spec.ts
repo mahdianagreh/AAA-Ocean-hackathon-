@@ -145,9 +145,10 @@ test.describe('the honest panels', () => {
     await page.locator('[data-open-overlay="provenance"]').click();
     const p = page.locator('[data-overlay="provenance"]');
     await expect(p).toBeVisible();
-    // 33 of the 34 manifest entries; overview_01 is excluded on purpose.
-    await expect(p.locator('[data-figure]')).toHaveCount(33);
-    await expect(p.getByText(/33 shown, of 34 in the manifest and 36 PNGs/)).toBeVisible();
+    // 42 of the 43 manifest entries; overview_01 is excluded on purpose. main added
+    // nine more QA figures after this panel was first written.
+    await expect(p.locator('[data-figure]')).toHaveCount(42);
+    await expect(p.getByText(/42 shown, of 43 in the manifest and 46 PNGs/)).toBeVisible();
     await expect(p.getByText(/overview_01_master_all_layers\.png is excluded/)).toBeVisible();
     // And the licence obligation that actually has a condition attached.
     await expect(p.getByText(/share-alike \(ODbL\)/)).toBeVisible();
@@ -156,10 +157,24 @@ test.describe('the honest panels', () => {
   test('a figure opens in a lightbox with its own QA caption', async ({ page }) => {
     await ready(page);
     await page.locator('[data-open-overlay="provenance"]').click();
-    await page.locator('[data-figure="coastline_01_single_sea_body.png"]').click();
+
+    // The expected caption is read from the derived fixture rather than hardcoded.
+    // An earlier version asserted "Exactly one polygon of 397.3" and broke when the
+    // sea polygon grew to 615.1 km² on main — the assertion was pinning a measured
+    // value, which is the same mistake the docs gate used to make. The invariant is
+    // "the lightbox shows the caption the QA run wrote", not any particular number.
+    const file = 'coastline_01_single_sea_body.png';
+    const expected = await page.evaluate(async (f) => {
+      const r = await fetch('/fixtures/provenance.json');
+      const j = (await r.json()) as { figures: Array<{ file: string; caption: string }> };
+      return j.figures.find((x) => x.file === f)?.caption ?? '';
+    }, file);
+    expect(expected.length).toBeGreaterThan(40);
+
+    await page.locator(`[data-figure="${file}"]`).click();
     // Radix Dialog nests: the lightbox title is the filename.
-    await expect(page.getByText('coastline_01_single_sea_body.png').first()).toBeVisible();
-    await expect(page.getByText(/Exactly one polygon of 397\.3/)).toBeVisible();
+    await expect(page.getByText(file).first()).toBeVisible();
+    await expect(page.getByText(expected.slice(0, 60), { exact: false })).toBeVisible();
   });
 
   test('limitations renders all nine, from the documents', async ({ page }) => {

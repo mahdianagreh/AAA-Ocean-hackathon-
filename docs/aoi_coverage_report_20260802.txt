@@ -1,0 +1,74 @@
+/Users/abdullatamimi/Desktop/AAA_Project/.venv/lib/python3.14/site-packages/pyogrio/geopandas.py:382: UserWarning: More than one layer found in 'osm_aqaba.gpkg': 'roads' (default), 'buildings', 'waterways', 'drainage_features', 'industrial', 'port', 'dive_tourism_poi', 'tourism_areas', 'protected_areas', 'osm_coastline', 'infrastructure_lines', 'water_bodies'. Specify layer parameter to avoid this warning.
+  result = read_func(
+/Users/abdullatamimi/Desktop/AAA_Project/.venv/lib/python3.14/site-packages/pyogrio/geopandas.py:382: UserWarning: More than one layer found in 'coastline.gpkg': 'water' (default), 'shoreline'. Specify layer parameter to avoid this warning.
+  result = read_func(
+Spatial contract — tasks/00-contracts.md §1
+  TERRAIN_AOI  34.75, 29.15, 35.94, 30.3
+  MARINE_AOI   34.8, 29.25, 35.05, 29.6
+
+19 file(s) do not cover their required extent:
+
+  data/interim/  — 1 file(s), up to 88% of the AOI missing
+      e.g. worldcover_aqaba_clip.tif
+           covers 34.8, 29.25, 35.15, 29.7
+  data/processed/plume/  — 2 file(s), up to 55% of the AOI missing
+      e.g. baseline_composite.tif
+           covers 34.895342563814175, 29.347735982091915, 35.05506455233552, 29.6022323051436
+  data/processed/vectors/  — 3 file(s), up to 95% of the AOI missing
+      e.g. osm_aqaba.gpkg
+           covers 34.9570694, 29.317320952979912, 35.15, 29.7
+  data/raw/soilgrids/  — 12 file(s), up to 88% of the AOI missing
+      e.g. bdod_0-5cm_mean.tif
+           covers 34.79999999999999, 29.250000000000004, 35.14999999999999, 29.700000000000003
+  data/raw/worldcover/  — 1 file(s), up to 26% of the AOI missing
+      e.g. ESA_WorldCover_10m_2021_v200_N27E033_Map.tif
+           covers 33.0, 27.0, 36.0, 30.0
+
+checked 21 file(s); 19 short of their AOI; 0 unreadable
+
+Re-pull anything listed above before trusting a per-catchment
+aggregate computed from it. Coverage gaps do not raise — they just
+silently shrink the area every mean and total is taken over.
+
+================================================================================
+INTERPRETATION — Pulga, after the v2 re-pull (2 Aug 2026)
+================================================================================
+Before the re-pull: 19 files short. After: 7. None of the remaining 7 is a real
+gap in this workstream's data. Recorded here so nobody re-chases them.
+
+CLOSED by the v2 re-pull
+  worldcover_aqaba_clip.tif      deleted; replaced by worldcover_terrain_v2_clip.tif,
+                                 a 2-tile mosaic (N27E033 + N30E033) whose bounds
+                                 assert against TERRAIN_AOI exactly.
+  soilgrids/*.tif  (12 files)    re-pulled against TERRAIN_AOI. 188x155 -> 481x526.
+  osm_aqaba.gpkg                 re-clipped to data/aoi/terrain_aoi.geojson.
+                                 roads 3,845 -> 8,289; drainage 200 -> 1,402.
+
+REMAINING 7 — correct by construction, or not this workstream's
+  data/processed/plume/ (2)      Abd's marine plume products, not Pulga's.
+
+  data/raw/worldcover/ (2)       Each raw 3x3 degree tile covers only its own band;
+                                 neither alone spans TERRAIN_AOI, which crosses the
+                                 N27/N30 boundary. The MOSAIC covers it, and
+                                 process_worldcover.py asserts that. A per-tile
+                                 coverage test cannot express "these two together".
+
+  osm_aqaba.gpkg                 Clipped extent starts at 34.957 E. The Geofabrik
+                                 Jordan extract itself starts at 34.8689 E, and
+                                 TERRAIN_AOI's western 0.12 deg is Egypt, Israel and
+                                 open Gulf. A Jordan-only extract cannot contain
+                                 features outside Jordan. Property of the source,
+                                 not of the clip.
+
+  reef_zones_PROVISIONAL.gpkg    CONTAINED in MARINE_AOI, occupying 8.3% of it. A
+                                 fringing-reef strip legitimately cannot fill an
+                                 extent that is mostly open sea and land. Coverage
+                                 is the wrong test for a derived coastal feature;
+                                 containment is the right one, and it passes.
+
+  coastline.gpkg                 Occupies 68.5% of MARINE_AOI — the remainder is
+                                 land. Escapes the box by ~0.001 deg, which is one
+                                 sub-pixel raster edge of the 50 m grid.
+
+Bathymetry (depth_utm36n.tif) was NOT re-pulled: MARINE_AOI is unchanged between
+contract v1 and v2, and the check reports it as covering its extent.

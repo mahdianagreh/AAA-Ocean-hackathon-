@@ -17,7 +17,7 @@ the annotated markdown.
 import geopandas as gpd
 import pandas as pd
 
-from config import AOI_CRS_PROJECTED, AOI_CRS_STORAGE, DOCS, PROCESSED, VECTORS
+from pulga_config import AOI_CRS_PROJECTED, AOI_CRS_STORAGE, DOCS, PROCESSED, VECTORS
 
 OSM_GPKG = VECTORS / "osm_aqaba.gpkg"
 COASTLINE = VECTORS / "coastline.gpkg"

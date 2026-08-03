@@ -219,6 +219,11 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
       {
         // Dashed, because a wadi is dry almost always — the form says
         // "intermittent" without a legend entry. It is also the hazard's own path.
+        //
+        // Minor drainage fades in from zoom 12. main's re-extract took this layer
+        // from 406 features to 2,242, and drawing all of them at basin zoom buries
+        // the catchment boundaries under hairlines. The `minor` flag is set by the
+        // derivation script at a 1 km length threshold.
         id: 'wadis',
         type: 'line',
         source: `${SRC}-wadis`,
@@ -226,6 +231,15 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
           'line-color': c.ink_3,
           'line-width': ['interpolate', ['linear'], ['zoom'], 10, 0.5, 16, 1.6],
           'line-dasharray': [3, 2],
+          'line-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            11.5,
+            ['case', ['==', ['get', 'minor'], 1], 0, 1],
+            12.5,
+            1,
+          ],
         },
       },
       {

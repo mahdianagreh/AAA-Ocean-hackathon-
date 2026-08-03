@@ -20,7 +20,7 @@ on Day 6.
 |---|---|---|---|
 | 1 | **Expose `kernel_density_contours` through `/plume/simulate` as GeoJSON** — and carry its relative-density caveat in the payload | Abd | Mostly already built (see §4). The remaining ask is that the API serves the contours rather than a raster: `observed_plume_probability.tif` is **4.2 MB**, and four timesteps × scenario reruns is tens of MB per interaction. |
 | 2 | **Pre-downsampled hyetograph** at display resolution | Pulga / Nizar | `catchment_rainfall` is ~2.3 M rows. The browser must never see the raw series. |
-| 3 | **Figure delivery decided** — API static mount vs frontend bundle, and who generates thumbnails | Pulga | 27 MB of PNGs; `overview_01` alone is 5.4 MB. The offline pack has to carry them either way. |
+| 3 | **Figure delivery decided** — API static mount vs frontend bundle, and who generates thumbnails | Pulga | 48 MB of PNGs; `overview_01` alone 8.8 MB. The offline pack has to carry them either way. |
 | 4 | **`/ask` citations as a structured array**, never prose | Pulga | "An uncited answer must not render as an answer" has to be structurally impossible, not a convention. |
 | 5 | **SHAP drivers as ordered objects** with signed contribution and a stable key | Mahdi | Pre-rendered English strings cannot be translated at render time. |
 | 6 | **Confidence as its components** — exceedance fraction, member count, threshold | Nizar / Mahdi | Same reason. The UI composes the sentence in both languages. |
@@ -170,7 +170,7 @@ selected by env var. Components never know which is live.
 `data/processed/vectors/*.gpkg`; event values from the event contract in
 [`00-phase2-plan.md`](../../../tasks/phase2/00-phase2-plan.md) (salinity 38.75 ‰, −1.75 ‰ at 19σ;
 turbidity peak 2.18 g/L; ~31 h elevated); the Data Sources table from
-[`data_dictionary.md`](../../data_dictionary.md); the 34 figures from
+[`data_dictionary.md`](../../data_dictionary.md); the 43 figures from
 [`qa_screenshots/manifest.json`](../../qa_screenshots/MANIFEST.md). Invented fixtures produce a UI
 that fits numbers which never arrive.
 
@@ -180,7 +180,7 @@ that fits numbers which never arrive.
 |---|---|---|
 | 3 | Typed endpoints, stubs acceptable | Pulga |
 | 3 | Stable read schema | Nizar |
-| 4 | 34 figures + captions | already in the repo |
+| 4 | 43 figures + captions | already in the repo |
 | 5 | Risk fields + driver list | Mahdi |
 | 6 | Plume layers per timestep | Abd |
 
@@ -201,7 +201,7 @@ Verified in the repo, not assumed:
 - **`overview_01_master_all_layers.png` is excluded from the provenance panel.** Its own burned-in
   caption reads *"CATCHMENTS ARE A LOCAL TEST FIXTURE… 5 latitude bands, not a watershed
   delineation."* Best-looking figure, wrong catchments.
-- **`manifest.json` lists 34 figures; 36 PNGs exist.** The two extras are Abd's later plume figures.
+- **`manifest.json` lists 43 figures; 46 PNGs exist.** The 3 extras are later additions.
   Driving the panel off the manifest is correct and silently omits them — a decision, not an accident.
 - **Satellite validation is a null result.** Concept §15.3 Scene 6 says "reveal the satellite plume";
   that is superseded. The mooring time series is the validation target.

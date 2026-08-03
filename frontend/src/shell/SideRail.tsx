@@ -164,10 +164,18 @@ export function SideRail({
               {t('rail.reefZones')}
             </h2>
             {data.reef.map((r) => (
-              <Row key={r.reef_zone_id} label={r.reef_zone_id} caveat={r.zone_name}>
+              <Row
+                key={r.reef_zone_id}
+                label={r.reef_zone_id}
+                // The habitat class is real information now that the ACA swap has
+                // landed; the provisional file said 'unknown' for all eight.
+                caveat={[r.zone_name, r.habitat_class, r.geomorphic_class]
+                  .filter(Boolean)
+                  .join(' · ')}
+              >
                 <span className="flex items-baseline gap-2">
                   <span dir="auto" className="max-w-40 truncate text-2xs text-ink-3">
-                    {r.zone_name}
+                    {r.habitat_class ?? r.zone_name}
                   </span>
                   <ValueWithUnit value={r.area_km2} unit="km²" digits={2} provenance="modelled" />
                 </span>

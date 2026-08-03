@@ -36,8 +36,32 @@ from pathlib import Path
 
 import pandas as pd
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import config as cfg  # noqa: E402
+# scripts/config.py was deleted on main while this frontend was being built, and the
+# spatial constants moved to backend/src/config/spatial.py. Other scripts now resolve
+# their own paths (see scripts/export_web_layers.py), so this does the same rather than
+# reintroducing a module main deliberately removed.
+#
+# The AOIs are still imported rather than retyped: tests/test_spatial_contract.py exists
+# precisely because a hardcoded bounding box is how the AOI silently regressed once
+# already, and RETIRED_BOX is asserted against in spatial.py for the same reason.
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "backend" / "src"))
+from config import spatial as _spatial  # noqa: E402
+
+
+class cfg:  # noqa: N801 — kept lowercase so the call sites below read unchanged
+    """The handful of paths and constants this script needs."""
+
+    DATA = ROOT / "data"
+    PROCESSED = DATA / "processed"
+    VECTORS = PROCESSED / "vectors"
+    FEATURES = PROCESSED / "features"
+    REPO_ROOT = ROOT
+    TERRAIN_AOI = _spatial.TERRAIN_AOI
+    MARINE_AOI = _spatial.MARINE_AOI
+    AQABA_AOI = _spatial.AQABA_AOI
+    AOI_CRS_STORAGE = _spatial.CRS_STORAGE
+    AOI_CRS_PROJECTED = _spatial.CRS_MEASURE
 
 EVENT_ID = "AQ-2016-10-28"
 # The window the demo scrubs. Starts before the rain and ends after the mooring

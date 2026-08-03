@@ -118,7 +118,7 @@ side, not the sensitivity side.**
 
 ## 6. Allen Coral Atlas maps shallow reef only
 
-Once the real habitat export lands, it still only covers optically shallow reef.
+The real habitat export landed on 2026-08-03, and it still only covers optically shallow reef.
 Deeper habitat is not in the product, so our exposure map is **silent** about it —
 which is different from saying it is safe.
 
@@ -126,7 +126,7 @@ which is different from saying it is safe.
 
 ## 7. OpenStreetMap tells us what is mapped, not what exists
 
-We use OSM for roads, buildings and — most valuably — 27 mapped culverts that correct
+We use OSM for roads, buildings and — most valuably — 46 mapped culverts that correct
 where wadis actually reach the sea. A DEM routes water *around* a road embankment; a
 culvert carries it *through*.
 
