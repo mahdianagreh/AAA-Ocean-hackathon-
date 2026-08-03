@@ -133,8 +133,13 @@ def _driver_clause(drivers: list[dict], language: str, rainfall_percentile) -> s
 
     phrases = [p for p in phrases if p]
     if not phrases:
+        # The Arabic clause must be NOUN-initial. TEMPLATE_AR interpolates this
+        # after لأن, which cannot take a verb directly: the natural word order
+        # "لم تُوفَّر عوامل النموذج" yields "لأن لم تُوفَّر" — ungrammatical. All seven
+        # DRIVER_PHRASE["ar"] entries happen to start with a noun, so only this
+        # fallback was exposed, and only when a caller supplies no drivers at all.
         return ("the model's drivers were not supplied" if lang == "en"
-                else "لم تُوفَّر عوامل النموذج")
+                else "عوامل النموذج لم تُوفَّر")
     sep, final = JOIN[lang]
     if len(phrases) == 1:
         return phrases[0]

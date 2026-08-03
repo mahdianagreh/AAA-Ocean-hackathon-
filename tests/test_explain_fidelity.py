@@ -136,6 +136,29 @@ def test_no_drivers_says_so():
           "drivers were not supplied" in text, f"text: {text}")
 
 
+def test_arabic_driver_clause_is_noun_initial():
+    """TEMPLATE_AR puts the clause after لأن, which cannot govern a verb directly.
+
+    Every driver phrase AND the no-drivers fallback must therefore begin with a
+    noun. This shipped broken once: the fallback used the natural word order
+    "لم تُوفَّر عوامل النموذج", rendering "لأن لم تُوفَّر" — ungrammatical Arabic in the
+    one branch no fixture exercised, because every real driver phrase happens to
+    start with a noun. A number-fidelity test cannot catch this; only reading the
+    sentence can, so the check is encoded here.
+    """
+    # Verb particles / verb forms that must never directly follow لأن.
+    forbidden = ("لم", "لا", "ما", "تم", "يُ", "تُ")
+
+    cases = [[]] + [[{"feature": f, "value": 1.0}] for f in explain.DRIVER_PHRASE["ar"]]
+    for drivers in cases:
+        text, _ = _build("ar", shap_drivers=drivers)
+        after = text.split("لأن ", 1)[1] if "لأن " in text else ""
+        label = drivers[0]["feature"] if drivers else "<no drivers>"
+        check(f"لأن is not followed by a verb — {label}",
+              bool(after) and not after.startswith(forbidden),
+              f"reads 'لأن {after[:24]}...' in: {text}")
+
+
 if __name__ == "__main__":
     print("/explain number-fidelity tests\n")
     test_every_number_appears_verbatim_both_languages()
@@ -147,6 +170,7 @@ if __name__ == "__main__":
     test_matches_the_calibration_example()
     test_unknown_driver_is_shown_not_dropped()
     test_no_drivers_says_so()
+    test_arabic_driver_clause_is_noun_initial()
 
     print()
     if FAILURES:
