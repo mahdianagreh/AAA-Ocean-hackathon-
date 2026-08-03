@@ -63,8 +63,22 @@ OPTIONAL_SOURCES = {
               "Pulga — tasks/phase2/04-pulga.md §0"),
 }
 
+#: Per-(event, catchment) sources. These join on TWO keys, not one, because the value
+#: varies by event as well as by catchment — soil moisture before the storm is the whole
+#: point of an antecedent feature. Joining these on catchment_id alone would silently
+#: fan out the row count.
+EVENT_SOURCES = {
+    "antecedent": (FEATURES / "event_antecedents.parquet", "Karam — this task, §4"),
+}
+
 #: Never features. Asserted, not just documented.
-LABEL_ONLY_PREFIXES = ("sro", "ssro", "surface_runoff", "subsurface_runoff")
+#:
+#: `label_` matters as much as the raw names. extract_event_antecedents.py deliberately
+#: prefixes its two targets `label_surface_runoff_mm` / `label_subsurface_runoff_mm`, and
+#: those do NOT start with "surface_runoff" — so a guard listing only the raw spellings
+#: has a hole exactly where the real labels arrive. That is the shape of every bug this
+#: project has hit: the safety net misses the one case that occurs.
+LABEL_ONLY_PREFIXES = ("sro", "ssro", "surface_runoff", "subsurface_runoff", "label_")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)-7s %(message)s",
                     datefmt="%H:%M:%S")
@@ -144,6 +158,57 @@ def main() -> int:
             "columns": int(len(frame.columns) - 1),
         }
         logger.info("%-10s joined  %d column(s)", name, len(frame.columns) - 1)
+
+    # Per-(event, catchment) sources. Joined LEFT so an event whose ERA5 month has not
+    # downloaded yet keeps its row with NaN antecedents, rather than vanishing from the
+    # matrix — a shrinking row count is much harder to notice than a NaN column.
+    for name, (path, owner) in EVENT_SOURCES.items():
+        if not path.exists():
+            missing[name] = {
+                "path": str(path.relative_to(PROJECT_ROOT)),
+                "owner": owner,
+                "reason": "file does not exist",
+            }
+            logger.warning("%-10s MISSING — %s", name, owner)
+            continue
+        frame = pd.read_parquet(path)
+        keys = ["event_id", "catchment_id"]
+        if any(k not in frame.columns for k in keys):
+            missing[name] = {
+                "path": str(path.relative_to(PROJECT_ROOT)),
+                "owner": owner,
+                "reason": f"needs {keys} to join on",
+            }
+            logger.error("%-10s lacks %s — cannot join", name, keys)
+            continue
+
+        # Drop the labels HERE rather than relying on the guard below. The guard is the
+        # backstop; a source that is known to carry its own targets should not be handing
+        # them to the join in the first place.
+        labels = [c for c in frame.columns
+                  if any(c.lower().startswith(p) for p in LABEL_ONLY_PREFIXES)]
+        frame = frame.drop(columns=labels)
+        overlap = [c for c in frame.columns if c in matrix.columns and c not in keys]
+
+        before = len(matrix)
+        matrix = matrix.merge(frame.drop(columns=overlap), on=keys, how="left")
+        assert len(matrix) == before, (
+            f"joining {name} changed the row count {before} -> {len(matrix)}; "
+            f"the source has duplicate {keys} pairs"
+        )
+        joined = len(frame.columns) - len(keys) - len(overlap)
+        covered = int(matrix[frame.columns.difference(keys)[0]].notna().sum())
+        present[name] = {
+            "path": str(path.relative_to(PROJECT_ROOT)),
+            "columns": int(joined),
+            "labels_withheld": labels,
+            "rows_with_values": covered,
+            "rows_without_values": int(len(matrix) - covered),
+        }
+        logger.info("%-10s joined  %d column(s) on %s — %d/%d rows have values "
+                    "(%d await ERA5); withheld labels %s",
+                    name, joined, keys, covered, len(matrix),
+                    len(matrix) - covered, labels)
 
     # Enforce the label rule structurally.
     leaked = [c for c in matrix.columns

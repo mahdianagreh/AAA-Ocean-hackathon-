@@ -109,6 +109,67 @@ def catchment_weighted(values: xr.DataArray, weights: dict) -> dict[str, float]:
     return out
 
 
+def label_distribution(table: pd.DataFrame, label_columns: list[str]) -> dict:
+    """Publish the label's shape so the target definition is an informed choice.
+
+    Whoever trains on this file has to pick a target formulation, and the obvious
+    pick is wrong. Within the candidate set — already the top ~1 % of days by
+    rainfall — almost every storm produces *some* ERA5 runoff, so a binary
+    "did runoff occur" target is ~98 % positive: predicting yes always scores ~98 %
+    and learns nothing. That is the same tautology the label rule guards against,
+    reached from the other direction, and it would not look like a bug. It would
+    look like a good score.
+
+    The magnitude does vary — about 19x between the median and the maximum within a
+    single catchment — so the usable formulations are regression on the value (log
+    scale, it spans four orders of magnitude) or a binary split at a percentile of
+    the candidate set. The percentile balances are given so that choice needs no
+    further computation.
+    """
+    import numpy as np
+
+    out = {}
+    for col in label_columns:
+        raw = table[col]
+        v = raw.dropna()
+        if v.empty:
+            out[col] = {"non_missing": 0, "note": "no values — ERA5 months absent"}
+            continue
+        pct = {f"p{p}": round(float(np.percentile(v, p)), 6)
+               for p in (10, 25, 50, 75, 90, 99)}
+        out[col] = {
+            "rows": int(len(raw)),
+            "missing": int(raw.isna().sum()),
+            "exactly_zero": int((v == 0).sum()),
+            "greater_than_zero": int((v > 0).sum()),
+            "fraction_positive_at_zero_threshold": round(float((v > 0).mean()), 4),
+            "percentiles_mm": pct,
+            "binary_balance_at_percentile": {
+                f"p{p}": round(float((v > np.percentile(v, p)).mean()), 3)
+                for p in (50, 75, 90)
+            },
+            "per_catchment_median_mm": {
+                k: round(float(x), 6) for k, x in
+                table.dropna(subset=[col]).groupby("catchment_id")[col].median().items()
+            },
+        }
+    out["target_warning"] = (
+        "Do NOT use `> 0` as a classification target. Within the candidate set it is "
+        "~98 % positive, so the majority-class model scores ~98 % and predicts nothing. "
+        "Use regression on the magnitude (log scale — it spans four orders of "
+        "magnitude) or a binary split at a candidate-set percentile; p50 gives a 50/50 "
+        "split. Whichever is chosen, the threshold is a modelling decision and belongs "
+        "in the model card, not buried in a script."
+    )
+    out["leakage_warning"] = (
+        "Per-catchment medians order monotonically with catchment area (AQ-C01 largest "
+        "and wettest, AQ-C05 smallest and driest). Combined with static features that "
+        "are constant per catchment, random CV will memorise catchment identity. This is "
+        "why leave-one-catchment-out AND a temporal holdout are both mandatory."
+    )
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--only-available", action="store_true",
@@ -248,7 +309,9 @@ def main() -> int:
     table.to_parquet(OUT, index=False)
 
     label_columns = [c for c in table.columns if c.startswith("label_")]
+
     summary = {
+        "label_distribution": label_distribution(table, label_columns),
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "rows": int(len(table)),
         "events_processed": int(table["event_id"].nunique()),
@@ -264,6 +327,11 @@ def main() -> int:
             "Runoff columns are prefixed label_ so they cannot be mistaken "
             "for features. They are the target, never an input.",
             "Wind direction is meteorological — the bearing the wind blows FROM.",
+            "DO NOT BINARISE AT > 0. See label_distribution.target_warning: "
+            "almost every candidate storm produces some ERA5 runoff, so "
+            "'did runoff occur' is ~98 % positive and a model predicting "
+            "'yes' always would score ~98 % while learning nothing. The "
+            "discriminating question is MAGNITUDE, not occurrence.",
         ],
     }
     STATUS.write_text(json.dumps(summary, indent=2, default=str) + "\n")
