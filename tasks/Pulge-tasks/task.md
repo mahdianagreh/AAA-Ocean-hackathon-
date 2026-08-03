@@ -1,130 +1,132 @@
 # Pulga — Tasks Tracker
 
-**Last updated:** 2026-08-02 · Phase 2 (backend · exposure engine · RAG)
+**Last updated:** 2026-08-03, after merging `origin/main` (Karam's ACA swap-in)
 
 - Reproduce from zero: [docs/README_pulga.md](../../docs/README_pulga.md)
 - Provenance & limitations: [docs/data_dictionary.md](../../docs/data_dictionary.md)
-- Model card (exposure engine, explain, RAG): [docs/model_card.md](../../docs/model_card.md)
-- QA figures, captioned: [docs/qa_screenshots/MANIFEST.md](../../docs/qa_screenshots/MANIFEST.md)
-- Judge-facing honesty page: [docs/pitch_limitations.md](../../docs/pitch_limitations.md)
-- AOI correction evidence: [docs/aoi_coverage_report_20260802.txt](../../docs/aoi_coverage_report_20260802.txt)
+- Model card: [docs/model_card.md](../../docs/model_card.md)
+- QA figures: [docs/qa_screenshots/MANIFEST.md](../../docs/qa_screenshots/MANIFEST.md)
+- Judge-facing: [docs/pitch_limitations.md](../../docs/pitch_limitations.md)
+- **Karam's handoff:** [docs/HANDOFF_pulga_2026-08-03.md](../../docs/HANDOFF_pulga_2026-08-03.md)
 
-> **Everything green except Earth Engine**, which needs an interactive browser and is
-> excluded by instruction. Whole-repo suite: **370 passed, 0 failed, 45 skipped.**
+> **All 12 Definition-of-Done items closed.** Earth Engine works, the real Allen Coral
+> Atlas zones are in, and the whole repo suite is **419 passed, 0 failed**.
 
 ---
 
-## §9 Definition of Done — 10 of 12
+## §9 Definition of Done — 12 / 12
 
 | # | Item | Status |
 |---|---|---|
-| 1 | `check_aoi_coverage.py` run, gap report saved | **done** — run before re-fetching; 19→7 short, each remainder explained |
-| 2 | WorldCover v2 mosaic (2 tiles), seam-checked, screenshotted | **done** — 0.01 pp seam |
-| 3 | SoilGrids + OSM re-pulled against `TERRAIN_AOI` | **done** |
-| 4 | 3 feature tables on real catchments, fixture deleted, areas cross-checked | **done** — all 5 within 0.1% |
-| 5 | Earth Engine authenticated | **BLOCKED — excluded by instruction** |
-| 6 | Real ACA export + `verify_against_provisional()` | **BLOCKED on 5** — script ready, asserts written |
-| 7 | FastAPI serving every §17 endpoint, typed, cached, caveats as data | **done** — 15 endpoints, 19 routes |
-| 8 | Exposure engine, `formula_terms` stored, EPSG:32636 | **done** — 21 terms per result |
-| 9 | `/explain` exact number-fidelity | **done** — 27 checks, EN + AR |
-| 10 | `/ask` 100% citation coverage, `docs/ali` excluded | **done** — 16 checks, 13/13 corpus files |
-| 11 | `data_dictionary.md` updated with the re-pull | **done** — dated amendment, v1 kept as history |
-| 12 | Day-12 gate grep | **done early** — every match declared |
-
-## §1 AOI fix — 8 of 9 (only EE outstanding)
-
-| Item | Result |
-|---|---|
-| Coverage report saved + annotated | 19 files short → 7, each remaining one explained as correct-by-construction |
-| `TERRAIN_AOI` / `MARINE_AOI` in config, old box deleted | done — and the literal is *not* repeated in any comment; `test_spatial_contract.py` enforces it |
-| Second WorldCover tile identified, mosaicked, seam-checked | `N27E033` + `N30E033`, **derived from the AOI**, not hardcoded. 14280×13800 px |
-| SoilGrids re-pulled | 188×155 → **526×481** |
-| OSM re-clipped | roads 3,845→**8,289**, drainage 200→**1,402**, culverts 27→**46** |
-| Per-catchment aggregations re-run | all three, on the real 5-catchment set |
-| AQ-C01 bare-ground re-verified + screenshotted | **98.64%** over 4,453 km² (95.6% of basin) |
-| Earth Engine | **blocked** |
-| Data dictionary notes the re-pull, reason, date | done, with a v1→v2 comparison table |
-
-**Marine data deliberately NOT re-pulled.** `MARINE_AOI` is unchanged between contract
-v1 and v2. The coverage tool flags reef zones and coastline as "short", but coverage is
-the wrong test for a derived coastal feature — a reef fringe cannot fill an extent that
-is mostly open sea. Verified by *containment* instead, which passes.
-
-## §2 Phase-1 blockers
-
-- **Feature tables:** closed. `landcover` (17 cols), `soil` (**73 cols** — mean/σ/min/max/median/count), `urban` (10 cols) at the contract paths.
-- **ACA export:** blocked on EE.
-
-## §3 FastAPI — all 15 endpoints live
-
-Priority 1 for the 6 Aug slice is live **now**, ahead of schedule. Priorities 2–3
-(runoff, plume) are stubs with final shapes, flagged `is_stub: true` **and** a
-`critical` caveat. Priorities 4–5 (exposure, explain, ask, backtests, alerts) are real.
-
-Caveats are scoped: outlet- and run-level caveats attach once at run level, zone-level
-ones per result. No duplication in the payload — the same critical warning repeated N
-times trains a reader to skim past it.
-
-## §4 Exposure engine
-
-`formula_terms` on every result (21 keys, incl. `measure_crs` and `score_scale`),
-persisted to SQLite behind a two-function interface so swapping to the shared session
-layer touches nothing else. EPSG:32636 enforced by `_assert_measure_crs`, which
-rejects both 4326 and 3857.
-
-Both §4.6 cross-checks implemented and passing:
-- **circular-buffer baseline** — 33.75 → 17.5 → 5.0 with distance, arrivals 3 → 6 → 12 h
-- **hand-computed spot check** — agrees with the engine to < 1e-12
-
-Verified across all five outlets: 4 produce scores; **AQ-O01 produces none, correctly** —
-it sits at the gulf head, 2,995 m from the nearest zone, and the response says so in an
-`info` caveat rather than returning a bare empty list.
-
-## §5 Explain + RAG
-
-- `/explain` is a deterministic template, not an LLM — so it *cannot* round a number.
-  EN and AR asserted to carry identical numbers for the same input.
-- `/ask` composes answers by **quotation**, so an uncited answer is structurally
-  impossible. 13/13 corpus files indexed, 255 chunks. `docs/ali/*` excluded by an
-  allowlist **and** an independent guard.
-- Arabic questions retrieve via a query-term bridge, since the corpus is English —
-  stated in `docs/rag_limitations.md`, not hidden.
-
-## §6 QA
-
-42 captioned, timestamped, manifested figures. Manifest reports foreign and missing
-files rather than silently covering only part of the directory.
+| 1 | `check_aoi_coverage.py` run, gap report saved | **done** — `docs/aoi_coverage_report_20260802.txt`, annotated |
+| 2 | WorldCover v2 mosaic (2 tiles), seam-checked, screenshotted | **done** — seam discontinuity 0.01 pp |
+| 3 | SoilGrids + OSM re-pulled against `TERRAIN_AOI` | **done** — SoilGrids 526×481, OSM 8,289 roads |
+| 4 | 3 feature tables on real catchments, fixture deleted, areas cross-checked | **done** — all 5 within 0.1% of contract |
+| 5 | Earth Engine authenticated and verified working | **done** — see the project-id note below |
+| 6 | Real ACA zones, `verify_against_provisional()` passed, weight still placeholder | **done** — 8/8 IDs, 1.235 km², all 1.0 |
+| 7 | FastAPI serving every §17 endpoint, typed, cached, caveats as data | **done** — 20 routes, all 12 §17 paths |
+| 8 | Exposure engine, `formula_terms` stored, EPSG:32636 | **done** — 12 tests |
+| 9 | `/explain` exact number-fidelity | **done** — 9 tests, EN + AR |
+| 10 | `/ask` citation coverage, `docs/ali` excluded | **done** — 9 tests, 13/13 corpus files |
+| 11 | `data_dictionary.md` — AOI re-pull **and** ACA export with versions and dates | **done** |
+| 12 | Day-12 gate grep | **done** — 3 declared `_PROVISIONAL`, 0 `FIXTURE` |
 
 ---
 
-## Fixed this phase, beyond the plan
+## What the merge with Karam changed
 
-| What | Why it mattered |
-|---|---|
-| **`config` module-name collision** | `scripts/config.py` and `backend/src/config/` both claimed the bare name. Under pytest whichever imported first won, so `test_soilgrids_units.py` failed *purely on alphabetical ordering*. Renamed to `pulga_config`; added a root `conftest.py` documenting the hazard. |
-| **Abd's `run_plume_extraction.py` could not import** | It used `ANALYSIS_BBOX`, removed by the AOI v2 migration. Substituted `MARINE_BBOX` (contract §1 assigns imagery to the marine extent) and flagged the substitution in-file rather than rewriting silently. |
-| **5 teammate test files could not collect** | Missing `scipy`, `earthaccess`, `cdsapi`. Installed; those suites now run. |
-| **`tmp_db` was not a real fixture** | Used as a pytest param but only defined in the `__main__` path, so 2 storage tests errored. Now a proper fixture pointing at a temp DB, so tests cannot pollute the real audit trail. |
-| **Water-fraction cross-check was misleading after v2** | The old 23.89% vs 23.3% comparison was computed on a box that was mostly sea. Recomputed over a common extent (`MARINE_AOI`): **42.91% vs 41.29%, agreeing to 1.62 pp.** |
-| **Stale count baked into a filename** | `osm_04_culverts_all_27_numbered.png` showed 46 culverts. Made count-agnostic; added an explicit `prune_missing()` so sanctioned renames don't leave a permanent warning. |
-| **Fixture generator removed** | `make_catchments_fixture.py` deleted and the synthetic fallback tier dropped from resolution. With real catchments committed, silently falling back to invented geometry would produce plausible-looking feature tables from polygons that are not watersheds. |
+He did the EE unblock and a full ACA swap while this branch was working on the same
+thing. **His implementation was better and was taken wholesale.** He found four defects,
+three of which this branch never spotted:
 
-## Target files
+| # | defect | why it was invisible |
+|---|---|---|
+| 1 | Fragments assigned whole to their best-overlap zone | R-05 came out at 475 m² while 0.068 km² of its reef was credited to neighbours. This branch found this one independently. |
+| 2 | `habitat_class` held the raw integer `ACA_benthic_13` | A text column that reaches the map popup, Postgres and RAG answers |
+| 3 | Dominant class counted by **piece**, not area | 25 single-pixel rock specks outvoted the coral patch that *is* the zone |
+| 4 | Geometry attributes inherited from the provisional file | `marine_park_overlap_pct` described a hand-drawn box, not reef |
 
-| file | status |
-|---|---|
-| `landcover_by_catchment.parquet` | **done**, real catchments |
-| `soil_by_catchment.parquet` | **done**, 73 cols |
-| `urban_by_catchment.parquet` | **done**, 10 cols |
-| `osm_aqaba.gpkg` | **done**, 12 layers, TERRAIN_AOI |
-| `worldcover_terrain_v2_clip.tif` | **done**, 2-tile mosaic |
-| `coastline.gpkg`, `depth_utm36n.tif` | **done** (not re-pulled — marine box unchanged) |
-| `reef_zones.gpkg` | **`_PROVISIONAL` only** — blocked on EE |
-| `exposure_runs.sqlite` | **done** — audit trail |
+His class tables are read off the live asset and re-verified every build — geomorphic 22
+is *Reef Slope*, and the plausible guess (24, *Back Reef Slope*) would have mislabelled
+five of eight zones with no error.
 
-## The one thing still needing a human
+**Kept from this branch:** the FastAPI surface, exposure engine, `/explain`, `/ask` —
+which his handoff lists as 5-of-14 and "not started".
 
-**Earth Engine auth** (~10 min, browser). Verified blocked: no credentials at
-`~/.config/earthengine/`, `ee.Authenticate()` requires interactive OAuth. Unblocks
-Definition-of-Done items 5 and 6. `export_aca.py submit / status / build` is written
-and its ID-continuity asserts are in place.
+---
+
+## Reef areas changed 4.6× — anything computed before this is wrong
+
+`5.69 km² → 1.235 km²`. The old figure was the area of hand-drawn 250 m boxes; the new
+one is what the Atlas maps as habitat. The **per-zone ranking changed too**, not just the
+totals.
+
+| zone | km² | dominant habitat | in Marine Park | depth land-cell % |
+|---|---:|---|---:|---:|
+| R-01 | 0.463 | Coral/Algae | 0% | 39.2 |
+| R-02 | 0.037 | Coral/Algae | 0% | **100.0** |
+| R-03 | 0.011 | Coral/Algae | 0% | 0.0 |
+| R-04 | 0.147 | Coral/Algae | 96.9% | 19.3 |
+| R-05 | 0.069 | Coral/Algae | 100% | 0.0 |
+| R-06 | 0.186 | Coral/Algae | 100% | 52.1 |
+| R-07 | 0.127 | **Rock** | 92.4% | 74.5 |
+| R-08 | 0.196 | **Rock** | 10.3% | 51.3 |
+
+### Three caveat changes this forced
+
+1. **The 250 m width caveat is obsolete and was removed** for real geometry. The outline
+   is the Atlas's own 5 m polygons, so an absolute km² is defensible. Shipping the old
+   caveat would have been a false statement about a 5 m product.
+2. **`reef_shallow_only` replaces it** — a fraction of a zone is still the better framing,
+   but because the Atlas maps optically shallow reef only, not because the width is a guess.
+3. **`depth_is_land_dominated` added.** Depth is now the weakest field, not the geometry:
+   the bathymetry is 50 m under a 20–50 m reef strip, so 39–100% of cells read as land.
+   `R-02` is **null** — no water cell at all — and is never coerced to 0. Verified that
+   R-02 and R-07 warn while R-05 (0% land) correctly does not.
+
+---
+
+## Regressions I introduced in the merge, and fixed
+
+Taking "theirs" wholesale for data files reverted two things:
+
+- **OSM went back to the old small box** — 3,845 roads, stopping at 29.7 N. Re-clipped
+  to `TERRAIN_AOI`: 8,289 roads.
+- **AQ-C01's road length was understated 6.4×** (387 km vs 2,482 km) because the urban
+  table had been rebuilt from that small-box OSM. This is the §1 coverage bug reappearing
+  in the feature table that feeds the runoff model, on the catchment that is 96% of the
+  basin. Re-aggregated.
+- **Three §6.1 figures became orphans** — the seam check, the AQ-C01 bare-ground plot and
+  the provisional-vs-final centroid map existed on disk with no script able to regenerate
+  them, because his `qa_land.py` has neither. Restored from history and adapted to his
+  `tiles_for()` / `WORLDCOVER_DIR` API rather than duplicating helpers.
+
+## Earth Engine project id — the handoff and reality disagree
+
+Measured, not assumed:
+
+```
+reefshield-aqaba-504407   WORKS
+reefshield-aqaba-504406   fails — "Caller does not have required permission"
+reefshield-aqaba-504318   fails — same
+```
+
+`HANDOFF_pulga_2026-08-03.md` §5 names **-504406** as the one to use. On this machine it
+is the one that fails. `export_aca.py project_id()` now falls back to the verified id
+instead of exiting when no env var is set, and records the discrepancy in-code. **One of
+the two records is wrong and someone should settle it.**
+
+---
+
+## Still open, not mine to close
+
+- **`sensitivity_weight` is still 1.0** and still `PLACEHOLDER_PENDING_MARINE_SCIENTIST`.
+  Contract swap #5. `habitat_class` and `marine_park_overlap_pct` are exactly the measured
+  inputs a marine scientist needs — hand them over, do not convert them.
+- **Credential rotation.** Karam's handoff §5 records that the Earthdata password, the CDS
+  token and the Supabase superuser password have each been exposed in a chat transcript and
+  are **not yet rotated**. Separately, `.env` was committed in `2f0a6d6` on
+  `origin/pulga-branch`; gitignoring it does not remove it from history.
+- **`reef_zones_PROVISIONAL.gpkg` stays on disk** — retained for the swap-in diff only.
+  The Day-12 grep will match it; it is a *declared* placeholder, which §6.3 permits, but
+  say so out loud rather than being surprised.

@@ -189,7 +189,7 @@ def resolve_catchments():
 def provenance_warning(kind):
     """Text to burn into any figure not built on the final catchment delineation.
 
-    Replaces the old `fixture_warning`, which could no longer fire once the local
+    Replaces the old `provenance_warning`, which could no longer fire once the local
     synthetic fixture tier was removed on 2 Aug 2026. The live concern is now
     Mahdi's provisional seed: a figure built on it is still legitimate, but a reader
     must be able to see which delineation produced it.

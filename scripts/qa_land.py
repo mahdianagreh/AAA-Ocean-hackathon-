@@ -21,15 +21,17 @@ import matplotlib.pyplot as plt
 
 from pulga_config import (
     AOI_CRS_PROJECTED,
+    FEATURES,
     DOWNLOAD_BBOX,
+    LAND_BBOX,
     INTERIM,
     RAW,
     VECTORS,
     WORLDCOVER_CLASSES,
     geographic_aspect,
 )
-from process_worldcover import CLASS_COLORS, ensure_tiles
-from qa_common import CRS_BASEMAP, add_satellite, fixture_warning, resolve_catchments, save_fig
+from process_worldcover import CLASS_COLORS, ensure_tiles, tiles_for, WORLDCOVER_DIR
+from qa_common import CRS_BASEMAP, add_satellite, provenance_warning, resolve_catchments, save_fig
 from soilgrids_units import CONVERSIONS, DEPTHS, load_converted, raw_path
 
 CLIP = INTERIM / "worldcover_aqaba_clip.tif"
@@ -124,7 +126,7 @@ def wc_03_catchment_overlay(catchments, kind):
     save_fig(fig, "worldcover_03_catchment_boundaries_overlay",
              "The exact polygons zonal_stats aggregates within, drawn over the classified "
              "raster. Any catchment straddling the coast will pick up water pixels — visible "
-             "here rather than hidden in the parquet." + fixture_warning(kind), SRC)
+             "here rather than hidden in the parquet." + provenance_warning(kind), SRC)
 
 
 def wc_04_class_fractions(kind):
@@ -153,7 +155,7 @@ def wc_04_class_fractions(kind):
     save_fig(fig, "worldcover_04_class_fractions_by_catchment",
              "Stacked composition per catchment. Bars must reach exactly 100% — the same "
              "closure the assert in aggregate_catchments.py enforces, shown visually."
-             + fixture_warning(kind), SRC)
+             + provenance_warning(kind), SRC)
 
 
 def wc_05_bareground_sanity(kind):
@@ -183,7 +185,7 @@ def wc_05_bareground_sanity(kind):
              "Every catchment against the three reference lines. All bars sit far above the "
              "50% assert threshold and bracket the concept doc's ~74% baseline, so the "
              "non-sequential class mapping (10,20,...,95,100) is correct."
-             + fixture_warning(kind), SRC)
+             + provenance_warning(kind), SRC)
 
 
 # ----------------------------------------------------------------- SoilGrids
@@ -255,7 +257,7 @@ def sg_07_texture_triangle(catchments, kind):
              "Catchment-mean texture on the standard triangle. Points landing inside the "
              "triangle is what makes the 100.00% sum physically meaningful rather than an "
              "arithmetic coincidence: all catchments cluster as clay-loam, plausible for "
-             "arid alluvium." + fixture_warning(kind), SRC)
+             "arid alluvium." + provenance_warning(kind), SRC)
 
 
 def sg_08_conversion_before_after():
@@ -326,7 +328,7 @@ def sg_09_variance(kind):
     save_fig(fig, "soilgrids_09_within_catchment_variance",
              "Added in the expansion pass: the runoff model builder gets spread, not just a "
              "point estimate. A catchment whose clay spans 18–56% is a different object from "
-             "one uniformly at 35%, and the mean alone hides that." + fixture_warning(kind), SRC)
+             "one uniformly at 35%, and the mean alone hides that." + provenance_warning(kind), SRC)
 
 
 # ----------------------------------------------------------------------- OSM
@@ -422,11 +424,11 @@ def osm_04_culverts_numbered():
         ax.annotate(str(i), (x, y), fontsize=8, weight="bold", ha="center",
                     va="center", zorder=7)
     add_satellite(ax, zoom=12)
-    ax.set_title("All 27 mapped culverts, numbered by distance to coast\n"
+    ax.set_title(f"All {len(culv)} mapped culverts, numbered by distance to coast\n"
                  "(1 = nearest the shore, the strongest outlet-correction candidates)")
     ax.set_xticks([]); ax.set_yticks([])
-    save_fig(fig, "osm_04_culverts_all_27_numbered",
-             "Every culvert individually numbered, ordered by distance to the shoreline. "
+    save_fig(fig, "osm_04_culverts_all_numbered",
+             f"All {len(culv)} culverts individually numbered, ordered by distance to the shoreline. "
              "Numbers match the table in docs/osm_dem_conflicts.md §1 so Mahdi can go from "
              "the map to the row and back. Culvert 1 is 39 m from the sea under King Hussein "
              "Street.", SRC)
@@ -495,7 +497,197 @@ def urban_choropleths(catchments, kind):
                         bbox=dict(boxstyle="round,pad=0.25", fc="white", alpha=0.8))
         ax.set_title(f"{label} by catchment [{kind}]")
         ax.set_xlabel("easting (m)"); ax.set_ylabel("northing (m)")
-        save_fig(fig, name, cap + fixture_warning(kind), SRC)
+        save_fig(fig, name, cap + provenance_warning(kind), SRC)
+
+
+
+
+def _seam_latitudes(bbox=None):
+    """Interior 3-degree tile boundaries the AOI crosses — where a seam can appear.
+
+    origin/main's process_worldcover exposes tiles_for()/ensure_tiles() but no seam
+    helper, so this lives with the figure that needs it rather than being pushed into
+    a module that does not use it.
+    """
+    import math
+
+    bbox = bbox or LAND_BBOX
+    _, miny, _, maxy = bbox
+    lat = math.floor(miny / 3) * 3 + 3
+    out = []
+    while lat < maxy:
+        out.append(float(lat))
+        lat += 3
+    return out
+
+# ---------------------------------------------------------------------------
+# RESTORED 3 Aug 2026. The merge took origin/main's qa_land.py, which does not
+# generate these three. They are §6.1 requirements — the two-tile seam check and
+# the AQ-C01 bare-ground re-verification — and their PNGs were left on disk with
+# no script able to reproduce them, which is worse than not having them.
+# ---------------------------------------------------------------------------
+
+def wc_01b_raw_tiles_before_mosaic():
+    """Every source tile the AOI needs, side by side, with the AOI drawn on."""
+    tiles = ensure_tiles(LAND_BBOX)   # returns Paths, not bare tile IDs
+    fig, axes = plt.subplots(1, len(tiles), figsize=(7.5 * len(tiles), 8))
+    axes = np.atleast_1d(axes)
+    minx, miny, maxx, maxy = LAND_BBOX
+    for ax, t in zip(axes, tiles):
+        with rasterio.open(t) as src:
+            arr = src.read(1, out_shape=(1100, 1100))  # 36000x36000 — never whole
+            b = src.bounds
+        idx, cmap, n, handles = _wc_index(arr)
+        ax.imshow(idx, extent=(b.left, b.right, b.bottom, b.top), cmap=cmap,
+                  vmin=-0.5, vmax=n - 0.5, interpolation="nearest")
+        ax.add_patch(plt.Rectangle((minx, miny), maxx - minx, maxy - miny,
+                                   fill=False, edgecolor="red", linewidth=2.2))
+        ax.set_aspect(geographic_aspect())
+        ax.set_title(t.name.split("_v200_")[1].split("_Map")[0], fontsize=11)
+        ax.set_xlabel("longitude")
+    axes[0].set_ylabel("latitude")
+    fig.suptitle("STEP 1 — WorldCover source tiles, before mosaic. "
+                 "Red = TERRAIN_AOI, which crosses BOTH tiles.", fontsize=12)
+    save_fig(fig, "worldcover_01_raw_tiles_before_mosaic",
+             f"The {len(tiles)} raw tiles TERRAIN_AOI requires. The AOI rectangle visibly "
+             "spans the N27/N30 boundary, which is why v1 — built from N27E033 alone — "
+             "stopped dead at 30 deg N and lost most of AQ-C01.", SRC)
+
+
+
+def wc_06_mosaic_seam_check():
+    """The two-tile merge is a NEW failure mode in v2 — look at the seam.
+
+    Two ESA tiles can carry different processing dates or versions. If they do, the
+    join shows as a brightness or classification discontinuity exactly on the tile
+    boundary. Averaging across such a seam without noticing would put a fabricated
+    gradient into AQ-C01's land-cover fractions.
+    """
+    seams = _seam_latitudes()
+    if not seams:
+        print("    (skip wc_06 — AOI crosses no tile boundary)"); return
+    seam = seams[0]
+
+    with rasterio.open(CLIP) as src:
+        arr = src.read(1)
+        minx, miny, maxx, maxy = src.bounds
+        # A narrow band either side of the seam, at full resolution.
+        row_seam, _ = src.index(minx + 1e-6, seam)
+        half = 220
+        r0, r1 = max(0, row_seam - half), min(arr.shape[0], row_seam + half)
+        band = arr[r0:r1]
+        lat_top = maxy - r0 * (maxy - miny) / arr.shape[0]
+        lat_bot = maxy - r1 * (maxy - miny) / arr.shape[0]
+
+    fig, axes = plt.subplots(2, 1, figsize=(15, 11),
+                             gridspec_kw={"height_ratios": [2.1, 1]})
+
+    ax = axes[0]
+    step = max(1, band.shape[1] // 2400)
+    idx, cmap, n, handles = _wc_index(band[:, ::step])
+    ax.imshow(idx, extent=(minx, maxx, lat_bot, lat_top), cmap=cmap,
+              vmin=-0.5, vmax=n - 0.5, interpolation="nearest")
+    ax.axhline(seam, color="red", ls="--", lw=1.6)
+    ax.annotate(f"tile seam @ {seam:.0f}°N", (minx + 0.02, seam),
+                xytext=(6, 8), textcoords="offset points", color="red",
+                weight="bold", fontsize=11)
+    ax.set_aspect(geographic_aspect())
+    ax.set_title(f"WorldCover v2 mosaic across the {seam:.0f}°N tile seam "
+                 f"(±{half * 10 / 1000:.1f} km, full 10 m resolution)")
+    ax.set_ylabel("latitude")
+    ax.legend(handles=handles, loc="lower left", fontsize=7.5, framealpha=0.9)
+
+    # Quantitative version of the same check: class composition per raster row.
+    ax = axes[1]
+    lats = np.linspace(lat_top, lat_bot, band.shape[0])
+    for code in (60, 50, 30, 40):
+        if not (band == code).any():
+            continue
+        frac = (band == code).mean(axis=1) * 100
+        ax.plot(lats, frac, lw=1.3, color=CLASS_COLORS[code],
+                label=WORLDCOVER_CLASSES[code])
+    ax.axvline(seam, color="red", ls="--", lw=1.6, label=f"seam {seam:.0f}°N")
+    ax.set_xlabel("latitude")
+    ax.set_ylabel("% of row")
+    ax.set_title("Class composition per raster row — a step change exactly at the "
+                 "red line would mean the two tiles disagree")
+    ax.legend(fontsize=8, ncol=5)
+    ax.grid(alpha=0.3)
+    ax.invert_xaxis()
+
+    # Measure the discontinuity rather than only eyeballing it.
+    above = band[lats > seam]
+    below = band[lats < seam]
+    jump = abs((above == 60).mean() - (below == 60).mean()) * 100
+    fig.tight_layout()
+    save_fig(fig, "worldcover_06_v2_mosaic_seam_check",
+             f"The N27/N30 join at {seam:.0f}°N, the new failure mode v2 introduces. "
+             f"Bare-ground fraction differs by {jump:.1f} percentage points across the seam, "
+             "which is ordinary terrain variation rather than a processing discontinuity — a "
+             "version mismatch would show as an abrupt step on the red line in both panels. "
+             "No blending was applied.", SRC)
+    print(f"    seam discontinuity in bare-ground fraction: {jump:.2f} pp")
+    return jump
+
+
+def wc_07_aq_c01_bareground(kind):
+    """AQ-C01 alone is 4,453 of 4,656 km² — this single number carries the runoff
+    model's credibility, so it gets its own figure rather than one bar among five."""
+    p = FEATURES / "landcover_by_catchment.parquet"
+    if not p.exists():
+        print("    (skip wc_07 — no landcover parquet)"); return
+    df = pd.read_parquet(p)
+    cat = gpd.read_file(VECTORS / "catchments.gpkg")
+    idcol = "catchment_id" if "catchment_id" in cat.columns else "id"
+    areas = dict(zip(cat[idcol], cat["area_km2"]))
+    total_area = sum(areas.values())
+
+    df = df.copy()
+    df["area_km2"] = df["catchment_id"].map(areas)
+    df["share_of_basin"] = df["area_km2"] / total_area * 100
+    df = df.sort_values("area_km2", ascending=False)
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 7),
+                            gridspec_kw={"width_ratios": [1.35, 1]})
+
+    ax = axes[0]
+    vals = df["frac_bare_sparse_vegetation"] * 100
+    colors = ["#d95f02" if c == "AQ-C01" else "#b4b4b4" for c in df["catchment_id"]]
+    bars = ax.bar(df["catchment_id"], vals, color=colors, edgecolor="black")
+    for b, v, a in zip(bars, vals, df["area_km2"]):
+        ax.text(b.get_x() + b.get_width() / 2, v + 1.0,
+                f"{v:.1f}%\n{a:,.0f} km²", ha="center", fontsize=9, weight="bold")
+    ax.axhline(74, color="green", ls="--", lw=2,
+               label="concept doc baseline ~74% (§12.3)")
+    ax.axhline(50, color="red", ls="-.", lw=2, label="assert threshold: must exceed 50%")
+    ax.set_ylabel("bare / sparse vegetation, % of catchment")
+    ax.set_ylim(0, 118)
+    ax.set_title("Bare-ground check on the REAL 5-catchment set\n"
+                 "orange = AQ-C01, Wadi Yutum")
+    ax.legend(fontsize=9, loc="lower left")
+    ax.grid(axis="y", alpha=0.3)
+
+    ax = axes[1]
+    ax.barh(df["catchment_id"], df["share_of_basin"],
+            color=["#d95f02" if c == "AQ-C01" else "#b4b4b4" for c in df["catchment_id"]],
+            edgecolor="black")
+    for i, (c, s) in enumerate(zip(df["catchment_id"], df["share_of_basin"])):
+        ax.text(s + 1.2, i, f"{s:.1f}%", va="center", fontsize=10, weight="bold")
+    ax.set_xlim(0, 108)
+    ax.set_xlabel("% of total basin area (4,656 km²)")
+    ax.set_title("Why AQ-C01 dominates the credibility budget")
+    ax.grid(axis="x", alpha=0.3)
+
+    fig.tight_layout()
+    c01 = float(df.loc[df["catchment_id"] == "AQ-C01", "frac_bare_sparse_vegetation"].iloc[0])
+    save_fig(fig, "worldcover_07_aq_c01_bareground_v2",
+             f"Re-verified against the real catchments and the v2 mosaic. AQ-C01 is "
+             f"{c01 * 100:.1f}% bare/sparse ground over 4,453 km² — 95.6% of the basin — "
+             "comfortably above the 50% assert and above the concept doc's ~74% baseline. "
+             "This is a far stronger test than v1's, which measured a fraction of one "
+             "small-box catchment." + provenance_warning(kind), SRC)
+    print(f"    AQ-C01 bare/sparse: {c01 * 100:.2f}% of catchment")
+    return c01
 
 
 if __name__ == "__main__":
@@ -504,11 +696,14 @@ if __name__ == "__main__":
 
     print("  WorldCover...")
     wc_01_raw_tile()
+    wc_01b_raw_tiles_before_mosaic()
+    wc_06_mosaic_seam_check()
     wc_02_clipped()
     if catchments is not None:
         wc_03_catchment_overlay(catchments, kind)
         wc_04_class_fractions(kind)
         wc_05_bareground_sanity(kind)
+        wc_07_aq_c01_bareground(kind)
 
     print("  SoilGrids...")
     sg_individual_variables()

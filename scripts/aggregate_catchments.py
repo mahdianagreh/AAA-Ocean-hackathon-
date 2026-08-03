@@ -39,7 +39,7 @@ from pulga_config import (
 )
 from soilgrids_units import CONVERSIONS, DEPTHS, load_converted, raw_path
 
-WORLDCOVER_CLIP = INTERIM / "worldcover_terrain_v2_clip.tif"
+WORLDCOVER_CLIP = INTERIM / "worldcover_aqaba_clip.tif"
 OSM_GPKG = VECTORS / "osm_aqaba.gpkg"
 
 # Real first, Mahdi's Day-1 seed as the only fallback. The local synthetic fixture

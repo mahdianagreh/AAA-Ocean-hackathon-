@@ -3,7 +3,7 @@
 **Owner:** Pulga · land cover, soil, urban, marine habitat, bathymetry
 
 - Provenance, licences, limitations: [data_dictionary.md](data_dictionary.md)
-- All 42 QA figures with captions: [qa_screenshots/MANIFEST.md](qa_screenshots/MANIFEST.md)
+- Every QA figure, captioned and counted: [qa_screenshots/MANIFEST.md](qa_screenshots/MANIFEST.md)
 - Judge-facing honesty page: [pitch_limitations.md](pitch_limitations.md)
 - Handoff to the terrain lead: [osm_dem_conflicts.md](osm_dem_conflicts.md)
 - Visual provenance map: [overview_02_data_lineage_diagram.png](qa_screenshots/overview_02_data_lineage_diagram.png)
@@ -129,7 +129,7 @@ cd .. && .venv/bin/python tests/test_soilgrids_units.py && cd scripts
 ../.venv/bin/python make_catchments_fixture.py     # only while Mahdi's are pending
 ../.venv/bin/python aggregate_catchments.py
 
-# 7. All 42 QA figures + the manifest
+# 7. All QA figures + the manifest
 ../.venv/bin/python qa_land.py
 ../.venv/bin/python qa_marine.py
 ../.venv/bin/python qa_overview.py
@@ -149,7 +149,7 @@ cd .. && .venv/bin/python tests/test_soilgrids_units.py && cd scripts
 | Depth field | min **−907.1 m**, max **+1542.3 m**, 23.3% below sea level |
 | Sign-convention controls | **22/22 pass** |
 | Coastline | **1** water polygon, **397.3 km²** |
-| Reef zones | **8**, total **5.69 km²**, all median depth < 0 |
+| Reef zones | **8**, total **1.235 km²** (Allen Coral Atlas v2.0; the 5.69 km² figure was the hand-drawn 250 m boxes) |
 | Coastline vs OSM | median **62 m**, p90 337 m |
 | QA figures | **34** in `docs/qa_screenshots/manifest.json` |
 
