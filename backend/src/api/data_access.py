@@ -174,6 +174,13 @@ def reef_zones(include_geometry: bool = True) -> tuple[list[dict], bool]:
             or "PLACEHOLDER_PENDING_MARINE_SCIENTIST",
             "marine_park_overlap_pct": _clean(r.get("marine_park_overlap_pct")),
             "depth_median_m": _clean(r.get("depth_median_m")),
+            # Added by Karam's ACA build. depth_land_cell_pct is not decoration: the
+            # 50 m bathymetry under a 20-50 m reef strip reads as land for 39-100% of
+            # cells, so this is the field that says whether a depth is usable at all.
+            "depth_land_cell_pct": _clean(r.get("depth_land_cell_pct")),
+            "habitat_class_code": _clean(r.get("habitat_class_code")),
+            "habitat_class_mix": _clean(r.get("habitat_class_mix")),
+            "geomorphic_class": _clean(r.get("geomorphic_class")),
         }
         if include_geometry:
             rec["geometry"] = _geojson(r.geometry)

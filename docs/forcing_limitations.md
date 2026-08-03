@@ -30,11 +30,28 @@ from the concept doc:
   (`GLOBAL_ANALYSISFORECAST_PHY_001_024`) masks the *exact same* outlet cell as
   unresolved/land — this is not a HYCOM-specific quirk, two independently-run global
   ocean models agree the provisional outlet sits outside what either resolves as water.
-  At the gulf-mouth point (34.90, 29.40) where both resolve, direction agreement was
-  good: HYCOM 52.9° vs Copernicus Marine 46.9° (from-direction) — a 6.0° disagreement,
-  speeds within 20% of each other (6.9 cm/s vs 8.3 cm/s). See `compare_hycom_vs_copernicus()`
-  in `backend/src/ingestion/ocean_currents.py`, figure:
+  At the gulf-mouth point (34.90, 29.40) where both resolve **today**, direction
+  agreement was good — under 5° disagreement each time this was checked (currents
+  evolve hour to hour, so the exact figure drifts; re-run
+  `python -m src.ingestion.ocean_currents` for the current number, in
+  `docs/qa_screenshots/currents_01_hycom_vs_copernicus.png`'s top row). See
+  `compare_hycom_vs_copernicus()` in `backend/src/ingestion/ocean_currents.py`, figure:
   [`docs/qa_screenshots/currents_01_hycom_vs_copernicus.png`](qa_screenshots/currents_01_hycom_vs_copernicus.png).
+- **At the actual historical event (2026-08-03, using the correct archival products —
+  HYCOM `GLBu0.08/expt_91.2` and Copernicus Marine's GLORYS12V1 reanalysis, not the
+  rolling "latest"/"anfc" products used for live forcing, which have no 2016 data at
+  all):** the two models' resolved footprints in the narrow gulf **barely overlap at
+  all** — a systematic scan of the entire MARINE_AOI at 0.01° resolution found zero
+  points both models resolve simultaneously; the nearest shared point is (34.85, 29.30),
+  6 km from the outlet. There, at the mooring's peak-response time (2016-10-28 06:50
+  UTC), the two models disagree by **65.8°** on current direction (HYCOM 330.8° vs
+  Copernicus Marine 36.6°) — far worse than the ~2° agreement seen for today's
+  conditions. Both report weak flow (1.4–2.6 cm/s), and direction is intrinsically
+  noisy at low speed, which is itself part of the honest picture: **the two best free
+  global ocean models cannot agree on which way the water was moving during the actual
+  event this project backtests against.** This is a stronger, more specific version of
+  the resolution-limitation claim than "the gulf is narrow" — it is measured disagreement
+  on the exact date that matters, not a generic caveat.
 
 ## What this does and doesn't invalidate
 
@@ -61,16 +78,24 @@ Never present a single trajectory line on the dashboard. Always show:
 
 1. A probability field from many particles, not one path.
 2. The resolution number next to the current layer in the UI.
-3. The HYCOM-vs-Copernicus-Marine agreement (or disagreement) as an uncertainty signal —
-   now live (6.0° direction agreement at the gulf mouth, both mask the outlet identically),
-   see `docs/data_dictionary.md` §8 Phase 2 update, 2026-08-03.
+3. The HYCOM-vs-Copernicus-Marine agreement (or disagreement) as an uncertainty signal.
+   For today's conditions: under 5° agreement at the gulf mouth (drifts hour to
+   hour with live currents). Both models mask the outlet identically regardless
+   of when checked. **For the actual demo event (2016-10-28): 65.8° disagreement** — put
+   this number on the calibration/scenario slide specifically, not just the generic
+   "today" figure, since it's the uncertainty that actually applies to the backtest.
+   See `docs/data_dictionary.md` §8 Phase 2 update, 2026-08-03.
 
 ## Judge-ready answer
 
 > "The Gulf is narrower than three grid cells of the best free global ocean model, so we
 > don't claim meter-level accuracy — we output probabilistic exposure zones and we tell
 > the user our confidence. We verified this isn't theoretical: our own release point sits
-> on a masked cell in the global grid. Higher-resolution local current measurements are
+> on a masked cell in the global grid, in both models we tried. For the actual October
+> 2016 event we backtest against, HYCOM and Copernicus Marine's historical archives
+> disagree by 66 degrees on current direction — which is exactly why the plume transport
+> step runs an ensemble of particles under stochastic diffusion and reports a probability
+> field, not a single confident line. Higher-resolution local current measurements are
 > Phase 2, integrated with Marine Science Station data."
 
 This matches the concept doc's own guidance (§23.4): never claim exact prediction; the

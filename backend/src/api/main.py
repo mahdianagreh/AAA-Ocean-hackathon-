@@ -319,8 +319,11 @@ def list_reef_zones(include_geometry: bool = Query(True)):
             # saying so would be a false statement about a 5 m Atlas product. What
             # does apply is that the named zones miss most of the mapped reef, and
             # that our depth grid disagrees with the Atlas in places.
-            caveats += cav.reef_area_correction() + cav.reef_scope_is_jordan()
-            caveats += cav.reef_depth_disagreement()
+            caveats += (cav.reef_area_correction() + cav.reef_scope_is_jordan()
+                        + cav.reef_shallow_only()
+                        + cav.depth_is_land_dominated(
+                            z['reef_zone_id'], z.get('depth_land_cell_pct'),
+                            z.get('depth_median_m')))
         out.append(ReefZoneOut(
             **{k: v for k, v in z.items() if k != "geometry"},
             geometry=z.get("geometry") if include_geometry else None,

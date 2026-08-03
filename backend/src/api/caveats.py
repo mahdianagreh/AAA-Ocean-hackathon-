@@ -89,33 +89,42 @@ def catchment_area_uncertainty() -> list[Caveat]:
 
 
 def reef_area_correction() -> list[Caveat]:
-    """The real reef is far smaller than the provisional strips implied.
+    """Reef area shrank 4.6x when the Atlas replaced the hand-drawn boxes.
 
-    Measured 3 Aug 2026 against the Allen Coral Atlas export:
+    Verified against data/processed/vectors/reef_zones.gpkg on 2026-08-03:
+    5.69 km2 of 250 m strips -> 1.235 km2 of ACA 5 m outline. Per-zone ranking
+    changed too, not only the totals, so any exposure figure computed against the
+    provisional areas is wrong rather than merely imprecise.
 
-        living reef in MARINE_AOI          4.192 km²
-          on Jordan's coastal corridor     0.855 km²
-          in Egyptian / Israeli waters     3.338 km²  (80% of the AOI total)
-        scored across the 8 named zones    0.742 km²  (86.8% of Jordan's corridor)
-        provisional strips claimed         5.69  km²  (7.7x the real figure)
-
-    An earlier draft of this caveat said the zones covered "only 40%" of the reef.
-    That was wrong and alarmist: it measured against every reef in the marine box,
-    four fifths of which is in another country's water and was never in scope. The
-    honest statement is that coverage of Jordan's reef is good, and that the
-    provisional AREA was a large overestimate.
+    Note what this caveat no longer says. The 250 m width assumption is GONE — the
+    outline is the Atlas's own 5 m polygons, so an absolute km2 is now defensible.
+    A fraction of a named zone is still the better framing, but for a different
+    reason, which reef_shallow_only() carries.
     """
     return [Caveat(
         field="area_km2",
         message=(
-            "Reef area comes from Allen Coral Atlas v2.0 at 5 m: 0.742 km² across the "
-            "8 named zones, which is 86.8% of the living reef the Atlas maps on "
-            "Jordan's coast. The earlier provisional geometry claimed 5.69 km² — about "
-            "7.7x more — because it assumed a uniform 250 m-wide strip along the whole "
-            "coastline. Any figure derived from the provisional area is an "
-            "overestimate."
+            "Reef area comes from Allen Coral Atlas v2.0 at 5 m: 1.235 km² across the 8 "
+            "named zones. The earlier provisional geometry claimed 5.69 km² — 4.6x more — "
+            "because it assumed a uniform 250 m strip along the whole coastline. Any "
+            "number derived from the provisional area is an overestimate, and the per-zone "
+            "ranking changed as well as the totals."
         ),
         severity="warning",
+        source=f"{DD} §4",
+    )]
+
+
+def reef_shallow_only() -> list[Caveat]:
+    """Why a fraction still beats an absolute area, now that the width is real."""
+    return [Caveat(
+        field="zone_fraction_affected",
+        message=(
+            "Allen Coral Atlas maps optically shallow reef only, so deeper habitat inside "
+            "a zone is unrepresented. An absolute 'km² affected' therefore understates the "
+            "habitat actually at risk; a fraction of a named zone is the safer framing."
+        ),
+        severity="info",
         source=f"{DD} §4",
     )]
 
@@ -125,35 +134,49 @@ def reef_scope_is_jordan() -> list[Caveat]:
     return [Caveat(
         field="reef_zone_id",
         message=(
-            "Scope is Jordan's coast. The Atlas maps a further 3.338 km² of living reef "
-            "inside the same marine bounding box, on the Egyptian and Israeli shores; "
-            "those reefs are not zoned and not scored. Risk shown here is risk to the "
-            "named Jordanian zones, not to all reef in the Gulf of Aqaba."
+            "Scope is Jordan's coast. The Atlas export covers the full padded box, and "
+            "6.09 km² of the 7.32 km² it maps lies in Egyptian, Saudi and Israeli water — "
+            "deliberately discarded, all of it more than 5 km from the Jordanian zone "
+            "chain. Risk shown here is risk to the named Jordanian zones, not to all reef "
+            "in the Gulf of Aqaba."
         ),
         severity="info",
         source=f"{DD} §4",
     )]
 
 
-def reef_depth_disagreement() -> list[Caveat]:
-    """Two of our own artefacts disagree, and the disagreement is the signal.
+def depth_is_land_dominated(zone_id: str, land_pct, depth_median) -> list[Caveat]:
+    """Depth is now the weakest field in the reef table, not the geometry.
 
-    ACA maps reef at 5 m where our 450 m-effective bathymetry says land: R-02 and
-    R-08 come out with a positive median elevation. ACA is purpose-built for shallow
-    reef at 5 m, so it wins — but the disagreement is worth surfacing rather than
-    resolving silently in favour of whichever file was read last.
+    The bathymetry is 50 m while the reef strip is 20-50 m wide, so 39-100% of the
+    cells under a zone read as land. Karam's handoff is explicit: check
+    depth_land_cell_pct before any depth reaches a formula or a screen. R-02 has no
+    water cell at all and is NaN — not 0, and not the +10 m the raw cells would give.
     """
-    return [Caveat(
-        field="depth_median_m",
-        message=(
-            "Depth is sampled from a bathymetry grid with ~450 m effective resolution, "
-            "while reef extent comes from Allen Coral Atlas at 5 m. Where the two "
-            "disagree — two zones report a positive median elevation, i.e. 'land' — "
-            "trust the Atlas for reef presence and treat the depth as indicative only."
-        ),
-        severity="warning",
-        source=f"{DD} §5",
-    )]
+    out: list[Caveat] = []
+    if depth_median is None:
+        out.append(Caveat(
+            field="depth_median_m",
+            message=(
+                f"{zone_id} has no water cell in the 50 m bathymetry at all, so depth is "
+                "unavailable. Reported as null, never as 0 — a gap is a gap."
+            ),
+            severity="warning",
+            source=f"{DD} §4",
+        ))
+    elif land_pct is not None and land_pct >= 50:
+        out.append(Caveat(
+            field="depth_median_m",
+            message=(
+                f"{land_pct:.0f}% of the bathymetry cells under {zone_id} read as land, "
+                "because the grid is 50 m and the reef strip is 20-50 m wide. The median "
+                "is taken over water cells only and rests on few of them; treat it as "
+                "indicative, not measured."
+            ),
+            severity="warning",
+            source=f"{DD} §4",
+        ))
+    return out
 
 
 def provisional_reef_zones() -> list[Caveat]:

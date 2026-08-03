@@ -96,7 +96,21 @@ class ReefZoneOut(BaseModel):
     sensitivity_weight: float
     sensitivity_weight_status: SensitivityStatus
     marine_park_overlap_pct: float | None = None
-    depth_median_m: float | None = None
+    depth_median_m: float | None = Field(
+        default=None,
+        description="Median over WATER cells only. Null where a zone has no water cell "
+                    "at all (R-02). Never coerce null to 0 — read depth_land_cell_pct.",
+    )
+    depth_land_cell_pct: float | None = Field(
+        default=None,
+        description="Share of 50 m bathymetry cells under the zone that read as land. "
+                    "39-100% in practice; check it before using depth_median_m.",
+    )
+    habitat_class_code: int | None = None
+    habitat_class_mix: str | None = Field(
+        default=None, description='Composition by AREA, e.g. "Coral/Algae:89%;Rock:11%"'
+    )
+    geomorphic_class: str | None = None
     geometry: dict | None = None
     caveats: list[Caveat] = []
 
