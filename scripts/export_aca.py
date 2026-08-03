@@ -84,9 +84,14 @@ def submit():
     ee = init_ee()
     aoi = ee.Geometry.Rectangle(list(DOWNLOAD_BBOX))
 
-    col = ee.ImageCollection(ACA_COLLECTION)
-    benthic = col.select("benthic").mosaic().clip(aoi).rename("benthic")
-    geomorphic = col.select("geomorphic").mosaic().clip(aoi).rename("geomorphic")
+    # ACA/reef_habitat/v2_0 is a single global Image, not an ImageCollection.
+    # ee.ImageCollection() on it fails with "Expected asset ... to be an
+    # ImageCollection, found 'Image'", so there is no mosaic step to do —
+    # verified against the live asset, whose bands are
+    # ['geomorphic', 'benthic', 'reef_mask'].
+    habitat = ee.Image(ACA_COLLECTION)
+    benthic = habitat.select("benthic").clip(aoi).rename("benthic")
+    geomorphic = habitat.select("geomorphic").clip(aoi).rename("geomorphic")
     stacked = benthic.addBands(geomorphic).toInt16()
 
     task = ee.batch.Export.image.toDrive(

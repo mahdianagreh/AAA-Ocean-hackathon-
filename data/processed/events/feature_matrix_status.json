@@ -1,33 +1,29 @@
 {
-  "generated_utc": "2026-08-02T19:45:54Z",
+  "generated_utc": "2026-08-03T08:24:51Z",
   "rows": 500,
   "events": 100,
   "catchments": 5,
-  "columns": 35,
+  "columns": 128,
   "sources_present": {
     "terrain": {
       "path": "data/processed/features/catchment_terrain.parquet",
       "columns": 16
-    }
-  },
-  "sources_missing": {
+    },
     "landcover": {
       "path": "data/processed/features/landcover_by_catchment.parquet",
-      "owner": "Pulga \u2014 tasks/phase2/04-pulga.md \u00a70",
-      "reason": "file does not exist"
+      "columns": 13
     },
     "soil": {
       "path": "data/processed/features/soil_by_catchment.parquet",
-      "owner": "Pulga \u2014 tasks/phase2/04-pulga.md \u00a70",
-      "reason": "file does not exist"
+      "columns": 72
     },
     "urban": {
       "path": "data/processed/features/urban_by_catchment.parquet",
-      "owner": "Pulga \u2014 tasks/phase2/04-pulga.md \u00a70",
-      "reason": "file does not exist"
+      "columns": 9
     }
   },
-  "complete": false,
+  "sources_missing": {},
+  "complete": true,
   "label_rule": "ERA5-Land surface/sub-surface runoff are labels only and are asserted out of this table.",
   "note": "Missing sources are absent, not zero-filled. A zero bare-ground fraction is a claim about the catchment; an absent column is a claim about our data, and only the second one is true."
 }
