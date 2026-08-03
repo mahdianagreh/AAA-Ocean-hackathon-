@@ -8,15 +8,59 @@ definition.** Read that before you train anything.
 
 ---
 
-## 1 · What you have now
+## 1 · Exactly where the data is and how to load it
+
+Two files. **Features in one, labels in the other** — deliberately, so a label can never
+be used as an input by accident.
 
 ```
-data/processed/features/event_catchment_features.parquet     500 rows x 139 cols   FEATURES
-data/processed/features/event_antecedents.parquet            395 rows, 79 events   LABELS
-data/processed/features/event_antecedents.summary.json                             label stats
+data/processed/features/event_catchment_features.parquet     500 rows x 139 cols   FEATURES (X)
+data/processed/features/event_antecedents.parquet            395 rows,  15 cols    LABELS  (y)
+data/processed/features/event_antecedents.summary.json                             label stats + warnings
 ```
 
-Join on **`(event_id, catchment_id)`**. Both files use those keys.
+Copy-paste this. It is the whole loading step:
+
+```python
+import pandas as pd
+
+X = pd.read_parquet("data/processed/features/event_catchment_features.parquet")
+y = pd.read_parquet("data/processed/features/event_antecedents.parquet")
+
+KEYS = ["event_id", "catchment_id"]          # the join. Both files use these two.
+
+df = X.merge(y[KEYS + ["label_surface_runoff_mm"]], on=KEYS, how="inner")
+df = df.dropna(subset=["label_surface_runoff_mm"])
+print(len(df), "trainable rows")             # ~390
+
+# Never let a label into the features.
+feature_cols = [c for c in X.columns
+                if c not in KEYS
+                and not c.startswith("label_")
+                and c not in ("date", "storm_start", "storm_end", "merged_event_ids",
+                              "event_date", "selection_reason", "wettest_catchment")]
+```
+
+**`inner` is correct here**, not `left`: 105 of the 500 feature rows have no label yet
+because their ERA5 month is still downloading, and a row with no target cannot train.
+
+**Nothing else needs joining.** Terrain, soil, landcover, urban and the antecedent
+features are already merged into `event_catchment_features.parquet`. You do not need to
+touch the five source files.
+
+### Do not read this from Supabase
+
+The database has the same tables, but as of today `events` holds **116** rows and
+`event_catchment_features` holds **580** — 16 of those events are duplicate storm-days
+that I merged away this morning, and they drag 80 duplicate feature rows with them.
+Training off the DB would put the same storm in train *and* test. **Use the parquet
+files.** I am cleaning the DB separately.
+
+| | this morning | now |
+|---|---:|---:|
+| labelled events | 7 | **79** |
+| labelled rows | 35 | **395** |
+| feature columns | 128 | **139** |
 
 | | this morning | now |
 |---|---:|---:|
@@ -76,6 +120,18 @@ buried in a script. Full distribution, per-catchment medians and both warnings a
 `event_antecedents.summary.json` under `label_distribution`, so you do not need to
 recompute any of it.
 
+Concretely, if you go binary:
+
+```python
+import numpy as np
+THRESHOLD = np.percentile(df["label_surface_runoff_mm"], 50)   # ~0.0058 mm
+df["target"] = (df["label_surface_runoff_mm"] > THRESHOLD).astype(int)
+print(df["target"].mean())        # must be ~0.50, NOT ~0.98
+```
+
+**That printed number is your first sanity check.** If it comes out near 0.98 you have
+used `> 0` and every score after it is meaningless.
+
 ### Weak predictors — know this before you set expectations
 
 Correlations of the antecedent features against runoff magnitude are honest but weak:
@@ -112,6 +168,48 @@ and hand you a good score that means nothing. Five catchments, so LOCO is five f
 **Both are required**: leave-one-catchment-out **and** a temporal holdout at train ≤2014.
 They test different failures — LOCO tests transfer to an unseen catchment, the temporal
 split tests transfer to an unseen climate period.
+
+### How to verify — the exact recipe
+
+```python
+from sklearn.metrics import roc_auc_score
+
+# ---- 1. the baseline you must beat, and must report even if it wins
+majority = df["target"].mean()
+print(f"majority-class accuracy: {max(majority, 1-majority):.3f}")   # beat this or say so
+
+# ---- 2. leave-one-catchment-out: 5 folds, one per catchment
+for held_out in sorted(df["catchment_id"].unique()):
+    train = df[df["catchment_id"] != held_out]
+    test  = df[df["catchment_id"] == held_out]
+    # ... fit on train, predict on test ...
+    print(held_out, "n_test =", len(test))
+
+# ---- 3. temporal holdout: train on the past, test on the future
+year  = pd.to_datetime(df["event_id"].str.slice(3, 13)).dt.year
+train = df[year <= 2014]
+test  = df[year >  2014]
+print("temporal split:", len(train), "train /", len(test), "test")
+```
+
+**What a trustworthy result looks like:**
+
+| signal | good | bad |
+|---|---|---|
+| target balance | ~0.50 | ~0.98 → you used `> 0` |
+| accuracy vs majority baseline | a few points above | *far* above → suspect leakage |
+| LOCO spread across the 5 folds | similar scores | one fold near-perfect → memorising that catchment |
+| random CV vs LOCO | LOCO a bit worse | random CV *much* better → leakage confirmed |
+| top features | some event-varying ones | all static → the model learned which catchment, not what happens |
+
+**The single most useful check:** run plain random K-fold *as well as* LOCO. If random CV
+scores much higher, that gap **is** the leakage, measured. Report both numbers — that
+comparison is a stronger result than either score alone, and it is exactly the kind of
+honesty that survives a judge's question.
+
+If your XGBoost only ties the rule baseline, **say so and keep the baseline.** With 390
+rows, 5 catchments and predictors this weak, a rule that wins is a legitimate finding.
+Overselling a marginal model is the thing that loses the Q&A.
 
 ---
 
