@@ -55,3 +55,9 @@ Naming convention: `<source>_<NN>_<description>.png`
 | [reef_03_overlap_bug_before_after.png](reef_03_overlap_bug_before_after.png) | Left: the pre-fix geometry, 1.46 ha of double-counted reef in red where the perpendicular buffer bled across the band boundary. Right: after clipping each strip to its own latitude band, the overlap is 0 m². An exposure score computed on the left would have inflated the headline number. | 2026-07-31 21:59 UTC |
 | [reef_04_marine_park_validation.png](reef_04_marine_park_validation.png) | The Aqaba Marine Park (protect_class=4, 3.45 km², 29.397–29.460 N) in cyan against our zones. R-04–R-07 are 67–85% inside it despite the park never being used to place them — independent corroboration that the dive-site latitudes are right. R-01–R-03 fall outside, consistent with them being city and port frontage. | 2026-07-31 21:59 UTC |
 
+## Forcing chain (Nizar)
+
+| figure | what it shows | generated |
+|---|---|---|
+| [currents_01_hycom_vs_copernicus.png](currents_01_hycom_vs_copernicus.png) | Left: HYCOM (blue) and Copernicus Marine (orange) surface-current vectors over the resolved portion of the AOI. The provisional outlet (red X) has no vector from either model — both independently mask that exact cell as unresolved/land, which is the concrete evidence behind the ~9km resolution limitation in docs/forcing_limitations.md. Right: at the nearest point both models resolve (34.90, 29.40), direction agreement is 6.0° (52.9° vs 46.9°, from-direction) and speeds are within 20% (6.9 vs 8.3 cm/s) — two independent global ocean models broadly agreeing is what makes the plume-direction claim defensible. | 2026-08-03 UTC |
+
