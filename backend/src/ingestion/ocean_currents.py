@@ -149,9 +149,17 @@ class CurrentFieldInterpolator:
         self._ds = ds
 
     def __call__(self, lon: float, lat: float, time: np.datetime64, depth: float = 0.0):
-        point = self._ds.interp(
-            longitude=lon, latitude=lat, time=time, depth=depth, method="linear"
-        )
+        ds = self._ds
+        # Some Copernicus Marine products (e.g. the hourly-mean surface tier) ship a
+        # single depth level. Linearly interpolating a dimension with only one
+        # coordinate divides by zero (x_hi - x_lo == 0) and silently returns nan —
+        # select nearest instead of interpolating when there's nothing to interpolate
+        # between.
+        if ds.sizes.get("depth", 1) <= 1:
+            ds = ds.sel(depth=depth, method="nearest")
+            point = ds.interp(longitude=lon, latitude=lat, time=time, method="linear")
+        else:
+            point = ds.interp(longitude=lon, latitude=lat, time=time, depth=depth, method="linear")
         return float(point["u"].values), float(point["v"].values)
 
 
@@ -164,6 +172,38 @@ def build_interpolator(prefer: str = "copernicus_marine") -> CurrentFieldInterpo
     else:
         ds = fetch_hycom()
     return CurrentFieldInterpolator(ds)
+
+
+# ---------------------------------------------------------------------------
+# HYCOM vs Copernicus Marine direction comparison — an honest measure of forcing
+# uncertainty rather than presenting one model's current direction as ground truth.
+# ---------------------------------------------------------------------------
+
+def compare_hycom_vs_copernicus(lon: float, lat: float, time: np.datetime64, depth: float = 0.0) -> dict:
+    """Query both current sources at the same point/time and report the direction
+    and speed disagreement. Requires both to already be cached locally (call
+    cache_hycom() / cache_copernicus_marine() first)."""
+    hycom_ds = xr.open_dataset(RAW_DIR / "hycom_aoi_recent.nc")
+    cm_ds = xr.open_dataset(RAW_DIR / "copernicus_marine_aoi_recent.nc")
+
+    u_h, v_h = CurrentFieldInterpolator(hycom_ds)(lon, lat, time, depth)
+    u_c, v_c = CurrentFieldInterpolator(cm_ds)(lon, lat, time)
+
+    result = dict(lon=lon, lat=lat, time=str(time))
+    for name, u, v in [("hycom", u_h, v_h), ("copernicus_marine", u_c, v_c)]:
+        result[f"{name}_u_ms"] = u
+        result[f"{name}_v_ms"] = v
+        result[f"{name}_speed_ms"] = float(np.hypot(u, v)) if not np.isnan(u) else None
+        result[f"{name}_direction_from_deg"] = (
+            float((270 - np.degrees(np.arctan2(v, u))) % 360) if not np.isnan(u) else None
+        )
+
+    if result["hycom_direction_from_deg"] is not None and result["copernicus_marine_direction_from_deg"] is not None:
+        diff = abs(result["hycom_direction_from_deg"] - result["copernicus_marine_direction_from_deg"])
+        result["direction_diff_deg"] = min(diff, 360 - diff)
+    else:
+        result["direction_diff_deg"] = None
+    return result
 
 
 if __name__ == "__main__":
@@ -191,3 +231,7 @@ if __name__ == "__main__":
 
     u_mouth, v_mouth = interp(lon=34.90, lat=29.40, time=now)
     print(f"At the gulf mouth, 6 km further offshore (34.90, 29.40): u={u_mouth:.4f} m/s, v={v_mouth:.4f} m/s")
+
+    if copernicus_marine_available():
+        comparison = compare_hycom_vs_copernicus(lon=34.90, lat=29.40, time=now)
+        print(f"HYCOM vs Copernicus Marine at (34.90, 29.40): {comparison}")

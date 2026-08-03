@@ -26,6 +26,15 @@ from the concept doc:
   on 2026-08-02).
 - Only a narrow east–west strip of the AOI (lat ≈ 29.28–29.48) resolves as water at all in
   this grid — see `docs/data_dictionary.md` for the full query.
+- **Confirmed with a second independent model (2026-08-03):** Copernicus Marine
+  (`GLOBAL_ANALYSISFORECAST_PHY_001_024`) masks the *exact same* outlet cell as
+  unresolved/land — this is not a HYCOM-specific quirk, two independently-run global
+  ocean models agree the provisional outlet sits outside what either resolves as water.
+  At the gulf-mouth point (34.90, 29.40) where both resolve, direction agreement was
+  good: HYCOM 52.9° vs Copernicus Marine 46.9° (from-direction) — a 6.0° disagreement,
+  speeds within 20% of each other (6.9 cm/s vs 8.3 cm/s). See `compare_hycom_vs_copernicus()`
+  in `backend/src/ingestion/ocean_currents.py`, figure:
+  [`docs/qa_screenshots/currents_01_hycom_vs_copernicus.png`](qa_screenshots/currents_01_hycom_vs_copernicus.png).
 
 ## What this does and doesn't invalidate
 
@@ -52,9 +61,9 @@ Never present a single trajectory line on the dashboard. Always show:
 
 1. A probability field from many particles, not one path.
 2. The resolution number next to the current layer in the UI.
-3. The HYCOM-vs-Copernicus-Marine agreement (or disagreement) as an uncertainty signal,
-   once Copernicus Marine credentials are available (see `docs/data_dictionary.md` —
-   pending as of 2026-08-02).
+3. The HYCOM-vs-Copernicus-Marine agreement (or disagreement) as an uncertainty signal —
+   now live (6.0° direction agreement at the gulf mouth, both mask the outlet identically),
+   see `docs/data_dictionary.md` §8 Phase 2 update, 2026-08-03.
 
 ## Judge-ready answer
 
