@@ -289,20 +289,28 @@ outranks everything else on this list.
 
 Workaround while it stands: `docker compose run --rm --no-deps worker …`.
 
-### 22 · Karam — two parallel GeoJSON exports 🟠
+### 22 · Karam — two parallel GeoJSON exports ✅ CLOSED 2026-08-03
 
-`scripts/export_web_layers.py` (yours) writes nine layers to `data/processed/web/`
-and gitignores them. `scripts/13_frontend_basemap.py` (mine) writes twelve to
-`frontend/public/basemap/` and commits them.
+**Resolved by deleting mine.** `scripts/export_web_layers.py` is gone;
+`scripts/13_frontend_basemap.py` is the single derivation.
 
-Mine cannot be gitignored the same way, and that is the constraint rather than a
-preference: the compose build context is `./frontend`, so nothing under `data/` is
-reachable at image-build time, and DoD item 9 needs the layers present in the image
-rather than regenerable. Yours is the better default for everything else.
+You had the constraint right and I had written mine before yours existed — it was
+scaffolding to unblock the map, and that need has passed. Yours also turned out to be
+the better artefact rather than merely the necessary one: `places.geojson` already
+carries the dive sites with `name_ar` / `name_en`, and `protected.geojson` the Marine
+Park the same way, so it satisfies the bilingual DoD that mine quietly did not. Two
+derivations of the same boundaries is exactly the drift I warned Ali about, and keeping
+the one that must be committed anyway is the only version that removes it.
 
-They should be reconciled so one script feeds both — probably yours, with an output
-path flag. Until then two derivations of the same boundaries can drift, which is
-exactly what your handoff note warns about.
+Three layers existed only in mine and are **not** in `frontend/public/basemap/`. None is
+needed for the slice, so they are a note rather than a blocker — add them if a screen
+calls for them:
+
+| layer | source | note |
+|---|---|---|
+| `observed_plume_PROVISIONAL` | `observed_plume.gpkg` | swap #4, must be labelled provisional in the UI |
+| `drainage_features` | `osm_aqaba.gpkg:drainage_features` | 200 features, of which only 27 are culverts — do not label it "culverts" |
+| `port` | `osm_aqaba.gpkg:port` | R-02 context |
 
 ### 23 · Anyone — `scripts/config.py` was deleted with no replacement 🟠
 

@@ -13,29 +13,40 @@ start the shell today.
 
 ---
 
-## 1 · Your map layers are ready — I converted them for you
+## 1 · Map layers — you already solved this, better than I did
 
-**MapLibre cannot read a GeoPackage**, and every vector layer in the repo was `.gpkg`
-except one. That was a real blocker and it was mine to fix. Now:
+**Written before I saw your work. Superseded — read it as context, not instructions.**
 
-```bash
-../.venv/bin/python scripts/export_web_layers.py     # ~5 seconds
-```
+I had converted nine layers to `data/processed/web/` via `scripts/export_web_layers.py`,
+because MapLibre cannot read a GeoPackage and every vector in the repo was `.gpkg`. By
+then you had already shipped `scripts/13_frontend_basemap.py` → `frontend/public/basemap/`
+with **twelve** layers, and yours is the one to keep:
 
-writes to `data/processed/web/`, all in **EPSG:4326**, all loadable straight into a
-MapLibre `geojson` source:
+- It **must** be committed — the compose build context is `./frontend`, so nothing under
+  `data/` is reachable at image-build time, and DoD item 9 needs the layers in the image
+  rather than regenerable. You had that constraint right.
+- It is **bilingual**: `places.geojson` carries the dive sites with `name_ar` / `name_en`,
+  `protected.geojson` does the same for the Marine Park. Mine was English-only, which
+  quietly failed your own DoD item 8.
+- It derives more: `isobaths`, `wadis`, `landuse`, `coverage`.
 
-| file | features | size | what it is |
-|---|---:|---:|---|
-| `catchments.geojson` | 5 | 620 KB | `AQ-C01`…`AQ-C05` |
-| `reef_zones.geojson` | 8 | 234 KB | `R-01`…`R-08`, **real ACA habitat as of today** |
-| `shoreline.geojson` | 1 | 70 KB | coastline |
-| `water.geojson` | 1 | 71 KB | sea polygon |
-| `marine_park.geojson` | 2 | 8 KB | Aqaba Marine Park boundary |
-| `dive_sites.geojson` | 75 | 39 KB | dive/tourism POIs |
-| `drainage_features.geojson` | 200 | 149 KB | wadi drainage lines |
-| `port.geojson` | 1 | 4 KB | port area |
-| `observed_plume_PROVISIONAL.geojson` | 110 | 144 KB | **provisional** — see §5 |
+So **I deleted mine** and closed OPEN-ISSUES #22. Two derivations of the same boundaries
+is precisely the drift I warn about in §5, and keeping the version that has to be
+committed anyway is the only choice that removes it.
+
+I verified your `reef_zones.geojson` against the source: 8 zones, IDs match, real ACA
+attributes, `sensitivity_weight_status` preserved. Total area differs by 0.09% — web
+coordinate precision, while your `area_km2` attribute stays exact at 0.463425 for R-01.
+That is the right split: simplified geometry for the browser, authoritative number in the
+attribute. Keep doing that.
+
+Three layers existed only in mine and are absent from yours. None blocks the slice:
+
+| layer | source | note |
+|---|---|---|
+| `observed_plume_PROVISIONAL` | `observed_plume.gpkg` | swap #4 — must be labelled provisional in the UI, see §5 |
+| `drainage_features` | `osm_aqaba.gpkg:drainage_features` | 200 features, only **27** are culverts — do not label it "culverts" |
+| `port` | `osm_aqaba.gpkg:port` | context for R-02 |
 
 **1.3 MB total.** No simplification applied to any of it — a simplified boundary is a
 different claim about where a catchment is, so the default is untouched geometry. There is
