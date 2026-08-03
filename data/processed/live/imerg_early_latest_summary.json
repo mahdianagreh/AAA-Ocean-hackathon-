@@ -1,0 +1,49 @@
+{
+  "phase": "imerg_early_near_real_time",
+  "request_time_utc": "2026-08-01T14:07:02Z",
+  "run_type": "early",
+  "short_name": "GPM_3IMERGHHE",
+  "collection_id": "C2723758340-GES_DISC",
+  "preliminary": true,
+  "calibrated_final_product": false,
+  "suitable_for_training": false,
+  "bbox_west_south_east_north": [
+    34.8,
+    29.25,
+    35.15,
+    29.7
+  ],
+  "verdict": "GO",
+  "metadata_result": "available",
+  "latest_granule_name": "GPM_3IMERGHHE.07:3B-HHR-E.MS.MRG.3IMERG.20260801-S080000-E082959.0480.V07C.HDF5",
+  "latest_product_timestamp_utc": "2026-08-01T08:00:00Z",
+  "observed_latency_hours": 6.1173,
+  "expected_granules": 6,
+  "available_granules": 5,
+  "missing_timestamps": [
+    "2026-08-01T07:00:00Z"
+  ],
+  "window_completeness_percent": 83.3333,
+  "contiguous_run_granules": 3,
+  "contiguous_run_start_utc": "2026-08-01T05:30:00Z",
+  "contiguous_run_end_utc": "2026-08-01T06:30:00Z",
+  "retrieval_window_start_utc": "2026-08-01T05:30:00Z",
+  "retrieval_window_end_utc": "2026-08-01T08:00:00Z",
+  "file_count": 5,
+  "timestamp_count": 3,
+  "spatial_extent": {
+    "lat_min": 29.25,
+    "lat_max": 29.649999618530273,
+    "lon_min": 34.849998474121094,
+    "lon_max": 35.14999771118164
+  },
+  "data_completeness_percent": 100.0,
+  "precipitation_mm_per_hr": {
+    "min": 0.0,
+    "max": 0.0,
+    "mean": 0.0
+  },
+  "non_zero_precipitation_present": false,
+  "output_netcdf": "/Users/karambalasmeh/AI_ENG/AAA/data/processed/live/imerg_early_latest.nc",
+  "final_run_outputs_touched": false
+}
