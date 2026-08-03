@@ -27,6 +27,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 from dotenv import load_dotenv
 
@@ -235,8 +236,19 @@ class CurrentFieldInterpolator:
     def __init__(self, ds: xr.Dataset):
         self._ds = ds
 
-    def __call__(self, lon: float, lat: float, time: np.datetime64, depth: float = 0.0):
+    def __call__(self, lon: float, lat: float, time, depth: float = 0.0):
         ds = self._ds
+        # Callers pass whatever datetime flavor they have — np.datetime64 (our own
+        # __main__ demo), tz-aware pandas.Timestamp (the particle engine, per
+        # models/particle_engine.py's simulate()), tz-naive datetime, or an ISO
+        # string. xarray's .interp() only accepts datetime64/naive-datetime-like
+        # values against a tz-naive time coordinate — reject a raw tz-aware
+        # Timestamp with a TypeError instead of silently mis-comparing. Normalize
+        # here so every caller gets the same contract regardless of what they hand in.
+        time_ts = pd.Timestamp(time)
+        if time_ts.tzinfo is not None:
+            time_ts = time_ts.tz_localize(None)
+        time = np.datetime64(time_ts)
         # Some Copernicus Marine products (e.g. the hourly-mean surface tier) ship a
         # single depth level. Linearly interpolating a dimension with only one
         # coordinate divides by zero (x_hi - x_lo == 0) and silently returns nan —

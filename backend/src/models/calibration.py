@@ -5,23 +5,36 @@ velocity, objective = match arrival time, duration and peak timing at the
 mooring, every trial recorded, hypopycnal/hyperpycnal run as a toggle with a
 stated verdict on which one the calibration selects.
 
-**Real historical current forcing is not available yet -- this is a discovered
-gap, not an oversight.** `ocean_currents.build_interpolator` fetches HYCOM's
-public FMRC "best dataset" and Copernicus Marine's `ANALYSISFORECAST` product,
-both of which serve a rolling recent/forecast window, not October 2016. Feeding
-today's current field into a trial and labelling the result "Oct 2016
-calibration" would be exactly the kind of fabricated-precision the project's
-own rules forbid (docs/event_dates.md, "no fabricated geometry, ever" applies
-equally to no fabricated forcing). A real run needs either a historical HYCOM
-archive endpoint or Copernicus Marine's `MULTIYEAR` reanalysis product for
-2016-10 -- flagged for Nizar, since ocean forcing sourcing is his workstream.
+**UPDATE 2026-08-03 -- the current half of this gap is closed.**
+`ocean_currents.fetch_hycom_historical()` (HYCOM `GLBu0.08/expt_91.2`) and
+`ocean_currents.fetch_copernicus_marine_historical()` (Copernicus Marine's
+`MULTIYEAR` GLORYS12V1 reanalysis, `cmems_mod_glo_phy_my_0.083deg_P1D-m`) both
+cover October 2016 with real depth levels, cached at
+`data/raw/currents/{hycom,copernicus_marine}_aoi_AQ-2016-10-28.nc`. Either,
+wrapped in `CurrentFieldInterpolator`, satisfies this module's `current_fn`
+contract directly -- confirmed with a live smoke test through
+`run_single_trial()`, 2026-08-03. (`build_interpolator()` and the plain
+`fetch_hycom`/`fetch_copernicus_marine` mentioned in the original version of
+this note are still the *live/rolling* products and still wrong for this --
+use the `_historical` variants specifically.)
 
-Until that forcing exists, this module is exercised with a synthetic or
+**Wind forcing is still a placeholder.** ERA5-Land is the designated historical
+wind source (data-model.md Sec 3.2), and Karam's pipeline has already
+pulled/validated the raw ERA5-Land files for this exact window
+(`docs/data_dictionary.md`, `era5_land_hourly_20161026_20161027_summary.json`)
+-- but they're not in this environment (data/raw/ is gitignored, machine-local)
+and `event_antecedents.parquet` doesn't yet include `AQ-2016-10-28` (only 7
+unrelated events as of 2026-08-03). Needs either Karam's raw NetCDFs or CDS
+credentials to re-pull u10/v10 for this window -- not something to fabricate
+with a zero-wind or live-wind stand-in and call it real.
+
+Until real wind exists, this module is exercised with a synthetic or
 explicitly-supplied `current_fn`/`wind_fn` -- the grid search, the objective
-function, and the trial log are real and tested; only the Oct-2016 forcing
-input is a placeholder, and every trial log this module writes is stamped
+function, and the trial log are real and tested; only the wind forcing input
+is a placeholder now, and every trial log this module writes is stamped
 `forcing_is_placeholder` so nobody downstream mistakes a wiring smoke test for
-a scientific result.
+a scientific result. Do not flip `forcing_is_placeholder=False` for a real run
+until wind is real too -- the flag covers both, not just current.
 """
 
 from __future__ import annotations
