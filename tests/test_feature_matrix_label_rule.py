@@ -130,6 +130,48 @@ def test_the_matrix_carries_the_antecedent_features():
         assert column in columns, f"{column} missing from the feature matrix"
 
 
+def test_rank_is_never_a_feature():
+    """`rank` predicts runoff well and cannot exist at prediction time.
+
+    It is the storm's position in OUR catalogue by rainfall. A live forecast has no
+    rank — you cannot know where tomorrow's storm places among 27 years of history.
+    A model trained on it scores well offline and is undeployable, which is a worse
+    outcome than a model that scores badly, because the score hides it.
+    """
+    assert "rank" in builder.NON_FEATURE_COLUMNS
+
+
+@pytest.mark.skipif(not MATRIX.exists(), reason="matrix not built yet")
+def test_feature_roles_separate_catchment_identity_from_process():
+    """115 of 130 numeric columns are constant per catchment.
+
+    Across the table they hold five distinct values — one per catchment — so a tree
+    splitting on them identifies the catchment rather than learning the process. The
+    roles block exists so the modeller selects columns instead of guessing, and this
+    test pins the split down.
+    """
+    import pandas as pd
+
+    roles = builder.feature_roles(pd.read_parquet(MATRIX))
+
+    assert roles["counts"]["static_per_catchment"] > roles["counts"]["event_varying"], (
+        "the static features are meant to be the majority here — if that flips, this "
+        "guidance needs rewriting rather than silently going stale"
+    )
+    # The event-varying set is what can actually respond to a forecast.
+    for column in ("precipitation_depth_mm", "soil_moisture_t_minus_24h",
+                   "precipitation_prior_7d_mm"):
+        assert column in roles["event_varying"], column
+    # Identifiers and catalogue artefacts must not be offered as features.
+    for column in ("event_id", "catchment_id", "rank"):
+        assert column in roles["non_feature"], column
+        assert column not in roles["event_varying"]
+        assert column not in roles["static_per_catchment"]
+    # And no label may appear in any trainable role.
+    for role in ("event_varying", "static_per_catchment"):
+        assert not [c for c in roles[role] if _is_blocked(c)]
+
+
 @pytest.mark.skipif(not MATRIX.exists(), reason="matrix not built yet")
 def test_joining_antecedents_did_not_change_the_row_count():
     """One row per (event, catchment). A left join must not fan out or drop."""

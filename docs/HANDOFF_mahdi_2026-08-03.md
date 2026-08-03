@@ -237,6 +237,73 @@ Cite the numbers, not the expectation.
 
 ---
 
+## 4b · Choose your columns — this is the real overfitting risk
+
+390 labelled rows and 139 columns sounds like a row-count problem. It is not. Measured:
+
+| | count | what it means |
+|---|---:|---|
+| **constant per catchment** | **115** | only **5 distinct values** in the entire table |
+| **vary by event** | **14** | the only columns that can respond to a forecast |
+| identifiers / artefacts | 9 | never train on these |
+
+Those 115 columns — soil, terrain, landcover, urban — do not describe 390 situations. They
+describe **five catchments**, repeated 78 times each. A tree splitting on
+`soil_clay_0_5cm` is not learning about clay; it is learning *"this is AQ-C03"*. Random CV
+will reward that richly. Leave-one-catchment-out will destroy it.
+
+**More rows would not fix this.** Choosing columns does. So `feature_matrix_status.json`
+now carries a `feature_roles` block and you can select instead of guess:
+
+```python
+import json
+roles = json.load(open("data/processed/events/feature_matrix_status.json"))["feature_roles"]
+
+roles["event_varying"]           # 14 — start here
+roles["static_per_catchment"]    # 115 — add deliberately, a few at a time
+roles["non_feature"]             # 9  — never
+```
+
+**Suggested progression**, each step reported:
+
+1. **14 event-varying columns only.** ~390 rows, 14 features. Honest starting point.
+2. Add **a handful** of static features you can justify physically — catchment area,
+   mean slope, bare-ground fraction. Not all 115.
+3. If LOCO gets *worse* when you add static features, they were memorisation. Stop.
+
+### One column you must not train on
+
+**`rank`** is now classified `non_feature`, and it is the subtle one. It is the storm's
+position in *our* catalogue by rainfall, so it correlates strongly with runoff and will
+look like your best predictor. **A live forecast has no rank** — you cannot know where
+tomorrow's storm places among 27 years of history. A model using it scores well offline
+and cannot be deployed, which is worse than a model that scores badly, because the score
+hides the problem.
+
+### If you genuinely want more rows
+
+There is room, and it is my job not yours. The catalogue is the **top 100 storms**, cut off
+at 3.26 mm daily. The full record holds:
+
+| threshold | days |
+|---|---:|
+| ≥ 1 mm anywhere | **393** |
+| ≥ 3 mm | 125 |
+| ≥ 5 mm | 58 |
+
+Aqaba is hyper-arid — only 393 of 10,135 days have measurable rain anywhere. So the
+ceiling is roughly **250–300 storms after merging** consecutive days, i.e. about **3× the
+current rows**. The added storms are 1–3 mm events that mostly produce no runoff, which
+would actually *help* — the target is currently 98% positive, and genuine no-runoff cases
+are what it lacks.
+
+The cost is ERA5 downloads for the extra months, and the sweep is already the slow
+dependency. **Tell me if you want it and I will start it** — decide after step 1 above,
+because if 14 features on 390 rows already overfits, more rows of the same shape will not
+rescue it.
+
+---
+
 ## 5 · A correction to your task file
 
 Your task file may still say the feature matrix is partially blocking you and to build
