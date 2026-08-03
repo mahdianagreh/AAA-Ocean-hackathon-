@@ -19,7 +19,32 @@ export default defineConfig({
     },
   },
 
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      testIgnore: /\.offline\.spec\.ts$/,
+    },
+    {
+      // A browser-level DNS blackhole, and it needs its own project because
+      // launchOptions force a new worker and cannot be scoped to a describe block.
+      //
+      // Why DNS rather than page.route(): the RTL text plugin is fetched by the
+      // MapLibre *worker*, not the page, and route interception is not a bet worth
+      // taking there. Blackholing at the resolver covers every requester.
+      name: 'chromium-offline',
+      testMatch: /\.offline\.spec\.ts$/,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost',
+            '--enable-unsafe-swiftshader',
+          ],
+        },
+      },
+    },
+  ],
 
   webServer: {
     command: 'npm run dev',

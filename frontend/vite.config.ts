@@ -25,6 +25,22 @@ export default defineConfig({
     // audit greps the built CSS for `oklch(` to prove this held.
     target: 'es2022',
     cssTarget: 'chrome120',
+
+    // MapLibre is ~250 kB gzipped on its own and is non-negotiable — the map is
+    // the product. Splitting it into its own chunk does not make the first paint
+    // faster (it is needed immediately), but it keeps app-code changes from
+    // invalidating it, which matters for the repeat loads a rehearsal does.
+    rolldownOptions: {
+      output: {
+        advancedChunks: {
+          groups: [{ name: 'maplibre', test: /node_modules\/maplibre-gl/ }],
+        },
+      },
+    },
+    // Raised deliberately: the warning fires on the maplibre chunk, which we have
+    // already decided to ship whole. The budget that actually matters is app JS,
+    // measured separately in the phase audit.
+    chunkSizeWarningLimit: 1200,
   },
 
   test: {

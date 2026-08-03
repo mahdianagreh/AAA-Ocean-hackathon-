@@ -9,7 +9,44 @@
     "theme": "Appearance",
     "themeLight": "Light",
     "themeDark": "Dark",
-    "themeSystem": "System"
+    "themeSystem": "System",
+    "dataSourceHint": "Which client is serving this view: fixtures reads the committed snapshot, http reads the live API."
+  },
+  "mode": {
+    "label": "Mode",
+    "historical": "Historical",
+    "forecast": "Forecast",
+    "scenario": "Scenario",
+    "phase2": "Arrives in Phase 2, with the time cursor it has to preserve."
+  },
+  "connection": {
+    "checking": "Checking",
+    "live": "Live API",
+    "snapshot": "Offline snapshot",
+    "offline": "No connection",
+    "noModel": "no trained model registered"
+  },
+  "map": {
+    "label": "Map of the Gulf of Aqaba: catchments, coastal outlets and reef zones",
+    "faultTitle": "The map cannot render Arabic labels",
+    "faultBody": "The right-to-left text plugin did not load, so Arabic place names would render unshaped and in the wrong order. This is shown rather than hidden, because the failure is otherwise invisible in English.",
+    "textEquivalent": "Everything the map shows is also listed in the side rail: five catchments with their areas, five coastal outlets with their upstream areas, and eight reef zones. The basemap detail stops at 35.0°E, short of the eastern edge of catchment AQ-C01."
+  },
+  "rail": {
+    "label": "Layers and values",
+    "loading": "Reading the snapshot…",
+    "catchments": "Catchments",
+    "outlets": "Coastal outlets",
+    "reefZones": "Reef zones",
+    "unnamed": "unnamed",
+    "reefProvisional": "Provisional zones. Sensitivity is 1.0 on all eight, pending marine-science review — so exposure varies only through the hazard term, and these zones do not differ in sensitivity.",
+    "coverage": "Basemap coverage",
+    "coverageNote": "The dashed boundary is where the OpenStreetMap extract ends, at 35.0°E. Catchment AQ-C01 continues past it — Wadi Yutum drains from 90 km inland — so the absence of detail out there is a gap in the basemap, not empty desert."
+  },
+  "time": {
+    "label": "Time",
+    "phase2": "Time slider arrives in Phase 2 and will drive every time-varying layer at once.",
+    "attribution": "Roads, wadis and place names © OpenStreetMap contributors, ODbL."
   },
   "glyph": {
     "catchment": "Catchment",

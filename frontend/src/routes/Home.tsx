@@ -1,91 +1,47 @@
 import { useTranslation } from 'react-i18next';
-import { CatchmentGlyph, OutletGlyph, ReefZoneGlyph } from '../icons';
-import { useUi } from '../app/uiStore';
-import { specimenEnabled } from '../app/useRoute';
+import { Masthead } from '../shell/Masthead';
+import { SideRail } from '../shell/SideRail';
+import { TimeBar } from '../shell/TimeBar';
+import { MapView } from '../map/MapView';
 
-/** Phase 0 placeholder.
+/** The one screen. 03 §1: eight storyboard scenes on a single view, with the
+ *  limitations text and provenance panel as overlays rather than routes.
  *
- *  The real layout regions — masthead, map, side rail, scenario drawer, time
- *  bar, overlays — land in Phase 1 with the map. This exists so the token layer,
- *  the fonts, the language switch and the theme switch are all provably working
- *  on `/` and not only inside the specimen iframes.
+ *  Layout regions are 03 §3. The grid is expressed in rows and columns rather
+ *  than absolute positioning, because grid column order already follows document
+ *  direction — which is most of what makes the RTL mirroring free.
  *
- *  Deliberately not a fake dashboard. 00's risk register lists "dashboard
- *  becomes more important than science", and a mocked-up map here would be the
- *  first step toward exactly that.
+ *  The map is never smaller than half the viewport. That is enforced by the grid
+ *  track sizing, not by a min-height on the map element, so it holds at every
+ *  breakpoint rather than only where someone remembered to check.
  */
 export function Home() {
   const { t } = useTranslation();
-  const { theme, lang, setTheme, setLang } = useUi();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-8 p-6">
-      <header className="flex flex-col gap-2 border-b border-hairline pb-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h1 className="flex items-baseline gap-2 text-xl font-semibold">
-            <span dir="ltr" style={{ unicodeBidi: 'isolate' }}>
-              {t('brand.name')}
-            </span>
-            <span className="text-md font-normal text-ink-2">{t('brand.place')}</span>
-          </h1>
+    <div
+      className="grid h-screen grid-rows-[auto_minmax(0,1fr)_auto] bg-canvas text-ink"
+      data-shell="true"
+    >
+      <Masthead />
 
-          <div className="flex items-center gap-3 text-xs">
-            <label className="flex items-center gap-2">
-              <span className="text-ink-2">{t('chrome.language')}</span>
-              <select
-                className="rule bg-surface px-2 py-1 text-ink"
-                value={lang}
-                onChange={(e) => setLang(e.target.value === 'ar' ? 'ar' : 'en')}
-              >
-                <option value="en">English</option>
-                <option value="ar">العربية</option>
-              </select>
-            </label>
+      {/* Map + side rail. The rail is a fixed track so the map keeps the rest;
+          on narrow viewports the rail drops below and the map keeps its height —
+          03 §5's open question, answered in favour of the map because the map is
+          the product. */}
+      <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,1fr)_22rem] lg:grid-rows-1">
+        <main className="relative min-h-0 border-b border-hairline lg:border-b-0 lg:border-e">
+          <MapView />
+        </main>
+        <SideRail />
+      </div>
 
-            <label className="flex items-center gap-2">
-              <span className="text-ink-2">{t('chrome.theme')}</span>
-              <select
-                className="rule bg-surface px-2 py-1 text-ink"
-                value={theme}
-                onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
-              >
-                <option value="system">{t('chrome.themeSystem')}</option>
-                <option value="light">{t('chrome.themeLight')}</option>
-                <option value="dark">{t('chrome.themeDark')}</option>
-              </select>
-            </label>
-          </div>
-        </div>
-        <p className="text-sm text-ink-2">{t('brand.tagline')}</p>
-      </header>
+      <TimeBar />
 
-      <section className="flex flex-wrap gap-6">
-        {(
-          [
-            [CatchmentGlyph, 'catchment'],
-            [OutletGlyph, 'outlet'],
-            [ReefZoneGlyph, 'reefZone'],
-          ] as const
-        ).map(([Icon, key]) => (
-          <div key={key} className="flex items-center gap-3 rule px-4 py-3">
-            <Icon size={24} label={t(`glyph.${key}`)} />
-            <span className="text-sm">{t(`glyph.${key}`)}</span>
-          </div>
-        ))}
-      </section>
-
-      <footer className="mt-auto border-t border-hairline pt-4 text-xs text-ink-3">
-        Phase 0 — language lock. The map, its layers and the three modes land in Phase 1.
-        {specimenEnabled ? (
-          <>
-            {' '}
-            <a className="text-accent underline" href="/specimen">
-              /specimen
-            </a>{' '}
-            renders every component in both themes × both directions.
-          </>
-        ) : null}
-      </footer>
-    </main>
+      {/* The map is never the only path to a fact — 09 rule 7. Phase 2 gives the
+          time-varying layers their textual equivalent here; for now this states
+          what the map cannot: that the basemap detail stops short of AQ-C01. */}
+      <p className="sr-only">{t('map.textEquivalent')}</p>
+    </div>
   );
 }
