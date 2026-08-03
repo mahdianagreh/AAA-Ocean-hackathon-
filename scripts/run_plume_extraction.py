@@ -22,7 +22,14 @@ import rasterio
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from config import ANALYSIS_BBOX, PROCESSED, VECTORS, QA  # noqa: E402
+# NOTE (Pulga, 2 Aug 2026): this file imported ANALYSIS_BBOX, which the AOI v2
+# migration removed — the script could not even import. Substituted MARINE_BBOX,
+# because contract §1 assigns imagery to MARINE_AOI, and the old ANALYSIS_BBOX
+# (34.90, 29.35, 35.05, 29.60) is a near-subset of it (34.80, 29.25, 35.05, 29.60).
+# The scene search therefore covers slightly MORE sea than before, never less.
+# Flagging rather than silently rewriting: if you wanted the tighter box, say so.
+from pulga_config import MARINE_BBOX as ANALYSIS_BBOX  # noqa: E402
+from pulga_config import PROCESSED, VECTORS, QA  # noqa: E402
 
 sys.path.append(str(Path(__file__).resolve().parent.parent / "backend" / "src"))
 from models import plume_segmentation as ps  # noqa: E402

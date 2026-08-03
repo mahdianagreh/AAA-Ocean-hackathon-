@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 import geopandas as gpd
+import pytest
 from shapely.geometry import Point, box
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -208,6 +209,19 @@ def test_fraction_never_exceeds_one():
 
 
 # ------------------------------------------------------------------- storage
+
+@pytest.fixture
+def tmp_db(tmp_path, monkeypatch):
+    """Point the store at a throwaway SQLite file.
+
+    Without this the storage tests would write into the real
+    data/outputs/exposure_runs.sqlite and pollute the audit trail the demo reads
+    from — a test that dirties production data is worse than no test.
+    """
+    db = tmp_path / "exposure_runs_test.sqlite"
+    monkeypatch.setenv("REEFSHIELD_EXPOSURE_DB", str(db))
+    return db
+
 
 def test_formula_terms_round_trip(tmp_db):
     zones, plume = _radial_scenario()

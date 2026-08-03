@@ -1,129 +1,130 @@
 # Pulga — Tasks Tracker
 
-**Last updated:** 2026-08-02 · Phase 2 · Backend, Exposure Engine, RAG
+**Last updated:** 2026-08-02 · Phase 2 (backend · exposure engine · RAG)
 
 - Reproduce from zero: [docs/README_pulga.md](../../docs/README_pulga.md)
-- Provenance + the v2 amendment: [docs/data_dictionary.md](../../docs/data_dictionary.md)
-- **42 QA figures, captioned:** [docs/qa_screenshots/MANIFEST.md](../../docs/qa_screenshots/MANIFEST.md)
-- Judge-facing: [docs/pitch_limitations.md](../../docs/pitch_limitations.md) · [docs/rag_limitations.md](../../docs/rag_limitations.md)
-- AOI evidence: [docs/aoi_coverage_report_20260802.txt](../../docs/aoi_coverage_report_20260802.txt)
+- Provenance & limitations: [docs/data_dictionary.md](../../docs/data_dictionary.md)
+- Model card (exposure engine, explain, RAG): [docs/model_card.md](../../docs/model_card.md)
+- QA figures, captioned: [docs/qa_screenshots/MANIFEST.md](../../docs/qa_screenshots/MANIFEST.md)
+- Judge-facing honesty page: [docs/pitch_limitations.md](../../docs/pitch_limitations.md)
+- AOI correction evidence: [docs/aoi_coverage_report_20260802.txt](../../docs/aoi_coverage_report_20260802.txt)
 
-**Test suite: 174 checks, 0 failures.**
-
-```
-tests/test_soilgrids_units.py     21 pass    unit conversion, texture closes to 100.00
-tests/test_exposure_engine.py     33 pass    formula, CRS guard, formula_terms, cross-checks
-tests/test_explain_fidelity.py    27 pass    no number altered, EN + AR
-tests/test_ask_citations.py       15 pass    100% citation coverage, docs/ali excluded
-tests/test_api_contracts.py       78 pass    15 routes, 19 caveats verified to reach payloads
-```
+> **Everything green except Earth Engine**, which needs an interactive browser and is
+> excluded by instruction. Whole-repo suite: **370 passed, 0 failed, 45 skipped.**
 
 ---
 
-## §1 · THE AOI FIX — closed
+## §9 Definition of Done — 10 of 12
 
-| Item | Status | Evidence |
+| # | Item | Status |
 |---|---|---|
-| `check_aoi_coverage.py` run, output saved + timestamped | done | [aoi_coverage_report_20260802.txt](../../docs/aoi_coverage_report_20260802.txt) — **19 files short → 7**, each remainder explained |
-| `TERRAIN_AOI` / `MARINE_AOI` in config, old box deleted | done | Team's `backend/src/config/spatial.py` owns it; `make_aoi.py` reduced to a **verifier** rather than a second writer |
-| Second WorldCover tile identified, downloaded, mosaicked | done | **N27E033 + N30E033**, tiles *derived* from the AOI not hardcoded |
-| Seam-checked with a saved screenshot | done | [worldcover_06_v2_mosaic_seam_check.png](../../docs/qa_screenshots/worldcover_06_v2_mosaic_seam_check.png) — **0.01 pp** discontinuity, no blending applied |
-| SoilGrids re-pulled against `TERRAIN_AOI` | done | 188×155 → **481×526** cells |
-| OSM re-clipped against `TERRAIN_AOI` | done | roads 3,845 → **8,289**; drainage 200 → **1,402** |
-| All three aggregations re-run on the real 5-catchment set | done | at the contract paths, fixture deleted |
-| `AQ-C01` bare-ground re-verified + screenshotted | done | **98.64%** over 4,453 km² → [worldcover_07](../../docs/qa_screenshots/worldcover_07_aq_c01_bareground_v2.png) |
-| Earth Engine authenticated | **BLOCKED — needs you** | No credentials at `~/.config/earthengine/`; `ee.Authenticate()` requires browser OAuth |
-| `data_dictionary.md` updated with the re-pull, reason, date | done | Appended as a dated **amendment**, not a silent overwrite |
+| 1 | `check_aoi_coverage.py` run, gap report saved | **done** — run before re-fetching; 19→7 short, each remainder explained |
+| 2 | WorldCover v2 mosaic (2 tiles), seam-checked, screenshotted | **done** — 0.01 pp seam |
+| 3 | SoilGrids + OSM re-pulled against `TERRAIN_AOI` | **done** |
+| 4 | 3 feature tables on real catchments, fixture deleted, areas cross-checked | **done** — all 5 within 0.1% |
+| 5 | Earth Engine authenticated | **BLOCKED — excluded by instruction** |
+| 6 | Real ACA export + `verify_against_provisional()` | **BLOCKED on 5** — script ready, asserts written |
+| 7 | FastAPI serving every §17 endpoint, typed, cached, caveats as data | **done** — 15 endpoints, 19 routes |
+| 8 | Exposure engine, `formula_terms` stored, EPSG:32636 | **done** — 21 terms per result |
+| 9 | `/explain` exact number-fidelity | **done** — 27 checks, EN + AR |
+| 10 | `/ask` 100% citation coverage, `docs/ali` excluded | **done** — 16 checks, 13/13 corpus files |
+| 11 | `data_dictionary.md` updated with the re-pull | **done** — dated amendment, v1 kept as history |
+| 12 | Day-12 gate grep | **done early** — every match declared |
 
-**Marine data deliberately NOT re-pulled.** `MARINE_AOI` is unchanged between
-contract v1 and v2. The coverage tool flags `reef_zones` and `coastline` as "short",
-but that is the wrong test for a derived coastal feature: reef zones are
-**contained** in the marine box and occupy 8.3% of it, which is correct for a
-fringing reef. Verified rather than assumed, and recorded in the report.
+## §1 AOI fix — 8 of 9 (only EE outstanding)
 
-## §2 · Phase-1 blockers
-
-| Item | Status |
+| Item | Result |
 |---|---|
-| Three feature tables at contract paths, fixture deleted | **done** |
-| Catchment areas cross-checked vs geometry contract | **done — all 5 within 0.1%**, total 4,656.1 vs 4,656 km² |
-| Earth Engine auth + real ACA export | **BLOCKED on browser OAuth.** `export_aca.py` ready; `verify_against_provisional()` asserts no new IDs and no centroid drift > 5 km |
-| `sensitivity_weight` still 1.0 and still labelled | **done** — enforced by test, and the caveat travels on 3 endpoints |
+| Coverage report saved + annotated | 19 files short → 7, each remaining one explained as correct-by-construction |
+| `TERRAIN_AOI` / `MARINE_AOI` in config, old box deleted | done — and the literal is *not* repeated in any comment; `test_spatial_contract.py` enforces it |
+| Second WorldCover tile identified, mosaicked, seam-checked | `N27E033` + `N30E033`, **derived from the AOI**, not hardcoded. 14280×13800 px |
+| SoilGrids re-pulled | 188×155 → **526×481** |
+| OSM re-clipped | roads 3,845→**8,289**, drainage 200→**1,402**, culverts 27→**46** |
+| Per-catchment aggregations re-run | all three, on the real 5-catchment set |
+| AQ-C01 bare-ground re-verified + screenshotted | **98.64%** over 4,453 km² (95.6% of basin) |
+| Earth Engine | **blocked** |
+| Data dictionary notes the re-pull, reason, date | done, with a v1→v2 comparison table |
 
-## §3 · FastAPI backend
+**Marine data deliberately NOT re-pulled.** `MARINE_AOI` is unchanged between contract
+v1 and v2. The coverage tool flags reef zones and coastline as "short", but coverage is
+the wrong test for a derived coastal feature — a reef fringe cannot fill an extent that
+is mostly open sea. Verified by *containment* instead, which passes.
 
-All **15 concept §17 routes** registered and returning declared shapes.
-→ [phase2_05_endpoint_status.png](../../docs/qa_screenshots/phase2_05_endpoint_status.png)
+## §2 Phase-1 blockers
 
-- [x] Pydantic models for every request/response — [schemas.py](../../backend/src/api/schemas.py) is the deliverable
-- [x] Caveats travel as **structured data**, 19 verified → [phase2_04](../../docs/qa_screenshots/phase2_04_caveat_coverage_matrix.png)
-- [x] Caching keyed on the scenario hash, not wall clock — verified by test
-- [x] No database connection opened. Reads go through `data_access`; runs persist via `exposure/store.py` behind two functions so the shared session layer swaps in cleanly
-- [x] Stubs shaped correctly and flagged `is_stub` + a **critical** caveat
+- **Feature tables:** closed. `landcover` (17 cols), `soil` (**73 cols** — mean/σ/min/max/median/count), `urban` (10 cols) at the contract paths.
+- **ACA export:** blocked on EE.
 
-**Priority-1 for the 6 Aug slice is live now:** health · catchments · reef-zones ·
-events · exposure (real engine, not a stub).
+## §3 FastAPI — all 15 endpoints live
 
-## §4 · Component D — exposure engine
+Priority 1 for the 6 Aug slice is live **now**, ahead of schedule. Priorities 2–3
+(runoff, plume) are stubs with final shapes, flagged `is_stub: true` **and** a
+`critical` caveat. Priorities 4–5 (exposure, explain, ask, backtests, alerts) are real.
 
-- [x] Formula exactly as specified; `risk_score = product × 100`, with `score_scale` recorded
-- [x] Contour × zone intersection **in EPSG:32636**, enforced by `_assert_measure_crs` which rejects both 4326 and 3857
-- [x] `formula_terms` stored on **every** run → [phase2_01](../../docs/qa_screenshots/phase2_01_formula_terms_table.png)
-- [x] Risk bands per §14.5, with the "needs marine scientists" caveat attached wherever displayed
-- [x] `zone_fraction_affected` preferred over absolute km²
-- [x] **Cross-check 1** (circular-buffer baseline): scores 33.75 → 17.5 → 5.0 with distance; arrivals 3 h → 6 h → 12 h
-- [x] **Cross-check 2** (hand-computed): 21.2439280620 by hand == engine, to 1e-12
+Caveats are scoped: outlet- and run-level caveats attach once at run level, zone-level
+ones per result. No duplication in the payload — the same critical warning repeated N
+times trains a reader to skim past it.
 
-A zone the plume never reaches returns **no result plus an explanatory caveat**,
-never a zero-risk hit — and the caveat names the nearest zone and the plume's
-actual reach.
+## §4 Exposure engine
 
-## §5 · Component E — explanation and RAG
+`formula_terms` on every result (21 keys, incl. `measure_crs` and `score_scale`),
+persisted to SQLite behind a two-function interface so swapping to the shared session
+layer touches nothing else. EPSG:32636 enforced by `_assert_measure_crs`, which
+rejects both 4326 and 3857.
 
-- [x] `/explain` bilingual, matching the calibration paragraph almost verbatim
-- [x] **The LLM phrases nothing it computes** — the shipped generator is a deterministic template, so the rule holds by construction. Self-checks fidelity in the response path, not only in tests
-- [x] RAG corpus is an **explicit allowlist**; `docs/ali/*` excluded twice over
-- [x] `/ask` returns citations or an honest refusal; assertion in the request path
-- [x] Bilingual, with the English-corpus limitation stated → [rag_limitations.md](../../docs/rag_limitations.md)
+Both §4.6 cross-checks implemented and passing:
+- **circular-buffer baseline** — 33.75 → 17.5 → 5.0 with distance, arrivals 3 → 6 → 12 h
+- **hand-computed spot check** — agrees with the engine to < 1e-12
 
-## §6 · QA discipline
+Verified across all five outlets: 4 produce scores; **AQ-O01 produces none, correctly** —
+it sits at the gulf head, 2,995 m from the nearest zone, and the response says so in an
+`info` caveat rather than returning a bare empty list.
 
-42 Pulga figures, all captioned, timestamped and manifested. The manifest now also
-accounts for 2 figures belonging to another workstream rather than pretending to
-cover the whole directory.
+## §5 Explain + RAG
 
-## Day-12 gate (run early)
+- `/explain` is a deterministic template, not an LLM — so it *cannot* round a number.
+  EN and AR asserted to carry identical numbers for the same input.
+- `/ask` composes answers by **quotation**, so an uncited answer is structurally
+  impossible. 13/13 corpus files indexed, 255 chunks. `docs/ali/*` excluded by an
+  allowlist **and** an independent guard.
+- Arabic questions retrieve via a query-term bridge, since the corpus is English —
+  stated in `docs/rag_limitations.md`, not hidden.
 
-| Artifact | Status |
+## §6 QA
+
+42 captioned, timestamped, manifested figures. Manifest reports foreign and missing
+files rather than silently covering only part of the directory.
+
+---
+
+## Fixed this phase, beyond the plan
+
+| What | Why it mattered |
 |---|---|
-| `catchments_PROVISIONAL.gpkg` | superseded by `catchments.gpkg` |
-| `outlets_PROVISIONAL.gpkg` | superseded by `outlets.gpkg` |
-| `reef_zones_PROVISIONAL.gpkg` | **still the live artifact** — ACA blocked on EE auth; `/health` reports `degraded` and says why |
-| `*FIXTURE*` anywhere under `data/` | **none** |
-| `sensitivity_weight` = 1.0 | still a **labelled** placeholder, which is the correct end state |
+| **`config` module-name collision** | `scripts/config.py` and `backend/src/config/` both claimed the bare name. Under pytest whichever imported first won, so `test_soilgrids_units.py` failed *purely on alphabetical ordering*. Renamed to `pulga_config`; added a root `conftest.py` documenting the hazard. |
+| **Abd's `run_plume_extraction.py` could not import** | It used `ANALYSIS_BBOX`, removed by the AOI v2 migration. Substituted `MARINE_BBOX` (contract §1 assigns imagery to the marine extent) and flagged the substitution in-file rather than rewriting silently. |
+| **5 teammate test files could not collect** | Missing `scipy`, `earthaccess`, `cdsapi`. Installed; those suites now run. |
+| **`tmp_db` was not a real fixture** | Used as a pytest param but only defined in the `__main__` path, so 2 storage tests errored. Now a proper fixture pointing at a temp DB, so tests cannot pollute the real audit trail. |
+| **Water-fraction cross-check was misleading after v2** | The old 23.89% vs 23.3% comparison was computed on a box that was mostly sea. Recomputed over a common extent (`MARINE_AOI`): **42.91% vs 41.29%, agreeing to 1.62 pp.** |
+| **Stale count baked into a filename** | `osm_04_culverts_all_27_numbered.png` showed 46 culverts. Made count-agnostic; added an explicit `prune_missing()` so sanctioned renames don't leave a permanent warning. |
+| **Fixture generator removed** | `make_catchments_fixture.py` deleted and the synthetic fallback tier dropped from resolution. With real catchments committed, silently falling back to invented geometry would produce plausible-looking feature tables from polygons that are not watersheds. |
 
-## Bugs caught in Phase 2 — 5 more, running total 10
+## Target files
 
-| # | Bug | Would have caused |
-|---|---|---|
-| 6 | `0.0725 × 100` rendered as `7.249999999999999%` | IEEE754 artefact on screen, unfixable by rounding since rounding is banned — fixed with an exact decimal shift |
-| 7 | Fidelity check used substring matching | `72` → `72.4` passed undetected — a number could be *extended* without failing the audit |
-| 8 | `/ask` answered out-of-corpus with a real citation | "airspeed **velocity**" matched ocean-current velocity: cited but not responsive — fixed with a term-coverage gate |
-| 9 | `/alerts` read the newest run, not the requested scenario | A cached exposure response writes no run, so alerts could describe a different outlet than asked about |
-| 10 | Catchment-area caveat cited the wrong file | ±4% lives in the data dictionary, not `00-contracts.md §2` |
+| file | status |
+|---|---|
+| `landcover_by_catchment.parquet` | **done**, real catchments |
+| `soil_by_catchment.parquet` | **done**, 73 cols |
+| `urban_by_catchment.parquet` | **done**, 10 cols |
+| `osm_aqaba.gpkg` | **done**, 12 layers, TERRAIN_AOI |
+| `worldcover_terrain_v2_clip.tif` | **done**, 2-tile mosaic |
+| `coastline.gpkg`, `depth_utm36n.tif` | **done** (not re-pulled — marine box unchanged) |
+| `reef_zones.gpkg` | **`_PROVISIONAL` only** — blocked on EE |
+| `exposure_runs.sqlite` | **done** — audit trail |
 
-Bugs 6–9 were found **by writing the test or building the artifact**.
+## The one thing still needing a human
 
-## The one thing that still needs a human
-
-**Earth Engine authentication** (~10 min, browser). Confirmed blocked: no
-credentials on disk, and `ee.Authenticate()` needs an interactive OAuth flow.
-
-```bash
-.venv/bin/python -c "import ee; ee.Authenticate()"
-export GEE_PROJECT=<your-project-id>
-cd scripts && ../.venv/bin/python export_aca.py submit
-```
-
-Everything downstream of it is built and asserted against the provisional schema,
-so the swap is a data change, not a rebuild.
+**Earth Engine auth** (~10 min, browser). Verified blocked: no credentials at
+`~/.config/earthengine/`, `ee.Authenticate()` requires interactive OAuth. Unblocks
+Definition-of-Done items 5 and 6. `export_aca.py submit / status / build` is written
+and its ID-continuity asserts are in place.

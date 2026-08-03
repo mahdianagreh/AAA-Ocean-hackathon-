@@ -14,13 +14,10 @@ of these exists, in order:
 
   1. data/processed/vectors/catchments.gpkg              (real, final)
   2. data/processed/vectors/catchments_PROVISIONAL.gpkg  (Mahdi's Day-1 seed)
-  3. data/interim/catchments_FIXTURE_local_test_only.gpkg (our own test fixture)
 
-On (3) it writes to data/interim/ with a _FIXTURE suffix and REFUSES to touch the
-contract feature paths. That distinction is the whole point: the pipeline gets
-exercised and verified today, but fixture-derived numbers cannot reach the runoff
-model or the demo by accident. When Mahdi publishes, re-run — nothing else
-changes, which is exactly the contract's "cost of a rerun is minutes" claim.
+Both write to the contract feature paths. The third tier — a local synthetic fixture
+— existed while the real delineation was pending and was removed on 2 Aug 2026 once
+it landed. `--input <path>` still overrides the search order.
 """
 
 import sys
@@ -32,7 +29,7 @@ import pandas as pd
 import rasterio
 from rasterstats import zonal_stats
 
-from config import (
+from pulga_config import (
     AOI_CRS_PROJECTED,
     FEATURES,
     INTERIM,
@@ -45,10 +42,14 @@ from soilgrids_units import CONVERSIONS, DEPTHS, load_converted, raw_path
 WORLDCOVER_CLIP = INTERIM / "worldcover_terrain_v2_clip.tif"
 OSM_GPKG = VECTORS / "osm_aqaba.gpkg"
 
+# Real first, Mahdi's Day-1 seed as the only fallback. The local synthetic fixture
+# tier was REMOVED on 2 Aug 2026 once the real 5-catchment delineation landed:
+# falling back to invented geometry would produce a full set of plausible-looking
+# feature tables from polygons that are not watersheds, and nothing downstream would
+# be able to tell. Failing loudly is the better outcome.
 CATCHMENT_CANDIDATES = [
     (VECTORS / "catchments.gpkg", "real", True),
     (VECTORS / "catchments_PROVISIONAL.gpkg", "provisional", True),
-    (INTERIM / "catchments_FIXTURE_local_test_only.gpkg", "fixture", False),
 ]
 
 
@@ -84,9 +85,11 @@ def resolve_catchments():
             return gdf, kind, publishable
 
     sys.exit(
-        "No catchments found. Mahdi owns catchments_PROVISIONAL.gpkg (contract §4 P1).\n"
-        "To exercise this pipeline meanwhile: "
-        ".venv/bin/python scripts/make_catchments_fixture.py"
+        "No catchments found at either contract path:\n"
+        f"  {VECTORS / 'catchments.gpkg'}\n"
+        f"  {VECTORS / 'catchments_PROVISIONAL.gpkg'}\n"
+        "Mahdi owns these (contract §4 P1). There is deliberately no synthetic\n"
+        "fallback — see CATCHMENT_CANDIDATES."
     )
 
 

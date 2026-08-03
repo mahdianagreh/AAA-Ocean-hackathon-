@@ -26,7 +26,7 @@ import time
 
 import requests
 
-from config import LAND_BBOX, RAW
+from pulga_config import LAND_BBOX, RAW
 
 VARIABLES = ["clay", "sand", "silt", "soc", "bdod", "cfvo"]
 DEPTHS = ["0-5cm", "5-15cm"]

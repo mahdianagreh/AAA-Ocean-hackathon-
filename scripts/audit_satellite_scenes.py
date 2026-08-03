@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 import requests
 from pystac_client import Client
 
-from config import DOWNLOAD_BBOX
+from pulga_config import DOWNLOAD_BBOX
 
 CDSE_ODATA_URL = "https://catalogue.dataspace.copernicus.eu/odata/v1/Products"
 EARTH_SEARCH_URL = "https://earth-search.aws.element84.com/v1"

@@ -24,7 +24,7 @@ from pyproj import Transformer
 from shapely.geometry import LineString, MultiPolygon
 from shapely.ops import unary_union
 
-from config import AOI_CRS_PROJECTED, AOI_CRS_STORAGE, PROCESSED, RAW, VECTORS
+from pulga_config import AOI_CRS_PROJECTED, AOI_CRS_STORAGE, PROCESSED, RAW, VECTORS
 from make_reef_zones_provisional import (
     REEF_STRIP_M,
     ZONE_DEFS,

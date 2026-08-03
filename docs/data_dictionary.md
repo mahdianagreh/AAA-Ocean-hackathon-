@@ -4,10 +4,10 @@
 
 **Spatial contract:** download box `34.80, 29.25, 35.15, 29.70` (W, S, E, N, EPSG:4326).
 Storage CRS **EPSG:4326**, all area/distance maths in **EPSG:32636** (UTM 36N).
-Constants live in [scripts/config.py](../scripts/config.py) — nothing hardcodes a bbox.
+Constants live in [scripts/pulga_config.py](../scripts/pulga_config.py) — nothing hardcodes a bbox.
 
 **Reproduce from zero:** [README_pulga.md](README_pulga.md).
-**All 34 QA figures with captions:** [qa_screenshots/MANIFEST.md](qa_screenshots/MANIFEST.md).
+**All 42 QA figures with captions:** [qa_screenshots/MANIFEST.md](qa_screenshots/MANIFEST.md).
 **Judge-facing limitations:** [pitch_limitations.md](pitch_limitations.md).
 
 > **Standing rule for this workstream.** Every dataset, transformation, join and
@@ -39,7 +39,7 @@ tile CRS — but measuring there inflates ground distance by 1/cos(lat) = **1.14
 this latitude, which is exactly how culvert #1 was briefly reported as 45 m from the
 coast when the true distance is 39 m. Draw in 3857; measure in 32636.
 
-Figures drawn in EPSG:4326 pass `config.geographic_aspect()` to `set_aspect()`.
+Figures drawn in EPSG:4326 pass `pulga_config.geographic_aspect()` to `set_aspect()`.
 `imshow` defaults to `aspect='equal'`, which would draw 1° longitude the same length
 as 1° latitude — at 29.4 °N that is ~97 km against ~111 km, making the figure **14.9%
 too wide**. A distorted picture is a real defect when the picture is the evidence.
@@ -76,27 +76,45 @@ uncertainty and is not worth correcting.
 | [worldcover_04_class_fractions_by_catchment.png](qa_screenshots/worldcover_04_class_fractions_by_catchment.png) | fractions close to 100% per catchment |
 | [worldcover_05_bareground_sanity_annotated.png](qa_screenshots/worldcover_05_bareground_sanity_annotated.png) | every catchment clears the 50% assert and brackets the ~74% baseline |
 
-**Measured composition** (padded AOI, 4200×5400 px @ 10 m):
+**Measured composition** (padded AOI, 14280×13800 px @ 10 m):
 
 | class | % of AOI | % of land |
 |---|---:|---:|
-| bare / sparse vegetation | 72.53 | **95.30** |
-| built-up | 3.15 | 4.14 |
-| permanent water | 23.89 | (sea) |
-| tree cover | 0.25 | 0.33 |
-| grassland | 0.07 | 0.09 |
-| cropland | 0.06 | 0.08 |
-| shrubland | 0.04 | 0.06 |
+| bare / sparse vegetation | 93.63 | **97.82** |
+| permanent water | 4.28 | (sea) |
+| built-up | 0.70 | 0.73 |
+| grassland | 0.65 | 0.68 |
+| cropland | 0.52 | 0.55 |
+| tree cover | 0.12 | 0.13 |
+| shrubland | 0.09 | 0.10 |
 | herbaceous wetland | 0.00 | 0.00 |
 
-**Sanity check: PASSED.** Bare/sparse ground is 95.3% of the land surface. The check
-is an `assert`, so a wrong class mapping halts the pipeline rather than quietly
-poisoning the runoff model. Class codes are **not sequential** (10, 20, …, 95, 100)
-and are declared once in `config.py`.
+Land is 18,863 km², 95.7% of the terrain extent. Note how different this is from the
+v1 figures: the old box was largely sea, so water was 23.89% of it and bare ground
+72.53%. The terrain box reaches 90 km inland, so it is overwhelmingly desert. Both
+sets of numbers are correct for their own extent — which is exactly why an extent has
+to be quoted alongside any fraction.
 
-**Independent corroboration.** WorldCover puts water at 23.89% of the AOI; the
-bathymetry water mask independently gives 23.3%. Two unrelated products agreeing to
-within 0.6 pp is good evidence both clips are correctly georeferenced.
+**Sanity check: PASSED.** Bare/sparse ground is 97.82% of the land surface, above the
+concept doc's ~74% baseline and far above the 50% assert threshold. The check is an
+`assert`, so a wrong class mapping halts the pipeline rather than quietly poisoning
+the runoff model. Class codes are **not sequential** (10, 20, …, 95, 100) and are
+declared once in `pulga_config.py`.
+
+**Independent corroboration, recomputed for v2.** Comparing water fraction between
+WorldCover and the bathymetry water mask only means something over a *common* extent.
+Measured inside `MARINE_AOI`:
+
+| product | resolution | water |
+|---|---|---:|
+| ESA WorldCover class 80 | 10 m | 42.91% |
+| Bathymetry water mask (elev < 0) | 50 m | 41.29% |
+
+**Agreement: 1.62 pp** between two products that share no lineage — one an optical
+land-cover classifier, the other a bathymetric grid. That is good evidence both clips
+are correctly georeferenced. The v1 version of this check compared 23.89% against
+23.3% over the old box; it is superseded, not deleted, because the old box no longer
+defines either product's extent.
 
 **Known limitations**
 
@@ -121,7 +139,7 @@ within 0.6 pp is good evidence both clips are correctly georeferenced.
 | **Access date** | 2026-08-01 |
 | **Access method** | WCS 2.0.1 `GetCoverage` per variable/depth, `https://maps.isric.org/mapserv?map=/map/<var>.map` |
 | **Spatial resolution** | 250 m |
-| **Coverage** | Padded box, 155×188 cells |
+| **Coverage** | Padded box, 526×481 cells |
 | **License** | CC BY 4.0 |
 | **Reproduce** | `../.venv/bin/python download_soilgrids.py` then `.venv/bin/python tests/test_soilgrids_units.py` |
 | **Outputs** | `data/raw/soilgrids/*.tif` (12 rasters), `data/processed/features/soil_by_catchment.parquet` (73 columns) |
@@ -204,7 +222,7 @@ at 35%, and the mean alone hides that.
 | [osm_01_roads_over_satellite.png](qa_screenshots/osm_01_roads_over_satellite.png) | roads align with visible carriageways — georeferencing is right |
 | [osm_02_buildings_over_satellite.png](qa_screenshots/osm_02_buildings_over_satellite.png) | footprints match built-up areas in imagery |
 | [osm_03_waterways_drainage_over_satellite.png](qa_screenshots/osm_03_waterways_drainage_over_satellite.png) | drainage follows real wadi floors |
-| [osm_04_culverts_all_27_numbered.png](qa_screenshots/osm_04_culverts_all_27_numbered.png) | all 27 culverts, numbered to match the handoff table |
+| [osm_04_culverts_all_27_numbered.png](qa_screenshots/osm_04_culverts_all_27_numbered.png) | all 46 culverts, numbered to match the handoff table |
 | [osm_05_culvert_top5_insets.png](qa_screenshots/osm_05_culvert_top5_insets.png) | each top culvert sits under a visible road embankment |
 | [osm_06_dive_poi_and_marine_park.png](qa_screenshots/osm_06_dive_poi_and_marine_park.png) | dive sites and the Marine Park boundary |
 | [urban_01_road_density_choropleth.png](qa_screenshots/urban_01_road_density_choropleth.png) | road density per catchment |
@@ -214,10 +232,10 @@ at 35%, and the mean alone hides that.
 
 | layer | features | purpose |
 |---|---:|---|
-| roads | 3 845 | impervious surface, runoff |
-| buildings | 10 099 | independent built-up estimate |
+| roads | 8 289 | impervious surface, runoff |
+| buildings | 12 570 | independent built-up estimate |
 | waterways | 206 | drainage network |
-| drainage_features | 200 | **outlet correction** — 27 culverts |
+| drainage_features | 200 | **outlet correction** — 46 culverts |
 | industrial | 32 | sediment/contaminant source proxy |
 | port | 1 | port frontage |
 | dive_tourism_poi | 75 | who the alert product serves |
@@ -231,9 +249,9 @@ at 35%, and the mean alone hides that.
 `industrial`, `natural` or `protect_class` as columns — they sit inside the
 `other_tags` HSTORE where SQL cannot filter them cleanly.
 [scripts/osmconf_reefshield.ini](../scripts/osmconf_reefshield.ini) promotes them,
-and that is what surfaced the **27 culverts**, the **Aqaba Marine Park**, and the
+and that is what surfaced the **46 culverts**, the **Aqaba Marine Park**, and the
 **OSM coastline**. `drainage_features` composition: 89 stream, 57 drain, 41 canal,
-9 river, 4 ditch; 27 `tunnel=culvert`; 102 `intermittent=yes`; 9 named, including
+9 river, 4 ditch; 27 `tunnel=culvert`; 102 `intermittent=yes`; 42 named, including
 **وادي اليتيم (Wadi Al-Yutum)**, the major wadi draining to Aqaba.
 
 **Known limitations**
@@ -397,8 +415,10 @@ prevent.
   while the mask was wrong elsewhere. The expansion immediately caught two points
   wrongly assumed to be mid-gulf that are in fact Wadi Araba land at +533 m and
   +241 m.
-- Depth range −907.1 m to +1542.3 m; 23.3% of the AOI below sea level (WorldCover
-  independently: 23.89%).
+- Depth range −907.1 m to +1542.3 m; 23.3% of the bathymetry raster's own extent
+  below sea level. Within `MARINE_AOI` specifically it is 41.29%, which is the figure
+  to compare against WorldCover's 42.91% — see the cross-check in §1. The two extents
+  differ, so the two percentages are not interchangeable.
 - The water mask polygonises to **one** 397.3 km² sea body — no spurious interior
   lakes in dry wadi floors, which would punch false holes in the particle barrier.
 - **Single nodata representation.** GMRT ships 1 917 cells (~0.3%) as bare NaN with
@@ -661,7 +681,7 @@ Full audit and methodology: [event_audit.md](event_audit.md). Access method
 verified 2026-08-02: Microsoft Planetary Computer STAC
 (`planetarycomputer.microsoft.com/api/stac/v1`), anonymous SAS-token signing
 via the `planetary-computer` package — no Copernicus Data Space / Earth
-Engine login needed. Search box: `ANALYSIS_BBOX` (`scripts/config.py`).
+Engine login needed. Search box: `ANALYSIS_BBOX` (`scripts/pulga_config.py`).
 
 | Product/version | Access date | Scene ID(s) | Role |
 |---|---|---|---|
@@ -906,7 +926,7 @@ report's own interpretation section.
 |---|---|---|---|
 | ESA WorldCover | 1 tile (`N27E033`), 4200×5400 px | **2 tiles mosaicked** (`N27E033` + `N30E033`), 14280×13800 px | 2026-08-02 |
 | ISRIC SoilGrids | 188×155 cells | **481×526 cells** | 2026-08-02 |
-| OpenStreetMap | clipped to old box; 3,845 roads / 200 drainage | **clipped to `terrain_aoi.geojson`; 8,289 roads / 1,402 drainage** | 2026-08-02 |
+| OpenStreetMap | clipped to old box; 3,845 roads / 200 drainage / 27 culverts | **clipped to `terrain_aoi.geojson`; 8,289 roads / 1,402 drainage / 46 culverts** | 2026-08-02 |
 | Bathymetry / coastline / reef zones | — | **NOT re-pulled** — `MARINE_AOI` is unchanged between contract v1 and v2 | 2026-08-01 |
 
 Required WorldCover tiles are now **derived from the AOI** in

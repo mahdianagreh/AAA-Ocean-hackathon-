@@ -19,7 +19,7 @@ import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 
-from config import (
+from pulga_config import (
     AOI_CRS_PROJECTED,
     FEATURES,
     LAND_BBOX,
@@ -29,7 +29,7 @@ from config import (
     geographic_aspect,
 )
 from process_worldcover import CLASS_COLORS, TILE_DIR, required_tiles, seam_latitudes
-from qa_common import CRS_BASEMAP, add_satellite, fixture_warning, resolve_catchments, save_fig
+from qa_common import CRS_BASEMAP, add_satellite, provenance_warning, resolve_catchments, save_fig
 from soilgrids_units import CONVERSIONS, DEPTHS, load_converted, raw_path
 
 CLIP = INTERIM / "worldcover_terrain_v2_clip.tif"
@@ -230,7 +230,7 @@ def wc_07_aq_c01_bareground(kind):
              f"{c01 * 100:.1f}% bare/sparse ground over 4,453 km² — 95.6% of the basin — "
              "comfortably above the 50% assert and above the concept doc's ~74% baseline. "
              "This is a far stronger test than v1's, which measured a fraction of one "
-             "small-box catchment." + fixture_warning(kind), SRC)
+             "small-box catchment." + provenance_warning(kind), SRC)
     print(f"    AQ-C01 bare/sparse: {c01 * 100:.2f}% of catchment")
     return c01
 
@@ -259,7 +259,7 @@ def wc_03_catchment_overlay(catchments, kind):
     save_fig(fig, "worldcover_03_catchment_boundaries_overlay",
              "The exact polygons zonal_stats aggregates within, drawn over the classified "
              "raster. Any catchment straddling the coast will pick up water pixels — visible "
-             "here rather than hidden in the parquet." + fixture_warning(kind), SRC)
+             "here rather than hidden in the parquet." + provenance_warning(kind), SRC)
 
 
 def wc_04_class_fractions(kind):
@@ -288,7 +288,7 @@ def wc_04_class_fractions(kind):
     save_fig(fig, "worldcover_04_class_fractions_by_catchment",
              "Stacked composition per catchment. Bars must reach exactly 100% — the same "
              "closure the assert in aggregate_catchments.py enforces, shown visually."
-             + fixture_warning(kind), SRC)
+             + provenance_warning(kind), SRC)
 
 
 def wc_05_bareground_sanity(kind):
@@ -318,7 +318,7 @@ def wc_05_bareground_sanity(kind):
              "Every catchment against the three reference lines. All bars sit far above the "
              "50% assert threshold and bracket the concept doc's ~74% baseline, so the "
              "non-sequential class mapping (10,20,...,95,100) is correct."
-             + fixture_warning(kind), SRC)
+             + provenance_warning(kind), SRC)
 
 
 # ----------------------------------------------------------------- SoilGrids
@@ -390,7 +390,7 @@ def sg_07_texture_triangle(catchments, kind):
              "Catchment-mean texture on the standard triangle. Points landing inside the "
              "triangle is what makes the 100.00% sum physically meaningful rather than an "
              "arithmetic coincidence: all catchments cluster as clay-loam, plausible for "
-             "arid alluvium." + fixture_warning(kind), SRC)
+             "arid alluvium." + provenance_warning(kind), SRC)
 
 
 def sg_08_conversion_before_after():
@@ -461,7 +461,7 @@ def sg_09_variance(kind):
     save_fig(fig, "soilgrids_09_within_catchment_variance",
              "Added in the expansion pass: the runoff model builder gets spread, not just a "
              "point estimate. A catchment whose clay spans 18–56% is a different object from "
-             "one uniformly at 35%, and the mean alone hides that." + fixture_warning(kind), SRC)
+             "one uniformly at 35%, and the mean alone hides that." + provenance_warning(kind), SRC)
 
 
 # ----------------------------------------------------------------------- OSM
@@ -557,11 +557,11 @@ def osm_04_culverts_numbered():
         ax.annotate(str(i), (x, y), fontsize=8, weight="bold", ha="center",
                     va="center", zorder=7)
     add_satellite(ax, zoom=12)
-    ax.set_title("All 27 mapped culverts, numbered by distance to coast\n"
+    ax.set_title(f"All {len(culv)} mapped culverts, numbered by distance to coast\n"
                  "(1 = nearest the shore, the strongest outlet-correction candidates)")
     ax.set_xticks([]); ax.set_yticks([])
-    save_fig(fig, "osm_04_culverts_all_27_numbered",
-             "Every culvert individually numbered, ordered by distance to the shoreline. "
+    save_fig(fig, "osm_04_culverts_all_numbered",
+             f"All {len(culv)} culverts individually numbered, ordered by distance to the shoreline. "
              "Numbers match the table in docs/osm_dem_conflicts.md §1 so Mahdi can go from "
              "the map to the row and back. Culvert 1 is 39 m from the sea under King Hussein "
              "Street.", SRC)
@@ -630,7 +630,7 @@ def urban_choropleths(catchments, kind):
                         bbox=dict(boxstyle="round,pad=0.25", fc="white", alpha=0.8))
         ax.set_title(f"{label} by catchment [{kind}]")
         ax.set_xlabel("easting (m)"); ax.set_ylabel("northing (m)")
-        save_fig(fig, name, cap + fixture_warning(kind), SRC)
+        save_fig(fig, name, cap + provenance_warning(kind), SRC)
 
 
 if __name__ == "__main__":

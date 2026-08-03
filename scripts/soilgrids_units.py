@@ -14,7 +14,7 @@ exactly, because a 10x error would land the sum at 1000 or 10 instead of 100.
 import numpy as np
 import rasterio
 
-from config import RAW
+from pulga_config import RAW
 
 # variable -> (divisor, converted unit, plausible physical range after conversion)
 CONVERSIONS = {

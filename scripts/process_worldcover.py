@@ -39,7 +39,7 @@ import rasterio
 import rasterio.merge
 import matplotlib.colors as mcolors  # colour table for the GeoTIFF palette only
 
-from config import INTERIM, LAND_BBOX, RAW, WORLDCOVER_CLASSES
+from pulga_config import INTERIM, LAND_BBOX, RAW, WORLDCOVER_CLASSES
 
 TILE_DIR = RAW / "worldcover"
 CLIP = INTERIM / "worldcover_terrain_v2_clip.tif"

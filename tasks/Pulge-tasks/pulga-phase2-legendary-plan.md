@@ -196,10 +196,10 @@ ee.Authenticate()
 ```
 
 Then register your own project (per your Phase 1 legendary-prompt work, this should already
-exist as `reefshield-aqaba` if you completed that step — confirm, don't re-create):
+exist as `reefshield-aqaba-504407` if you completed that step — confirm, don't re-create):
 
 ```python
-ee.Initialize(project='reefshield-aqaba')
+ee.Initialize(project='reefshield-aqaba-504407')
 print(ee.Image("USGS/SRTMGL1_003").getInfo()['id'])  # sanity check, should print cleanly
 ```
 

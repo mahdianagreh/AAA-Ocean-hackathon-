@@ -412,11 +412,20 @@ def exposure_calculate(req: ExposureRequest):
             "plume_source": "SYNTHETIC_STUB",
             "model_versions": MODEL_VERSIONS,
         })
+        # Per-result caveats are ZONE-scoped. Anything that qualifies the whole run
+        # — the outlet's harbour warning, the risk-band note — is attached once at
+        # run level instead of repeated on every zone. Ali's UI would otherwise
+        # render the same critical warning N times on one panel, which trains a
+        # reader to skim past exactly the text that matters most.
+        zone_caveats = [
+            c for c in cav.build_exposure_caveats(req.outlet_id, zone_meta.get(zid))
+            if c.field not in ("outlet_id", "risk_level")
+        ] + cav.stub_model("The plume input to this exposure run")
+
         results.append(ExposureResult(
             **summary,
             confidence=confidence,
-            caveats=(cav.build_exposure_caveats(req.outlet_id, zone_meta.get(zid))
-                     + cav.stub_model("The plume input to this exposure run")),
+            caveats=zone_caveats,
         ))
 
     run_caveats = cav.harbour_outlet(req.outlet_id) + cav.risk_band_thresholds()

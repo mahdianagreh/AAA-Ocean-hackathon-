@@ -38,7 +38,7 @@ import rasterio.warp
 import geopandas as gpd
 from shapely.geometry import shape
 
-from config import AOI_CRS_PROJECTED, AOI_CRS_STORAGE, PROCESSED, RAW, VECTORS
+from pulga_config import AOI_CRS_PROJECTED, AOI_CRS_STORAGE, PROCESSED, RAW, VECTORS
 
 # Control points for the sign-convention assertion. Every one was established by
 # SAMPLING the grid, not by assuming — an inverted mask would make the particle

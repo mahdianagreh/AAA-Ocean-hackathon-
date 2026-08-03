@@ -21,7 +21,7 @@ bounding box is exactly what gets copy-pasted back in on a deadline, and
 
 import sys
 
-from config import LAND_BBOX, MARINE_BBOX, load_spatial_contract
+from pulga_config import LAND_BBOX, MARINE_BBOX, load_spatial_contract
 
 
 def main():

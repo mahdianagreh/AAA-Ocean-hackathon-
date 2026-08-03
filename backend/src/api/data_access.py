@@ -321,7 +321,7 @@ def data_sources() -> list[dict]:
             ],
             "qa_figures": [
                 "osm_01_roads_over_satellite.png",
-                "osm_04_culverts_all_27_numbered.png",
+                "osm_04_culverts_all_numbered.png",
                 "osm_05_culvert_top5_insets.png",
             ],
         },
