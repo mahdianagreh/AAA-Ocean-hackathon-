@@ -28,7 +28,7 @@ from config import (
     WORLDCOVER_CLASSES,
     geographic_aspect,
 )
-from process_worldcover import CLASS_COLORS, TILE
+from process_worldcover import CLASS_COLORS, ensure_tiles
 from qa_common import CRS_BASEMAP, add_satellite, fixture_warning, resolve_catchments, save_fig
 from soilgrids_units import CONVERSIONS, DEPTHS, load_converted, raw_path
 
@@ -53,7 +53,10 @@ def _wc_index(arr):
 
 def wc_01_raw_tile():
     """The whole 3x3 degree source tile, with the AOI drawn on it."""
-    with rasterio.open(TILE) as src:
+    # The AOI spans two WorldCover tiles since it reached 30.30 N, so the
+    # 'raw tile before clip' figure shows the first of the set rather than
+    # a single hard-coded tile.
+    with rasterio.open(ensure_tiles(DOWNLOAD_BBOX)[0]) as src:
         # 36000x36000 — decimate hard on read, never load it whole.
         arr = src.read(1, out_shape=(1500, 1500))
         b = src.bounds
