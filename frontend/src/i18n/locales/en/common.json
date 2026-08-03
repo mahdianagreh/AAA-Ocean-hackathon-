@@ -77,7 +77,9 @@
     "controlsNote": "Drag the slider in the ar/rtl panes: the track keeps left = earlier, because the chart below it does. The mode switch does mirror — it is navigation, not a time axis.",
     "sectionRiskCards": "Risk cards",
     "riskCardsNote": "Every band, plus a null runoff probability rendered as a gap and a row with missing rainfall hatched rather than drawn as zero.",
-    "sectionLegend": "Legend"
+    "sectionLegend": "Legend",
+    "sectionStates": "Component states",
+    "statesNote": "Loading, empty, error, stale and a declared gap. A component whose empty, error and stale states were never designed will improvise them on stage."
   },
   "hazard": {
     "minimal": "Minimal",
@@ -229,5 +231,9 @@
     "sedimentLoad": "Sediment load",
     "sedimentLoadNote": "Scales sediment concentration per unit discharge. 100% is the reported 24,400 t.",
     "caveat": "These controls move a transparent index, not a calibrated model. Use them to see which direction a factor pushes the answer — not to read off a number."
+  },
+  "states": {
+    "errorTitle": "Something did not load",
+    "stale": "Last updated {{age}} ago — this may no longer be current."
   }
 }

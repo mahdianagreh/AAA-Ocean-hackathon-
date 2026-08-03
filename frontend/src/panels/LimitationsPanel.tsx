@@ -60,8 +60,8 @@ export function LimitationsPanel() {
         <p dir="ltr" className="max-w-prose text-xs text-ink-2">
           {strip(l.forcing.statement)}
         </p>
-        <p className="text-2xs text-ink-3">{t('limitations.forcingSeeGrid')}</p>
-        <p className="text-2xs text-ink-3">
+        <p className="text-2xs text-ink-2">{t('limitations.forcingSeeGrid')}</p>
+        <p className="text-2xs text-ink-2">
           <code className="font-mono num">{l.forcing.source}</code>
         </p>
       </section>

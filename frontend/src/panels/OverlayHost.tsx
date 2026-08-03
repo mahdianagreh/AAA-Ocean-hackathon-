@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Dialog } from 'radix-ui';
 import { useTranslation } from 'react-i18next';
 import { useUi, type Overlay } from '../app/uiStore';
@@ -26,6 +27,20 @@ export function OverlayHost() {
   const overlay = useUi((s) => s.overlay);
   const setOverlay = useUi((s) => s.setOverlay);
 
+  /** Restore focus to whatever opened the panel.
+   *
+   *  Radix returns focus to its own Dialog.Trigger, and these panels are opened by
+   *  buttons in the masthead with a store action instead — one Dialog.Root serving
+   *  four overlays cannot have four triggers. So Radix has nothing to restore, and
+   *  Escape left focus on the body: a keyboard user was dumped at the top of the
+   *  document after every panel. The a11y test caught it.
+   *
+   *  Captured on open, restored in onCloseAutoFocus with the default prevented. */
+  const opener = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (overlay) opener.current = document.activeElement as HTMLElement | null;
+  }, [overlay]);
+
   return (
     <Dialog.Root open={Boolean(overlay)} onOpenChange={(o) => !o && setOverlay(null)}>
       <Dialog.Portal>
@@ -38,6 +53,10 @@ export function OverlayHost() {
         <Dialog.Overlay className="fixed inset-0 z-50 bg-canvas/85" />
         <Dialog.Content
           data-overlay={overlay ?? undefined}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            opener.current?.focus();
+          }}
           className="fixed inset-3 z-50 flex flex-col overflow-hidden rule bg-surface shadow-float lg:inset-x-[12%] lg:inset-y-8"
           aria-describedby={undefined}
         >
@@ -52,7 +71,15 @@ export function OverlayHost() {
               {t('common.close')}
             </Dialog.Close>
           </header>
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          {/* tabIndex + role: a scrollable region with no focusable content is
+              unreachable by keyboard, which axe flags and 09's "full keyboard path"
+              forbids. */}
+          <div
+            className="min-h-0 flex-1 overflow-y-auto p-4"
+            tabIndex={0}
+            role="region"
+            aria-label={overlay ? t(`overlay.${overlay}`) : undefined}
+          >
             {overlay ? PANELS[overlay]() : null}
           </div>
         </Dialog.Content>

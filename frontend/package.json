@@ -24,6 +24,7 @@
     "zustand": "5.0.14"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.2",
     "@mapbox/mapbox-gl-rtl-text": "0.4.0",
     "@playwright/test": "1.62.1",
     "@tailwindcss/vite": "4.3.3",

@@ -336,6 +336,28 @@ def report():
 
     print()
     print("=" * 84)
+    print("TEXT ON EVERY GROUND — not just canvas")
+    print("=" * 84)
+    print("  The original check measured ink against --canvas only. axe then found")
+    print("  --ink-3 on --surface-2 at 4.38, below AA, in a panel that had every right")
+    print("  to exist. A ground the tokens offer is a ground text will land on, so all")
+    print("  three are checked and the failures are named rather than discovered later.")
+    for theme in ("light", "dark"):
+        print(f"\n  [{theme}]")
+        grounds = {n: clamp(*GROUND[theme][n]) for n in ("canvas", "surface", "surface-2")}
+        for ink in ("ink", "ink-2", "ink-3", "accent"):
+            v = clamp(*GROUND[theme][ink])
+            row = []
+            for gname, g in grounds.items():
+                c = contrast(v, g)
+                tag = "AA" if c >= 4.5 else "AA-lg" if c >= 3 else "FAIL"
+                row.append(f"{gname} {c:5.2f} {tag:5}")
+            print(f"    --{ink:8} " + "  ".join(row))
+    print("\n  RULE: body text at --text-2xs or --text-xs uses --ink or --ink-2 on")
+    print("        --surface-2. --ink-3 is for text on --canvas and --surface only.")
+
+    print()
+    print("=" * 84)
     print("HAZARD RAMP  (concept §14.5)")
     print("=" * 84)
     for theme, idx, direction in (("light", 2, "darkens"), ("dark", 3, "lightens")):

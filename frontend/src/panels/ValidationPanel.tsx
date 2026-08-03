@@ -123,7 +123,7 @@ export function ValidationPanel() {
             <span className="text-ink-2">{t('validation.physicalNullBody')}</span>
           </p>
         ) : null}
-        <p className="text-2xs text-ink-3">
+        <p className="text-2xs text-ink-2">
           {t('validation.source')}{' '}
           <code className="font-mono num">{v.satellite.source}</code>
         </p>

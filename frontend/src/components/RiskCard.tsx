@@ -15,7 +15,12 @@ import { DriverBars, type Driver } from './DriverBars';
 const BAND_CLASS: Record<HazardBand, string> = {
   minimal: 'bg-risk-minimal text-risk-minimal-on border-risk-minimal-stroke',
   low: 'bg-risk-low text-risk-low-on border-risk-low-stroke',
-  moderate: 'bg-risk-moderate text-risk-moderate-on border-risk-moderate-stroke',
+  moderate:
+    // Correction #10: no AA-compliant text colour exists for this band in dark
+    // theme (4.04 measured). So dark drops the fill and keeps the hue as a stroke
+    // on --surface, where --ink reaches 14.32. Light theme is unaffected.
+    'bg-risk-moderate text-risk-moderate-on border-risk-moderate-stroke ' +
+    'dark:bg-surface dark:text-ink dark:border-risk-moderate',
   high: 'bg-risk-high text-risk-high-on border-risk-high-stroke',
   critical: 'bg-risk-critical text-risk-critical-on border-risk-critical-stroke',
 };
@@ -104,7 +109,17 @@ export function RiskCard({ data }: { data: RiskCardData }) {
       ) : null}
 
       {data.provisional ? (
-        <p className="text-2xs text-risk-high">{t('risk.provisional')}</p>
+        // A coloured MARKER plus ink text, not coloured text. The hazard ramp is a
+        // fill scale with a paired --risk-*-on token; #d67229 as ink on --surface
+        // measures 3.33 and fails AA at this size. axe caught it on every card.
+        // 01 §4 also prefers form over hue, and a marker is form.
+        <p className="flex items-start gap-1.5 text-2xs text-ink-2">
+          <span
+            aria-hidden="true"
+            className="mt-0.5 block h-2 w-2 shrink-0 border border-risk-high-stroke bg-risk-high"
+          />
+          {t('risk.provisional')}
+        </p>
       ) : null}
     </article>
   );

@@ -8,6 +8,8 @@ import { RiskCard, type RiskCardData } from '../components/RiskCard';
 import { Hyetograph } from '../components/Hyetograph';
 import type { LayerKey, Mode } from '../app/uiStore';
 import type { RainPoint } from '../api/event';
+import { Empty, ErrorState, Loading, Stale } from '../components/States';
+import { ValueWithUnit } from '../components/ValueWithUnit';
 
 /** Every Phase 2 component, on all four specimen panes.
  *
@@ -156,6 +158,32 @@ export function registerPhase2Specimens() {
         {BANDS.map((b, i) => (
           <RiskCard key={b} data={card(b, [12, 33, 51, 74, 92][i])} />
         ))}
+      </div>
+    ),
+  });
+
+  registerSpecimen({
+    id: 'states',
+    titleKey: 'specimen.sectionStates',
+    noteKey: 'specimen.statesNote',
+    render: () => (
+      <div className="flex flex-col gap-3">
+        <Loading what="Reading the snapshot…" />
+        <Empty
+          title="No plume at this step"
+          body="No cell reached the lowest density band. This is a quiet step, not a failed layer — and the two must never look the same."
+        />
+        <ErrorState message="event.json: HTTP 503 {&quot;error&quot;:&quot;no trained model registered&quot;}" />
+        <Stale ageLabel="18 min">
+          <div className="flex items-baseline justify-between gap-2 rule bg-surface p-2 text-xs">
+            <span className="text-ink-2">Runoff probability</span>
+            <ValueWithUnit value={0.7213} digits={4} provenance="modelled" />
+          </div>
+        </Stale>
+        <div className="flex items-baseline justify-between gap-2 rule bg-surface p-2 text-xs">
+          <span className="text-ink-2">Sediment class (no data)</span>
+          <ValueWithUnit value={null} />
+        </div>
       </div>
     ),
   });

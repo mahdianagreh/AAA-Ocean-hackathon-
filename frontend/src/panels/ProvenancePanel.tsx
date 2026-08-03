@@ -98,7 +98,7 @@ export function ProvenancePanel() {
           needs a decision before a paid contract. */}
       <section className="flex flex-col gap-2">
         <h3 className="text-sm font-semibold">{t('provenancePanel.sources')}</h3>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={t('provenancePanel.sources')}>
           <table className="w-full border-collapse text-2xs">
             <tbody>
               {s.rows.map((r, i) => (

@@ -67,7 +67,12 @@ function Glyphs() {
 const BAND_CLASS: Record<(typeof HAZARD_BANDS)[number], string> = {
   minimal: 'bg-risk-minimal text-risk-minimal-on border-risk-minimal-stroke',
   low: 'bg-risk-low text-risk-low-on border-risk-low-stroke',
-  moderate: 'bg-risk-moderate text-risk-moderate-on border-risk-moderate-stroke',
+  moderate:
+    // Correction #10: no AA-compliant text colour exists for this band in dark
+    // theme (4.04 measured). So dark drops the fill and keeps the hue as a stroke
+    // on --surface, where --ink reaches 14.32. Light theme is unaffected.
+    'bg-risk-moderate text-risk-moderate-on border-risk-moderate-stroke ' +
+    'dark:bg-surface dark:text-ink dark:border-risk-moderate',
   high: 'bg-risk-high text-risk-high-on border-risk-high-stroke',
   critical: 'bg-risk-critical text-risk-critical-on border-risk-critical-stroke',
 };

@@ -148,6 +148,13 @@ for f in sorted(SRC.rglob("*")):
     for i, line in enumerate(f.read_text().splitlines(), 1):
         if "token-ok:" in line:
             continue
+        # A hex inside a comment is documentation, not a hardcoded colour — and the
+        # comments that matter most cite the exact value they are warning about
+        # ("#d67229 as ink on --surface measures 3.33"). Flagging those would push
+        # people to delete the reason rather than the violation.
+        stripped = line.strip()
+        if stripped.startswith(("*", "//", "/*", "<!--")):
+            continue
         for m in re.finditer(r"#[0-9a-fA-F]{3,8}\b", line):
             if re.match(r"^#[0-9a-fA-F]{3,8}$", m.group()):
                 offenders.append(f"{rel}:{i} {m.group()}")

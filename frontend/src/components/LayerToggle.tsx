@@ -44,7 +44,11 @@ export function LayerToggle({
                 checked={layers[k]}
                 onCheckedChange={() => onToggle(k)}
                 data-layer={k}
-                className="flex h-3 w-3 shrink-0 items-center justify-center border border-hairline-2 bg-surface data-[state=checked]:border-accent"
+                // The visible box stays 12px — 02 §5 keeps controls small — but the
+                // hit area is extended to 24px with a pseudo-element rather than by
+                // growing the mark. 09 requires >=24px on the control, not just on
+                // the label that happens to wrap it.
+                className="relative flex h-3 w-3 shrink-0 items-center justify-center border border-hairline-2 bg-surface before:absolute before:-inset-1.5 before:content-[''] data-[state=checked]:border-accent"
               >
                 <Checkbox.Indicator className="block h-1.5 w-1.5 bg-accent" />
               </Checkbox.Root>

@@ -156,7 +156,7 @@ export function Assistant() {
           <h4 className="text-xs font-semibold">{t('assistant.noAnswerTitle')}</h4>
           <p className="max-w-prose text-2xs text-ink-2">{t('assistant.noAnswerBody')}</p>
           <details className="text-2xs">
-            <summary className="cursor-pointer text-ink-3">
+            <summary className="cursor-pointer text-ink-2">
               {t('assistant.searched', { n: res.searched.length })}
             </summary>
             <ul className="mt-1 flex flex-col gap-0.5">
@@ -171,7 +171,7 @@ export function Assistant() {
           </details>
           {/* The corpus boundary, stated. 07 §4: the research documents are not in
               it, so a market question genuinely has no sourced answer here. */}
-          <p className="text-2xs text-ink-3">{t('assistant.corpusBoundary')}</p>
+          <p className="text-2xs text-ink-2">{t('assistant.corpusBoundary')}</p>
         </section>
       ) : null}
     </div>

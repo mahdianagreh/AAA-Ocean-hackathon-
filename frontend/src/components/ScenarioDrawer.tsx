@@ -44,7 +44,8 @@ export function ScenarioDrawer() {
           type="button"
           onClick={resetScenario}
           data-scenario-reset="true"
-          className="rule px-2 py-0.5 text-2xs text-ink-2"
+          // min-h-6: 24px, per 09's hit-area rule. py-0.5 gave 20px.
+          className="rule min-h-6 px-2 py-1 text-2xs text-ink-2"
         >
           {t('scenario.reset')}
         </button>
@@ -77,7 +78,6 @@ export function ScenarioDrawer() {
               step={c.step}
               onValueChange={([v]) => setScenario(c.key, v)}
               data-scenario={c.key}
-              aria-label={t(`scenario.${c.key}`)}
               className="relative flex h-4 w-full touch-none items-center select-none"
             >
               <Slider.Track className="relative h-px w-full grow bg-hairline-2">
@@ -86,7 +86,14 @@ export function ScenarioDrawer() {
               {/* Diamond, matching the time slider's handle — one handle language
                   across the interface rather than two. 09: the visible mark is
                   10px, so the touch target is extended by padding. */}
-              <Slider.Thumb className="block h-2.5 w-2.5 rotate-45 border border-ink bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" />
+              {/* aria-label goes on the THUMB, not the Root. Radix puts
+                  role="slider" on the thumb, so a label on the root leaves the
+                  actual widget unnamed — axe caught all six of these as
+                  aria-input-field-name violations. */}
+              <Slider.Thumb
+                aria-label={t(`scenario.${c.key}`)}
+                className="block h-2.5 w-2.5 rotate-45 border border-ink bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              />
             </Slider.Root>
 
             <p className="text-2xs text-ink-3">{t(`scenario.${c.key}Note`)}</p>
@@ -97,7 +104,7 @@ export function ScenarioDrawer() {
       {/* 09 rule 8: never claim exactness. These controls change a transparent
           index, not a calibrated model, and saying so is the difference between a
           what-if and a pretence. */}
-      <p className="rule bg-surface-2 p-2 text-2xs text-ink-3">{t('scenario.caveat')}</p>
+      <p className="rule bg-surface-2 p-2 text-2xs text-ink-2">{t('scenario.caveat')}</p>
     </section>
   );
 }
