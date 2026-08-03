@@ -90,7 +90,11 @@ export function MapView({ risk }: { risk?: Array<{ catchment_id: string; band: s
             customAttribution: [
               '© OpenStreetMap contributors (ODbL)',
               'Bathymetry: GEBCO / GMRT',
-              'Reef zones: PROVISIONAL — not Allen Coral Atlas',
+              // Updated when contract swap-in #3 landed. This line said
+              // "PROVISIONAL — not Allen Coral Atlas" and was still saying it after
+              // the real habitat was merged in, which is both a stale caveat and a
+              // missing attribution: CC BY 4.0 requires the credit.
+              'Reef habitat © Allen Coral Atlas (CC BY 4.0), sensitivity weighting provisional',
             ],
           }),
           'bottom-right',
