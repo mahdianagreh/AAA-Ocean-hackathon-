@@ -1,0 +1,52 @@
+{
+  "generated_utc": "2026-08-03T07:01:03Z",
+  "window_hours": 3,
+  "events_ranked": 99,
+  "events_skipped_incomplete": 1,
+  "skipped": [
+    {
+      "event_id": "AQ-2000-01-04",
+      "granules": 0
+    }
+  ],
+  "demo_event": {
+    "daily_rank": 25,
+    "intensity_rank": 11,
+    "moved": 14,
+    "peak_3h_mm": 7.987,
+    "max_daily_mm": 8.293
+  },
+  "biggest_climbers": [
+    {
+      "event_id": "AQ-2010-01-17",
+      "daily_rank": 96,
+      "intensity_rank": 7,
+      "rank_change": 89
+    },
+    {
+      "event_id": "AQ-1999-02-06",
+      "daily_rank": 97,
+      "intensity_rank": 38,
+      "rank_change": 59
+    },
+    {
+      "event_id": "AQ-2018-12-06",
+      "daily_rank": 62,
+      "intensity_rank": 4,
+      "rank_change": 58
+    },
+    {
+      "event_id": "AQ-2014-02-16",
+      "daily_rank": 87,
+      "intensity_rank": 39,
+      "rank_change": 48
+    },
+    {
+      "event_id": "AQ-2013-01-28",
+      "daily_rank": 70,
+      "intensity_rank": 23,
+      "rank_change": 47
+    }
+  ],
+  "note": "Ranked on peak trailing accumulation per catchment, from half-hourly Final Run. Daily screening selected these candidates, so this re-ranks within that pool \u2014 an intense storm on a low-total day that stage 1 never selected cannot appear here. That residual limitation belongs in the model card."
+}
