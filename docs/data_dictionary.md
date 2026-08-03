@@ -555,7 +555,7 @@ windows) and **2026-07-31 / 2026-08-01** (IMERG Final Oct 2016 window).
 | Temporal resolution | 30 minutes |
 | Time availability | 2000-06 → present (Final lags ~3.5 months) |
 | Spatial resolution | 0.1° (~11 km) |
-| Geographic extent used | 34.80–35.15 °E, 29.25–29.70 °N (5 lat × 4 lon cells) |
+| Geographic extent used | **`TERRAIN_AOI` = 34.75–35.94 °E, 29.15–30.30 °N.** Was documented as 34.80–35.15 / 29.25–29.70 — that box was **retired on 2 Aug 2026** for cutting off ~85% of Wadi Yutum. Any file fetched before then covers the wrong area; see `scripts/check_aoi_coverage.py` |
 | Raw path | `data/raw/imerg/events/<event_id>/` |
 | Processed path | `data/processed/events/<event_id>/<event_id>_imerg.nc` |
 | Citation | https://gpm.nasa.gov/data/imerg |
@@ -573,6 +573,69 @@ windows) and **2026-07-31 / 2026-08-01** (IMERG Final Oct 2016 window).
 Aqaba flash floods — a documented product limitation, not a pipeline defect.
 The delivered array is `(time, lon, lat)`; index-order errors are silent.
 Harmony does **not** concatenate — one file per granule.
+
+---
+
+## 1b. NASA GPM IMERG V07 — Daily Final (stage-1 screening)
+
+The half-hourly product above is the one used for storm *intensity*. This daily one is
+what made a 27.7-year search affordable: half-hourly IMERG for the whole record is
+~455,000 Harmony requests, which is weeks of wall time. Daily is ~10,000, and it is only
+ever used to **decide which days deserve half-hourly detail** — never to measure
+intensity.
+
+| Field | Value |
+|---|---|
+| Source organization | NASA / JAXA (GPM mission), distributed by NASA GES DISC |
+| Dataset name | GPM IMERG Final Precipitation L3 **1 day** 0.1° |
+| Product / version | `GPM_3IMERGDF`, version **07** |
+| Collection concept ID | `C2723754864-GES_DISC` |
+| Run type | **final** — gauge-adjusted, calibrated |
+| Suitable for training | Yes, for daily totals only — `screening_only: true` in the registry |
+| Access method | NASA Harmony spatial + variable subsetting (`harmony-py`), auth via `earthaccess` |
+| Access date | 2026-08-02 (sweep manifest `generated_utc` 2026-08-02T18:08:36Z) |
+| Registration required | Same as the half-hourly product — Earthdata account + *NASA GESDISC DATA ARCHIVE* approval |
+| Licence / terms status | Accepted (EULA approved 2026-08-01) |
+| Temporal resolution | 1 day (`granule_minutes: 1440`) |
+| Period swept | **1998 → 2026**, 10,321 days expected |
+| Spatial resolution | 0.1° (~11 km) |
+| Geographic extent used | `TERRAIN_AOI` = 34.75–35.94 °E, 29.15–30.30 °N |
+| Raw path | `data/raw/imerg/daily_final/` |
+| Processed path | `data/processed/features/catchment_rainfall_daily.parquet`, `catchment_rainfall_climatology.parquet` |
+| Manifest | `data/processed/events/daily_sweep_manifest.json` |
+| Reproduce | `./scripts/run_daily_sweep.sh` → `python scripts/aggregate_daily_to_catchments.py` → `python scripts/build_event_catalogue.py` |
+| Citation | https://gpm.nasa.gov/data/imerg |
+
+**Completeness: 10,135 of 10,321 days = 98.2%.**
+
+The 186 missing days are **contiguous — 2025-10-01 to 2026-04-04** — and every one of
+them is after the last day the Final Run had been produced at the access date. This is
+the product's ~3.5-month gauge-adjustment latency, not a gap in the sweep, which is why
+the event catalogue records `search_scope_end_utc = 2025-09-30` rather than today's date.
+Per the data rules the days are **reported and never interpolated**; the full list is in
+the manifest.
+
+| Variable | Internal name | Units | Notes |
+|---|---|---|---|
+| `precipitation` | `precipitation` | **mm/day** | **No `Grid/` prefix** — unlike the half-hourly product |
+| derived | `precipitation_depth_mm` | mm | `rate × interval_hours / rate_period_hours`, i.e. × 1 for a daily granule |
+
+**The units trap.** Daily is **mm/day** and half-hourly is **mm/hr**, and the daily
+variable has **no `Grid/` prefix**. Applying the half-hourly convention to daily data
+understates depth by **48×** and raises no error — the numbers just come out small and
+plausible. Both the variable name and the rate period come from `IMERG_PRODUCTS` in
+`backend/src/ingestion/imerg.py`; neither is ever written as a literal.
+
+**Limitations.**
+
+1. **A daily total cannot rank a flash flood.** Aqaba's damaging events are short,
+   intense bursts; two storms with the same daily total can differ severalfold in peak
+   3-hour intensity. That is the entire reason stage 2 exists, and it is measurable —
+   re-ranking the catalogue by peak 3-hour intensity moved the demo event from 14th to
+   **8th**. Stage 1 output is a *candidate list*, never a severity ranking.
+2. The generous top-N (≥100) is the mitigation for exactly that under-ranking.
+3. ~11 km cells smooth localized convective storms — inherited from the product, same as
+   the half-hourly run.
 
 ---
 
@@ -674,6 +737,47 @@ Produced by `backend/src/processing/antecedent_features.py`; written to
 
 Missing hours are excluded from sums and reduce the valid fraction — never
 treated as zero.
+
+### The cross-event table, and the target definition
+
+`scripts/extract_event_antecedents.py` rolls the per-event files into one table at
+`data/processed/features/event_antecedents.parquet`, one row per (event × catchment),
+with the two ERA5 runoff targets prefixed `label_`.
+
+| | |
+|---|---|
+| Rows / events | **395 rows, 79 events** (as of 2026-08-03) |
+| Events skipped | 21 — their ERA5 month has not downloaded yet; the sweep is at 74 of 84 months |
+| Label columns | `label_surface_runoff_mm`, `label_subsurface_runoff_mm` |
+| Label window | 24 h from the event hour |
+| Distribution | published in `event_antecedents.summary.json` under `label_distribution` |
+
+**Do not binarise the label at `> 0`.** The candidates are already the top ~1% of days by
+rainfall, so nearly every one produces *some* ERA5 runoff: **98% of rows are positive at a
+zero threshold.** A model predicting "runoff" always would score ~98% and have learned
+nothing — the same tautology the label rule exists to prevent, reached from the other
+direction, and it would present as a good result rather than as a bug.
+
+The **magnitude** is what discriminates. It spans four orders of magnitude, and within a
+single catchment the maximum is ~19× the median:
+
+| percentile | mm | binary balance if used as threshold |
+|---|---:|---:|
+| p10 | 0.00014 | — |
+| p50 | 0.00584 | **50% positive** |
+| p75 | 0.01624 | 25% positive |
+| p90 | 0.03897 | 10% positive |
+| p99 | 0.13343 | — |
+
+So the usable formulations are regression on the value (log scale) or a binary split at a
+candidate-set percentile. Whichever is chosen, **the threshold is a modelling decision and
+belongs in the model card**, not buried in a script.
+
+**Leakage warning.** Per-catchment median runoff orders monotonically with catchment area
+— AQ-C01 0.0104 mm (4,453 km²) descending to AQ-C05 0.0047 mm. Combined with static
+features that are constant per catchment, random CV will memorise catchment identity and
+report a meaningless score. This is the concrete reason **leave-one-catchment-out *and* a
+temporal holdout are both mandatory**, not merely advisable.
 
 ---
 
