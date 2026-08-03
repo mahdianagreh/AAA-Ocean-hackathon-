@@ -1,42 +1,44 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { api } from '../api';
-import type { Catchment, Outlet, ReefZone } from '../api/types';
-import { HARBOUR_BASIN_OUTLETS } from '../api/types';
+import { useUi } from '../app/uiStore';
+import type { EventData } from '../app/useEventData';
+import type { RiskCardData } from '../components/RiskCard';
+import { RiskCard } from '../components/RiskCard';
+import { Hyetograph } from '../components/Hyetograph';
+import { Legend } from '../components/Legend';
+import { LayerToggle } from '../components/LayerToggle';
 import { ValueWithUnit } from '../components/ValueWithUnit';
-import { CatchmentGlyph, OutletGlyph, ReefZoneGlyph } from '../icons';
+import { HARBOUR_BASIN_OUTLETS } from '../api/types';
 
 /** Side rail: risk cards, layer toggles, legend — 03 §3.
  *
- *  In Phase 1 it carries the textual equivalent of what the map draws, which is
- *  09 rule 7: the map is never the only path to a fact. Risk cards and the
- *  exposure legend arrive in Phase 2 with the data that fills them.
+ *  Also the textual equivalent of the map (09 rule 7 / 01 §6.5), which is why the
+ *  values live here rather than only in tooltips. Everything reads the cursor from
+ *  the store, so scrubbing moves the cards and the chart with the map.
+ *
+ *  03 §5 asked whether risk cards show all zones or only those above `low`. Answer:
+ *  all of them, sorted by score. With five catchments the list is short, and hiding
+ *  the quiet ones would make "nothing is happening" indistinguishable from "the
+ *  layer failed to load" — which is the empty state 03 §2 calls a first-class
+ *  design problem, not a fallback.
  */
-export function SideRail() {
+export function SideRail({
+  data,
+  risk,
+  error,
+}: {
+  data: EventData | null;
+  risk: RiskCardData[];
+  error: string | null;
+}) {
   const { t } = useTranslation();
-  const [data, setData] = useState<{
-    catchments: Catchment[];
-    outlets: Outlet[];
-    reef: ReefZone[];
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { cursor, setCursor, layers, toggleLayer } = useUi();
 
-  useEffect(() => {
-    const c = api();
-    let live = true;
-    void Promise.all([c.catchments(), c.outlets(), c.reefZones()])
-      .then(([catchments, outlets, reef]) => {
-        if (live) setData({ catchments, outlets, reef });
-      })
-      .catch((e: Error) => live && setError(e.message));
-    return () => {
-      live = false;
-    };
-  }, []);
+  const ranked = [...risk].sort((a, b) => b.score - a.score);
+  const worst = ranked[0];
 
   return (
     <aside
-      className="flex min-h-0 flex-col gap-4 overflow-y-auto bg-surface p-4"
+      className="flex min-h-0 flex-col gap-5 overflow-y-auto bg-surface p-4"
       aria-label={t('rail.label')}
     >
       {error ? (
@@ -45,32 +47,98 @@ export function SideRail() {
         </p>
       ) : null}
 
-      {/* Loading is a designed state, not a spinner-shaped absence — 04. */}
       {!data && !error ? <p className="text-xs text-ink-3">{t('rail.loading')}</p> : null}
 
       {data ? (
         <>
-          <Group icon={<CatchmentGlyph size={16} />} title={t('rail.catchments')}>
-            {data.catchments.map((c) => (
-              <Row
-                key={c.catchment_id}
-                id={c.catchment_id}
-                label={c.name ?? t('rail.unnamed')}
-                caveat={c.caveat}
-              >
-                <ValueWithUnit value={c.area_km2} unit="km²" digits={2} provenance="modelled" />
-              </Row>
-            ))}
-          </Group>
+          {/* Scene 3: rainfall and the activated catchment. The chart leads
+              because the officer's first question is what fell and where. */}
+          <Hyetograph
+            byCatchment={data.series.rainfall_daily.by_catchment}
+            unit={data.series.rainfall_daily.unit}
+            cursor={cursor}
+            onCursor={setCursor}
+            marks={data.series.mooring.markers.map((m) => ({
+              t: m.t,
+              label: t(`mooring.${m.key}`),
+            }))}
+          />
 
-          <Group icon={<OutletGlyph size={16} />} title={t('rail.outlets')}>
+          {/* Scene 8: the recommendation. One card leads — the worst catchment at
+              this step — and the rest follow, because there is one decision to
+              make and four pieces of context. */}
+          <section className="flex flex-col gap-2">
+            <h2 className="flex items-baseline justify-between border-b border-hairline pb-1 text-xs font-semibold text-ink-2">
+              {t('rail.risk')}
+              {worst ? (
+                <span className="font-normal text-ink-3">
+                  {t('rail.worst')}{' '}
+                  <span
+                    dir="ltr"
+                    style={{ unicodeBidi: 'isolate' }}
+                    className="font-mono num text-2xs"
+                  >
+                    {worst.catchment_id}
+                  </span>
+                </span>
+              ) : null}
+            </h2>
+            {ranked.map((r) => (
+              <RiskCard key={r.catchment_id} data={r} />
+            ))}
+          </section>
+
+          {/* Scene 6's inputs, and the reason the whole project pivoted here: the
+              satellite route is a null result, so the mooring record is the
+              validation target. Measured values, so they are solid-form. */}
+          <section className="flex flex-col gap-1">
+            <h2 className="border-b border-hairline pb-1 text-xs font-semibold text-ink-2">
+              {t('rail.mooring')}
+            </h2>
+            <Row label={t('mooring.peakSediment')}>
+              <ValueWithUnit
+                value={data.series.mooring.peak_suspended_sediment.value}
+                unit={data.series.mooring.peak_suspended_sediment.unit}
+                digits={2}
+                provenance="reported"
+              />
+            </Row>
+            <Row label={t('mooring.salinityAnomaly')}>
+              <ValueWithUnit
+                value={data.series.mooring.salinity_anomaly.value}
+                unit={data.series.mooring.salinity_anomaly.unit}
+                digits={2}
+                provenance="reported"
+              />
+            </Row>
+            <Row label={t('mooring.elevatedDuration')}>
+              <ValueWithUnit
+                value={data.series.mooring.elevated_duration_hours.value}
+                unit={data.series.mooring.elevated_duration_hours.unit}
+                digits={2}
+                provenance="converted"
+              />
+            </Row>
+            <Row label={t('mooring.sedimentMass')}>
+              <ValueWithUnit
+                value={data.series.mooring.sediment_mass_total.value}
+                unit={data.series.mooring.sediment_mass_total.unit}
+                digits={0}
+                provenance="reported"
+              />
+            </Row>
+            <p className="text-2xs text-ink-3">{t('mooring.noSeries')}</p>
+          </section>
+
+          {/* Outlets, with AQ-O04's caveat travelling with it — 01 §6.7. */}
+          <section className="flex flex-col gap-1">
+            <h2 className="border-b border-hairline pb-1 text-xs font-semibold text-ink-2">
+              {t('rail.outlets')}
+            </h2>
             {data.outlets.map((o) => (
               <Row
                 key={o.outlet_id}
-                id={o.outlet_id}
-                label={o.catchment_id}
-                // 01 §6.7: AQ-O04's enclosed-harbour caveat travels with it
-                // wherever it appears, not only where someone remembered.
+                label={o.outlet_id}
                 caveat={o.caveat}
                 warn={HARBOUR_BASIN_OUTLETS.has(o.outlet_id)}
               >
@@ -82,58 +150,52 @@ export function SideRail() {
                 />
               </Row>
             ))}
-          </Group>
+          </section>
 
-          <Group icon={<ReefZoneGlyph size={16} />} title={t('rail.reefZones')}>
+          {/* Reef zones by name. 09 rule 7: the map is never the only path to a
+              fact, and these are the subject of the product — the map draws eight
+              polygons, so the rail has to name eight zones. An earlier version of
+              this rail dropped them in favour of the legend alone, and the offline
+              test caught it as a missing R-01. Phase 3's exposure scores land in
+              this same list. */}
+          <section className="flex flex-col gap-1">
+            <h2 className="border-b border-hairline pb-1 text-xs font-semibold text-ink-2">
+              {t('rail.reefZones')}
+            </h2>
             {data.reef.map((r) => (
-              <Row key={r.reef_zone_id} id={r.reef_zone_id} label={r.zone_name}>
-                <ValueWithUnit value={r.area_km2} unit="km²" digits={2} provenance="modelled" />
+              <Row key={r.reef_zone_id} label={r.reef_zone_id} caveat={r.zone_name}>
+                <span className="flex items-baseline gap-2">
+                  <span dir="auto" className="max-w-40 truncate text-2xs text-ink-3">
+                    {r.zone_name}
+                  </span>
+                  <ValueWithUnit value={r.area_km2} unit="km²" digits={2} provenance="modelled" />
+                </span>
               </Row>
             ))}
-            {/* 01 §6.6: provisional data is labelled in the UI, not only in the
-                repo. sensitivity_weight is 1.0 on all eight zones, so the legend
-                must not imply they differ. */}
-            <p className="mt-1 text-2xs text-ink-3">{t('rail.reefProvisional')}</p>
-          </Group>
+          </section>
 
-          {/* The honesty device, in words as well as on the map. */}
-          <Group title={t('rail.coverage')}>
+          <Legend plumeLevels={[0.1, 0.25, 0.5, 0.75]} />
+          <LayerToggle layers={layers} onToggle={toggleLayer} />
+
+          <section className="flex flex-col gap-1">
+            <h2 className="border-b border-hairline pb-1 text-xs font-semibold text-ink-2">
+              {t('rail.coverage')}
+            </h2>
             <p className="text-2xs text-ink-3">{t('rail.coverageNote')}</p>
-          </Group>
+            <p className="text-2xs text-ink-3">{t('rail.reefProvisional')}</p>
+          </section>
         </>
       ) : null}
     </aside>
   );
 }
 
-function Group({
-  icon,
-  title,
-  children,
-}: {
-  icon?: React.ReactNode;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-2">
-      <h2 className="flex items-center gap-2 border-b border-hairline pb-1 text-xs font-semibold text-ink-2">
-        {icon}
-        {title}
-      </h2>
-      <div className="flex flex-col gap-1">{children}</div>
-    </section>
-  );
-}
-
 function Row({
-  id,
   label,
   caveat,
   warn,
   children,
 }: {
-  id: string;
   label: string;
   caveat?: string;
   warn?: boolean;
@@ -142,23 +204,9 @@ function Row({
   return (
     <div className="flex items-baseline justify-between gap-2 text-xs" title={caveat}>
       <span className="flex min-w-0 items-baseline gap-2">
-        {/* shrink-0 and nowrap, because flex was happy to break `R-02` across two
-            lines to make room for a long zone name. An identifier that wraps is
-            no longer an identifier. */}
-        <span
-          dir="ltr"
-          style={{ unicodeBidi: 'isolate' }}
-          className="shrink-0 whitespace-nowrap font-mono num text-2xs"
-        >
-          {id}
-        </span>
-        {/* dir="auto", not a fixed direction. These names come from the data and
-            can be either script — "Marine Science Station / Cedar Pride" or an
-            Arabic zone name. In an RTL container a Latin name truncated with a
-            fixed direction puts the ellipsis at the START, so the rail showed
-            "…rine Science Station / Cedar Pride" and lost the identifying half.
-            Letting the browser resolve direction from the first strong character
-            keeps the ellipsis at the end in both scripts. */}
+        {/* dir="auto", not a fixed direction: these labels can be either script,
+            and in an RTL container a Latin name truncated with a fixed direction
+            puts the ellipsis at the START — losing the half that identifies it. */}
         <span dir="auto" style={{ unicodeBidi: 'isolate' }} className="truncate text-ink-2">
           {label}
         </span>

@@ -2,6 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { useUi, type Lang, type ThemeChoice } from '../app/uiStore';
 import { DATA_SOURCE } from '../api';
 import { ConnectionState } from './ConnectionState';
+import { ModeSwitch } from '../components/ModeSwitch';
+import { stepCounts } from '../app/useEventData';
 
 /** Masthead: brand, mode switcher, language toggle, connection state — 03 §3.
  *
@@ -9,9 +11,9 @@ import { ConnectionState } from './ConnectionState';
  *  three modes are shown disabled rather than absent. A control that appears in
  *  Phase 2 changes the layout; a disabled one does not.
  */
-export function Masthead() {
+export function Masthead({ steps }: { steps: string[] }) {
   const { t } = useTranslation();
-  const { theme, lang, setTheme, setLang } = useUi();
+  const { theme, lang, mode, setTheme, setLang, setMode } = useUi();
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline bg-surface px-4 py-2">
@@ -24,23 +26,14 @@ export function Masthead() {
         <span className="text-xs text-ink-2">{t('brand.place')}</span>
       </div>
 
-      {/* Phase 2. Disabled rather than hidden, so adding it does not reflow. */}
-      <nav aria-label={t('mode.label')} className="flex items-center gap-0">
-        {(['historical', 'forecast', 'scenario'] as const).map((m, i) => (
-          <button
-            key={m}
-            type="button"
-            disabled
-            aria-disabled="true"
-            className={`border border-hairline px-3 py-1 text-xs text-ink-3 ${
-              i === 0 ? 'rounded-s-sm' : ''
-            } ${i === 2 ? 'rounded-e-sm' : ''} ${i > 0 ? 'border-s-0' : ''}`}
-            title={t('mode.phase2')}
-          >
-            {t(`mode.${m}`)}
-          </button>
-        ))}
-      </nav>
+      <div className="flex items-center gap-2">
+        <ModeSwitch value={mode} onChange={(m) => setMode(m, stepCounts(steps))} />
+        {/* Only Historical has data behind it. Saying which mode is real beats
+            three modes that look equally live and two that quietly are not. */}
+        {mode !== 'historical' ? (
+          <span className="text-2xs text-ink-3">{t(`mode.${mode}Pending`)}</span>
+        ) : null}
+      </div>
 
       <div className="flex items-center gap-3 text-xs">
         <ConnectionState />

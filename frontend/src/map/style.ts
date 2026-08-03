@@ -55,6 +55,63 @@ function label(lang: Lang) {
 
 const url = (name: string) => `${import.meta.env.BASE_URL}basemap/${name}.geojson`;
 
+const EMPTY_FC = { type: 'FeatureCollection', features: [] } as const;
+
+/** The mooring, inline because it is one point from one paper.
+ *
+ *  Coordinate and radius from data/processed/marine/mooring_target_AQ-2016-10-28.json,
+ *  where both are tagged provenance "derived" — the paper states only "~250 m
+ *  offshore the Kinnet Canal outlet, 13 m depth". The derivation doc is explicit
+ *  that this must not be used to more precision than the 1.5 km radius implies,
+ *  and that AQ-O01 (Wadi Yutum, Jordan) must not be substituted for it. */
+const MOORING = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      properties: { key: 'mooring', depth_m: -13, uncertainty_radius_m: 1500 },
+      geometry: { type: 'Point', coordinates: [34.98151, 29.53799] },
+    },
+  ],
+} as const;
+
+/** The ~9 km ocean-model grid — the honesty device from 01 §2.
+ *
+ *  Two to three cells span the entire Gulf. The coarseness the project keeps
+ *  apologising for in prose becomes something a judge can see, which is more
+ *  convincing than stating it and converts the biggest weakness into evidence of
+ *  rigour. Off by default: it is a thing you turn on to make a point.
+ *
+ *  0.081° of longitude at 29.5°N is ~7.9 km; 0.081° of latitude is ~9.0 km. The
+ *  cell is drawn on that spacing rather than a round number of kilometres, because
+ *  the model's own grid is in degrees. */
+const GRID_DEG = 0.081;
+const MODEL_GRID = {
+  type: 'FeatureCollection',
+  features: (() => {
+    const out: Array<Record<string, unknown>> = [];
+    for (let lon = 34.68; lon < 35.2; lon += GRID_DEG) {
+      for (let lat = 29.16; lat < 29.72; lat += GRID_DEG) {
+        out.push({
+          type: 'Feature',
+          properties: { role: 'model_cell' },
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [lon, lat],
+              [lon + GRID_DEG, lat],
+              [lon + GRID_DEG, lat + GRID_DEG],
+              [lon, lat + GRID_DEG],
+              [lon, lat],
+            ].map(([x, y]) => [Number(x.toFixed(5)), Number(y.toFixed(5))]),
+          },
+        });
+      }
+    }
+    return out;
+  })(),
+} as const;
+
 /** Layer order is 03-information-architecture.md §4, "to be fixed in Phase 1 and
  *  not renegotiated later". Bottom to top. The data layers Phase 2 adds
  *  (rainfall, plume, exposure fills) slot in at the marked positions. */
@@ -81,6 +138,18 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
       [`${SRC}-outlets`]: { type: 'geojson', data: url('outlets') },
       [`${SRC}-places`]: { type: 'geojson', data: url('places') },
       [`${SRC}-coverage`]: { type: 'geojson', data: url('coverage') },
+      // The mooring: one point, the validation target from Kalman et al. 2025,
+      // with its 1.5 km uncertainty radius drawn rather than implied. The paper
+      // gives only "~250 m offshore the Kinnet Canal outlet, 13 m depth" — no
+      // decimal coordinate — so a bare dot would claim precision the source does
+      // not support.
+      [`${SRC}-mooring`]: { type: 'geojson', data: MOORING },
+      // Empty until Abd's per-timestep contours land (OPEN-ISSUES.md item 2). The
+      // dependency table allows a static polygon stub; an empty FeatureCollection
+      // is the honest version of that — nothing is drawn, and the legend says the
+      // layer exists rather than showing a shape we invented.
+      [`${SRC}-plume`]: { type: 'geojson', data: EMPTY_FC },
+      [`${SRC}-grid`]: { type: 'geojson', data: MODEL_GRID },
     },
     layers: [
       // --- ground -------------------------------------------------------
@@ -186,8 +255,21 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
         paint: { 'line-color': c.ink_3, 'line-width': 1 },
       },
 
-      // Phase 2 inserts `rainfall` and the plume relative-density contours here,
-      // beneath the reef so exposure stays readable through them.
+      // --- plume: relative-density contours, beneath the reef so exposure
+      //     stays readable through them. Empty until Abd's per-timestep contours
+      //     land; dashed and hatched because it is modelled, never a trajectory. --
+      {
+        id: 'plume-fill',
+        type: 'fill',
+        source: `${SRC}-plume`,
+        paint: { 'fill-color': c.ink_3, 'fill-opacity': 0.18 },
+      },
+      {
+        id: 'plume-line',
+        type: 'line',
+        source: `${SRC}-plume`,
+        paint: { 'line-color': c.ink_3, 'line-width': 1, 'line-dasharray': [3, 2] },
+      },
 
       // --- reef zones. Phase 2 fills these by exposure score -------------
       {
@@ -228,7 +310,48 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
         },
       },
 
-      // --- the honesty device -------------------------------------------
+      // --- the mooring: measured, so it is drawn solid ------------------
+      {
+        // The uncertainty radius first, as a hatched-equivalent low-opacity fill.
+        // 01 §4: an envelope is hatched, and 09 rule 1 says uncertainty renders
+        // with the value or the value does not render. A bare dot would claim a
+        // precision the source does not give.
+        id: 'mooring-uncertainty',
+        type: 'circle',
+        source: `${SRC}-mooring`,
+        paint: {
+          // 1500 m at zoom 13 near 29.5°N is roughly 40 px; scaled so the radius
+          // stays geographically honest rather than a fixed pixel blob.
+          'circle-radius': ['interpolate', ['exponential', 2], ['zoom'], 10, 5, 16, 300],
+          'circle-color': c.data_measured,
+          'circle-opacity': 0.08,
+          'circle-stroke-color': c.data_measured,
+          'circle-stroke-width': 0.5,
+          'circle-stroke-opacity': 0.4,
+        },
+      },
+      {
+        id: 'mooring',
+        type: 'circle',
+        source: `${SRC}-mooring`,
+        paint: {
+          'circle-radius': 4,
+          'circle-color': c.surface,
+          'circle-stroke-color': c.data_measured,
+          'circle-stroke-width': 1.6,
+        },
+      },
+
+      // --- the honesty devices ------------------------------------------
+      {
+        // The ~9 km ocean-model grid. Two to three cells span the whole Gulf, and
+        // our own release point sits on a cell the model masks as land.
+        id: 'model-grid',
+        type: 'line',
+        source: `${SRC}-grid`,
+        layout: { visibility: 'none' },
+        paint: { 'line-color': c.ink_3, 'line-width': 0.6, 'line-opacity': 0.5 },
+      },
       {
         // The OSM extract stops at 35.0 E / 29.55 N while TERRAIN_AOI reaches
         // 35.94 E / 30.30 N, because Wadi Yutum drains 90 km inland. So the

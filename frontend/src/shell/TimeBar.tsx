@@ -1,34 +1,60 @@
 import { useTranslation } from 'react-i18next';
+import { TimeSlider } from '../components/TimeSlider';
+import { useUi } from '../app/uiStore';
+import type { EventData } from '../app/useEventData';
 
 /** Time bar: full width beneath the map, drives every time-varying layer — 03 §3.
  *
- *  Phase 1 reserves the region and states what it will do. The slider itself is
- *  Phase 2 and is bespoke rather than a Radix Slider, because of the one subtlety
- *  06 §3 calls "the subtle one": the control mirrors under RTL, but the time axis
- *  it scrubs does not. Earlier stays on the left, because the hyetograph beneath
- *  it runs left to right and the two must agree. Getting that backwards makes the
- *  whole time-scrub choreography feel wrong in Arabic without anyone being able to
- *  say why.
- *
- *  Reserving the space now rather than adding it in Phase 2 means the map's height
- *  does not change when the slider lands — and the map-never-below-half-viewport
- *  rule is measured against this layout, not a layout without it.
+ *  It also has to admit what the axis is. The steps are DAILY, because there is no
+ *  sub-daily series in the repo — while the event's own peak was a three-hour
+ *  window. 09 rule 8 says never claim exactness, and a slider stepping in days
+ *  over an event that happened in hours has to say so on screen rather than let
+ *  the interval imply a resolution we do not have.
  */
-export function TimeBar() {
+export function TimeBar({ data }: { data: EventData | null }) {
   const { t } = useTranslation();
+  const cursor = useUi((s) => s.cursor);
+  const setCursor = useUi((s) => s.setCursor);
+
+  const marks = data
+    ? data.series.mooring.markers.map((m) => ({
+        t: m.t,
+        key: m.key,
+        label: t(`mooring.${m.key}`),
+      }))
+    : [];
+
+  const w3 = data?.series.subdaily.wettest_3h_window_utc;
 
   return (
     <footer
-      className="flex items-center justify-between gap-4 border-t border-hairline bg-surface px-4 py-2"
+      className="flex flex-col gap-1 border-t border-hairline bg-surface px-4 py-2"
       aria-label={t('time.label')}
     >
-      <p className="text-2xs text-ink-3">{t('time.phase2')}</p>
+      <div className="flex items-center gap-4">
+        {data ? (
+          <TimeSlider steps={data.steps} value={cursor} onChange={setCursor} marks={marks} />
+        ) : (
+          <p className="flex-1 text-2xs text-ink-3">{t('rail.loading')}</p>
+        )}
+      </div>
 
-      {/* Attribution is a licence obligation for OSM, MapLibre, GMRT and Allen
-          Coral Atlas, and 00's risk register scores it. The map carries its own
-          non-collapsible control; this repeats the ODbL share-alike one, because
-          it is the obligation with an actual condition attached. */}
-      <p className="text-2xs text-ink-3">{t('time.attribution')}</p>
+      <div className="flex flex-wrap items-baseline justify-between gap-3 text-2xs text-ink-3">
+        {/* The resolution caveat, stated where the control is. */}
+        <span>
+          {t('time.dailyOnly')}
+          {w3?.max_rain_3h_mm != null ? (
+            <>
+              {' '}
+              {t('time.wettest3h', {
+                mm: w3.max_rain_3h_mm.toFixed(2),
+                start: w3.start.replace('T', ' ').replace('Z', ''),
+              })}
+            </>
+          ) : null}
+        </span>
+        <span>{t('time.attribution')}</span>
+      </div>
     </footer>
   );
 }

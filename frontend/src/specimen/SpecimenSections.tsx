@@ -3,6 +3,11 @@ import { CatchmentGlyph, OutletGlyph, ReefZoneGlyph } from '../icons';
 import { HAZARD_BANDS, HAZARD_RANGES } from '../api/types';
 import { Canary } from './Canary';
 import { specimenEntries } from './registry';
+import { registerPhase2Specimens } from './registerPhase2';
+
+// Registered at module scope, so the entries exist before the first render rather
+// than appearing on a second pass.
+registerPhase2Specimens();
 
 function Section({
   id,

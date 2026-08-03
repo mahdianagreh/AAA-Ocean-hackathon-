@@ -81,8 +81,9 @@ test('the side rail still lists every value with no network', async ({ page }) =
     await expect(rail.getByText(id, { exact: true }).first()).toBeVisible();
   }
 
-  // The one named catchment, and the area that has to survive a language switch.
-  await expect(rail.getByText('Wadi Yutum')).toBeVisible();
+  // exact:true — "Wadi Yutum" also appears inside AQ-C01's caveat prose, so an
+  // inexact match resolves to two nodes.
+  await expect(rail.getByText('Wadi Yutum', { exact: true })).toBeVisible();
   await expect(rail.getByText('4453.08', { exact: false }).first()).toBeVisible();
 });
 

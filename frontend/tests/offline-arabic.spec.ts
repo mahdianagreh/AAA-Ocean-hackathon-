@@ -89,21 +89,36 @@ test.describe('Arabic labels are placed and shaped', () => {
     await page.goto(AR);
     await mapReady(page);
 
-    const names = await page.evaluate(() => {
+    const r = await page.evaluate(() => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const m = (window as any).__map;
       if (!m) return null;
-      return m
-        .queryRenderedFeatures({ layers: ['label-protected', 'label-wadi', 'label-place'] })
-        .map((f: { properties: Record<string, unknown> }) => f.properties.name_ar)
-        .filter(Boolean);
+      const names = (fn: 'queryRenderedFeatures' | 'querySourceFeatures', arg: unknown) =>
+        (m[fn] as (a: unknown) => Array<{ properties: Record<string, unknown> }>)(arg)
+          .map((f) => f.properties.name_ar)
+          .filter(Boolean)
+          .join(' ');
+      return {
+        // Placed on screen at the current framing.
+        rendered: names('queryRenderedFeatures', {
+          layers: ['label-protected', 'label-wadi', 'label-place'],
+        }),
+        // Present in the loaded sources regardless of framing.
+        wadis: names('querySourceFeatures', 'basemap-wadis'),
+      };
     });
 
-    expect(names, 'window.__map was not exposed').not.toBeNull();
-    // متنزه العقبة البحري (Aqaba Marine Park) and وادي اليتيم (Wadi Yutum, the
-    // demo path) are both verified present in osm_aqaba.gpkg with real name:ar.
-    expect(names!.join(' ')).toContain('متنزه العقبة البحري');
-    expect(names!.join(' ')).toContain('وادي اليتيم');
+    expect(r, 'window.__map was not exposed').not.toBeNull();
+
+    // Two separate claims, because they fail for different reasons and an
+    // earlier version of this test conflated them: وادي اليتيم dropped out when
+    // the side rail widened by 1rem and pushed it off the viewport, which looked
+    // like a labelling failure but was a framing change.
+    //
+    // 1. Arabic labels are actually PLACED at this framing.
+    expect(r!.rendered).toContain('متنزه العقبة البحري');
+    // 2. وادي اليتيم — the demo path — carries a real name:ar in the data.
+    expect(r!.wadis).toContain('وادي اليتيم');
   });
 
   test('shaping visibly changes the canvas — the tofu check', async ({ page }) => {

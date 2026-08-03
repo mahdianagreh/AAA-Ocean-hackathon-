@@ -33,6 +33,8 @@ export const palette = {
       high: '#b93c27',
       critical: '#0c2327',
     },
+    data_measured: '#3b5254',
+    data_modelled: '#627476',
   },
   dark: {
     canvas: '#041418',
@@ -59,6 +61,8 @@ export const palette = {
       high: '#f98368',
       critical: '#e2eeee',
     },
+    data_measured: '#a9bbbd',
+    data_modelled: '#778a8d',
   },
 } as const;
 

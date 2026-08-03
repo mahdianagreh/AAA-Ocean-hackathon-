@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AttributionControl, Map as MapLibreMap, NavigationControl, ScaleControl } from 'maplibre-gl';
+import {
+  AttributionControl,
+  type DataDrivenPropertyValueSpecification,
+  Map as MapLibreMap,
+  NavigationControl,
+  ScaleControl,
+} from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { rtlReady } from './rtl';
 import { buildStyle, LABEL_LAYERS, labelExpression } from './style';
 import { useUi } from '../app/uiStore';
 import { AOI } from './aoi';
+import { palette } from '../design/palette.generated';
 
 /** The map. 03 §3: the dominant region, never smaller than half the viewport.
  *
@@ -13,12 +20,24 @@ import { AOI } from './aoi';
  *  Phase 2 adds the side-rail equivalents. For now the layer list and the
  *  coverage caveat are both stated in the rail rather than only drawn.
  */
-export function MapView() {
+export function MapView({ risk }: { risk?: Array<{ catchment_id: string; band: string }> }) {
   const { t } = useTranslation();
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
-  const { theme, lang } = useUi();
+  const { theme, lang, layers } = useUi();
   const [fault, setFault] = useState<string | null>(null);
+  /** A monotonic epoch, not a boolean.
+   *
+   *  A `ready` boolean flapped: `styledata` fires repeatedly during load while
+   *  isStyleLoaded() is still false, and one of those firings lands *after*
+   *  `load` — so ready went true then back to false, and every effect gated on it
+   *  silently stopped running. A layer toggle changed the checkbox and left the
+   *  map alone, which looked like a broken toggle rather than a stale flag.
+   *
+   *  Incrementing only when the style is genuinely loaded means the value can only
+   *  move forward, so effects re-run after a restyle and never un-run. */
+  const [epoch, setEpoch] = useState(0);
+  const ready = epoch > 0;
 
   // Resolve 'system' to a concrete palette — the style carries baked hex, so it
   // cannot defer to a media query the way the CSS tokens do.
@@ -77,6 +96,13 @@ export function MapView() {
           }),
           'bottom-right',
         );
+        const bump = () => {
+          if (m.isStyleLoaded()) setEpoch((n) => n + 1);
+        };
+        m.on('load', bump);
+        m.on('styledata', bump);
+        m.on('idle', bump);
+
         map.current = m;
         // Exposed so the offline-Arabic gate can call queryRenderedFeatures and
         // prove the Arabic names were actually *placed*, not merely requested.
@@ -114,7 +140,73 @@ export function MapView() {
     for (const id of LABEL_LAYERS) {
       if (m.getLayer(id)) m.setLayoutProperty(id, 'text-field', labelExpression(lang));
     }
-  }, [lang]);
+  }, [lang, epoch]);
+
+  /** Catchment fill by risk band — the land half of the choreography.
+   *
+   *  Driven by a `match` on catchment_id rather than by rewriting the GeoJSON, so
+   *  a cursor move is one setPaintProperty call instead of a source reload. That is
+   *  what lets the time-scrub stay smooth: the geometry never changes, only the
+   *  paint expression does.
+   */
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || !m.getLayer('catchments-fill') || !risk?.length) return;
+
+    // MapLibre cannot read CSS custom properties, so these resolve to hex from
+    // the generated palette — the same values, one source.
+    const p = palette[resolved];
+    type Band = keyof typeof p.risk;
+
+    /** A `match` expression built from a variable-length list.
+     *
+     *  MapLibre types `match` as a fixed-shape tuple, which a spread cannot
+     *  satisfy — the compiler cannot know the arity. The runtime contract (a
+     *  flat pair list then a fallback) is exactly what MapLibre validates, and
+     *  the style-error listener above surfaces it loudly if it is ever wrong. */
+    const matchBy = (pick: (band: Band) => string) =>
+      [
+        'match',
+        ['get', 'catchment_id'],
+        ...risk.flatMap((r) => [r.catchment_id, pick(r.band as Band)]),
+        p.ink_3,
+      ] as unknown as DataDrivenPropertyValueSpecification<string>;
+
+    m.setPaintProperty('catchments-fill', 'fill-color', matchBy((b) => p.risk[b]));
+    // 0.22, not 0.35. At 0.35 the fill buried the roads and the wadis — and the
+    // wadis are the hazard's own paths, so losing them to the risk colour defeats
+    // the point. 02 §5 puts the weight on the boundary anyway: hairlines are the
+    // container model, so the stroke carries the signal and the fill only tints.
+    m.setPaintProperty('catchments-fill', 'fill-opacity', 0.22);
+    // Every hazard fill carries a stroke at the next band up — 02 §2.
+    m.setPaintProperty('catchments-line', 'line-color', matchBy((b) => p.riskStroke[b]));
+    m.setPaintProperty('catchments-line', 'line-width', 1.4);
+  }, [risk, epoch, resolved]);
+
+  /** Layer visibility. One effect, so a toggle cannot get out of sync with the
+   *  store, and unknown layers are skipped rather than throwing. */
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    const map_: Record<string, string[]> = {
+      isobaths: ['isobaths'],
+      catchments: ['catchments-fill', 'catchments-line'],
+      reef: ['reef-fill', 'reef-line'],
+      outlets: ['outlets'],
+      coverage: ['coverage'],
+      labels: LABEL_LAYERS,
+      plume: ['plume-fill', 'plume-line'],
+      mooring: ['mooring'],
+      modelGrid: ['model-grid'],
+      rainfall: [],
+    };
+    for (const [key, ids] of Object.entries(map_)) {
+      const visible = layers[key as keyof typeof layers] ? 'visible' : 'none';
+      for (const id of ids) {
+        if (m.getLayer(id)) m.setLayoutProperty(id, 'visibility', visible);
+      }
+    }
+  }, [layers, epoch]);
 
   if (fault) {
     return (

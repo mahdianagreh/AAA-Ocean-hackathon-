@@ -66,6 +66,10 @@ JS_PATTERNS = [
     (r"\b(?:marginLeft|marginRight|paddingLeft|paddingRight|borderLeft|borderRight)\b",
      "the logical camelCase form (marginInlineStart, …)"),
     (r"\btextAlign\s*:\s*['\"](?:left|right)['\"]", "textAlign: 'start' / 'end'"),
+    # A bare `left:` / `right:` inside a style object was slipping through: the
+    # class patterns need a trailing hyphen (`left-1/2`), so `{ left: '50%' }` was
+    # invisible to this gate while being exactly the thing it exists to catch.
+    (r"(?<![\w-])(?:left|right)\s*:\s*['\"`{]", "insetInlineStart / insetInlineEnd"),
 ]
 
 fails = []
@@ -108,14 +112,20 @@ hits = []
 for f in files:
     rel = f.relative_to(ROOT).as_posix()
     is_style = f.suffix in {".css"}
-    for i, line in enumerate(f.read_text(encoding="utf-8").splitlines(), 1):
+    lines = f.read_text(encoding="utf-8").splitlines()
+    for i, line in enumerate(lines, 1):
         stripped = line.strip()
         # A comment explaining the rule is not a violation of it. This file's own
         # patterns appear in prose all over the codebase.
         if stripped.startswith(("*", "//", "/*", "<!--")):
             continue
 
-        allowed = "rtl-ok:" in line
+        # The marker is honoured on the same line OR the one immediately above.
+        # In JSX a style prop routinely sits on its own line with the justification
+        # in a comment above it, and forcing the reason onto the same line would
+        # mean truncating the reason — which defeats the point of requiring one.
+        prev = lines[i - 2] if i >= 2 else ""
+        allowed = "rtl-ok:" in line or "rtl-ok:" in prev
         found = []
         for pat, fix in (CSS_PATTERNS if is_style else CLASS_PATTERNS + JS_PATTERNS):
             for m in re.finditer(pat, line):
@@ -124,7 +134,9 @@ for f in files:
             continue
         for token, fix in found:
             if allowed:
-                exceptions.append(f"{rel}:{i}  {token}  ({line.split('rtl-ok:')[1].strip()})")
+                src = line if "rtl-ok:" in line else prev
+                reason = src.split("rtl-ok:")[1].strip().rstrip("*/ ").strip()
+                exceptions.append(f"{rel}:{i}  {token!r:<12} {reason}")
             else:
                 hits.append(f"{rel}:{i}  {token}  -> use {fix}")
 

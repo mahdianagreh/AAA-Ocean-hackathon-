@@ -292,6 +292,12 @@ def emit_ts(res):
                 x["lch"] for x in hz if x["name"] == b["stroke"])
             lines.append(f"      {b['name']}: '{hexof(*src)}',")
         lines.append("    },")
+        # The --data-* aliases, resolved. The CSS refers to them through var(),
+        # but MapLibre cannot read custom properties, so the map needs the hex
+        # under the same semantic name — otherwise the style would reach for
+        # ink_2 directly and the alias would stop meaning anything.
+        lines.append(f"    data_measured: '{hexof(*g['ink-2'])}',")
+        lines.append(f"    data_modelled: '{hexof(*g['ink-3'])}',")
         lines.append("  },")
     lines += [
         "} as const;",

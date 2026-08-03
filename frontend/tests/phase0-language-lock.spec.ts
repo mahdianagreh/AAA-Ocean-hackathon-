@@ -116,10 +116,11 @@ test.describe('bidi isolation', () => {
     // resolves backwards unless the span is isolated.
     for (const lang of ['en', 'ar'] as const) {
       await page.goto(`/specimen?solo=1&theme=light&lang=${lang}`);
-      const minimal = page.locator('[data-band="minimal"]');
-      await expect(minimal).toContainText('0–20');
-      const critical = page.locator('[data-band="critical"]');
-      await expect(critical).toContainText('81–100');
+      // Scoped to the ramp: the risk cards carry data-band too, so an unscoped
+      // selector is a strict-mode violation rather than a real failure.
+      const ramp = page.locator('#hazard');
+      await expect(ramp.locator('[data-band="minimal"]')).toContainText('0–20');
+      await expect(ramp.locator('[data-band="critical"]')).toContainText('81–100');
     }
   });
 
@@ -160,8 +161,12 @@ test.describe('the specimen matrix', () => {
 
   test('the hazard ramp renders all five bands with a stroke', async ({ page }) => {
     await page.goto('/specimen?solo=1&theme=light&lang=en');
+    // Scoped to the ramp section: the risk cards carry `data-band` too, and every
+    // band now appears in both places. Unscoped this is a strict-mode violation
+    // rather than a failure — the ramp is fine, the selector was not.
+    const ramp = page.locator('#hazard');
     for (const b of ['minimal', 'low', 'moderate', 'high', 'critical']) {
-      const chip = page.locator(`[data-band="${b}"]`);
+      const chip = ramp.locator(`[data-band="${b}"]`);
       await expect(chip).toBeVisible();
       // A fill alone is not a boundary — minimal measures 1.29 against canvas.
       const w = await chip.evaluate((el) => getComputedStyle(el).borderTopWidth);

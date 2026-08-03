@@ -17,7 +17,9 @@
     "historical": "Historical",
     "forecast": "Forecast",
     "scenario": "Scenario",
-    "phase2": "Arrives in Phase 2, with the time cursor it has to preserve."
+    "phase2": "Arrives in Phase 2, with the time cursor it has to preserve.",
+    "forecastPending": "no live forcing wired yet",
+    "scenarioPending": "controls arrive with the scenario drawer"
   },
   "connection": {
     "checking": "Checking",
@@ -41,12 +43,18 @@
     "unnamed": "unnamed",
     "reefProvisional": "Provisional zones. Sensitivity is 1.0 on all eight, pending marine-science review — so exposure varies only through the hazard term, and these zones do not differ in sensitivity.",
     "coverage": "Basemap coverage",
-    "coverageNote": "The dashed boundary is where the OpenStreetMap extract ends, at 35.0°E. Catchment AQ-C01 continues past it — Wadi Yutum drains from 90 km inland — so the absence of detail out there is a gap in the basemap, not empty desert."
+    "coverageNote": "The dashed boundary is where the OpenStreetMap extract ends, at 35.0°E. Catchment AQ-C01 continues past it — Wadi Yutum drains from 90 km inland — so the absence of detail out there is a gap in the basemap, not empty desert.",
+    "risk": "Exposure by catchment",
+    "worst": "highest",
+    "mooring": "Mooring record"
   },
   "time": {
     "label": "Time",
     "phase2": "Time slider arrives in Phase 2 and will drive every time-varying layer at once.",
-    "attribution": "Roads, wadis and place names © OpenStreetMap contributors, ODbL."
+    "attribution": "Roads, wadis and place names © OpenStreetMap contributors, ODbL.",
+    "slider": "Event time",
+    "dailyOnly": "Steps are daily — no sub-daily series exists for this event.",
+    "wettest3h": "Wettest 3 h was {{mm}} mm at one grid cell from {{start}} UTC."
   },
   "glyph": {
     "catchment": "Catchment",
@@ -64,7 +72,12 @@
     "canaryTitle": "Bidi canary",
     "canaryNote": "Each value below must keep its number before its unit, in both directions.",
     "hazardNote": "Every fill carries a 1px stroke at the next band up. A fill alone is not a boundary.",
-    "provenanceNote": "Measured, modelled and envelope differ by form, not by hue — so the distinction survives colour-blindness, greyscale and a photograph of the screen."
+    "provenanceNote": "Measured, modelled and envelope differ by form, not by hue — so the distinction survives colour-blindness, greyscale and a photograph of the screen.",
+    "sectionControls": "Controls",
+    "controlsNote": "Drag the slider in the ar/rtl panes: the track keeps left = earlier, because the chart below it does. The mode switch does mirror — it is navigation, not a time axis.",
+    "sectionRiskCards": "Risk cards",
+    "riskCardsNote": "Every band, plus a null runoff probability rendered as a gap and a row with missing rainfall hatched rather than drawn as zero.",
+    "sectionLegend": "Legend"
   },
   "hazard": {
     "minimal": "Minimal",
@@ -85,5 +98,64 @@
   "value": {
     "missing": "No data",
     "missingLong": "No data — this is a gap, not a zero"
+  },
+  "chart": {
+    "hyetograph": "Rainfall per catchment",
+    "peak": "peak"
+  },
+  "risk": {
+    "score": "Exposure score",
+    "runoffProbability": "Runoff probability",
+    "drivers": "What is driving it",
+    "confidenceLabel": "Confidence",
+    "confidence": "{{n}} of {{total}} days exceed {{threshold}}",
+    "thresholdWetDay": "this catchment's wet-day 99th percentile",
+    "provisional": "Provisional index, not model output — no trained model is registered."
+  },
+  "driver": {
+    "rain_today": "Rainfall this day",
+    "antecedent_rain_48h": "Antecedent rain, 48 h",
+    "catchment_area": "Catchment area",
+    "transmission_loss": "Transmission loss"
+  },
+  "legend": {
+    "hazard": "Exposure",
+    "plume": "Plume",
+    "reef": "Reef zones",
+    "relativeDensity": "relative density",
+    "densityCaveat": "Peak-normalised relative density, not a probability of impact. A 0.50 band is half the peak density of this simulation, which describes the cloud's own shape — not a chance the water reaches that place.",
+    "reefEqualSensitivity": "All eight zones carry the same sensitivity (1.0), pending marine-science review. Exposure varies only through the hazard term, so a darker zone means more hazard reaching it — not a more fragile reef."
+  },
+  "layers": {
+    "title": "Layers",
+    "isobaths": "Isobaths",
+    "catchments": "Catchments",
+    "rainfall": "Rainfall",
+    "plume": "Plume contours",
+    "reef": "Reef zones",
+    "outlets": "Coastal outlets",
+    "mooring": "Mooring",
+    "modelGrid": "Ocean-model grid (~9 km)",
+    "coverage": "Basemap coverage",
+    "labels": "Labels",
+    "modelGridNote": "Turn on the ocean-model grid to see the resolution problem: two to three cells span the entire Gulf, and the release point sits on a cell the model masks as land.",
+    "family": {
+      "base": "Base",
+      "land": "Land",
+      "marine": "Marine",
+      "honesty": "Resolution"
+    }
+  },
+  "mooring": {
+    "turbidity_onset": "Turbidity onset",
+    "turbidity_cleared": "Turbidity cleared",
+    "peakSediment": "Peak suspended sediment",
+    "salinityAnomaly": "Salinity anomaly",
+    "elevatedDuration": "Elevated duration",
+    "sedimentMass": "Sediment mass",
+    "noSeries": "Reported values from Kalman et al. 2025. The five-minute record itself is not in this repository, so these are the published summary points rather than a trace."
+  },
+  "series": {
+    "noSubDaily": "No sub-daily rainfall series is available for this event."
   }
 }

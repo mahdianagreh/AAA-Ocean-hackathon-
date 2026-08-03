@@ -1,0 +1,227 @@
+{
+ "event_id": "AQ-2016-10-28",
+ "window_utc": {
+  "start": "2016-10-26T00:00:00Z",
+  "end": "2016-10-30T00:00:00Z"
+ },
+ "rainfall_daily": {
+  "unit": "mm/day",
+  "provenance": "modelled",
+  "source": "data/processed/features/catchment_rainfall_daily.parquet",
+  "note": "NASA GPM IMERG V07, aggregated per catchment. Daily resolution.",
+  "by_catchment": {
+   "AQ-C01": [
+    {
+     "t": "2016-10-26T00:00:00Z",
+     "mm": 1.8767,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-27T00:00:00Z",
+     "mm": 9.5766,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-28T00:00:00Z",
+     "mm": 6.4395,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-29T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-30T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    }
+   ],
+   "AQ-C02": [
+    {
+     "t": "2016-10-26T00:00:00Z",
+     "mm": 0.4607,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-27T00:00:00Z",
+     "mm": 9.2053,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-28T00:00:00Z",
+     "mm": 8.2933,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-29T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-30T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    }
+   ],
+   "AQ-C03": [
+    {
+     "t": "2016-10-26T00:00:00Z",
+     "mm": 1.0132,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-27T00:00:00Z",
+     "mm": 10.202,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-28T00:00:00Z",
+     "mm": 6.3963,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-29T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-30T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    }
+   ],
+   "AQ-C04": [
+    {
+     "t": "2016-10-26T00:00:00Z",
+     "mm": 0.7492,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-27T00:00:00Z",
+     "mm": 9.4742,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-28T00:00:00Z",
+     "mm": 7.9937,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-29T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-30T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    }
+   ],
+   "AQ-C05": [
+    {
+     "t": "2016-10-26T00:00:00Z",
+     "mm": 0.723,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-27T00:00:00Z",
+     "mm": 9.7271,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-28T00:00:00Z",
+     "mm": 7.838,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-29T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    },
+    {
+     "t": "2016-10-30T00:00:00Z",
+     "mm": 0.0,
+     "coverage": 1.0
+    }
+   ]
+  }
+ },
+ "subdaily": {
+  "available": false,
+  "reason_key": "series.noSubDaily",
+  "granules": 156,
+  "grid_shape_time_lat_lon": [
+   156,
+   5,
+   4
+  ],
+  "extrema_not_a_series": true,
+  "wettest_windows": {
+   "rain_1h_mm": 6.76,
+   "rain_3h_mm": 11.715,
+   "rain_6h_mm": 12.99,
+   "rain_24h_mm": 20.545
+  },
+  "wettest_3h_window_utc": {
+   "start": "2016-10-28T02:30:00Z",
+   "end": "2016-10-28T05:30:00Z",
+   "max_rain_3h_mm": 11.715,
+   "derivation": "Derived from NASA GPM IMERG V07 over the Aqaba DOWNLOAD_BBOX, not directly reported by the paper."
+  }
+ },
+ "mooring": {
+  "source_citation": "Kalman, A., Katz, T., Vincze, M., Longenecker, J., Mathalon, A., Hill, P., and Goodman-Tchernov, B. (2025). Anatomy of a Flash Flood in a Hyperarid Environment: From Atmospheric Masses to Sediment Dispersal in the Sea. Natural Hazards and Earth System Sciences, 25, 3201-3219.",
+  "source_doi": "10.5194/nhess-25-3201-2025",
+  "position": {
+   "lon": 34.98151,
+   "lat": 29.53799,
+   "depth_m": -13,
+   "uncertainty_radius_m": 1500,
+   "provenance": "derived",
+   "note": "Paper states only '~250 m offshore the Kinnet Canal outlet, 13 m depth', no decimal coordinate. Do not use to more precision than the 1.5 km radius implies. Do not substitute AQ-O01 (Wadi Yutum, Jordan) for this point -- see derivation doc §0."
+  },
+  "markers": [
+   {
+    "key": "turbidity_onset",
+    "t": "2016-10-28T06:50:00Z",
+    "provenance": "converted"
+   },
+   {
+    "key": "turbidity_cleared",
+    "t": "2016-10-29T14:15:00Z",
+    "provenance": "converted"
+   }
+  ],
+  "elevated_duration_hours": {
+   "value": 31.42,
+   "unit": "h",
+   "provenance": "converted"
+  },
+  "peak_suspended_sediment": {
+   "value": 2.18,
+   "unit": "g/L",
+   "provenance": "reported"
+  },
+  "salinity_minimum": {
+   "value": 38.75,
+   "unit": "PSU",
+   "provenance": "reported"
+  },
+  "salinity_anomaly": {
+   "value": -1.75,
+   "unit": "‰",
+   "provenance": "reported",
+   "uncertainty": {
+    "sigma": 19
+   }
+  },
+  "sediment_mass_total": {
+   "value": 24400,
+   "unit": "t",
+   "provenance": "reported"
+  },
+  "series_available": false,
+  "source_file": "data/processed/marine/mooring_target_AQ-2016-10-28.json"
+ }
+}
