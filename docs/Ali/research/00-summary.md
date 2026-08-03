@@ -148,6 +148,13 @@ Yes, but a modest one — and being honest about that is an advantage.
 
 **The market is small: about 12 places we could realistically serve.** Not hundreds.
 
+**And nine of those twelve are in our own region.** MENA is not a slice of this business, it is
+almost the whole thing: four sites on the Gulf of Aqaba, two more on the Red Sea, three on the
+Gulf of Oman. Reef tourism worth roughly **$2.2 billion a year** sits in the Red Sea system, and a
+MENA-only version of the company tops out around **$750,000 to $1.25 million a year** — a team of
+four to six. **What decides that number is not the site count, it's whether one Saudi
+giga-project signs.** → [`11`](11-market.md) §2A
+
 **Running it is very cheap.** All the satellite and weather data we use is free. Servers cost
 roughly **$140–480 per site per month** — around **2–7%** of what we'd charge. Money is not the
 constraint.

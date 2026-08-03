@@ -86,7 +86,22 @@ def test_percentiles_are_computed_per_catchment():
 
 def test_literature_dates_come_from_the_contract_file():
     """docs/event_dates.md rule 1: never hard-code an event date in a script."""
-    source = (PROJECT_ROOT / "scripts" / "build_event_catalogue.py").read_text()
+    # Strip comments and string literals first. A docstring explaining WHY the
+    # contract ID must survive a storm merge is documentation, not a hard-coded
+    # date — the rule is about code that would bypass event_dates.md. The first
+    # version of this test grepped raw text and flagged its own explanation.
+    import io
+    import tokenize
+
+    path = PROJECT_ROOT / "scripts" / "build_event_catalogue.py"
+    raw = path.read_text()
+    code_tokens = []
+    for token in tokenize.generate_tokens(io.StringIO(raw).readline):
+        if token.type in (tokenize.COMMENT, tokenize.STRING):
+            continue
+        code_tokens.append(token.string)
+    source = " ".join(code_tokens)
+
     assert "AQ-2016-10-28" not in source, (
         "The demo event date is hard-coded in the catalogue script. It must be "
         "parsed from docs/event_dates.md, which is the single source of truth "

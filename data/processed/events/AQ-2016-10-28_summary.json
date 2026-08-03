@@ -1,0 +1,131 @@
+{
+  "event_id": "AQ-2016-10-28",
+  "source_product": "NASA GPM IMERG V07 Final Run",
+  "timing_contract": "docs/event_dates.md",
+  "scan_window": {
+    "start_utc": "2016-10-25T00:00:00Z",
+    "end_utc": "2016-10-28T05:59:59Z",
+    "duration_hours": 77.99972,
+    "provenance": "parsed from event_dates.md (inclusive end -> exclusive granule bound, -1 s)"
+  },
+  "bbox": {
+    "west": 34.8,
+    "south": 29.25,
+    "east": 35.15,
+    "north": 29.7
+  },
+  "granules": {
+    "expected": 156,
+    "available": 156,
+    "downloaded_this_run": 156,
+    "reused": 0,
+    "completeness_percent": 100.0,
+    "raw_bytes": 7076536,
+    "first_timestamp_utc": "2016-10-25T00:00:00Z",
+    "last_timestamp_utc": "2016-10-28T05:30:00Z",
+    "interval_minutes": 30
+  },
+  "grid": {
+    "shape_time_lat_lon": [
+      156,
+      5,
+      4
+    ],
+    "lat": [
+      29.25,
+      29.349998,
+      29.449999,
+      29.549999,
+      29.65
+    ],
+    "lon": [
+      34.849998,
+      34.950001,
+      35.049999,
+      35.149998
+    ]
+  },
+  "precipitation_rate_mm_per_hr": {
+    "min": 0.0,
+    "max": 9.789999961853027,
+    "mean": 0.2381890967500229
+  },
+  "quality": {
+    "total_valid_cells": 3120,
+    "total_missing_cells": 0,
+    "timestamps_with_missing_values": [],
+    "max_consecutive_missing_intervals": 0,
+    "interpolation_performed": false,
+    "missing_data_policy": "propagate_nan"
+  },
+  "wettest_windows": {
+    "rain_1h_mm": {
+      "variable": "rain_1h_mm",
+      "window_hours": 1.0,
+      "interval_count": 2,
+      "max_mm": 6.760000228881836,
+      "window_start_utc": "2016-10-28T02:00:00Z",
+      "window_end_utc": "2016-10-28T03:00:00Z",
+      "label_timestamp_utc": "2016-10-28T02:30:00Z",
+      "lat": 29.44999885559082,
+      "lon": 35.04999923706055,
+      "time_index": 149,
+      "lat_index": 2,
+      "lon_index": 2
+    },
+    "rain_3h_mm": {
+      "variable": "rain_3h_mm",
+      "window_hours": 3.0,
+      "interval_count": 6,
+      "max_mm": 11.714999198913574,
+      "window_start_utc": "2016-10-28T02:30:00Z",
+      "window_end_utc": "2016-10-28T05:30:00Z",
+      "label_timestamp_utc": "2016-10-28T05:00:00Z",
+      "lat": 29.649999618530273,
+      "lon": 35.04999923706055,
+      "time_index": 154,
+      "lat_index": 4,
+      "lon_index": 2
+    },
+    "rain_6h_mm": {
+      "variable": "rain_6h_mm",
+      "window_hours": 6.0,
+      "interval_count": 12,
+      "max_mm": 12.989998817443848,
+      "window_start_utc": "2016-10-28T00:00:00Z",
+      "window_end_utc": "2016-10-28T06:00:00Z",
+      "label_timestamp_utc": "2016-10-28T05:30:00Z",
+      "lat": 29.649999618530273,
+      "lon": 35.04999923706055,
+      "time_index": 155,
+      "lat_index": 4,
+      "lon_index": 2
+    },
+    "rain_24h_mm": {
+      "variable": "rain_24h_mm",
+      "window_hours": 24.0,
+      "interval_count": 48,
+      "max_mm": 20.545001983642578,
+      "window_start_utc": "2016-10-27T05:30:00Z",
+      "window_end_utc": "2016-10-28T05:30:00Z",
+      "label_timestamp_utc": "2016-10-28T05:00:00Z",
+      "lat": 29.44999885559082,
+      "lon": 34.849998474121094,
+      "time_index": 154,
+      "lat_index": 2,
+      "lon_index": 0
+    }
+  },
+  "wettest_3h_window_utc": {
+    "start": "2016-10-28T02:30:00Z",
+    "end": "2016-10-28T05:30:00Z",
+    "max_rain_3h_mm": 11.714999198913574,
+    "lat": 29.649999618530273,
+    "lon": 35.04999923706055,
+    "derivation": "Derived from NASA GPM IMERG V07 over the Aqaba DOWNLOAD_BBOX, not directly reported by the paper."
+  },
+  "scope": {
+    "catchment_aggregation_performed": false,
+    "global_hdf5_downloaded": false
+  }
+}

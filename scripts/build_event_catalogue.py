@@ -141,6 +141,68 @@ def build_climatology(daily: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+
+def group_into_storms(
+    by_day: pd.DataFrame,
+    max_gap_days: int = 1,
+    protected_ids: set[str] | None = None,
+) -> pd.DataFrame:
+    """Merge consecutive wet days into single storms.
+
+    A storm that starts on the evening of the 17th and peaks on the 18th
+    appears in a daily record as two days. Ranked as two candidates it wins
+    two of the catalogue's slots, and — far worse — the same storm can then
+    land in both the training and the test split, where it makes the model
+    look skilful at predicting something it has already seen.
+
+    Measured before this was added: 99 candidate days were only 84 distinct
+    storms, with 14 counted twice. The giveaway was pairs of consecutive days
+    carrying *identical* peak 3-hour intensity, because both windows contained
+    the same burst.
+
+    The storm is named for its wettest day, so the ID points at the day the
+    rainfall actually peaked — EXCEPT where a member day carries a literature
+    ID, which always wins.
+
+    That exception is not cosmetic. `docs/event_dates.md` fixes the canonical
+    ID for the demo event as AQ-2016-10-28, the UTC flood-arrival date, and
+    contract §2 says IDs are never renamed. Naming that storm for its wettest
+    day silently renamed it to AQ-2016-10-27 and broke the join with every
+    stored result that references the contract ID.
+    """
+    protected = protected_ids or set()
+    if by_day.empty:
+        return by_day.assign(storm_id=[], storm_days=[])
+
+    ordered = by_day.sort_values("date").reset_index(drop=True)
+    gaps = ordered["date"].diff().dt.days
+    # A gap of NaN (first row) or > max_gap_days starts a new storm.
+    ordered["storm_index"] = (gaps.isna() | (gaps > max_gap_days)).cumsum()
+
+    storms = []
+    for _, member_days in ordered.groupby("storm_index"):
+        peak = member_days.loc[member_days["max_daily_mm"].idxmax()]
+        named = set(member_days["event_id"]) & protected
+        if named:
+            # A literature ID in the storm takes precedence over the wettest
+            # day, so the contract ID survives the merge.
+            keeper = sorted(named)[0]
+            peak = peak.copy()
+            peak["event_id"] = keeper
+            peak["date"] = member_days.loc[
+                member_days["event_id"] == keeper, "date"
+            ].iloc[0]
+        storms.append({
+            **peak.drop(labels=["storm_index"]).to_dict(),
+            "storm_days": int(len(member_days)),
+            "storm_start": member_days["date"].min(),
+            "storm_end": member_days["date"].max(),
+            "storm_total_mm": float(member_days["max_daily_mm"].sum()),
+            "merged_event_ids": ",".join(sorted(member_days["event_id"])),
+        })
+    return pd.DataFrame(storms)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--daily", type=Path, default=DAILY_PARQUET)
@@ -193,7 +255,28 @@ def main() -> int:
     )
 
     by_day["event_id"] = by_day["date"].dt.strftime("AQ-%Y-%m-%d")
-    by_day = by_day.sort_values("max_daily_mm", ascending=False).reset_index(drop=True)
+
+    # Merge consecutive wet days into storms BEFORE ranking, so the top-N are
+    # N distinct storms rather than N days that may include the same storm
+    # twice. Only wet days can join a storm — otherwise every day in the
+    # record chains into one run.
+    wet = by_day[by_day["max_daily_mm"] >= WET_DAY_MM].copy()
+    dry = by_day[by_day["max_daily_mm"] < WET_DAY_MM].copy()
+    storms = group_into_storms(
+        wet, protected_ids={item["event_id"] for item in literature_dates()}
+    )
+    if not dry.empty:
+        dry = dry.assign(storm_days=1, storm_start=dry["date"],
+                         storm_end=dry["date"],
+                         storm_total_mm=dry["max_daily_mm"],
+                         merged_event_ids=dry["event_id"])
+        storms = pd.concat([storms, dry], ignore_index=True)
+
+    merged_away = len(by_day) - len(storms)
+    logger.info("  %d wet day(s) -> %d storm(s); %d duplicate day(s) merged",
+                len(wet), len(storms), merged_away)
+
+    by_day = storms.sort_values("max_daily_mm", ascending=False).reset_index(drop=True)
     by_day["rank"] = by_day.index + 1
 
     selected = by_day.head(args.top_n).copy()
@@ -202,7 +285,14 @@ def main() -> int:
     # Force-include literature events regardless of rank.
     forced = literature_dates()
     for item in forced:
-        match = by_day[by_day["date"] == item["date"]]
+        # The literature date may have been merged into a storm named for a
+        # neighbouring, wetter day — so match on membership, not just on the
+        # storm's own date.
+        match = by_day[
+            by_day["merged_event_ids"].str.contains(item["event_id"], regex=False)
+        ]
+        if match.empty:
+            match = by_day[by_day["date"] == item["date"]]
         if match.empty:
             logger.warning(
                 "%s (%s) is not in the daily record — outside the swept range?",

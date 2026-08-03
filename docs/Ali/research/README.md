@@ -145,7 +145,7 @@ null**, not a data-quality problem. The documented pivot is to validate against 
 
 | # | File | Contents |
 |---|---|---|
-| 11 | [`11-market.md`](11-market.md) | TAM/SAM/SOM with shown arithmetic; the reef-valuation trap; Aqaba value-at-risk |
+| 11 | [`11-market.md`](11-market.md) | TAM/SAM/SOM with shown arithmetic; **§2A MENA-only sizing**; the reef-valuation trap; Aqaba value-at-risk |
 | 12 | [`12-buyers.md`](12-buyers.md) | Four buyer archetypes, named contacts, value quantification |
 | 13 | [`13-economics.md`](13-economics.md) | Revenue streams, cost structure, per-deployment unit economics |
 | 14 | [`14-funding.md`](14-funding.md) | **The GFCR programme, GEF 10905, PERSGA, policy hooks, parametric insurance** |

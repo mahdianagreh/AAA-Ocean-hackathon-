@@ -1,0 +1,227 @@
+{
+  "generated_utc": "2026-08-02T20:44:35Z",
+  "rows": 35,
+  "events_processed": 7,
+  "events_skipped": 93,
+  "skipped": [
+    {
+      "event_id": "AQ-2014-03-09",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2022-01-01",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2010-01-18",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2023-03-14",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2010-02-25",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2020-03-12",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2016-03-26",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2018-12-05",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2002-11-09",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2022-01-09",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2014-12-09",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2016-10-27",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2016-12-23",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2001-04-04",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2016-12-24",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2002-10-30",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2018-04-27",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2020-01-10",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2019-01-27",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2019-02-07",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2013-01-25",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2016-10-28",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2023-01-03",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2015-02-23",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2014-02-15",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2022-11-23",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2021-01-14",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2003-12-15",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2001-04-03",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2020-03-13",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2010-12-29",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2021-02-03",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2013-02-01",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2013-01-27",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2011-01-18",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2020-02-24",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2021-12-31",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2007-01-04",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2019-02-06",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2004-01-22",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2012-01-30",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2008-01-10",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2017-01-26",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2010-01-13",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2019-12-15",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2007-02-03",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2013-02-06",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2018-11-23",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2014-03-02",
+      "reason": "no ERA5 months downloaded yet"
+    },
+    {
+      "event_id": "AQ-2016-01-07",
+      "reason": "no ERA5 months downloaded yet"
+    }
+  ],
+  "label_columns": [
+    "label_surface_runoff_mm",
+    "label_subsurface_runoff_mm"
+  ],
+  "label_window_hours": 24,
+  "soil_lags_hours": [
+    24,
+    72
+  ],
+  "rain_windows_hours": [
+    24,
+    72,
+    168
+  ],
+  "notes": [
+    "ERA5-Land is land-only; sea cells are permanently NaN and contribute to neither numerator nor denominator.",
+    "Runoff columns are prefixed label_ so they cannot be mistaken for features. They are the target, never an input.",
+    "Wind direction is meteorological \u2014 the bearing the wind blows FROM."
+  ]
+}

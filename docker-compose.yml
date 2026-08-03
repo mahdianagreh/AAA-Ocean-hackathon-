@@ -1,0 +1,80 @@
+# ReefShield Aqaba — the whole stack, one command.
+#
+#   docker compose up --build              api + worker
+#   docker compose --profile frontend up   adds the map, once Ali's shell exists
+#
+# There is no database service. The stack talks to Supabase Cloud, which is a
+# deliberate decision and not an omission: it means the demo needs a live
+# connection. The concept doc's risk register rates "downloads fail during
+# demo" medium probability / high impact, and conference wifi is exactly that
+# scenario. If it bites, the fix is a cached-fixture fallback in the api
+# service rather than reinstating Postgres.
+
+name: reefshield
+
+x-supabase: &supabase
+  # Set in .env, which is gitignored. .env.example lists every key.
+  SUPABASE_URL: ${SUPABASE_URL:-}
+  SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
+  SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+  SUPABASE_DSN: ${SUPABASE_DSN:-}
+
+services:
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: api
+    ports:
+      - "8000:8000"
+    environment:
+      <<: *supabase
+      REEFSHIELD_ROOT: /app
+      REEFSHIELD_CORS_ORIGINS: http://localhost:5173,http://localhost:3000
+      GIT_SHA: ${GIT_SHA:-unknown}
+    volumes:
+      # Read-only: the API reads geometry and model artifacts, and must never
+      # be the thing that writes to data/.
+      - ./data:/app/data:ro
+      # Live reload in development. Drop this line for a production image.
+      - ./backend/src:/app/backend/src:ro
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: worker
+    environment:
+      <<: *supabase
+      REEFSHIELD_ROOT: /app
+      REEFSHIELD_WORKER_POLL: ${REEFSHIELD_WORKER_POLL:-30}
+    volumes:
+      # Writable, unlike the API: the worker is what runs the pipeline.
+      - ./data:/app/data
+      - ./backend/src:/app/backend/src:ro
+      - ./scripts:/app/scripts:ro
+    # No ports. The worker is never called - it picks work up.
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    # Behind a profile so `docker compose up` works for everyone before the
+    # frontend exists. Ali's directory is not created here - that is his.
+    profiles: ["frontend"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      api:
+        condition: service_healthy

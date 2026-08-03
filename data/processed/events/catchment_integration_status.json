@@ -1,0 +1,12 @@
+{
+  "phase": "catchment_integration",
+  "status": "SKIPPED_MISSING_DEPENDENCY",
+  "checked_paths": [
+    "data/processed/vectors/catchments.gpkg",
+    "data/processed/vectors/catchments_PROVISIONAL.gpkg"
+  ],
+  "reason": "No catchment polygons available \u2014 cannot aggregate rainfall.",
+  "owner_task": "P1 in tasks/00-contracts.md (Mahdi, ~1 h, HydroBASINS level 9)",
+  "fabricated_geometry": false,
+  "blocks_master_task": false
+}
