@@ -54,6 +54,7 @@ ERA5_DIR = ROOT / "raw/era5_land/events"
 RUNOFF = ROOT / "data/processed/features/daily_runoff_all_days.parquet"
 RAINFALL = ROOT / "data/processed/features/catchment_rainfall_daily.parquet"
 TERRAIN = ROOT / "data/processed/features/catchment_terrain.parquet"
+CLIMATOLOGY = ROOT / "data/processed/features/catchment_rainfall_climatology.parquet"
 OUT = ROOT / "data/processed/features/training_set_full.parquet"
 
 MONTH_FILE = re.compile(r"era5_land_(\d{8})T0000_(\d{8})T2300\.nc$")
@@ -92,11 +93,24 @@ def catchment_masks(ds):
     return out
 
 
-def daily_soil_moisture() -> pd.DataFrame:
-    """Daily mean swvl1 per catchment, for EVERY day in the months on disk.
+# Instantaneous state variables. They must NEVER be deaccumulated - only the
+# cumulative fields (tp, sro, ssro) are, and treating an instantaneous field as
+# cumulative would produce differences of state rather than the state itself.
+INSTANT_VARS = {
+    "swvl1": "soil_moisture",
+    "u10": "wind_u",
+    "v10": "wind_v",
+    "t2m": "temp_k",
+}
 
-    swvl1 is instantaneous and must never be deaccumulated, so this is a plain
-    daily mean of hourly values.
+
+def daily_soil_moisture() -> pd.DataFrame:
+    """Daily means of every instantaneous variable, for EVERY day on disk.
+
+    swvl1, u10, v10 and t2m are instantaneous and must never be deaccumulated,
+    so these are plain daily means of hourly values. All four come from the same
+    files already being opened for sro - wind and temperature were simply not
+    being read.
     """
     from ingestion.era5_land import read_era5_land
 
@@ -112,18 +126,21 @@ def daily_soil_moisture() -> pd.DataFrame:
         except Exception as exc:
             print(f"  SKIP {f.name}: {type(exc).__name__}")
             continue
-        if "swvl1" not in ds:
+        present = {k: v for k, v in INSTANT_VARS.items() if k in ds}
+        if "swvl1" not in present:
             ds.close()
             continue
         t = pd.to_datetime(ds["time"].values)
-        arr = ds["swvl1"].values
         for cid, mask in masks.items():
-            s = pd.Series(arr[:, mask].mean(axis=1), index=t)
-            daily = s.resample("1D").mean()
-            rows.append(pd.DataFrame({
-                "date": daily.index, "catchment_id": cid,
-                "soil_moisture": daily.values,
-            }))
+            rec = {}
+            for var, out_name in present.items():
+                s = pd.Series(ds[var].values[:, mask].mean(axis=1), index=t)
+                rec[out_name] = s.resample("1D").mean()
+            frame = pd.DataFrame(rec)
+            frame.index.name = "date"
+            frame = frame.reset_index()
+            frame["catchment_id"] = cid
+            rows.append(frame)
         ds.close()
         if i % 25 == 0 or i == len(files):
             print(f"  swvl1 [{i}/{len(files)}]")
@@ -186,6 +203,73 @@ def main():
           "their lags are NaN, never zero")
 
     print("\n4/4  target and negative strata ...")
+    # Wind as speed and direction rather than raw u/v components: a tree cannot
+    # combine two orthogonal components into a magnitude, so it would have to
+    # rediscover the hypotenuse from splits.
+    if {"wind_u", "wind_v"} <= set(df.columns):
+        df["wind_speed_ms"] = np.hypot(df.wind_u, df.wind_v)
+        df["wind_direction_deg"] = (np.degrees(np.arctan2(-df.wind_u, -df.wind_v))
+                                    % 360)
+    if "temp_k" in df.columns:
+        df["temp_c"] = df.temp_k - 273.15
+
+    # Season. Aqaba's rain is almost entirely Oct-Mar, and autumn convective
+    # storms behave differently from winter frontal ones - the Oct 2016 event
+    # delivered 82% of its rainfall in 18 hours. Encoded cyclically so December
+    # and January sit adjacent rather than 11 apart, which an integer month
+    # would imply.
+    doy = df.date.dt.dayofyear
+    df["season_sin"] = np.sin(2 * np.pi * doy / 365.25)
+    df["season_cos"] = np.cos(2 * np.pi * doy / 365.25)
+
+    # ── (1) rainfall normalised by each catchment's own climatology ──────
+    # LOCO's difficulty is transfer to an UNSEEN catchment, and absolute mm do
+    # not transfer: 6 mm on 4,453 km2 is not 6 mm on 36 km2. A position in the
+    # catchment's own wet-day distribution does. AQ-C01 scores 0.553 against
+    # 0.75-0.81 elsewhere, and it is exactly where absolute values transfer
+    # worst - so this targets the weakest fold rather than the average.
+    clim = pd.read_parquet(CLIMATOLOGY)[
+        ["catchment_id", "p50_wet_mm", "p90_wet_mm", "p99_wet_mm",
+         "wet_day_threshold_mm"]]
+    df = df.merge(clim, on="catchment_id", how="left")
+    df["rain_over_p50"] = df.precipitation_mm_day / df.p50_wet_mm
+    df["rain_over_p90"] = df.precipitation_mm_day / df.p90_wet_mm
+    df["rain_over_p99"] = df.precipitation_mm_day / df.p99_wet_mm
+    # Empirical percentile within the catchment's own history - the same
+    # quantity a hydrologist means by "a 1-in-N-years day here".
+    df["rain_self_percentile"] = (
+        df.groupby("catchment_id").precipitation_mm_day.rank(pct=True))
+
+    # ── (2) consecutive dry days before the event ────────────────────────
+    # The strongest missing physical predictor after intensity. Arid soil
+    # crusts when it bakes, and a crust sheds water rather than absorbing it -
+    # which is why DRY antecedent conditions RAISE runoff. soil_moisture_lag1d
+    # captures wetness but not the DURATION of dryness, which is what forms
+    # the crust.
+    wet_thr = df.wet_day_threshold_mm.fillna(1.0)
+    is_dry = (df.precipitation_mm_day < wet_thr).astype(int)
+    def _run_length(v):
+        out, run = np.empty(len(v), dtype=float), 0
+        for i, dry in enumerate(v):
+            out[i] = run          # days dry BEFORE today, so no same-day leak
+            run = run + 1 if dry else 0
+        return out
+    df["dry_days_before"] = (
+        df.assign(_d=is_dry).sort_values(["catchment_id", "date"])
+          .groupby("catchment_id")._d.transform(lambda s: _run_length(s.to_numpy()))
+    )
+    df.loc[broken, "dry_days_before"] = np.nan   # month-file gaps again
+
+    # ── (4) label quality weight ────────────────────────────────────────
+    # AQ-C01's label is a 41-cell area mean. The other four are single ERA5
+    # cells, three of them nearest-cell point samples with no cell centre
+    # inside the catchment, and ERA5-Land is ~81 km2 per cell against
+    # catchments of 36-65 km2. Treating a good label and a noisy one as
+    # equally true is a choice; this makes the other choice available.
+    df["label_weight"] = np.where(
+        df.era5_cell_inside_polygon & (df.era5_cells > 1), 1.0,
+        np.where(df.era5_cell_inside_polygon, 0.75, 0.5))
+
     df["target"] = (df.sro_mm_day > RUNOFF_THRESHOLD_MM).astype(int)
     # Hard negatives are where the boundary is: measurable rain, little runoff.
     df["negative_stratum"] = np.where(
