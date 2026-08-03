@@ -55,9 +55,42 @@ def git_sha() -> str:
 
 
 # ── the geometry contract, settled 2 Aug ────────────────────────────────
-# Served from constants rather than read from disk so the API answers even
-# without the data volume mounted. The file is authoritative; this mirrors it,
-# and the values match tasks/00-contracts.md §2.
+OUTLETS_GEOJSON = ROOT / "data/processed/vectors/outlets.geojson"
+
+
+def _outlets_from_disk() -> list[dict] | None:
+    """Read the outlets, caveats included, from the file that owns them.
+
+    scripts/12_culvert_crosscheck.py writes both the GeoPackage and this
+    GeoJSON. Reading it here means the AQ-O04 harbour warning has exactly one
+    source: an earlier version of this module carried its own copy of that
+    text, which is precisely how a safety caveat drifts out of sync with the
+    data it describes.
+
+    Plain json rather than geopandas - the serving image has no geospatial
+    stack, and five point features do not justify adding one.
+    """
+    if not OUTLETS_GEOJSON.exists():
+        return None
+    try:
+        import json
+        with OUTLETS_GEOJSON.open() as fh:
+            fc = json.load(fh)
+        out = []
+        for feat in fc.get("features", []):
+            p = dict(feat.get("properties") or {})
+            lon, lat = feat["geometry"]["coordinates"][:2]
+            p["lon"], p["lat"] = round(lon, 5), round(lat, 5)
+            out.append(p)
+        return out or None
+    except Exception:
+        # A malformed file must not take the API down; fall through to the
+        # embedded contract values, which are the same numbers.
+        return None
+
+
+# Fallback only, for when the data volume is not mounted. These mirror
+# tasks/00-contracts.md §2; the file on disk is authoritative.
 GEOMETRY = [
     {"catchment_id": "AQ-C01", "name": "Wadi Yutum", "area_km2": 4453.08,
      "outlet_id": "AQ-O01", "lon": 34.97073, "lat": 29.54560,
@@ -137,14 +170,25 @@ def catchments():
 
 @app.get("/api/v1/outlets", tags=["geometry"])
 def outlets():
-    verified = [c for c in GEOMETRY if c["position_confidence"] != "low"]
+    """Release points, with every caveat attached.
+
+    `caveat` travels in the response on purpose: the AQ-O04 harbour warning
+    living only in a report is how a plume gets released into an enclosed
+    basin and nobody notices.
+    """
+    disk = _outlets_from_disk()
+    rows = disk or GEOMETRY
+    keys = ("outlet_id", "catchment_id", "lon", "lat", "position_confidence",
+            "caveat", "culvert_verdict", "unmodelled_coastal_culverts",
+            "nearest_culvert_m", "upstream_km2")
+    verified = [r for r in rows if r.get("position_confidence") != "low"]
     return {
-        "count": len(GEOMETRY),
+        "count": len(rows),
         "verified_against_imagery": len(verified),
         "share_of_discharge_verified": 0.964,
-        "outlets": [{k: c[k] for k in
-                     ("outlet_id", "catchment_id", "lon", "lat",
-                      "position_confidence", "caveat")} for c in GEOMETRY],
+        "source": "data/processed/vectors/outlets.geojson" if disk
+                  else "embedded contract values — data volume not mounted",
+        "outlets": [{k: r[k] for k in keys if k in r} for r in rows],
     }
 
 
