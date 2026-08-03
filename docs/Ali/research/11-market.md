@@ -10,6 +10,10 @@
 > **Realistic revenue:** **$0–80k** in year one (grant-funded, not sold) → **$450k–1.5M** by year
 > three. **This is a grant-to-contract business, not a venture-scale SaaS.**
 >
+> **MENA is not a segment of this — it is nearly all of it.** **9 of the 12 sites**, all six
+> non-Caribbean Tier 1 sites, **~$2.2 bn/yr** of reef tourism value at risk, and a steady-state
+> ceiling of **~$750k–1.25M/yr**. See **§2A**.
+>
 > **⚠️ The trap:** reef-valuation figures disagree by **two orders of magnitude**. Use the
 > conservative direct-use number (**$112k/km²/yr**), never Costanza's ~$35M/km². Applying Costanza
 > gives "$200 million of reef," which collapses under one question and takes your honest numbers
@@ -99,6 +103,83 @@ access. Puerto Rico, West Maui, Burdekin — already served. Ningaloo — no pro
 Makran — insufficient evidence. Arabian Gulf — wrong trigger.
 
 **12 serviceable sites is the honest number.** It is small. That is fine — see §4.
+
+---
+
+## 2A · MENA only — where the business actually is
+
+**[derived]** The question *"what is the market in our region?"* has a cleaner answer than the
+global one, because **MENA is not a segment of this business — it is very nearly all of it.**
+
+### Nine of the twelve serviceable sites are MENA
+
+| Sub-region | Sites | Names | Tier ([`09`](09-scorecard.md)) |
+|---|---:|---|---|
+| Gulf of Aqaba | 4 | Aqaba · Eilat · Taba/Nuweiba/Dahab · Saudi Aqaba coast + NEOM | 12, 11, 11, 11 — all Tier 1 |
+| Red Sea wider | 2 | Hurghada → Marsa Alam · Jeddah/central Red Sea | 11 (T1), 10 (T2) |
+| Gulf of Oman | 3 | Muscat/Daymaniyat · Fujairah east coast · Dhofar/Salalah | 11 (T1), 10 (T2), 9 (T2) |
+| **MENA total** | **9** | | **6 of them Tier 1** |
+| *Rest of World* | *3* | *Bonaire/Curaçao · Toliara · Baja California Sur* | |
+
+**[derived]** So **75% of the serviceable site count is MENA** — and the quality skews harder
+than the count does: **all six Tier 1 sites in §2 outside the Caribbean are MENA**, and the
+first five entries in the expansion sequence in
+[`09-scorecard.md`](09-scorecard.md) §Recommended expansion sequence are
+*all* MENA. Of the three Rest-of-World sites, one (Toliara) is explicitly modelled at
+**$0–50k, cost-recovery only** in §3.
+
+### Value at risk — MENA
+
+**[derived]** From the same arithmetic as §1, restricted to the region:
+
+| Layer | Figure | Basis |
+|---|---|---|
+| Red Sea system reef tourism value | **~$2.2 bn/yr** | Red Sea = **~6% of global coral reef** **[sourced]** × ~$36 bn/yr global reef tourism **[sourced]** |
+| Gulf of Oman increment | **not quantified** | **No published reef-area share exists for it.** Do not invent one |
+| **MENA share of the $3–4 bn arid TAM in §1** | **~55–75%** | $2.2 bn of $3–4 bn **[derived]** |
+
+> The Gulf of Aqaba sits *inside* the Red Sea figure — do not add it on top. And as in §1,
+> this is **value at risk, not a revenue target.**
+
+### Realistic MENA revenue
+
+**[assumption]** Two views, because they answer different questions.
+
+**Three-year view** — take the §3 build-out and note that the sites in it are almost entirely
+MENA: Aqaba (yr 1), Egypt corridor + a giga-project pilot (yr 2), Oman + Saudi expansion (yr 3).
+Only Bonaire is not. So **~85–90% of the year-three $450k–1.5M is MENA → ~$400k–1.35M/yr.**
+
+**Full-build view** — all 9 MENA sites live, which is a year 4+ scenario, using the
+per-site contribution from [`13-economics.md`](13-economics.md) §4:
+
+| Class | Sites | Contribution each | Subtotal |
+|---|---:|---|---:|
+| Authority-class (ASEZA, Egypt EEAA, Oman MECA, Fujairah, Israel INPA) | 7 | ~$73k/yr | **~$511k** |
+| Giga-project class (NEOM/Saudi Aqaba coast, Jeddah) | 2 | $150–400k licence − ~$29k cost = $121–371k | **~$242–742k** |
+| **MENA steady state** | **9** | | **~$750k – 1.25M/yr** |
+
+**[judgement]** That is the honest ceiling for a MENA-only version of this business: **under
+$1.5M/yr, sustaining a team of roughly four to six.** It does not become a large company by
+adding MENA sites — it becomes one only via the adjacent industrial markets in §4.4.
+
+### The number that actually decides the MENA figure
+
+**[judgement]** Not the site count — **the Saudi giga-projects.** NEOM, Red Sea Global and
+Jeddah Central sit inside a **$1.3 trillion** programme **[sourced]**, and a single
+environmental-compliance contract there at the top of the $150–400k band is worth **five
+authority-class sites**. The MENA number is therefore bimodal: without a giga-project it is
+~$500k/yr; with one it is ~$900k/yr; with two it approaches $1.25M.
+
+**The same fact is the risk.** One contract at $400k would be **~30–50% of all MENA revenue** —
+the customer-concentration risk already logged in [`13-economics.md`](13-economics.md) §5.
+Worth stating before a judge does.
+
+### The valuation trap, MENA edition
+
+**[judgement]** §0's warning gets *more* dangerous at regional scale, not less. Applying
+Costanza's ~$35M/km² to Red Sea reef area produces a **multi-billion-dollar** "value protected"
+headline. It is indefensible under one question and it would discredit the $2.2 bn figure —
+which is itself sourced and defensible — sitting right next to it. **Use the direct-use number.**
 
 ---
 
