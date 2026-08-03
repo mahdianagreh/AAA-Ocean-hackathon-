@@ -76,3 +76,10 @@ frontend/blob-report/
 frontend/*.tsbuildinfo
 frontend/.env.local
 
+
+# Root-level raw downloads (1.2 GB IMERG + 82 MB ERA5-Land month files).
+# These live at ./raw and ./era5 rather than data/raw, so the data/** rules
+# above never covered them. Reproducible via the fetch scripts; ERA5 months in
+# particular are what scripts/13_extract_sro_all_days.py reads.
+/raw/
+/era5/
