@@ -14,8 +14,9 @@ DESIGN NOTES THAT MATTER MORE THAN THE ROUTES
 
 * Nothing here opens a database connection. Reads go through `data_access`, which
   is the single place that knows where a contract artifact lives. Exposure runs
-  persist through `exposure.store`, which uses SQLite behind two functions so it
-  can be swapped for the shared session layer when that lands.
+  persist through `exposure.store`, which writes local SQLite behind two functions —
+  see its docstring for why that is still right now that Nizar's Supabase session
+  layer exists.
 
 * Missing is missing. If an artifact is absent the endpoint says so — it does not
   invent a plausible placeholder to keep its shape.
@@ -83,11 +84,21 @@ from .schemas import (
 API_VERSION = "0.2.0"
 PREFIX = "/api/v1"
 
+def _reef_zones_version() -> str:
+    """Report which reef-zone artifact is actually being served.
+
+    Resolved rather than hardcoded: this string ends up in every stored exposure
+    run's `model_versions`, and a run recorded as PROVISIONAL when it was computed
+    against the real Atlas export would be unreconstructable later.
+    """
+    return "PROVISIONAL" if da.reef_zones()[1] else "AllenCoralAtlas-v2_0"
+
+
 MODEL_VERSIONS = {
     "exposure_engine": "0.2.0",
     "runoff_model": "stub-0.1",
     "particle_engine": "stub-0.1",
-    "reef_zones": "PROVISIONAL",
+    "reef_zones": _reef_zones_version(),
     "bathymetry": "GMRT-substituted-for-GEBCO",
 }
 
@@ -286,21 +297,30 @@ def list_reef_zones(include_geometry: bool = Query(True)):
     out = []
     for z in zones:
         caveats = cav.sensitivity_placeholder(z["sensitivity_weight_status"])
-        caveats += cav.reef_zone_width()
+
         if is_provisional:
+            # The 250 m width assumption applies ONLY to the hand-placed geometry.
+            caveats += cav.reef_zone_width()
             caveats += cav.provisional_reef_zones()
-        if z["reef_zone_id"] in ("R-01", "R-02"):
-            caveats.append(Caveat(
-                field="reef_zone_id",
-                message=(
-                    f"{z['reef_zone_id']} covers developed beach and port frontage where "
-                    "reef presence is doubtful. If the Allen Coral Atlas export yields "
-                    "fewer real zones, this one may be dropped — the remaining IDs keep "
-                    "their names and are never renumbered."
-                ),
-                severity="warning",
-                source="docs/data_dictionary.md §4",
-            ))
+            if z["reef_zone_id"] in ("R-01", "R-02"):
+                caveats.append(Caveat(
+                    field="reef_zone_id",
+                    message=(
+                        f"{z['reef_zone_id']} covers developed beach and port frontage "
+                        "where reef presence is doubtful. If the Allen Coral Atlas export "
+                        "yields fewer real zones, this one may be dropped — the remaining "
+                        "IDs keep their names and are never renumbered."
+                    ),
+                    severity="warning",
+                    source="docs/data_dictionary.md §4",
+                ))
+        else:
+            # Real ACA geometry. Emphatically NOT the 250 m assumption any more —
+            # saying so would be a false statement about a 5 m Atlas product. What
+            # does apply is that the named zones miss most of the mapped reef, and
+            # that our depth grid disagrees with the Atlas in places.
+            caveats += cav.reef_area_correction() + cav.reef_scope_is_jordan()
+            caveats += cav.reef_depth_disagreement()
         out.append(ReefZoneOut(
             **{k: v for k, v in z.items() if k != "geometry"},
             geometry=z.get("geometry") if include_geometry else None,
@@ -548,7 +568,8 @@ def exposure_calculate(req: ExposureRequest):
             caveats=zone_caveats,
         ))
 
-    run_caveats = cav.harbour_outlet(req.outlet_id) + cav.risk_band_thresholds()
+    run_caveats = (cav.harbour_outlet(req.outlet_id) + cav.risk_band_thresholds()
+                   + cav.reef_area_correction() + cav.reef_scope_is_jordan())
 
     # An empty result list is a real finding, not a failure — but it must say so.
     # Returning a bare [] looks identical to a broken query, and a reviewer would

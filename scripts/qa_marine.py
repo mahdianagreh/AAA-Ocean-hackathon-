@@ -19,6 +19,7 @@ import rasterio
 import rasterio.features
 
 matplotlib.use("Agg")
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from pyproj import Transformer
 from shapely.geometry import LineString, MultiPolygon
@@ -35,7 +36,10 @@ from qa_common import CRS_BASEMAP, add_satellite, save_fig
 
 DEPTH = PROCESSED / "bathymetry" / "depth_utm36n.tif"
 COAST = VECTORS / "coastline.gpkg"
-REEF = VECTORS / "reef_zones_PROVISIONAL.gpkg"
+REEF_PROV = VECTORS / "reef_zones_PROVISIONAL.gpkg"
+REEF_REAL = VECTORS / "reef_zones.gpkg"
+# Figures show what is actually SERVED — the real Atlas export when it exists.
+REEF = REEF_REAL if REEF_REAL.exists() else REEF_PROV
 SRC = "Marine chain"
 
 
@@ -60,7 +64,7 @@ def reef_01_over_satellite():
                     fontsize=9.5, weight="bold", color="white", va="center",
                     bbox=dict(boxstyle="round,pad=0.3", fc="black", alpha=0.6))
     add_satellite(ax, zoom=13)
-    ax.set_title("Provisional reef zones R-01…R-08 over Esri WorldImagery")
+    ax.set_title(f"Reef zones R-01…R-08 over Esri WorldImagery\nsource: {REEF.name}")
     ax.set_xticks([]); ax.set_yticks([])
     save_fig(fig, "reef_01_provisional_over_satellite",
              "All 8 zones on satellite imagery. Every zone must lie on the water side of the "
@@ -85,7 +89,7 @@ def reef_02_zone_insets():
                      f"{r['area_km2']:.2f} km², park {r['marine_park_overlap_pct']:.0f}%, "
                      f"med depth {r['depth_median_m']:.0f} m", fontsize=9)
         ax.set_xticks([]); ax.set_yticks([])
-    fig.suptitle("Per-zone detail — each provisional reef zone on imagery", fontsize=14)
+    fig.suptitle(f"Per-zone detail — {REEF.name}", fontsize=14)
     save_fig(fig, "reef_02_per_zone_insets",
              "Each zone individually against imagery, annotated with area, Marine Park "
              "overlap and median depth. R-01/R-02 visibly cover developed beach and port "
@@ -122,8 +126,11 @@ def _strips_without_band_clip():
 
 
 def reef_03_overlap_before_after():
-    before = _strips_without_band_clip()
-    after = gpd.read_file(REEF).to_crs(AOI_CRS_PROJECTED).set_index("reef_zone_id")
+    before = _strips_without_band_clip()   # pre-fix provisional geometry
+    # REEF_PROV, not REEF: this figure documents the band-clip bug in the
+    # provisional pipeline. Diffing it against the real Atlas geometry would
+    # compare unrelated things — it briefly reported a bogus 169,117 m2 overlap.
+    after = gpd.read_file(REEF_PROV).to_crs(AOI_CRS_PROJECTED).set_index("reef_zone_id")
 
     ov_before = before["R-04"].intersection(before["R-05"])
     ov_after = after.loc["R-04", "geometry"].intersection(after.loc["R-05", "geometry"])
@@ -197,6 +204,99 @@ def reef_04_marine_park():
 
 
 # ------------------------------------------------------------------- depth
+
+def reef_05_provisional_vs_final():
+    """The swap-in check §6.1 asks for by name, and the one that carries the finding.
+
+    Two things must be visible here: that R-NN still means the same stretch of coast
+    (centroid drift), and that the named zones capture only part of the reef the Atlas
+    actually maps. The second is the more consequential and was invisible until the
+    real export existed.
+    """
+    if not REEF_REAL.exists():
+        print("    (skip reef_05 — no real ACA export yet)"); return
+
+    prov = gpd.read_file(REEF_PROV).to_crs(AOI_CRS_PROJECTED)
+    real = gpd.read_file(REEF_REAL).to_crs(AOI_CRS_PROJECTED)
+    frag_path = VECTORS / "aca_fragments_BEFORE_MERGE.gpkg"
+    frags = (gpd.read_file(frag_path).to_crs(AOI_CRS_PROJECTED)
+             if frag_path.exists() else None)
+
+    fig, axes = plt.subplots(1, 3, figsize=(21, 11))
+
+    # --- panel 1: extents, provisional vs Atlas
+    ax = axes[0]
+    prov.boundary.plot(ax=ax, color="#ff6600", linewidth=1.8, label="provisional (250 m strip)")
+    real.plot(ax=ax, facecolor="#00a03c", edgecolor="#00a03c", alpha=0.85,
+              label="Allen Coral Atlas v2.0")
+    ax.legend(fontsize=9, loc="upper right")
+    ax.set_title(f"Extents\nprovisional {prov.geometry.area.sum() / 1e6:.2f} km² → "
+                 f"Atlas {real.geometry.area.sum() / 1e6:.3f} km²")
+    ax.set_xlabel("easting (m)"); ax.set_ylabel("northing (m)")
+
+    # --- panel 2: centroid drift, the ID-continuity check
+    ax = axes[1]
+    pc = prov.set_index("reef_zone_id").geometry.centroid
+    rc = real.set_index("reef_zone_id").geometry.centroid
+    drifts = []
+    for zid in sorted(rc.index):
+        d_km = pc[zid].distance(rc[zid]) / 1000
+        drifts.append((zid, d_km))
+        ax.plot([pc[zid].x, rc[zid].x], [pc[zid].y, rc[zid].y], "-",
+                color="grey", lw=1.2, zorder=2)
+        ax.scatter([pc[zid].x], [pc[zid].y], s=70, color="#ff6600", zorder=3)
+        ax.scatter([rc[zid].x], [rc[zid].y], s=70, color="#00a03c", zorder=3)
+        ax.annotate(f"{zid} {d_km:.2f} km", (rc[zid].x, rc[zid].y), xytext=(9, 0),
+                    textcoords="offset points", fontsize=8, va="center")
+    worst = max(d for _, d in drifts)
+    ax.set_title(f"Centroid drift — ID continuity\nworst {worst:.2f} km against a "
+                 f"5 km assert bound: PASS")
+    ax.set_xlabel("easting (m)")
+
+    # --- panel 3: scope and area, with the corridor made explicit
+    ax = axes[2]
+    if frags is not None:
+        living = frags[frags["is_living_reef"]]
+        corridor = unary_union(prov.geometry.tolist()).buffer(600)
+        on_jordan = living.geometry.intersection(corridor)
+        elsewhere = living.geometry.difference(corridor)
+
+        gpd.GeoDataFrame(geometry=elsewhere[~elsewhere.is_empty],
+                         crs=AOI_CRS_PROJECTED).plot(
+            ax=ax, facecolor="#bbbbbb", edgecolor="none")
+        gpd.GeoDataFrame(geometry=on_jordan[~on_jordan.is_empty],
+                         crs=AOI_CRS_PROJECTED).plot(
+            ax=ax, facecolor="#ffcc00", edgecolor="none")
+        real.plot(ax=ax, facecolor="#00a03c", edgecolor="#00a03c", alpha=0.95)
+
+        a_else = elsewhere.area.sum() / 1e6
+        a_jord = on_jordan.area.sum() / 1e6
+        a_scored = real.geometry.area.sum() / 1e6
+        ax.set_title(f"Scope\nJordan's reef {a_jord:.3f} km², scored {a_scored:.3f} km² "
+                     f"({a_scored / a_jord * 100:.0f}%)")
+        ax.legend(handles=[
+            mpatches.Patch(facecolor="#bbbbbb",
+                           label=f"other nations' waters ({a_else:.3f} km², out of scope)"),
+            mpatches.Patch(facecolor="#ffcc00", label=f"Jordan's reef ({a_jord:.3f} km²)"),
+            mpatches.Patch(facecolor="#00a03c", label=f"scored ({a_scored:.3f} km²)"),
+        ], fontsize=8, loc="upper right")
+    ax.set_xlabel("easting (m)")
+
+    fig.suptitle("SWAP-IN #3 — provisional reef zones replaced by Allen Coral Atlas v2.0",
+                 fontsize=14)
+    fig.tight_layout()
+    save_fig(fig, "reef_05_provisional_vs_final",
+             f"The swap-in check. IDs are continuous — worst centroid drift {worst:.2f} km "
+             "against the 5 km assert bound, and no new IDs. Zones are disjoint, asserted. "
+             f"Coverage of Jordan's reef is {a_scored / a_jord * 100:.0f}%; the grey reef is "
+             "on the Egyptian and Israeli shores, inside the same bounding box but never in "
+             f"scope. The headline correction is AREA: the provisional strips claimed "
+             f"{prov.geometry.area.sum() / 1e6:.2f} km² against a real "
+             f"{a_scored:.3f} km², because they assumed a uniform 250 m width along the "
+             "whole coast.", SRC, dpi=150)
+    print(f"    Jordan reef coverage: {a_scored / a_jord * 100:.1f}%  "
+          f"(provisional overestimated area {prov.geometry.area.sum() / 1e6 / a_scored:.1f}x)")
+
 
 def depth_01_full_raster():
     elev, mask, extent = water_mask()
@@ -427,6 +527,7 @@ if __name__ == "__main__":
     reef_02_zone_insets()
     ov_b, ov_a = reef_03_overlap_before_after()
     reef_04_marine_park()
+    reef_05_provisional_vs_final()
 
     print("  depth field...")
     depth_01_full_raster()
@@ -445,5 +546,4 @@ if __name__ == "__main__":
     if dists is not None:
         print(f"  coastline vs OSM: median {np.median(dists):.0f} m, p90 "
               f"{np.percentile(dists, 90):.0f} m")
-    print("\nNOT PRODUCED: Allen Coral Atlas figures — require Earth Engine auth "
-          "(browser). See export_aca.py.")
+    print(f"\nreef figures drawn from: {REEF.name}")

@@ -447,7 +447,22 @@ def compute_overlaps(
         overlaps.groupby("catchment_id")["intersection_area_m2"].sum()
         / pd.Series(catchment_areas)
     ).rename("coverage_fraction")
-    overlaps = overlaps.merge(coverage, on="catchment_id", how="left")
+    # Merge on a real column, with the index name forced first.
+    #
+    # `coverage` is a Series produced by dividing a groupby result by a plain Series,
+    # and that division does not reliably carry the "catchment_id" index name through
+    # — here it arrives as None, so a bare .reset_index() yields a column literally
+    # called "index". Merging a DataFrame against a Series on a column name happens to
+    # work on pandas 3.x, but on 2.3.3 — the version pinned in
+    # backend/requirements-api.txt and used by the Docker image — it raises
+    # KeyError('catchment_id').
+    #
+    # rename_axis makes the name explicit rather than inherited, so this behaves
+    # identically on both versions. Same result; only the lookup path changes.
+    overlaps = overlaps.merge(
+        coverage.rename_axis("catchment_id").reset_index(),
+        on="catchment_id", how="left",
+    )
 
     # Catchments with no intersecting cell at all must still be visible.
     missing = set(catchment_areas) - set(overlaps["catchment_id"])

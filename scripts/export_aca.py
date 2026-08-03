@@ -180,18 +180,62 @@ def build():
     print(f"\n  {len(living)} living-reef patches "
           f"({living['area_km2'].sum():.3f} km2) to distribute across zones")
 
-    # A provisional zone is a 250 m strip; real ACA habitat can sit just outside it,
-    # so match on nearest-within-tolerance rather than strict intersection. 400 m is
-    # the strip width plus a margin, and it is recorded in the output so the choice
-    # is auditable rather than buried.
-    MATCH_TOLERANCE_M = 400.0
-    assigned = gpd.sjoin_nearest(
-        living, prov_utm[["reef_zone_id", "zone_name", "geometry"]],
-        how="left", max_distance=MATCH_TOLERANCE_M, distance_col="dist_m",
-    )
-    matched = assigned[assigned["reef_zone_id"].notna()]
-    print(f"  {len(matched)}/{len(living)} matched within {MATCH_TOLERANCE_M:.0f} m "
-          f"of a provisional zone")
+    # PARTITION BY LATITUDE BAND, don't assign whole fragments to a nearest zone.
+    #
+    # The zones are contiguous along-shore bands (see make_reef_zones_provisional's
+    # ZONE_DEFS), so a reef patch straddling a boundary genuinely belongs partly to
+    # each. Two earlier approaches were wrong:
+    #
+    #   * sjoin_nearest alone emitted a row per distance tie, so one patch was merged
+    #     into R-05, R-06 AND R-07 at once — summed zone area came out 54.6% above the
+    #     true union (1.675 vs 1.083 km2). Reef counted twice inflates every exposure
+    #     score built on it, and nothing raises.
+    #   * De-duplicating to a single nearest zone fixed the double-count but then
+    #     handed one large boundary-spanning patch entirely to R-05, leaving R-06 with
+    #     109 m2. Disjoint, but arbitrary.
+    #
+    # Clipping each patch to each zone's band is disjoint BY CONSTRUCTION (the bands
+    # partition the coast) and gives every zone the reef actually in front of it.
+    from make_reef_zones_provisional import ZONE_DEFS
+    from pyproj import Transformer
+    from shapely.geometry import box as shp_box
+
+    # The band must ALSO be confined to Jordan's coastal corridor. MARINE_AOI spans the
+    # whole head of the gulf, so a latitude band alone sweeps in reef on the Egyptian
+    # and Israeli shore — that pulled R-02's centroid 8.33 km west and tripped the
+    # drift assert, which is exactly what it is for. The corridor is the provisional
+    # strips buffered by CORRIDOR_M: wide enough to keep real reef sitting just outside
+    # a 250 m strip, narrow enough to stay on our own coast.
+    CORRIDOR_M = 600.0
+    corridor = unary_union(prov_utm.geometry.tolist()).buffer(CORRIDOR_M)
+
+    t = Transformer.from_crs(AOI_CRS_STORAGE, AOI_CRS_PROJECTED, always_xy=True)
+    minx, _, maxx, _ = living.total_bounds
+    pad = 5000.0
+
+    band_rows = []
+    for zone_id, zone_name, lat_n, lat_s in ZONE_DEFS:
+        _, n_max = t.transform(35.0, lat_n)
+        _, n_min = t.transform(35.0, lat_s)
+        band = shp_box(minx - pad, n_min, maxx + pad, n_max).intersection(corridor)
+        if band.is_empty:
+            continue
+        clipped = living.geometry.intersection(band)
+        keep = ~clipped.is_empty & clipped.notna()
+        if not keep.any():
+            continue
+        sub = living.loc[keep].copy()
+        sub["geometry"] = clipped[keep]
+        sub["reef_zone_id"] = zone_id
+        sub["zone_name"] = zone_name
+        sub["area_km2"] = sub.geometry.area / 1e6
+        band_rows.append(sub)
+
+    matched = gpd.GeoDataFrame(pd.concat(band_rows, ignore_index=True),
+                               crs=AOI_CRS_PROJECTED) if band_rows else living.iloc[0:0]
+    print(f"  {len(matched)} patch-pieces fall inside a zone band "
+          f"({matched['area_km2'].sum():.3f} km2 of {living['area_km2'].sum():.3f} km2 "
+          "living reef in the marine AOI)")
 
     out_rows = []
     for zid, grp in matched.groupby("reef_zone_id"):
@@ -200,6 +244,7 @@ def build():
         mix = grp.groupby("benthic_class")["area_km2"].sum().sort_values(ascending=False)
 
         geo_label = _geomorphic_majority(ee, merged)
+        depth_med, depth_min = _zone_depth(merged)
 
         out_rows.append({
             "reef_zone_id": zid,
@@ -214,10 +259,17 @@ def build():
             "sensitivity_weight_status": "PLACEHOLDER_PENDING_MARINE_SCIENTIST",
             "provisional": False,
             "geom_basis": (f"Allen Coral Atlas v2.0 benthic, {NATIVE_SCALE_M} m, "
-                           f"living-reef classes merged per zone "
-                           f"(match tolerance {MATCH_TOLERANCE_M:.0f} m)"),
+                           "living-reef classes clipped to the zone's along-shore band"),
             "source": ACA_ASSET,
             "marine_park_overlap_pct": pr.get("marine_park_overlap_pct"),
+            # SCHEMA CONTINUITY. These two exist in the provisional file, so they must
+            # exist here: Nizar's db/loaders/pulga_reef_zones.py reads depth_median_m
+            # into the `reef_zones.mean_depth_m` column, and dropping it would have
+            # made his loader raise a KeyError the moment it pointed at the real file.
+            # Recomputed for the ACA geometry rather than copied from the provisional
+            # one — the footprint changed, so the old depth no longer describes it.
+            "depth_median_m": depth_med,
+            "depth_min_m": depth_min,
             "geometry": merged,
         })
 
@@ -240,6 +292,34 @@ def build():
           f"across {len(final)} zones "
           f"(provisional claimed {prov['area_km2'].sum():.2f} km2 across {len(prov)})")
     print("\nNext: ../.venv/bin/python qa_marine.py   (regenerates reef figures)")
+
+
+def _zone_depth(geom_utm) -> tuple[float | None, float | None]:
+    """(median, min) depth over a zone footprint, from our own depth field.
+
+    Uses `depth_utm36n.tif` rather than asking Earth Engine: the bathymetry is a
+    Pulga artifact and the provisional zones' depth columns were computed from it, so
+    reading the same raster keeps the two files comparable. Returns (None, None) if
+    the raster is absent — a gap stays a gap.
+    """
+    import numpy as np
+    import rasterio
+    import rasterio.features
+
+    depth_path = (VECTORS.parent / "bathymetry" / "depth_utm36n.tif")
+    if not depth_path.exists():
+        return None, None
+    try:
+        with rasterio.open(depth_path) as src:
+            mask = rasterio.features.geometry_mask(
+                [geom_utm], out_shape=src.shape, transform=src.transform, invert=True)
+            arr = src.read(1)
+            vals = arr[mask & (arr != src.nodata)]
+        if vals.size == 0:
+            return None, None
+        return float(np.median(vals)), float(vals.min())
+    except Exception:
+        return None, None
 
 
 def _geomorphic_majority(ee, geom_utm) -> str:
@@ -265,11 +345,48 @@ def _geomorphic_majority(ee, geom_utm) -> str:
 
 
 def verify_against_provisional(final, prov=None, max_centroid_shift_km=5.0):
-    """The assertion that protects every stored exposure result."""
+    """The assertions that protect every stored exposure result."""
     import geopandas as gpd
+    from shapely.ops import unary_union
 
     if prov is None:
         prov = gpd.read_file(PROVISIONAL)
+
+    # SCHEMA CONTINUITY, asserted rather than assumed. Every column the provisional
+    # file carries must survive into the final one: downstream code binds to those
+    # names. Nizar's db loader reads `depth_median_m`, and an earlier version of this
+    # script silently dropped it — the loader would have raised a KeyError the first
+    # time it pointed at the real file. Adding columns is fine; losing one is not.
+    missing_cols = set(prov.columns) - set(final.columns)
+    assert not missing_cols, (
+        f"the ACA build dropped column(s) present in the provisional file: "
+        f"{sorted(missing_cols)}. Downstream consumers bind to these names — see "
+        "backend/src/db/loaders/pulga_reef_zones.py."
+    )
+    print(f"  OK schema continuity: all {len(prov.columns)} provisional columns "
+          f"present, {len(set(final.columns) - set(prov.columns))} added")
+
+    # NO OVERLAPS. The provisional build asserts this; the ACA build must too. Without
+    # it, a fragment assigned to two zones inflates the summed reef area — it reached
+    # 54.6% over the true union before the tie-dedup above was added. Any exposure
+    # score built on double-counted reef is silently wrong.
+    fu = final.to_crs(AOI_CRS_PROJECTED)
+    worst_overlap = 0.0
+    for i in range(len(fu)):
+        for j in range(i + 1, len(fu)):
+            ov = fu.geometry.iloc[i].intersection(fu.geometry.iloc[j]).area
+            if ov > worst_overlap:
+                worst_overlap = ov
+            assert ov < 1.0, (
+                f"{fu.reef_zone_id.iloc[i]} overlaps {fu.reef_zone_id.iloc[j]} by "
+                f"{ov:,.0f} m2 — reef counted twice. One fragment, one zone."
+            )
+    summed = fu.geometry.area.sum() / 1e6
+    union = unary_union(fu.geometry.tolist()).area / 1e6
+    assert abs(summed - union) < 1e-6, (
+        f"summed zone area {summed:.4f} km2 != union {union:.4f} km2 — zones overlap"
+    )
+    print(f"  OK zones are disjoint: summed area == union == {union:.4f} km2")
 
     p_ids, f_ids = set(prov["reef_zone_id"]), set(final["reef_zone_id"])
     added, dropped = f_ids - p_ids, p_ids - f_ids

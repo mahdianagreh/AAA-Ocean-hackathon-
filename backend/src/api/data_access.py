@@ -326,18 +326,30 @@ def data_sources() -> list[dict]:
             ],
         },
         {
-            "name": "Reef zones",
-            "product_version": "PROVISIONAL (Allen Coral Atlas v2.0 pending)",
-            "access_date": "2026-08-01",
-            "access_method": "Derived from the water mask + published dive-site positions",
-            "spatial_resolution": "n/a",
-            "licence": "own derivation; ACA is CC BY 4.0 when swapped in",
+            "name": "Reef zones (Allen Coral Atlas)",
+            "product_version": "Allen Coral Atlas v2.0 (ACA/reef_habitat/v2_0)",
+            "access_date": "2026-08-03",
+            "access_method": (
+                "Earth Engine reduceToVectors at native 5 m over MARINE_AOI, living-reef "
+                "benthic classes (Coral/Algae, Seagrass) merged onto the existing R-NN "
+                "zone extents"
+            ),
+            "spatial_resolution": "5 m",
+            "licence": "CC BY 4.0 (Allen Coral Atlas)",
             "limitations": [
-                "sensitivity_weight is a 1.0 placeholder labelled in the file schema; "
-                "ACA maps habitat, not sensitivity.",
-                "Seaward width is a flat 250 m assumption, so area is order-of-magnitude.",
-                "R-01 and R-02 cover developed beach and port frontage where reef "
-                "presence is doubtful.",
+                "Scope is Jordan's coast. The 8 named zones hold 0.742 km2, which is "
+                "86.8% of the living reef the Atlas maps on Jordan's coastal corridor. A "
+                "further 3.338 km2 sits inside the same bounding box on the Egyptian and "
+                "Israeli shores and is deliberately out of scope.",
+                "The earlier provisional geometry claimed 5.69 km2 — 7.7x the real "
+                "figure — because it assumed a uniform 250 m strip along the whole "
+                "coastline. Any number derived from the provisional area is an "
+                "overestimate.",
+                "sensitivity_weight remains a 1.0 placeholder labelled in the file "
+                "schema; the Atlas maps habitat, not sensitivity.",
+                "The Atlas maps optically shallow reef only; deeper habitat is absent.",
+                "Two zones report a positive median elevation because the ~450 m "
+                "bathymetry disagrees with the Atlas's 5 m reef extent near shore.",
             ],
             "qa_figures": [
                 "reef_01_provisional_over_satellite.png",

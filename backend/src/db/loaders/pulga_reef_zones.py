@@ -1,10 +1,11 @@
 """
 Loader: Pulga's reef zones -> `reef_zones`.
 
-Source: data/processed/vectors/reef_zones_PROVISIONAL.gpkg (per
-tasks/phase2/03-nizar.md §3 — "reef_zones_PROVISIONAL.gpkg, then the real ACA
-export"). Re-run this same loader once the real Allen Coral Atlas export lands at
-the same path/filename convention — same IDs, same schema, an upsert either way.
+Source: resolved by `resolve_reef_zones()` — the real Allen Coral Atlas export
+(data/processed/vectors/reef_zones.gpkg) when it exists, otherwise the provisional
+derivation. Per tasks/phase2/03-nizar.md §3: "reef_zones_PROVISIONAL.gpkg, then the
+real ACA export". The real file landed 2026-08-03; same IDs, same columns, so the
+upsert below is unchanged either way and `source_id` records which one was used.
 
 Note: the source has `depth_median_m`, not a mean. Mapped into `mean_depth_m` as
 the best available proxy since the schema has one depth column — flagged here
@@ -25,9 +26,29 @@ from sqlalchemy import text
 from src.db.client import session_scope
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
-REEF_ZONES_GPKG = REPO_ROOT / "data" / "processed" / "vectors" / "reef_zones_PROVISIONAL.gpkg"
+_VECTORS = REPO_ROOT / "data" / "processed" / "vectors"
 
 PROVISIONAL_SOURCE_ID = "reef_zones_provisional_derivation"
+ACA_SOURCE_ID = "reef_zones_allen_coral_atlas_v2_0"
+
+
+def resolve_reef_zones() -> tuple[Path, str, bool]:
+    """(path, source_id, is_provisional) — prefer the real ACA export.
+
+    The docstring above always said "then the real ACA export"; this implements it.
+    The real file landed on 2026-08-03 once Earth Engine auth was completed, and it
+    carries the same IDs and the same column names, so the upsert is unchanged —
+    which was the point of enforcing schema continuity on the Pulga side.
+
+    Preferring it here matters: otherwise the database keeps serving provisional
+    geometry while a real export sits on disk beside it, and nothing would say so.
+    """
+    real = _VECTORS / "reef_zones.gpkg"
+    prov = _VECTORS / "reef_zones_PROVISIONAL.gpkg"
+    if real.exists():
+        return real, ACA_SOURCE_ID, False
+    return prov, PROVISIONAL_SOURCE_ID, True
+
 
 UPSERT_SQL = text(
     """
@@ -54,11 +75,15 @@ UPSERT_SQL = text(
 
 
 def load_reef_zones() -> int:
-    if not REEF_ZONES_GPKG.exists():
-        print(f"SKIP reef_zones: missing {REEF_ZONES_GPKG}")
+    path, source_id, is_prov = resolve_reef_zones()
+    if not path.exists():
+        print(f"SKIP reef_zones: neither reef_zones.gpkg nor "
+              f"reef_zones_PROVISIONAL.gpkg found in {_VECTORS}")
         return 0
 
-    zones = gpd.read_file(REEF_ZONES_GPKG)
+    print(f"reef_zones source: {path.name} "
+          f"({'PROVISIONAL' if is_prov else 'real Allen Coral Atlas v2.0'})")
+    zones = gpd.read_file(path)
     n = 0
     with session_scope() as session:
         for _, row in zones.iterrows():
@@ -73,7 +98,7 @@ def load_reef_zones() -> int:
                     mean_depth_m=float(row["depth_median_m"]),
                     sensitivity_weight=float(row["sensitivity_weight"]),
                     sensitivity_basis=row["sensitivity_weight_status"],
-                    source_id=PROVISIONAL_SOURCE_ID,
+                    source_id=source_id,
                     is_provisional=bool(row["provisional"]),
                 ),
             )

@@ -1,32 +1,32 @@
 {
   "coastline_01_single_sea_body.png": {
     "caption": "The land barrier Nizar's particle engine uses. Exactly one polygon of 397.3 km\u00b2. Interior 'lakes' in dry wadi floors would punch false holes in the barrier and let particles escape inland; the 0.05 km\u00b2 speck filter exists to prevent that and dropped zero specks here.",
-    "generated": "2026-08-03 08:17 UTC",
+    "generated": "2026-08-03 09:18 UTC",
     "source": "Marine chain"
   },
   "coastline_02_osm_vs_gmrt_agreement.png": {
     "caption": "OSM's coastline is surveyed/traced from imagery and shares no lineage with GMRT, so it is a genuine external check. Median disagreement 62 m \u2014 about one pixel \u2014 rising to 337 m at p90 in the port and marina where the coarse bathymetry cannot resolve breakwaters. This quantifies the cost of substituting GMRT for unobtainable GEBCO instead of asserting it is fine.",
-    "generated": "2026-08-03 08:17 UTC",
+    "generated": "2026-08-03 09:18 UTC",
     "source": "Marine chain"
   },
   "depth_01_full_field_and_isobaths.png": {
     "caption": "The full depth field handed to Nizar, and its isobaths. The \u221250 to \u2212400 m contours crowd into a few hundred metres at the coast: that crowding is why reef-zone width is an explicit 250 m assumption rather than being derived from these contours.",
-    "generated": "2026-08-03 08:17 UTC",
+    "generated": "2026-08-03 09:18 UTC",
     "source": "Marine chain"
   },
   "depth_02_sign_convention_22_control_points.png": {
     "caption": "All 22 control points, each labelled with what was expected and the value actually sampled from gmrt_aqaba.tif. Expanded from the original 5, which were clustered near the city and could have passed while the mask was wrong elsewhere. The expansion caught two points wrongly assumed to be mid-gulf that are in fact Wadi Araba land at +533 m and +241 m.",
-    "generated": "2026-08-03 08:17 UTC",
+    "generated": "2026-08-03 09:18 UTC",
     "source": "Marine chain"
   },
   "depth_03_nodata_bug_before_after.png": {
     "caption": "Left: 1,917 scattered NaN cells in the source, with no nodata tag, some inside the sea body. Middle: zero NaN survive. Right: the single declared sentinel, confined to the reprojection margin. A NaN depth does not raise \u2014 it would have silently turned Nizar's particle positions into non-numbers.",
-    "generated": "2026-08-03 08:17 UTC",
+    "generated": "2026-08-03 09:18 UTC",
     "source": "Marine chain"
   },
   "depth_04_crossshore_profiles_per_zone.png": {
     "caption": "Depth against distance offshore at each zone. Several profiles fall through \u2212200 m within 250 m of shore, which is physically implausible for a real reef shelf and is an interpolation artefact of the ~450 m source. Deriving a reef edge from these curves would dress that artefact up as a measurement \u2014 hence the flat 250 m placeholder.",
-    "generated": "2026-08-03 08:17 UTC",
+    "generated": "2026-08-03 09:18 UTC",
     "source": "Marine chain"
   },
   "osm_01_roads_over_satellite.png": {
@@ -96,22 +96,27 @@
   },
   "reef_01_provisional_over_satellite.png": {
     "caption": "All 8 zones on satellite imagery. Every zone must lie on the water side of the visible shoreline \u2014 this is the check that caught the first attempt placing R-03\u2013R-05 on dry land. The fringing-reef shelf is visible as the pale strip hugging the coast.",
-    "generated": "2026-08-03 08:16 UTC",
+    "generated": "2026-08-03 09:17 UTC",
     "source": "Marine chain"
   },
   "reef_02_per_zone_insets.png": {
     "caption": "Each zone individually against imagery, annotated with area, Marine Park overlap and median depth. R-01/R-02 visibly cover developed beach and port frontage, which is why they are flagged as the most likely to be dropped when Allen Coral Atlas lands.",
-    "generated": "2026-08-03 08:17 UTC",
+    "generated": "2026-08-03 09:18 UTC",
     "source": "Marine chain"
   },
   "reef_03_overlap_bug_before_after.png": {
     "caption": "Left: the pre-fix geometry, 1.46 ha of double-counted reef in red where the perpendicular buffer bled across the band boundary. Right: after clipping each strip to its own latitude band, the overlap is 0 m\u00b2. An exposure score computed on the left would have inflated the headline number.",
-    "generated": "2026-08-03 08:17 UTC",
+    "generated": "2026-08-03 09:18 UTC",
     "source": "Marine chain"
   },
   "reef_04_marine_park_validation.png": {
     "caption": "The Aqaba Marine Park (protect_class=4, 3.45 km\u00b2, 29.397\u201329.460 N) in cyan against our zones. R-04\u2013R-07 are 67\u201385% inside it despite the park never being used to place them \u2014 independent corroboration that the dive-site latitudes are right. R-01\u2013R-03 fall outside, consistent with them being city and port frontage.",
-    "generated": "2026-08-03 08:17 UTC",
+    "generated": "2026-08-03 09:18 UTC",
+    "source": "Marine chain"
+  },
+  "reef_05_provisional_vs_final.png": {
+    "caption": "The swap-in check. IDs are continuous \u2014 worst centroid drift 0.65 km against the 5 km assert bound, and no new IDs. Zones are disjoint, asserted. Coverage of Jordan's reef is 87%; the grey reef is on the Egyptian and Israeli shores, inside the same bounding box but never in scope. The headline correction is AREA: the provisional strips claimed 5.69 km\u00b2 against a real 0.742 km\u00b2, because they assumed a uniform 250 m width along the whole coast.",
+    "generated": "2026-08-03 09:18 UTC",
     "source": "Marine chain"
   },
   "soilgrids_01_clay_both_depths.png": {

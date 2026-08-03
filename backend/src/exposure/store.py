@@ -1,17 +1,27 @@
 """Persistence for exposure runs — the audit trail behind every displayed score.
 
-WHY SQLITE AND NOT THE PROJECT DATABASE
----------------------------------------
-The standing rule is: never open your own connection, import the shared session
-layer. That layer does not exist in this repo yet (`backend/src/db/session.py` is
-absent), and the rule exists to stop two Postgres connection pools diverging under
-load — not to stop anything being persisted at all.
+WHY SQLITE, NOW THAT THE SHARED LAYER EXISTS
+--------------------------------------------
+Correction, 3 Aug 2026: this docstring previously said the shared session layer did
+not exist. It does — `backend/src/db/client.py` (Nizar) provides `get_session()` and
+`session_scope()` against Supabase Postgres. The standing rule "never open your own
+connection" therefore applies, and this module obeys it: it does **not** open a
+Postgres connection anywhere.
 
-So this module deliberately does NOT open a Postgres connection. It writes to a
-local SQLite file through stdlib `sqlite3`, behind a small interface with exactly
-one write path and one read path. When the shared session layer lands, swapping is
-a matter of reimplementing `save_run` and `get_run` against it; nothing upstream
-sees a difference, because callers only ever touch those two functions.
+It still writes exposure runs to a local SQLite file, on purpose:
+
+  * `client.py` raises at import if `SUPABASE_DB_URL` is unset. The exposure audit
+    trail has to be writable with no network and no credentials — during tests, and
+    during a demo on conference wifi. A run that cannot be persisted is a score that
+    cannot be defended, which is the one thing this table exists to prevent.
+  * It is a local-first cache, not a competing source of truth. The dashboard reads
+    reef zones and catchments from Supabase via Nizar's loaders; nothing else reads
+    this file.
+
+Both paths go through exactly one write function and one read function, so pointing
+them at `session_scope()` is a change to `save_run` and `get_run` only — no caller
+sees a difference. If the audit trail should live in Postgres for the demo, that is a
+deliberate call to make with Nizar, not something to switch silently here.
 
 `formula_terms` is stored as JSON rather than exploded into columns on purpose: the
 term set will grow as the model gains inputs, and a schema migration is a worse

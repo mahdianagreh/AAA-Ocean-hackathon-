@@ -88,6 +88,74 @@ def catchment_area_uncertainty() -> list[Caveat]:
     )]
 
 
+def reef_area_correction() -> list[Caveat]:
+    """The real reef is far smaller than the provisional strips implied.
+
+    Measured 3 Aug 2026 against the Allen Coral Atlas export:
+
+        living reef in MARINE_AOI          4.192 km²
+          on Jordan's coastal corridor     0.855 km²
+          in Egyptian / Israeli waters     3.338 km²  (80% of the AOI total)
+        scored across the 8 named zones    0.742 km²  (86.8% of Jordan's corridor)
+        provisional strips claimed         5.69  km²  (7.7x the real figure)
+
+    An earlier draft of this caveat said the zones covered "only 40%" of the reef.
+    That was wrong and alarmist: it measured against every reef in the marine box,
+    four fifths of which is in another country's water and was never in scope. The
+    honest statement is that coverage of Jordan's reef is good, and that the
+    provisional AREA was a large overestimate.
+    """
+    return [Caveat(
+        field="area_km2",
+        message=(
+            "Reef area comes from Allen Coral Atlas v2.0 at 5 m: 0.742 km² across the "
+            "8 named zones, which is 86.8% of the living reef the Atlas maps on "
+            "Jordan's coast. The earlier provisional geometry claimed 5.69 km² — about "
+            "7.7x more — because it assumed a uniform 250 m-wide strip along the whole "
+            "coastline. Any figure derived from the provisional area is an "
+            "overestimate."
+        ),
+        severity="warning",
+        source=f"{DD} §4",
+    )]
+
+
+def reef_scope_is_jordan() -> list[Caveat]:
+    """What the risk map covers, stated so nobody over-reads it."""
+    return [Caveat(
+        field="reef_zone_id",
+        message=(
+            "Scope is Jordan's coast. The Atlas maps a further 3.338 km² of living reef "
+            "inside the same marine bounding box, on the Egyptian and Israeli shores; "
+            "those reefs are not zoned and not scored. Risk shown here is risk to the "
+            "named Jordanian zones, not to all reef in the Gulf of Aqaba."
+        ),
+        severity="info",
+        source=f"{DD} §4",
+    )]
+
+
+def reef_depth_disagreement() -> list[Caveat]:
+    """Two of our own artefacts disagree, and the disagreement is the signal.
+
+    ACA maps reef at 5 m where our 450 m-effective bathymetry says land: R-02 and
+    R-08 come out with a positive median elevation. ACA is purpose-built for shallow
+    reef at 5 m, so it wins — but the disagreement is worth surfacing rather than
+    resolving silently in favour of whichever file was read last.
+    """
+    return [Caveat(
+        field="depth_median_m",
+        message=(
+            "Depth is sampled from a bathymetry grid with ~450 m effective resolution, "
+            "while reef extent comes from Allen Coral Atlas at 5 m. Where the two "
+            "disagree — two zones report a positive median elevation, i.e. 'land' — "
+            "trust the Atlas for reef presence and treat the depth as indicative only."
+        ),
+        severity="warning",
+        source=f"{DD} §5",
+    )]
+
+
 def provisional_reef_zones() -> list[Caveat]:
     return [Caveat(
         field="reef_zone_id",
