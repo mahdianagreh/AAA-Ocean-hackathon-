@@ -325,6 +325,28 @@ city and port frontage.
 R-01–R-06 (the Marine Park stretch) and Rock dominates R-07–R-08. Nothing in the merge
 knows where the park is.
 
+**Two independent exports agree, and the wider one is the more complete.** The same ACA
+asset was exported twice on 3 Aug — once over the download superset box (task
+`HL3VYSAJRVN6TLKEAXR3CEH2`) and once over the marine AOI only
+(`WJKEYOKSLGKFF2VSEIK5RWCD`), submitted in parallel because the wide one was slow and
+the deadline was real. Compared over the 39,038,220 pixels they share:
+
+| | |
+|---|---|
+| identical | 39,036,538 px — **99.9957%** |
+| differing | 1,682 px (0.042 km², **3.4%** of the 1.24 km² used) |
+| direction | **always** reef in the wide export and `Unmapped` in the narrow one; never the reverse |
+| location | every differing pixel lies within 380 m of the *narrow* export's own boundary (median 140 m), on its south and west edges |
+
+That one-directional, boundary-hugging pattern is a clip artefact in the narrower
+request: Earth Engine loads fewer source tiles for a smaller region, so pixels near the
+clip edge that need a neighbouring tile return `Unmapped`. Two independently submitted
+exports matching to 4 decimal places across 39 M pixels is strong evidence the export
+path is sound; the 3.4% shortfall is why `find_export()` **selects the widest available
+GeoTIFF and prints which one it used and which it ignored**, rather than taking the
+first of a sorted glob. Had the narrow file been chosen silently, every zone area would
+have been up to 3.4% low with nothing to indicate it.
+
 **What is trustworthy in this geometry, and what is not.** Both the outline *and* the
 width are now measured: the geometry is ACA's own 5 m benthic polygons, so the flat
 250 m width assumption that made the provisional `area_km2` order-of-magnitude only

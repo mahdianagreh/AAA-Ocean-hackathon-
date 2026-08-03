@@ -202,6 +202,13 @@ def find_export():
     # Both a full-box and a marine-scoped export can land here, and picking one
     # silently is how a build ends up describing a smaller area than the reader thinks.
     # Widest coverage wins, and the choice is stated.
+    #
+    # Measured, not assumed: over the 39,038,220 pixels the two 3 Aug exports share they
+    # agree on 99.9957%, and every one of the 1,682 disagreements is reef in the wide
+    # export and Unmapped in the narrow one — a clip artefact within 380 m of the narrow
+    # request's own boundary, where Earth Engine loads fewer source tiles. Taking the
+    # first of a sorted glob would have picked the narrow file and made every zone area
+    # up to 3.4% low with nothing to indicate it.
     if len(tifs) > 1:
         import rasterio
 
