@@ -56,3 +56,22 @@ data/processed/events/AQ-*/
 data/processed/events/AQ-*.nc
 data/processed/events/AQ-*.parquet
 data/processed/events/*.nc
+
+# Frontend — workstream 6. Build output and installed packages only.
+#
+# Everything under frontend/public/ IS committed on purpose, including the
+# derived basemap GeoJSON, the six woff2 faces and the vendored MapLibre RTL
+# plugin. DoD item 9 is "works with wifi off", so no frontend asset may be
+# fetched at runtime — and the compose build context is ./frontend, so nothing
+# under data/ is reachable at image-build time even if we wanted to derive it
+# there. `data/processed/**/*.tif` above also means the bathymetry raster the
+# isobaths come from is not in git, so the derived contours have to be.
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
+frontend/*.tsbuildinfo
+frontend/.env.local

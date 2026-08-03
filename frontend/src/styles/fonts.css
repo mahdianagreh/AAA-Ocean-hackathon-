@@ -1,0 +1,75 @@
+/* Self-hosted IBM Plex. Six woff2 faces, 378,040 B total, committed under
+ * public/fonts/ and licensed OFL-1.1 (public/fonts/OFL.txt).
+ *
+ * Self-hosting is not a preference. DoD item 9 is "works with wifi off", and a
+ * font CDN violates it. The files are committed rather than installed because
+ * @ibm/plex-sans, @ibm/plex-sans-arabic and @ibm/plex-mono all declare
+ * `postinstall: ibmtelemetry` — an install-time network call, in a project whose
+ * whole point is running without one. They were fetched with `npm pack`, which
+ * does not run scripts.
+ */
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* No unicode-range on the Arabic face, deliberately.
+ *
+ * 06-bilingual-rtl.md §7 flags that shaping limits how far the face can be
+ * split, and the trap is sharper than it sounds. The MapLibre RTL plugin's
+ * applyArabicShaping emits PRESENTATION FORMS, so a naive subset over
+ * U+0600-06FF would leave UI Arabic looking perfect — the browser shapes it via
+ * GSUB from the base block — while map labels rendered as tofu, because the
+ * shaped codepoints would have no glyph.
+ *
+ * Measured in this exact file: 252 Arabic, 48 Arabic Supplement, 196
+ * Presentation Forms-A, 140 Forms-B, 243 Latin — 1,065 codepoints in 71,904 B.
+ * That coverage is what makes client-side glyph rasterisation viable at all,
+ * so any future subsetting must keep U+FB50-FDFF and U+FE70-FEFF and pass
+ * --layout-features='*'. Re-measure before Phase 5; do not assume it behaves
+ * like the Latin face. */
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  src: url("/fonts/IBMPlexSansArabic-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Sans Arabic";
+  src: url("/fonts/IBMPlexSansArabic-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Mono is not decorative — 01 §5. Every measurement, coordinate, timestamp and
+   identifier sets in it, because numbers that get compared must align. */
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}

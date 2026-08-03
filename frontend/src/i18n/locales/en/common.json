@@ -1,0 +1,52 @@
+{
+  "brand": {
+    "name": "ReefShield",
+    "place": "Aqaba",
+    "tagline": "Wadi-to-reef sediment forecasting"
+  },
+  "chrome": {
+    "language": "Language",
+    "theme": "Appearance",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System"
+  },
+  "glyph": {
+    "catchment": "Catchment",
+    "outlet": "Coastal outlet",
+    "reefZone": "Reef zone"
+  },
+  "specimen": {
+    "title": "Component specimen",
+    "subtitle": "Every component, both themes × both directions. A primitive that is not here has not been checked.",
+    "pane": "{{theme}} · {{dir}}",
+    "sectionGlyphs": "Domain glyphs",
+    "sectionValues": "Values and units",
+    "sectionHazard": "Hazard ramp",
+    "sectionProvenance": "Provenance forms",
+    "canaryTitle": "Bidi canary",
+    "canaryNote": "Each value below must keep its number before its unit, in both directions.",
+    "hazardNote": "Every fill carries a 1px stroke at the next band up. A fill alone is not a boundary.",
+    "provenanceNote": "Measured, modelled and envelope differ by form, not by hue — so the distinction survives colour-blindness, greyscale and a photograph of the screen."
+  },
+  "hazard": {
+    "minimal": "Minimal",
+    "low": "Low",
+    "moderate": "Moderate",
+    "high": "High",
+    "critical": "Critical",
+    "band": "{{name}} · score {{range}}"
+  },
+  "provenance": {
+    "measured": "Measured",
+    "reported": "Reported",
+    "converted": "Converted",
+    "modelled": "Modelled",
+    "envelope": "Uncertainty envelope",
+    "missing": "No data"
+  },
+  "value": {
+    "missing": "No data",
+    "missingLong": "No data — this is a gap, not a zero"
+  }
+}
