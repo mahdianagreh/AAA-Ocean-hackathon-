@@ -17,11 +17,11 @@ You also own the project's most important honest caveat. The current products ar
 
 ## Before you download anything
 
-- [ ] **AOI bounding box frozen** (Mahdi commits `data/aoi/aqaba_aoi.geojson`).
+- [x] **AOI bounding box frozen** (Mahdi commits `data/aoi/aqaba_aoi.geojson`).
 Read [`00-contracts.md`](00-contracts.md) first — **you start Day 1 and wait for nobody.**
 
-- [ ] **Copernicus Marine account** registered → needed for the primary currents. **Day 1** — don't leave this to Day 8.
-- [ ] **Real outlets have landed (2 Aug)** — use `data/processed/vectors/outlets.gpkg`. **Five release points, not the two the contract said for a day.** The 30 m DEM resolves 30 discharge points on Jordan's coast where HydroBASINS saw two; the five selected each have their own mouth.
+- [x] **Copernicus Marine account** registered → needed for the primary currents. **Day 1** — don't leave this to Day 8. *(Activated 2026-08-03.)*
+- [x] **Real outlets have landed (2 Aug)** — use `data/processed/vectors/outlets.gpkg`. **Five release points, not the two the contract said for a day.** The 30 m DEM resolves 30 discharge points on Jordan's coast where HydroBASINS saw two; the five selected each have their own mouth.
 
   | Outlet | Catchment | lon, lat | Upstream |
   |---|---|---|---:|
@@ -32,9 +32,9 @@ Read [`00-contracts.md`](00-contracts.md) first — **you start Day 1 and wait f
   | `AQ-O05` | `AQ-C05` | 34.95998, 29.35737 | 35.6 km² |
 
   `AQ-O01` carries 96% of the discharge — if you only wire up one release point for the demo, wire that one. The other four are within 13 km of each other on the southern coast, so their plumes will overlap and should be modelled together rather than as independent events.
-- [ ] **Pull your own GEBCO copy.** It's a 10-minute download with no dependencies — don't wait for Pulga's coastline and depth field. Two people having their own is fine.
-- [ ] **Event dates** are in `docs/event_dates.md` from Day 1, straight from the literature. You don't need Karam's IMERG ranking to know which windows to pull.
-- [ ] **Publish P5 · synthetic plume mask on Day 1 (~30 min):** a plain ellipse offset from an outlet, saved in the exact format Abd's real mask will use → `data/processed/plume/observed_plume_PROVISIONAL.gpkg`. This is what lets you build and test the entire calibration parameter search before any satellite mask exists.
+- [ ] ~~Pull your own GEBCO copy.~~ **Superseded 2026-08-03 — do not do this.** Requested on Day 1, never landed, and moot: Pulga's team substituted GMRT project-wide (every programmatic GEBCO route closed). The depth field in use is `gmrt_bathymetry`, already in `raster_assets`. See `docs/data_dictionary.md`.
+- [x] **Event dates** are in `docs/event_dates.md` from Day 1, straight from the literature. You don't need Karam's IMERG ranking to know which windows to pull.
+- [x] **Publish P5 · synthetic plume mask on Day 1 (~30 min):** a plain ellipse offset from an outlet, saved in the exact format Abd's real mask will use → `data/processed/plume/observed_plume_PROVISIONAL.gpkg`. This is what lets you build and test the entire calibration parameter search before any satellite mask exists.
 
 ### Environment
 
@@ -62,9 +62,9 @@ GRIB is the format you'll fight with most. `cfgrib` works but is picky about ind
 - https://registry.opendata.aws/noaa-gfs-bdp-pds/
 
 **Tasks**
-- [ ] Pull a current run from the AWS open-data bucket — no credentials needed.
-- [ ] Extract AOI total precipitation and 10 m u/v wind out to **48 h lead**.
-- [ ] Confirm the forecast pipeline runs **end-to-end on today's data, whatever the weather is doing.**
+- [x] Pull a current run from the AWS open-data bucket — no credentials needed.
+- [x] Extract AOI total precipitation and 10 m u/v wind out to **48 h lead**.
+- [x] Confirm the forecast pipeline runs **end-to-end on today's data, whatever the weather is doing.**
 
 **Deliverable:** `backend/src/ingestion/gfs.py` + one cached live forecast for the demo
 
@@ -82,9 +82,9 @@ GRIB is the format you'll fight with most. `cfgrib` works but is picky about ind
 - https://registry.opendata.aws/noaa-gefs/
 
 **Tasks**
-- [ ] Pull the ensemble members for the AOI.
-- [ ] Compute **exceedance probability**: the fraction of members exceeding each catchment's 3 h rainfall threshold (thresholds come from Karam's percentile work).
-- [ ] Feed this into `event_probability` in the Component A output.
+- [x] Pull the ensemble members for the AOI.
+- [x] Compute **exceedance probability**: the fraction of members exceeding each catchment's 3 h rainfall threshold (thresholds come from Karam's percentile work). *(Real per-catchment p99 from `catchment_rainfall_climatology` — window is 24h, not 3h: Karam's delivered climatology is daily-resolution only, documented in `docs/data_dictionary.md`.)*
+- [x] Feed this into `event_probability` in the Component A output. *(Written to `forecast_exceedance` in Postgres.)*
 
 **Why this is the highest-value item in your stream:** it's what turns the dashboard's confidence number from a made-up figure into a defensible one. "72% of ensemble members exceed the catchment's 99th-percentile 3-hour rainfall" is a real statement. "Confidence: moderate" with no derivation is not, and a judge will ask.
 
@@ -103,9 +103,11 @@ GRIB is the format you'll fight with most. `cfgrib` works but is picky about ind
 - https://github.com/ecmwf/ecmwf-opendata
 
 **Tasks**
-- [ ] Install and configure the `ecmwf-opendata` client.
-- [ ] Pull the same AOI and lead-time window as GFS.
-- [ ] Build a **GFS-vs-IFS agreement flag** to surface in the dashboard.
+- [x] Install and configure the `ecmwf-opendata` client.
+- [x] Pull the same AOI and lead-time window as GFS.
+- [x] Build a **GFS-vs-IFS agreement flag** to surface in the dashboard.
+
+*(AIFS itself — the ML-variant model — was not pulled; marked optional above and lower priority than everything else on this list.)*
 
 **Deliverable:** `backend/src/ingestion/ecmwf.py` + the agreement indicator
 
@@ -129,10 +131,10 @@ GRIB is the format you'll fight with most. `cfgrib` works but is picky about ind
 **Product:** `GLOBAL_ANALYSISFORECAST_PHY_001_024`
 
 **Tasks**
-- [ ] Install and authenticate `copernicusmarine`.
-- [ ] Pull u/v currents for the northern Gulf: **surface plus the upper depth levels** (the plume may move as a dense underwater flow, not only at the surface — see the hyperpycnal-flow note below).
-- [ ] Pull for both the historical event windows and the live forecast period.
-- [ ] Deliver as an Xarray dataset the particle engine can query at any `(lon, lat, time)` **without a manual reshape step**.
+- [x] Install and authenticate `copernicusmarine`.
+- [x] Pull u/v currents for the northern Gulf: **surface plus the upper depth levels** (the plume may move as a dense underwater flow, not only at the surface — see the hyperpycnal-flow note below). *(The live "anfc" tier only has one ~0.49m level — real 0-50m depth resolution needs the GLORYS12V1 reanalysis product, used for the historical pull below.)*
+- [x] Pull for both the historical event windows and the live forecast period. *(Historical: HYCOM `GLBu0.08/expt_91.2` + Copernicus Marine GLORYS12V1, cached as `*_AQ-2016-10-28.nc`.)*
+- [x] Deliver as an Xarray dataset the particle engine can query at any `(lon, lat, time)` **without a manual reshape step**.
 
 **Deliverables**
 - `data/raw/currents/`
@@ -153,9 +155,9 @@ GRIB is the format you'll fight with most. `cfgrib` works but is picky about ind
 - https://www.hycom.org/ocean-prediction
 
 **Tasks**
-- [ ] Pull the equivalent u/v fields for the event windows.
-- [ ] Compare current direction at the outlet against Copernicus.
-- [ ] Document agreement or disagreement.
+- [x] Pull the equivalent u/v fields for the event windows.
+- [x] Compare current direction at the outlet against Copernicus. *(The outlet cell itself is masked/land in BOTH models — compared at the nearest point both resolve instead, which is the honest handling, not a workaround.)*
+- [x] Document agreement or disagreement. *(Today: <5°, drifts hourly. At the actual event peak, 2016-10-28 06:50 UTC: 65.8° disagreement — see `docs/forcing_limitations.md` and `docs/qa_screenshots/currents_01_hycom_vs_copernicus.png`.)*
 
 **Why bother:** if two independent ocean models agree the current was heading south during the event, your plume direction claim is much stronger. If they disagree, that's genuinely important to know — and it belongs in the uncertainty discussion rather than being quietly dropped.
 
@@ -180,13 +182,13 @@ That answer is stronger than a vague one, and the doc's §23.4 explicitly warns 
 
 ## Definition of done
 
-1. **Live forecast path** producing a per-catchment rainfall probability, working on today's data regardless of weather.
-2. **GEFS exceedance probability** wired into the confidence number.
-3. **GFS-vs-IFS agreement flag** implemented.
-4. **Current fields interpolation-ready** for the particle engine — surface and upper depths, both historical windows and live.
-5. **HYCOM-vs-Copernicus direction comparison** documented.
-6. **A written, one-paragraph statement of the resolution limitation** that anyone on the team can read off the slide.
-7. **Every product ID, variable list, and access date** in `docs/data_dictionary.md`.
+1. [x] **Live forecast path** producing a per-catchment rainfall probability, working on today's data regardless of weather.
+2. [x] **GEFS exceedance probability** wired into the confidence number. *(Real Karam climatology, not the Phase 1 placeholder.)*
+3. [x] **GFS-vs-IFS agreement flag** implemented.
+4. [x] **Current fields interpolation-ready** for the particle engine — surface and upper depths, both historical windows and live. *(Finished 2026-08-03 — historical pull and real depth levels were both missing until this pass; also fixed a real bug where requesting depth=0.0 against a product whose shallowest level is 0.49m silently returned nan.)*
+5. [x] **HYCOM-vs-Copernicus direction comparison** documented. *(Both today AND the actual event — the numbers are very different, 5° vs 66°, and the event number is the one that matters for the backtest.)*
+6. [x] **A written, one-paragraph statement of the resolution limitation** that anyone on the team can read off the slide.
+7. [x] **Every product ID, variable list, and access date** in `docs/data_dictionary.md`.
 
 **Target files**
 ```text
