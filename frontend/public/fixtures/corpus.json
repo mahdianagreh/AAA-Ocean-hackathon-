@@ -1,0 +1,531 @@
+{
+ "chunks": [
+  {
+   "file": "docs/event_dates.md",
+   "section": "Primary source",
+   "text": "Kalman, A., Katz, T., Vincze, M., Longenecker, J., Mathalon, A., Hill, P., and\nGoodman-Tchernov, B. (2025). *Anatomy of a Flash Flood in a Hyperarid\nEnvironment: From Atmospheric Masses to Sediment Dispersal in the Sea.*\nNatural Hazards and Earth System Sciences, **25**, 3201–3219.\n\n- DOI: https://doi.org/10.5194/nhess-25-3201-2025\n- Published 10 September 2025\n\n> ⚠️ **Citation correction.** `tasks/00-contracts.md:131`, `tasks/karam.md:43`,\n> and `tasks/abd.md:27` cite this article as **\"Ginat et al. 2025\"**. The first\n> author is **Kalman**; the article number (25/3201/2025) and DOI are the same\n> paper. Cite it as **Kalman et al. (2025)**. Those three task files still need\n> fixing — not changed here, because this task scoped edits to this file only.\n\n---"
+  },
+  {
+   "file": "docs/event_dates.md",
+   "section": "1. Primary event — October 2016",
+   "text": "### Canonical event ID\n\n```\nAQ-2016-10-28\n```\n\n**Reason:** the canonical date is the **flood-arrival date in UTC**. Rainfall\nbegan days earlier, so a rainfall-onset ID would disagree with the marine\narrival that the project actually forecasts. Fixing the ID to the arrival date\nin UTC keeps event IDs, marine observations, and model targets on one clock.\n\nThis resolves the `AQ-2016-10-XX` placeholders in the concept doc\n(`reefshield_aqaba_concept.md:481`, `:1117`, `:1502`).\n\n> **Note:** `tasks/00-contracts.md:68` shows `AQ-2016-10-25` in the ID-format\n> table. That is a **formatting example**, not this event. The correct ID for\n> the October 2016 event is `AQ-2016-10-28`.\n\n### Literature aliases\n\nThe same event appears under several names. All refer to `AQ-2016-10-28`:\n\n- October 2016 Aqaba–Eilat flash flood\n- 27 October 2016 rainfall/flood event\n- 28 October 2016 marine-arrival event\n\nExpect all three in the literature and in search results. The 27 vs 28 October\nsplit is not a contradiction: 27 October refers to the **rainfall**, 28 October\nto the **flood reaching the sea**.\n\n### Documented timing\n\n| Item | Value | Basis |\n|---|---|---|\n| Widespread rainfall reference | **2016-10-27"
+  },
+  {
+   "file": "docs/event_dates.md",
+   "section": "2. Backup event — February 2013",
+   "text": "**Exact timing: UNRESOLVED.** Pending extraction from:\n\nKatz, T. et al. (2015). *Desert flash floods form hyperpycnal flows in the\ncoral-rich Gulf of Aqaba.* Earth and Planetary Science Letters.\nhttps://www.sciencedirect.com/science/article/pii/S0012821X15001119\n\n```\nevent_id                : TO_BE_RESOLVED_FROM_KATZ_2015\nrainfall_onset_utc      : TO_BE_RESOLVED_FROM_KATZ_2015\nflood_arrival_local     : TO_BE_RESOLVED_FROM_KATZ_2015\nflood_arrival_utc       : TO_BE_RESOLVED_FROM_KATZ_2015\nimerg_scan_window_utc   : TO_BE_RESOLVED_FROM_KATZ_2015\nwettest_3h_window_utc   : TO_BE_DERIVED_FROM_IMERG\n```\n\n**No date is invented here.** What is known: the concept doc\n(`reefshield_aqaba_concept.md:160`) cites ≈21,000 tonnes of suspended sediment\nfor a February 2013 event, versus ≈24,000 tonnes for October 2016. Month and\nyear only — no day, no time.\n\nWhen resolved, note that **February is outside DST**: Israel is on IST\n(UTC+2) then, so the offset differs from the October 2016 event. Convert with\n`ZoneInfo(\"Asia/Jerusalem\")` rather than reusing UTC+3.\n\n---"
+  },
+  {
+   "file": "docs/event_dates.md",
+   "section": "3. Source vs Derived",
+   "text": "| Value | Classification |\n|---|---|\n| Widespread rainfall reference `2016-10-27T06:00:00Z` | **Directly reported by the paper** |\n| Flood arrival `2016-10-28 03:00` local, Eilat | **Directly reported by the paper** |\n| Offshore instrument response `2016-10-28 09:50` local | **Directly reported by the paper** |\n| ≈66 h duration · ≈51 h pre-arrival accumulation · ≈82 % in 18 h · ≈50 h to sea · ≈3 h rain-end-to-arrival | **Directly reported by the paper** |\n| Flood arrival `2016-10-28T00:00:00Z` | **Timezone-converted** (`ZoneInfo(\"Asia/Jerusalem\")`, IDT UTC+3) |\n| Offshore response `2016-10-28T06:50:00Z` | **Timezone-converted** (`ZoneInfo(\"Asia/Jerusalem\")`, IDT UTC+3) |\n| Turbidity/salinity cleared `2016-10-29T14:15:00Z` | **Timezone-converted** (`ZoneInfo(\"Asia/Jerusalem\")`, IDT UTC+3) |\n| Elevated turbidity duration `31.42 h` | **Derived** — differenced from the two converted timestamps above; agrees with the paper's own \"~31 h\" prose |\n| Peak suspended sediment `2.18 g/L` · salinity minimum `38.75 ‰` · background mean `40.53 ‰` · anomaly `19σ` | **Directly reported by the paper** |\n| Mooring coordinate `34.98151, 29.53799 ± 1.5 km` | **Derived** — see `docs/mooring_coordinate_d"
+  },
+  {
+   "file": "docs/event_dates.md",
+   "section": "4. Machine-readable summary",
+   "text": "```yaml\nprimary_event:\n  event_id: AQ-2016-10-28\n  canonical_date_basis: flood arrival date in UTC\n  source_doi: 10.5194/nhess-25-3201-2025\n  source_citation: Kalman et al. (2025)\n  aliases:\n    - October 2016 Aqaba-Eilat flash flood\n    - 27 October 2016 rainfall/flood event\n    - 28 October 2016 marine-arrival event\n  reported:\n    widespread_rainfall_reference_utc: 2016-10-27T06:00:00Z\n    flood_arrival_local: 2016-10-28T03:00:00\n    flood_arrival_timezone: Asia/Jerusalem\n    offshore_instrument_response_local: 2016-10-28T09:50:00\n    turbidity_salinity_cleared_local: 2016-10-29T17:15:00\n    rainfall_duration_hours: 66\n    accumulation_before_arrival_hours: 51\n    concentrated_spell_hours: 18\n    concentrated_spell_fraction: 0.82\n    rain_start_to_sea_hours: 50\n    rain_end_to_arrival_hours: 3\n    peak_suspended_sediment_g_l: 2.18\n    peak_suspended_sediment_location: near seafloor\n    salinity_minimum_psu: 38.75\n    salinity_background_mean_psu: 40.53\n    salinity_anomaly_sigma: 19\n  converted:\n    flood_arrival_utc: 2016-10-28T00:00:00Z\n    offshore_instrument_response_utc: 2016-10-28T06:50:00Z\n    turbidity_salinity_cleared_utc: 2016-10-29T14:15:00Z\n    tz_rule: IDT (UTC+3); "
+  },
+  {
+   "file": "docs/event_dates.md",
+   "section": "5. Rules for consumers of this file",
+   "text": "1. **Never hard-code an event date in a script.** Read it from here.\n2. **Never use `smoke_test_3h_window_utc` for a scientific claim.** It is a\n   plumbing test window.\n3. **Never substitute a placeholder for `wettest_3h_window_utc`.** If it still\n   reads `TO_BE_DERIVED_FROM_IMERG`, the derivation has not been run.\n4. **Always convert local times with `ZoneInfo(\"Asia/Jerusalem\")`.** The\n   October 2016 event is UTC+3; February 2013 will be UTC+2.\n5. **When the wettest window is derived, record it here** together with the\n   script that produced it, and keep the classification table current."
+  },
+  {
+   "file": "docs/event_audit.md",
+   "section": "0. Method and a real gap this caught",
+   "text": "**Search sources:**\n- Sentinel-2 metadata — official **Copernicus Data Space OData catalog**\n  (`https://catalogue.dataspace.copernicus.eu/odata/v1/Products`). Search is\n  **anonymous, no account needed.**\n- Landsat metadata + pixels — **Earth Search STAC** (AWS, Element84),\n  `https://earth-search.aws.element84.com/v1`, collection `landsat-c2-l2`.\n  Also anonymous.\n\n**⚠️ Cross-validation caught a real archive gap.** Earth Search's own\n`sentinel-2-l2a` collection (an AWS mirror) has **zero scenes for our tiles\n(36RXT / 36RYT) before 2017-01-01**, despite claiming a 2015-06-27 temporal\nextent. Querying the *official* Copernicus Data Space catalog directly shows\ncoverage from at least January 2016. **Conclusion: never trust the AWS\nEarth-Search mirror alone for Sentinel-2 dates before 2017 over this AOI** —\nalways cross-check against the official catalog, or a false \"no coverage\"\nverdict would have been reported for the entire October 2016 event.\n\n**Search extent:** padded box `34.80, 29.25, 35.15, 29.70` (contract\n`DOWNLOAD_BBOX`). AOI water-specific cloud scoring (per the acceptance\ncriteria) is not yet computed — see §4.\n\n---"
+  },
+  {
+   "file": "docs/event_audit.md",
+   "section": "1. Event AQ-2016-10-28 (primary) — Sentinel-2",
+   "text": "Flood arrival: `2016-10-28T00:00:00Z` (see `docs/event_dates.md`).\nSearch window: `2016-10-18` → `2016-11-07` (±10 days).\n\n**Only two acquisition dates fall in this window** — Sentinel-2B did not launch\nuntil April 2017, so 2016 had single-satellite (S2A-only) coverage at this\ntile's ~10-day revisit, not the ~5-day revisit possible today.\n\n| Date | Tiles | Days from event | Cloud cover (scene-level metadata) | Role |\n|---|---|---:|---:|---|\n| 2016-10-23 | 36RXT, 36RYT | −5 (pre) | 82.8% / 85.4% | pre-event — **too cloudy to use** |\n| **2016-11-02** | 36RXT, 36RYT | **+5 (post)** | **3.9% / 4.2%** | **post-event candidate** |\n\n**Numerically clears the gate** (§1 of `abd.md`: within ~5 days, <20% cloud) —\nbut see §1a below: **the visual/plume-visibility half of the gate fails.**\n\n**Product IDs** (Copernicus Data Space `Id`, and the Planetary Computer STAC\nIDs actually used for pixel access — see §1a):\n- `S2A_MSIL2A_20161102T082112_N0500_R121_T36RYT_20231026T122456` — id\n  `6ea1d505-8d0a-4bc4-aa28-2e0ce64e8b26`\n- `S2A_MSIL2A_20161102T082112_N0500_R121_T36RXT_20231026T122456` — id\n  `bc4a6f07-9dcb-4408-875e-e36fdc01607c` — Planetary Computer:\n  `S2A_MSIL2A_20161102T082112_R121_T36RXT_2"
+  },
+  {
+   "file": "docs/event_audit.md",
+   "section": "2. Backup event — February 2013",
+   "text": "**Exact date: UNRESOLVED.** `docs/event_dates.md` §2 already flags this — Katz\net al. (2015) is paywalled on ScienceDirect (403 on automated fetch), and no\nfree full text was found (checked: academia.edu mirror blocked automated\nfetch, ADS abstract page returned empty, the 2025 NHESS companion paper only\nrepeats the 21,000-tonne sediment figure without a date). **Needs a\nteammate with journal/institutional access to pull the actual day.** See §4.\n\n### Sentinel-2 — confirmed impossible, not just unlikely\n\nSentinel-2A launched **2015-06-27**, over two years after this event.\nConfirmed (not assumed): the official catalog has no Sentinel-2 product of any\nkind before its launch date. **There is no Sentinel-2 path for this event,\nfull stop** — matches `tasks/abd.md` §3's expectation.\n\n### Landsat — the real finding, and it overturns an assumption in `abd.md`\n\n`tasks/abd.md` §3 says Landsat 8 (launched Feb 2013) is \"marginal but usable.\"\n**That does not hold.** Coarse-scanned the full month (exact day unknown, so\n±10-day framing isn't yet possible):\n\n| Date | Scene | Cloud cover | Platform | Note |\n|---|---|---:|---|---|\n| 2013-02-02 | path 174 / row 039 | 33% | **Landsat 7** | SLC-off st"
+  },
+  {
+   "file": "docs/event_audit.md",
+   "section": "3. Go / no-go — FINAL, pixel-level QC complete",
+   "text": "**Primary event (Oct 2016): NO-GO for image-based validation.** The only\ncandidate post-event scene (2016-11-02, +5 days) numerically clears the gate\n(cloud, timing) but **fails the visual-plume criterion** — confirmed by two\nindependent sensors (Sentinel-2 + Landsat 8) and explained by the in-situ\nmooring record showing the plume signal had already dispersed 2.5–3.5 days\nbefore either satellite pass (§1a). This is not a weak/marginal result to\ngrade Silver or Bronze — it's a genuine null: **no plume is present in any\nimagery this project can access for this event**, for a real physical reason\n(dispersal faster than the revisit gap), not a data-quality problem.\n\n**Backup event (Feb 2013): weaker still.** No Sentinel-2 possible at all\n(pre-launch); Landsat 8 unavailable (pre-commissioning); only degraded\nLandsat 7 remains, and even that can't be properly scored until the exact\ndate resolves (§2).\n\n**What this means, concretely, per `abd.md`'s own escalation framing\n(\"different event, a weaker label, or repositioning around forecast\ncapability\"):**\n\n1. **A different event doesn't obviously help.** Feb 2013 is strictly worse\n   on sensor availability, and nothing else in the literatur"
+  },
+  {
+   "file": "docs/event_audit.md",
+   "section": "4. Blockers",
+   "text": "1. ~~Pixel-level access for visual QC~~ — **RESOLVED without needing\n   Copernicus Data Space or Earth Engine credentials.** Microsoft Planetary\n   Computer (`planetarycomputer.microsoft.com/api/stac/v1`) serves both\n   Sentinel-2 L2A and Landsat C2 L2 pixels publicly, anonymous SAS-token\n   signing via `pip install planetary-computer`. `.env`'s `CDSE_*` /\n   `EARTHENGINE_PROJECT` placeholders are no longer blocking this workstream\n   — see §1a. (Still worth registering for real if another workstream needs\n   Copernicus Data Space specifically, e.g. Copernicus Marine for Nizar.)\n2. **Still open: Katz et al. (2015) full text**, for the exact February 2013\n   date. Needed from someone with journal access (or the original authors).\n   Until then, the February event stays a whole-month coarse scan rather\n   than a scored ±10-day window, and its Landsat 7 candidate stays\n   unresolved between two structurally different dates (§2).\n3. **Still open: site-photo provenance** (§6c) — capture date/location\n   unconfirmed, EXIF stripped.\n\n---"
+  },
+  {
+   "file": "docs/event_audit.md",
+   "section": "6. New source material collected on-site (2026-08-02)",
+   "text": "Three items filed under `data/raw/`:\n\n### a. Kalman et al. (2025) — full text with tracked changes\n\n`data/raw/literature/kalman_et_al_2025_fulltext_ATC1.pdf` — the actual paper behind\n`docs/event_dates.md`'s Oct 2016 numbers, not just the abstract. Cross-checked\nagainst what's already recorded here: sediment mass (paper: \"2.44 × 10⁴ tons\" ≈\n24,400 t), flood arrival (paper: \"~3:00 am October 28th\"), and rainfall timing all\nmatch what's already in `docs/event_dates.md`. No contradiction found.\n\n**The real find: an independent, quantitative marine validation dataset that isn't\nsatellite imagery at all.** The paper's mooring station — anchored 250 m offshore\nthe Kinnet Canal outlet at 13 m depth — recorded salinity and turbidity (OBS 3+\nsensors) at 5-minute intervals through the whole flood. Reported numbers:\n\n- Salinity dropped to **38.75 ‰**, ~1.75 ‰ below the 9-month background mean\n  (40.53 ‰) — 19× the background standard deviation.\n- Turbidity peaked at **2.18 g/L** suspended sediment near the seafloor.\n- Elevated turbidity lasted **~31 hours**, from 09:50 Oct 28 to ~17:15 Oct 29.\n- The plume alternated between **hypopycnal (surface) and hyperpycnal (bottom)**\n  transport — botto"
+  },
+  {
+   "file": "docs/event_audit.md",
+   "section": "7. Remaining open items",
+   "text": "- [x] ~~Pull SCL band, compute AOI-water cloud %~~ — done, §1a (0.07%).\n- [x] ~~Pull true-color visual asset, confirm plume visibility~~ — done, §1a\n      (no plume, two independent sensors).\n- [x] ~~Pull 5–10 clear pre-event scenes, build baseline composite~~ — done,\n      §1b (8 scenes).\n- [x] ~~Build the plume-extraction pipeline~~ — done, §1c\n      (`backend/src/models/plume_segmentation.py`,\n      `scripts/run_plume_extraction.py`, `notebooks/03_plume_extraction.ipynb`).\n- [x] ~~Final go/no-go~~ — done, §3: **NO-GO**, escalated in this file.\n- [ ] **Feb 2013 exact date** — confirmed unreachable through free/legitimate\n      channels (ScienceDirect 403, academia.edu blocked, ADS empty, OpenAlex\n      confirms zero open-access copies exist anywhere). Needs a teammate with\n      institutional/journal access, or direct contact with the authors.\n      Once resolved: re-run the Landsat search as a proper ±10-day window\n      instead of a whole-month scan, and check the SLC-off gap position\n      against the coastline.\n- [ ] **Site-photo provenance** (§6c) — capture date/location unconfirmed.\n- [ ] **Team decision needed**: which pivot from §3 to take (mooring record as\n      Nizar's"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "The one-line version",
+   "text": "We built a working sediment-to-reef data foundation for Aqaba from five open\ndatasets in two weeks. **Three of those five datasets are global models or global\nproducts, not local measurements.** Our outputs are therefore a defensible *relative*\nranking of which catchments threaten which reefs — not an absolute prediction of how\nmuch sediment lands where.\n\n---"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "1. Our land cover is a single snapshot from 2021",
+   "text": "ESA WorldCover gives us 10 m land cover for one epoch, 2021. There is no time series.\n\n**What that means:** we model the February 2013 and October 2016 flood events using\n2021 land cover. Aqaba grew between those dates. Any change in bare ground or built-up\narea across that decade is invisible to us, and it runs in the direction that matters\n— more development means more runoff.\n\n**What we would do with more time:** Landsat-based change detection across 2013–2021\nto at least bound the error.\n\n---"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "2. Our soil data is a global model, not Aqaba's soil",
+   "text": "SoilGrids is a machine-learning product trained on global soil profiles. Nobody has\nsampled the soil in our catchments for this project.\n\n**If you ask us how we know Aqaba's soil texture, the honest answer is: we don't.**\nWe use SoilGrids as a *relative* erodibility ranking between our own catchments,\nwhere the model's systematic biases largely cancel. We never quote a clay percentage\nas a measured local property.\n\nWe did verify the data is internally consistent — clay + sand + silt sums to exactly\n100.00%, bulk density falls in the real-soil range of 1.09–1.46 kg/dm³, and organic\ncarbon is appropriately low for desert at ~12 g/kg. That confirms we are reading the\nproduct correctly. It does not make it a local measurement.\n\n**Phase 2:** field sampling at a handful of wadi outlets would anchor the ranking.\n\n---"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "3. We could not obtain GEBCO, and we say so",
+   "text": "Our brief specified GEBCO 15 arc-second bathymetry. **Every programmatic route to\nGEBCO is currently closed** — its WCS service returns empty capabilities, its download\nendpoint rejects automated requests, and the published tile paths return 404. It is\navailable only through an interactive web form.\n\nRather than stall or quietly fake it, we substituted **GMRT**, a bathymetric synthesis\nwhose deep-water source in this region is GEBCO itself. We then checked it two ways:\n\n- GMRT agrees with NOAA's independent global relief mosaic on the basin's deepest\n  point to within **0.2 metres**.\n- Our derived coastline agrees with OpenStreetMap's independently traced coastline to\n  a **median of 62 metres** — about one pixel.\n\n**We kept the file named `gmrt_aqaba.tif`, not `gebco_aqaba.tif`.** Mislabelling it\nwould have been the easy path and a genuine integrity failure. The pipeline\nautomatically prefers real GEBCO the moment someone downloads it by hand.\n\n---"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "4. Our bathymetry cannot see the reef shelf",
+   "text": "This is the most important limitation on this page.\n\nThe effective resolution of our depth data is about **450 metres**. The Gulf of Aqaba\nhas one of the steepest coastal drop-offs in the world — the reef shelf is often only\ntens of metres wide before the seabed plunges past 200 m.\n\n**Consequence:** our depth grid claims −372 m only 100 m offshore in places. That is\nan interpolation artefact, not a real slope. So:\n\n- Our plume model is credible at **basin scale** and as a \"particles stop at the\n  shore\" boundary.\n- It is **not** credible for reef-scale depth, small channels, or harbour structures.\n- We therefore did **not** derive our reef zone boundaries from depth contours, even\n  though that would have looked more rigorous. Deriving a reef edge from an\n  interpolation artefact would have dressed up a guess as a measurement.\n\nOur reef zone widths are an explicit, documented 250 m assumption.\n\n---"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "5. Our reef sensitivity weights are assumptions, not data",
+   "text": "Every reef zone carries `sensitivity_weight = 1.0`. **That is a placeholder, and it is\nlabelled as one inside the data file itself**, not just in a footnote — the column\n`sensitivity_weight_status` literally reads\n`PLACEHOLDER_PENDING_MARINE_SCIENTIST`.\n\nAllen Coral Atlas maps *habitat*, not *sensitivity*. Deciding that one reef is twice\nas vulnerable as another requires marine-science expertise this team does not have.\n\nWe did find one piece of real evidence that bears on it: the **Aqaba Marine Park**\nboundary, which we extracted from OSM. Four of our eight zones fall 67–85% inside the\nlegally protected reserve. We stored that overlap as a measured percentage and\n**deliberately did not convert it into a weight** — that conversion is a scientist's\njudgement, not ours.\n\n**If our exposure ranking looks confident, that confidence comes from the sediment\nside, not the sensitivity side.**\n\n---"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "6. Allen Coral Atlas maps shallow reef only",
+   "text": "Once the real habitat export lands, it still only covers optically shallow reef.\nDeeper habitat is not in the product, so our exposure map is **silent** about it —\nwhich is different from saying it is safe.\n\n---"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "7. OpenStreetMap tells us what is mapped, not what exists",
+   "text": "We use OSM for roads, buildings and — most valuably — 27 mapped culverts that correct\nwhere wadis actually reach the sea. A DEM routes water *around* a road embankment; a\nculvert carries it *through*.\n\n**But OSM completeness in Aqaba is unverified.** So we adopted a one-way rule: a\nmapped feature is positive evidence, and an unmapped one is *no* evidence. We never\nuse OSM's silence to rule a channel out. Our conflict report for the terrain lead\nstates this in its own header so it cannot be misread downstream.\n\n---"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "8. What we would fix first, given another week",
+   "text": "1. Field-sample soil at the main wadi outlets — turns limitation 2 from a caveat into\n   a calibration.\n2. Get high-resolution nearshore bathymetry — this single fix unlocks reef-scale\n   plume behaviour and would let us replace the 250 m assumption in limitation 4.\n3. Sit down with an Aqaba marine scientist for one hour and replace limitation 5's\n   placeholder weights with real ones.\n\n---"
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "9. Our satellite-based plume validation failed — and we can say exactly why",
+   "text": "We built a full Sentinel-2 extraction pipeline to validate the marine plume model against\na real satellite-observed mask for the October 2016 flood. **It found nothing, for a good\nphysical reason, and we are more confident in the result because of that than we would\nhave been in a weak positive.**\n\n**The evidence — three independent lines, not one:**\n\n1. Two independent sensors, both cloud-free over the AOI water (0.07% cloud/shadow):\n   Sentinel-2 (2016-11-02, +5 days) and Landsat 8 (2016-11-01, +4 days). Neither shows any\n   sediment discoloration near the outlet or shoreline.\n2. The Kalman et al. (2025) in-situ mooring — 250 m offshore the flood's actual discharge\n   point, sampling every 5 minutes through the whole event — shows the turbidity/salinity\n   signal lasted **~31 hours** and had returned to background by **17:15 local, 29 October**.\n   Both satellite passes are **2.5–3.5 days after that** — the plume was physically gone\n   before either sensor had a chance to see it. This is not a cloud-cover failure or a\n   revisit-timing accident we could have engineered around; a single-satellite ~5-day\n   revisit cadence cannot catch a plume that disperses in a day and a half.\n3."
+  },
+  {
+   "file": "docs/pitch_limitations.md",
+   "section": "Why we are telling you all this",
+   "text": "We caught **five silent bugs** in our own data during this build: reef zones placed on\ndry land, a nodata value that would have turned particle positions into non-numbers,\nsea pixels being read as zero-clay soil, 1.46 hectares of double-counted reef, and a\nset of distances measured in the wrong projection and overstated by 15%.\n\nNone of those five would have thrown an error. Every one was caught by insisting that\neach processing step produce a picture we had to look at. That is the same discipline\nbehind every caveat on this page — and it is the reason we would rather show you the\nlimits of this data than have you discover them for us."
+  },
+  {
+   "file": "docs/forcing_limitations.md",
+   "section": "The one-paragraph statement (read this off the slide)",
+   "text": "> The best free global ocean current models — Copernicus Marine and HYCOM — run at\n> roughly 1/12 degree, about 9 km per grid cell. The Gulf of Aqaba is only 15–25 km wide.\n> That means the entire gulf is spanned by two or three grid cells, so the nearshore\n> circulation — precisely where the reefs are — is not resolved. We saw this directly: our\n> own provisional wadi outlet coordinate lands on a grid cell the model treats as masked\n> land, not water. This is exactly why ReefShield does not output a single plume\n> trajectory. It outputs a probabilistic exposure zone, built from many particles run\n> under stochastic diffusion, with an explicit confidence figure attached. Higher-resolution\n> local current measurements are a Phase 2 item, not a hackathon MVP requirement."
+  },
+  {
+   "file": "docs/forcing_limitations.md",
+   "section": "Evidence, not assertion",
+   "text": "This was confirmed empirically while building the ingestion pipeline, not just asserted\nfrom the concept doc:\n\n- Querying HYCOM's `GLBy0.08` grid at the provisional outlet (34.96 N, 29.52 E — Wadi\n  Yutum system) returns `nan` — that cell is masked as land/unresolved in the global grid.\n- The nearest cell the model resolves as open water is roughly 6 km further into the gulf\n  mouth (34.90, 29.40), where it reports a real value (~2–3 cm/s, weak southwestward flow\n  on 2026-08-02).\n- Only a narrow east–west strip of the AOI (lat ≈ 29.28–29.48) resolves as water at all in\n  this grid — see `docs/data_dictionary.md` for the full query."
+  },
+  {
+   "file": "docs/forcing_limitations.md",
+   "section": "What this does and doesn't invalidate",
+   "text": "**Does not invalidate:** the forecasting and event-detection pipeline (GFS/GEFS/ECMWF),\nwhich operates on atmospheric grids at a different, generally adequate resolution for\ncatchment-scale rainfall.\n\n**Correction (2026-08-02):** an earlier version of this section said IoU/centroid\ncomparisons against \"Abd's real satellite mask\" were still meaningful for historical\nbacktesting. That is no longer accurate and must not be repeated. The Sentinel-2/Landsat\nextraction for `AQ-2016-10-28` is a documented coastline artifact, not a validated plume —\ntwo independent sensors show no visible plume, and the in-situ mooring record shows the\nsignal had already returned to background 2.5–3.5 days before either satellite pass (full\nreasoning: `docs/event_audit.md`, `docs/pitch_limitations.md`). Spatial metrics (IoU, Dice,\ncentroid distance) are not computed for this event at all —\n`backend/src/models/backtest_metrics.py`'s `assert_spatial_metrics_allowed` refuses to.\n**The historical backtest for `AQ-2016-10-28` validates against the Kalman et al. (2025)\nmooring time series instead** — arrival-time, duration and peak-timing error, per\n`docs/mooring_coordinate_derivation.md` and `data/processed/mar"
+  },
+  {
+   "file": "docs/forcing_limitations.md",
+   "section": "Judge-ready answer",
+   "text": "> \"The Gulf is narrower than three grid cells of the best free global ocean model, so we\n> don't claim meter-level accuracy — we output probabilistic exposure zones and we tell\n> the user our confidence. We verified this isn't theoretical: our own release point sits\n> on a masked cell in the global grid. Higher-resolution local current measurements are\n> Phase 2, integrated with Marine Science Station data.\"\n\nThis matches the concept doc's own guidance (§23.4): never claim exact prediction; the\ncorrect feasibility claim is end-to-end technical feasibility with explicit, honest\nuncertainty."
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "CRS of every artefact",
+   "text": "| Artefact | CRS | Pixel size |\n|---|---|---|\n| WorldCover tile + AOI clip | EPSG:4326 | 8.33e-05° (~10 m) |\n| Bathymetry, raw (`gmrt_aqaba.tif`) | EPSG:4326 | 5.50e-04° (~53 m) |\n| SoilGrids ×12 | EPSG:4326 | 2.26e-03° (~250 m) |\n| **`depth_utm36n.tif`** | **EPSG:32636** | **50 m** |\n| All vectors — reef zones, coastline, `osm_aqaba.gpkg`, AOI boxes | EPSG:4326 | — |\n| All `*.parquet` feature tables | non-spatial | — |\n\nPer contract §1: **EPSG:4326 for storage, EPSG:32636 for all maths.** The depth field\nis the single reprojected raster, because the particle engine integrates distances on\nit. SoilGrids is natively Homolosine; `OUTPUTCRS=EPSG:4326` is requested in the WCS\ncall so it arrives already reprojected.\n\n**Measurement CRS is not cosmetic.** Every length, area and distance is computed in\nUTM 36N. Figures with satellite basemaps are *drawn* in EPSG:3857 because that is the\ntile CRS — but measuring there inflates ground distance by 1/cos(lat) = **1.148** at\nthis latitude, which is exactly how culvert #1 was briefly reported as 45 m from the\ncoast when the true distance is 39 m. Draw in 3857; measure in 32636.\n\nFigures drawn in EPSG:4326 pass `config.geographic_aspect()` to `se"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "1. ESA WorldCover 10 m",
+   "text": "| Field | Value |\n|---|---|\n| **Product/version** | ESA WorldCover v200, 2021 epoch |\n| **Access date** | 2026-08-01 |\n| **Access method** | Direct S3 (AWS Open Data), tile `N27E033` |\n| **Source URL** | `https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/ESA_WorldCover_10m_2021_v200_N27E033_Map.tif` |\n| **Spatial resolution** | 10 m |\n| **Coverage** | One 3°×3° tile fully contains the padded box (asserted in code, not assumed) |\n| **License** | CC BY 4.0 — attribution: © ESA WorldCover project 2021 |\n| **Reproduce** | `cd scripts && ../.venv/bin/python process_worldcover.py` |\n| **Outputs** | `data/interim/worldcover_aqaba_clip.tif`, `data/processed/features/landcover_by_catchment.parquet` |\n\n**QA figures — all five steps**\n\n| figure | claim it makes checkable |\n|---|---|\n| [worldcover_01_raw_tile_before_clip.png](qa_screenshots/worldcover_01_raw_tile_before_clip.png) | one tile covers the whole AOI |\n| [worldcover_02_clipped_to_aoi.png](qa_screenshots/worldcover_02_clipped_to_aoi.png) | the clip is correctly placed and bare ground dominates |\n| [worldcover_03_catchment_boundaries_overlay.png](qa_screenshots/worldcover_03_catchment_boundaries_overlay.png) | the exa"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "2. ISRIC SoilGrids v2.0",
+   "text": "| Field | Value |\n|---|---|\n| **Product/version** | SoilGrids v2.0 |\n| **Access date** | 2026-08-01 |\n| **Access method** | WCS 2.0.1 `GetCoverage` per variable/depth, `https://maps.isric.org/mapserv?map=/map/<var>.map` |\n| **Spatial resolution** | 250 m |\n| **Coverage** | Padded box, 155×188 cells |\n| **License** | CC BY 4.0 |\n| **Reproduce** | `../.venv/bin/python download_soilgrids.py` then `.venv/bin/python tests/test_soilgrids_units.py` |\n| **Outputs** | `data/raw/soilgrids/*.tif` (12 rasters), `data/processed/features/soil_by_catchment.parquet` (73 columns) |\n\n**QA figures — one per variable plus three verification figures**\n\n| figure | claim it makes checkable |\n|---|---|\n| [soilgrids_01_clay_both_depths.png](qa_screenshots/soilgrids_01_clay_both_depths.png) | clay plausible at both depths, nodata matches the gulf |\n| [soilgrids_02_sand_both_depths.png](qa_screenshots/soilgrids_02_sand_both_depths.png) | sand, inverse pattern to clay as expected |\n| [soilgrids_03_silt_both_depths.png](qa_screenshots/soilgrids_03_silt_both_depths.png) | silt |\n| [soilgrids_04_soc_both_depths.png](qa_screenshots/soilgrids_04_soc_both_depths.png) | organic carbon low, as desert soil must be |\n|"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "3. OpenStreetMap — Jordan extract",
+   "text": "| Field | Value |\n|---|---|\n| **Product/version** | Geofabrik `jordan-latest.osm.pbf`, 30 MB |\n| **Access date** | 2026-08-01 |\n| **Access method** | `https://download.geofabrik.de/asia/jordan-latest.osm.pbf`, clipped with `ogr2ogr -clipsrc` |\n| **Spatial resolution** | Vector (no intrinsic resolution) |\n| **Coverage** | Padded box |\n| **License** | ODbL 1.0 — © OpenStreetMap contributors |\n| **Reproduce** | `./scripts/extract_osm.sh` then `../.venv/bin/python osm_drainage_report.py` |\n| **Outputs** | `data/raw/osm/jordan-latest.osm.pbf`, `data/processed/vectors/osm_aqaba.gpkg` (12 layers) |\n\n**QA figures**\n\n| figure | claim it makes checkable |\n|---|---|\n| [osm_01_roads_over_satellite.png](qa_screenshots/osm_01_roads_over_satellite.png) | roads align with visible carriageways — georeferencing is right |\n| [osm_02_buildings_over_satellite.png](qa_screenshots/osm_02_buildings_over_satellite.png) | footprints match built-up areas in imagery |\n| [osm_03_waterways_drainage_over_satellite.png](qa_screenshots/osm_03_waterways_drainage_over_satellite.png) | drainage follows real wadi floors |\n| [osm_04_culverts_all_27_numbered.png](qa_screenshots/osm_04_culverts_all_27_numbered.png) | all"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "4. Reef zones (provisional — Allen Coral Atlas pending)",
+   "text": "| Field | Value |\n|---|---|\n| **Product/version** | **PROVISIONAL**, derived. Allen Coral Atlas v2.0 export is swap-in #3. |\n| **Access date** | 2026-08-01 (provisional build) |\n| **Access method** | Derived from the water mask + published dive-site positions |\n| **Coverage** | Jordanian coast, 29.356–29.530 N |\n| **License** | n/a (own derivation). ACA is CC BY 4.0 when swapped in. |\n| **Reproduce** | `../.venv/bin/python make_reef_zones_provisional.py` (needs `process_bathymetry.py` first) |\n| **Output** | `data/processed/vectors/reef_zones_PROVISIONAL.gpkg` |\n\n**QA figures**\n\n| figure | claim it makes checkable |\n|---|---|\n| [reef_01_provisional_over_satellite.png](qa_screenshots/reef_01_provisional_over_satellite.png) | every zone is seaward of the visible shoreline |\n| [reef_02_per_zone_insets.png](qa_screenshots/reef_02_per_zone_insets.png) | each zone individually, with area/park/depth |\n| [reef_03_overlap_bug_before_after.png](qa_screenshots/reef_03_overlap_bug_before_after.png) | **bug fixed** — 1.46 ha double-count removed |\n| [reef_04_marine_park_validation.png](qa_screenshots/reef_04_marine_park_validation.png) | **independent validation** against the Marine Park |\n| [d"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "5. Bathymetry — depth field and coastline",
+   "text": "| Field | Value |\n|---|---|\n| **Product/version** | **GMRT (Global Multi-Resolution Topography), gmrt.org** — GEBCO stand-in |\n| **Access date** | 2026-08-01 |\n| **Access method** | `https://www.gmrt.org/services/GridServer`, `resolution=max`, `layer=topo` |\n| **Spatial resolution** | ~53 m grid spacing; **true information content ~450 m** |\n| **Coverage** | Padded box, 639×943 source → 699×1013 @ 50 m in UTM 36N |\n| **License** | Open — GMRT / GEBCO attribution |\n| **Reproduce** | `../.venv/bin/python process_bathymetry.py` |\n| **Outputs** | `data/raw/bathymetry/gmrt_aqaba.tif`, `data/processed/bathymetry/depth_utm36n.tif`, `data/processed/vectors/coastline.gpkg` |\n\n**QA figures**\n\n| figure | claim it makes checkable |\n|---|---|\n| [depth_01_full_field_and_isobaths.png](qa_screenshots/depth_01_full_field_and_isobaths.png) | the field handed to Nizar, and the steep shelf |\n| [depth_02_sign_convention_22_control_points.png](qa_screenshots/depth_02_sign_convention_22_control_points.png) | 22/22 control points pass, each labelled |\n| [depth_03_nodata_bug_before_after.png](qa_screenshots/depth_03_nodata_bug_before_after.png) | **bug fixed** — 1917 NaN → 0, one sentinel |\n| [coastline_01"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "Feature tables — schema",
+   "text": "`data/processed/features/*.parquet`, all joined on `catchment_id` (`AQ-C{NN}`,\ncontract §2). Produced by [aggregate_catchments.py](../scripts/aggregate_catchments.py).\n\n| table | columns |\n|---|---|\n| `landcover_by_catchment` | `catchment_id`, `landcover_px_total`, `frac_<class>` × 11, `frac_bare_or_sparse` |\n| `soil_by_catchment` | `catchment_id`, `<var>_<depth>_{mean,std,min,max,median,count}` × 12 = **73 columns** |\n| `urban_by_catchment` | `catchment_id`, `area_km2`, `road_density_km_per_km2`, `road_length_km`, `osm_building_frac`, `osm_building_count`, `mapped_drainage_km_per_km2`, `industrial_frac`, `infra_line_km_per_km2`, `tourism_poi_count` |\n\n**Built-in assertions:** land-cover fractions must sum to 1.0 per catchment, and\ncatchment-mean texture must still sum to 100% after spatial averaging.\n\n**`osm_building_frac` vs `frac_built_up` are independent estimates and will\ndisagree** — OSM maps roofs, WorldCover's `built_up` includes roads, yards and\nparking. The disagreement is informative, not a bug.\n\n> **Current status: blocked on Mahdi's catchment polygons** (contract §4 P1). The\n> pipeline is written, runs clean, and its assertions pass against a labelled local\n> fixture, "
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "Bugs caught by this QA discipline",
+   "text": "Five so far. Each has a figure or a test, because a fix without evidence is a claim.\n\n| # | bug | how it would have failed silently | evidence |\n|---|---|---|---|\n| 1 | Reef zones R-03–R-05 placed on **dry land** | exposure scores computed for land | [reef_01](qa_screenshots/reef_01_provisional_over_satellite.png), depth assert |\n| 2 | **Mixed NaN / −32768** nodata in depth field | NaN particle positions, no exception | [depth_03](qa_screenshots/depth_03_nodata_bug_before_after.png) |\n| 3 | **Undeclared 0-nodata** in SoilGrids over sea | coastal catchment means dragged to zero | [soilgrids_08](qa_screenshots/soilgrids_08_unit_conversion_before_after.png), 21 tests |\n| 4 | **1.46 ha overlap** between R-04 and R-05 | reef area double-counted, inflated headline | [reef_03](qa_screenshots/reef_03_overlap_bug_before_after.png) |\n| 5 | Culvert distances measured in **EPSG:3857** | every distance overstated by 14.8% | [osm_04](qa_screenshots/osm_04_culverts_all_27_numbered.png) now matches the report |\n\nBugs 4 and 5 were both found *by building the figure*, not by reading the code.\n# ReefShield Data Dictionary\n\nOne row per source variable, from provider to processed output. Every entry\nre"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "1. NASA GPM IMERG V07 — Final Run",
+   "text": "| Field | Value |\n|---|---|\n| Source organization | NASA / JAXA (GPM mission), distributed by NASA GES DISC |\n| Dataset name | GPM IMERG Final Precipitation L3 Half Hourly 0.1° |\n| Product / version | `GPM_3IMERGHH`, version **07** (files V07B) |\n| Collection concept ID | `C2723754847-GES_DISC` |\n| Run type | **final** — gauge-adjusted, calibrated |\n| Suitable for training | **Yes** |\n| Access method | NASA Harmony spatial + variable subsetting (`harmony-py`), auth via `earthaccess` |\n| Registration required | Yes — NASA Earthdata account **plus** one-time approval of *NASA GESDISC DATA ARCHIVE* |\n| Licence / terms status | Accepted (EULA approved 2026-08-01; blocked downloads until then) |\n| Native format | HDF5 (global) |\n| Processed format | NetCDF4 subset (~44 KB per granule vs ~7.6 MB global) |\n| Temporal resolution | 30 minutes |\n| Time availability | 2000-06 → present (Final lags ~3.5 months) |\n| Spatial resolution | 0.1° (~11 km) |\n| Geographic extent used | 34.80–35.15 °E, 29.25–29.70 °N (5 lat × 4 lon cells) |\n| Raw path | `data/raw/imerg/events/<event_id>/` |\n| Processed path | `data/processed/events/<event_id>/<event_id>_imerg.nc` |\n| Citation | https://gpm.nasa.gov/dat"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "2. NASA GPM IMERG V07 — Early Run",
+   "text": "| Field | Value |\n|---|---|\n| Source organization | NASA / JAXA, GES DISC |\n| Dataset name | GPM IMERG Early Precipitation L3 Half Hourly 0.1° |\n| Product / version | `GPM_3IMERGHHE`, version **07** (files V07C) |\n| Collection concept ID | `C2723758340-GES_DISC` (resolved from CMR, Harmony-verified) |\n| Run type | **early** — preliminary, uncalibrated |\n| Suitable for training | **No** — `preliminary=true`, `calibrated_final_product=false` |\n| Observed latency | **6.1 h** measured 2026-08-01 (latest granule 08:00 UTC at 14:06 UTC) |\n| Access method | Same Harmony path as Final; separate collection ID |\n| Registration required | Same Earthdata account and GES DISC approval |\n| Licence / terms status | Accepted |\n| Native / processed format | HDF5 → NetCDF4 subset |\n| Temporal / spatial resolution | 30 minutes / 0.1° |\n| Time availability | ~4–6 h behind real time |\n| Raw path | `data/raw/imerg/early_live/` |\n| Processed path | `data/processed/live/imerg_early_latest.nc` |\n| Citation | https://gpm.nasa.gov/data/imerg |\n\nVariables identical to Final Run. Every output carries `imerg_run_type=\"early\"`,\nand Early results are written to `live/` so they can never overwrite Final Run\nfiles."
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "3. ERA5-Land Hourly",
+   "text": "| Field | Value |\n|---|---|\n| Source organization | ECMWF / Copernicus Climate Change Service (C3S) |\n| Dataset name | ERA5-Land hourly data from 1950 to present |\n| Product / version | `reanalysis-era5-land` (ERA5-Land) |\n| Run type | reanalysis (not applicable to Final/Early distinction) |\n| Access method | Copernicus CDS API (`cdsapi` ≥ 0.7.7), credentials in `~/.cdsapirc` |\n| Registration required | Yes — CDS account **plus** one-time ERA5-Land licence acceptance |\n| Licence / terms status | Accepted 2026-08-01 (403 \"required licences not accepted\" until then) |\n| Native format | GRIB, converted server-side to NetCDF (cfgrib 0.9.15.1 / ecCodes 2.48.0) |\n| Processed format | NetCDF4 |\n| Temporal resolution | 1 hour |\n| Time availability | 1950 → present (~5-day lag) |\n| Spatial resolution | 0.1° (~9 km native) |\n| Geographic extent used | CDS area `[29.70, 34.80, 29.25, 35.15]` → 5 lat × 4 lon |\n| Raw path | `data/raw/era5_land/events/<event_id>/` |\n| Processed path | `data/processed/events/<event_id>/<event_id>_era5_land.nc` |\n| Citation | https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land |\n\n| CDS variable | Short name | Internal name | Units | `GRIB_stepType` | M"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "4. Derived antecedent features",
+   "text": "Produced by `backend/src/processing/antecedent_features.py`; written to\n`<event_id>_antecedent_features.parquet`.\n\n| Feature | Units | Definition |\n|---|---|---|\n| `soil_moisture_t_minus_24h`, `_72h` | m³ m⁻³ | `swvl1` sampled at the exact lag |\n| `precipitation_prior_24h_mm`, `_72h_mm`, `_7d_mm` | mm | sum over `(event − N h, event]` |\n| `surface_runoff_prior_*`, `subsurface_runoff_prior_*` | mm | same windows |\n| `u10_event_time`, `v10_event_time` | m s⁻¹ | value at the event hour |\n| `wind_speed_event_time` | m s⁻¹ | `sqrt(u10² + v10²)` |\n| `wind_direction_event_time` | degrees | **meteorological**: bearing the wind blows **from**; `(270 − deg(atan2(v, u))) mod 360` |\n| `temperature_2m_event_time` | K | value at the event hour |\n| `mean_wind_speed_prior_state_window`, `mean_temperature_...` | m s⁻¹, K | mean over the trailing state window |\n| `<feature>_valid_fraction` | 1 | share of the window with usable data |\n| `valid_data_fraction` | 1 | minimum across all features |\n| `quality_flag` | — | `GOOD` / `MISSING_DATA` / `PARTIAL_WINDOW` / `NO_DATA` |\n\nMissing hours are excluded from sums and reduce the valid fraction — never\ntreated as zero.\n\n---"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "5. Rainfall candidates",
+   "text": "`data/processed/events/rainfall_candidates.parquet`. Columns per the Phase 7\ncontract, including `candidate_generation_scope`, `search_scope_start_utc`,\n`search_scope_end_utc` and **`is_exhaustive`**.\n\n> **`is_exhaustive = false`** for everything produced so far. The table covers\n> only the configured demonstration windows and is **not** a complete\n> historical event catalogue.\n\n---"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "6. CHIRPS — not executed",
+   "text": "| Field | Value |\n|---|---|\n| Source organization | UCSB Climate Hazards Center / USGS |\n| Dataset name | CHIRPS (Climate Hazards InfraRed Precipitation with Station data) |\n| Status | **Out of scope for this workstream — not retrieved, not evaluated** |\n| Reason | IMERG Final + Early already satisfy the rainfall requirement; CHIRPS was never part of the executed plan |\n| Registration | None required (open access) |\n| Note | Listed only so its absence is explicit rather than an oversight. No CHIRPS data exists anywhere in this repository. |\n\n---"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "7. Cross-product warning",
+   "text": "**ERA5-Land and IMERG grids are not index-aligned.** Both are 0.1° and both are\n5 × 4 over this box, which makes index pairing look plausible — it is wrong:\n\n```\nIMERG lat: 29.25 29.35 29.45 29.55 29.65   (ascending)\nERA5  lat: 29.30 29.40 29.50 29.60 29.70   (after normalisation)\nIMERG lon: 34.85 34.95 35.05 35.15\nERA5  lon: 34.80 34.90 35.00 35.10\n```\n\nCell centres are offset by half a cell. Any spatial combination must use\narea-weighted overlap or catchment aggregation. No index-based merge exists\nanywhere in this codebase.\n\n---"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "8. Sentinel-2 / Landsat — plume validation imagery (Abd)",
+   "text": "Full audit and methodology: [event_audit.md](event_audit.md). Access method\nverified 2026-08-02: Microsoft Planetary Computer STAC\n(`planetarycomputer.microsoft.com/api/stac/v1`), anonymous SAS-token signing\nvia the `planetary-computer` package — no Copernicus Data Space / Earth\nEngine login needed. Search box: `ANALYSIS_BBOX` (`scripts/config.py`).\n\n| Product/version | Access date | Scene ID(s) | Role |\n|---|---|---|---|\n| Sentinel-2 L2A | 2026-08-02 | `S2A_MSIL2A_20161102T082112_R121_T36RXT_20210213T163836` | Post-event candidate, AQ-2016-10-28. Cloud 3.6% (scene), 0.07% (AOI water). **No plume visible** — see event_audit.md §1a. |\n| Sentinel-2 L2A | 2026-08-02 | `S2A_MSIL2A_20161023T082012_*_T36RXT/T36RYT` | Pre-event, in-window — 82–85% cloud, unusable |\n| Sentinel-2 L2A ×8 | 2026-08-02 | `20161013T082002`, `20161003T081752`, `20160923T082002`, `20160913T081602`, `20160903T082012`, `20160824T081602`, `20160814T082012`, `20160725T082012` (all `T36RXT`) | Baseline composite (median), <1.1% cloud each |\n| Landsat 8 C2 L2 | 2026-08-02 | `LC08_L2SP_174039_20161101_02_T1` | Independent post-event corroboration, +4 days, 0.47% cloud (tile 174040 was 32.8%, unused) |\n| Landsat 7 C2 L2 "
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "8. Nizar — Weather Forecasts & Ocean Currents",
+   "text": "**Owner:** Nizar · **Feeds:** Component A (forecast mode), Component F (plume transport)\n**Last verified:** 2026-08-02 · **Judge-facing limitation:** [forcing_limitations.md](forcing_limitations.md)\n\nSpatial contract as above (§ intro). All sources below pulled live and cached under\n`data/raw/forecasts/` and `data/raw/currents/`; ingestion code in\n`backend/src/ingestion/{gfs,gefs,ecmwf,ocean_currents}.py`.\n\n| Product | Provider | Version | Extent | Access Date | License | Citation / Notes |\n|---|---|---|---|---|---|---|\n| GEBCO Bathymetry (GeoTIFF) | GEBCO / gebco.net | GEBCO 2026 Global | padded download box | 2026-08-02 | GEBCO Grid Terms of Use (free, cite GEBCO) | Requested via https://download.gebco.net/ subsetting app; download link emailed (async, may take a while to generate). Layer: Bathymetry only. → `data/raw/bathymetry/gebco_aqaba.tif` once retrieved. |\n| NOAA GFS (pgrb2.0p25) | NOAA NCEP / AWS Open Data (`noaa-gfs-bdp-pds`) | 2026-08-02 00Z cycle | padded box, F00–F48 (3h steps) | 2026-08-02 | US Government work, public domain | Pulled via Herbie (GRIB .idx byte-range subset, no full-file download). Variables: APCP surface (→ `tp`), UGRD/VGRD 10 m (→ `u10`/`v10`). → `b"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "Terrain & hydrology — Mahdi",
+   "text": "### Copernicus DEM GLO-30\n\n| | |\n|---|---|\n| Product | `Copernicus_DSM_COG_10_{N29,N30}_00_{E034,E035}_00_DEM` |\n| Version | GLO-30, COG distribution |\n| Source | AWS Open Data mirror, `s3://copernicus-dem-30m/` (public, no credentials) |\n| Accessed | 1 Aug 2026 (re-fetched 2 Aug after a nodata fix) |\n| Extent | 4 × 1° tiles, clipped to 34.75–35.94 °E, 29.15–30.30 °N |\n| Resolution | 1 arc-second (~30 m); reprojected to EPSG:32636 at 30 m |\n| Licence | Free for any use with attribution to ESA / Copernicus |\n| Script | `scripts/03_dem_fetch.py` |\n| Output | `data/raw/dem/cop_glo30_aqaba.tif`, `data/processed/dem/dem_utm36n.tif` |\n| **Role** | **Production DEM.** Catchment delineation, outlets, all terrain features |\n\n**Known limitation:** surface model — buildings, container stacks and road embankments are in the elevation values. Caused 3 of 5 outlets to route through port infrastructure (`reports/outlets/`).\n\n**Gotcha:** nodata must be set explicitly. GLO-30 encodes sea as exactly `0.0`, so leaving nodata unset makes reprojection fill indistinguishable from the Gulf and welds the raster frame onto the coastline — 1,080 km² of \"sea\" against a true 623 km². Also: `PREDICTOR=3` is re"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "Derived products — Mahdi",
+   "text": "| File | Contents | Script |\n|---|---|---|\n| `data/aoi/terrain_aoi.geojson` | Land extent, derived from the catchments | `02` |\n| `data/aoi/marine_aoi.geojson` | Sea extent, hand-set, **unconfirmed** | `01` |\n| `data/aoi/aqaba_aoi.geojson` | Union of both — the download superset | `02` |\n| `data/processed/dem/dem_utm36n.tif` | Production DEM, EPSG:32636, 30 m | `03` |\n| `data/processed/vectors/catchments.gpkg` | 5 catchments, `catchment_id` + `outlet_id` | `06` |\n| `data/processed/vectors/outlets.gpkg` | 5 outlets + `position_confidence` | `06` |\n| `data/processed/features/catchment_terrain.parquet` | 17 terrain columns | `06` |\n| `data/interim/hydro/outlet_candidates.csv` | All 72 coastal discharge points | `05` |\n\n### `catchment_terrain.parquet` columns\n\n| Column | Units | Notes |\n|---|---|---|\n| `catchment_id` | — | `AQ-C01`…`AQ-C05`, join key |\n| `outlet_id` | — | `AQ-O01`…`AQ-O05` |\n| `area_km2` | km² | **±4%** — see the endorheic caveat below |\n| `elev_min_m` / `elev_max_m` / `elev_mean_m` | m | Land cells only, sea excluded |\n| `relief_m` | m | max − min |\n| `slope_mean_deg` / `slope_max_deg` | ° | From the 30 m grid |\n| `stream_len_km` | km | Stream cells × 30 m |\n| `draina"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "Caveats that must travel with the numbers",
+   "text": "**Wadi Yutum contributing area: 4,453 km² ±4%** (range 4,349–4,690). Three approaches agree — explicit endorheic masking 4,349, `fill=False` proxy 4,453, HydroBASINS exorheic 4,690. Roughly 1,800–2,000 km² of the topographic basin drains to internal sinks and never reaches the Gulf; it is excluded on purpose. Do not restore it from HydroBASINS `UP_AREA`, which includes it. See `reports/endorheic/`.\n\n**Outlet positions:** only `AQ-O01` and `AQ-O05` verify against imagery — 96.4% of discharge. `AQ-O02`/`O03`/`O04` route through the container terminal, tank farms and a harbour basin, and carry `position_confidence = \"low\"`. `AQ-O04` discharges into an enclosed harbour and must not be demoed without saying so. See `reports/outlets/`.\n\n**Marine AOI is unconfirmed.** Nobody has checked the seaward reach against a 24 h drift at northern-Gulf current speeds.\n\n---"
+  },
+  {
+   "file": "docs/data_dictionary.md",
+   "section": "Not yet filled in",
+   "text": "Karam, Pulga, Abd and Nizar — add your products above using the same format. Rainfall, reanalysis, forecasts, land cover, soil, OSM, reef habitat, bathymetry, currents and satellite imagery are all still missing from this ledger."
+  },
+  {
+   "file": "docs/mooring_coordinate_derivation.md",
+   "section": "0. The correction this derivation surfaces",
+   "text": "**The Kinnet Canal discharges on the Eilat (Israel) shoreline, not the Jordan/Aqaba\nside.** Direct quote from the paper (page 8 of the extracted text): *\"Flash floods\nreaching the sea through the Kinnet Canal (discharge located on Eilat shoreline).\"* The\nKinnet watershed is explicitly **trans-national** — it spans both countries — but the\ncanal itself, and therefore the mooring 250 m offshore it, sits on the Israeli side of the\nhead of the Gulf, not at Mahdi's Jordanian `AQ-O01` (Wadi Yutum) pour point.\n\nThe two are close (1.40 km apart, computed in §3) and almost certainly describe two\ndifferent engineering definitions of the same trans-national drainage system — Mahdi's\nDEM pour point is where flow exits the Jordanian portion of the catchment; the Kinnet\nCanal is the shared channel's actual sea outlet, downstream of both countries' contributing\narea, on the Israeli side of the border. **Do not treat `AQ-O01`'s coordinate as the\nmooring's location.** They are related, not identical.\n\nThis also matters for the particle engine: the physical release point that generated the\nobserved mooring signal is the Kinnet Canal mouth (§3), not necessarily coincident with\nwherever `outlets.gpkg`"
+  },
+  {
+   "file": "docs/mooring_coordinate_derivation.md",
+   "section": "1. What the paper actually says",
+   "text": "Extracted from `data/raw/literature/kalman_et_al_2025_fulltext_ATC1.pdf` via\n`pdftotext -layout` (poppler-utils, installed locally to do this extraction):\n\n> \"An instrumented mooring station was anchored ~250 m offshore in front of the Kinnet\n> Canal ... offshore the Kinnet outlet at 13 m water depth.\"\n\nNo decimal coordinate appears anywhere in the text. The only geolocated information is\n**Fig. 1b** — a labelled regional map showing the mooring's position relative to Eilat,\nAqaba, and the watershed boundary, with axis tick marks at longitude 35.0°/35.6° and\nlatitude 29.4°/29.8°.\n\n---"
+  },
+  {
+   "file": "docs/mooring_coordinate_derivation.md",
+   "section": "2. Digitizing Fig. 1b",
+   "text": "Steps actually run, in order, so they can be repeated or checked:\n\n1. Rendered page 7 of the PDF (the page containing Fig. 1) at 600 DPI with\n   `pdftoppm -png -r 600 -f 7 -l 7`.\n2. Cropped to the map panel and located the four axis tick marks by pixel-intensity\n   scanning (dark tick marks against a white margin, immediately outside the map frame's\n   grey border) rather than reading them off by eye:\n   - Longitude 35.0° → pixel x ≈ 630; longitude 35.6° → pixel x ≈ 1545 (915 px / 0.6°)\n   - Latitude 29.8° → pixel y ≈ 696; latitude 29.4° → pixel y ≈ 1385.5 (689.5 px / 0.4°,\n     y increasing downward as latitude decreases)\n3. Located the map's location marker (a small solid red rectangle sitting at the\n   coastline, distinct from the red triangular \"Aqaba\" city-label pin above it) by color\n   thresholding (`R > 180, G < 80, B < 80`) and took its pixel centroid.\n4. Applied the linear pixel→degree mapping from step 2 to the marker centroid.\n\n**Result — the raw digitized point:**\n\n```\nlon = 34.97593\nlat = 29.52773\n```\n\n**This number is not the recommended coordinate.** Two things make it too imprecise to\nuse directly:\n\n- The marker itself is a solid rectangle covering **~30 × 14 px ≈ "
+  },
+  {
+   "file": "docs/mooring_coordinate_derivation.md",
+   "section": "3. Anchoring to real coastline data and re-deriving the offset",
+   "text": "Rather than trust the schematic figure's precision, the raw digitized point was used only\nto identify **which stretch of coastline** the canal outlet is near, then re-anchored to\nPulga's actual `coastline.gpkg` (EPSG:4326, reprojected to EPSG:32636 for all distance\nmath per the project's CRS contract):\n\n1. **Snap to the real coastline.** Nearest point on the `shoreline` layer to the raw\n   digitized marker:\n   ```\n   lon = 34.98336, lat = 29.53956\n   ```\n   Distance from the raw marker to this snap point: **1,496.5 m**. This distance is the\n   single largest source of error in this whole derivation, and is used directly as the\n   uncertainty radius in §4 — it is not a guessed number, it is the measured disagreement\n   between the figure's schematic basemap and the project's own surveyed coastline.\n\n2. **Find the seaward direction.** Local coastline tangent estimated from two points ±20 m\n   along the shoreline from the snap point; the perpendicular (normal) direction was\n   resolved into \"seaward\" by testing which side falls inside the `water` polygon.\n   Seaward bearing: **225° from north** (south-southwest), which is the direction directly\n   into the Gulf at this part of the coa"
+  },
+  {
+   "file": "docs/mooring_coordinate_derivation.md",
+   "section": "4. Uncertainty, stated plainly",
+   "text": "**Uncertainty radius: 1.5 km**, taken as the measured distance between the raw\nfigure-digitized point and its nearest match on the project's real coastline (§3, step 1).\nThis is deliberately the *largest* of the error sources identified, not an average or a\nsmaller component of it:\n\n| Source | Size | Included in the 1.5 km figure? |\n|---|---|---|\n| Figure-to-coastline disagreement (schematic basemap vs. surveyed coastline) | 1,496 m | **Yes — this is the number used** |\n| Marker footprint (the drawn rectangle itself) | ~1.9 km × 0.9 km | Subsumed — same order of magnitude |\n| Seaward bearing choice | small (bathymetry cross-check in §3.4 supports it) | Not separately added |\n| \"~250 m\" offshore distance itself (paper says \"~\", not exact) | ±50–100 m | Not separately added — small next to the 1.5 km term |\n\nDo not report this coordinate to more precision than the radius implies. \"Approximately\n34.98°E, 29.54°N, ±1.5 km, at the head of the Gulf near the Kinnet Canal mouth on the\nEilat shoreline\" is the honest statement. A sixth decimal place would be fabricated\nprecision.\n\n**Independent triangulation, for confidence, not for precision:** the coastline-snapped\npoint (§3 step 1) sits *"
+  },
+  {
+   "file": "docs/mooring_coordinate_derivation.md",
+   "section": "5. Machine-readable summary",
+   "text": "```yaml\nmooring_position_AQ-2016-10-28:\n  recommended:\n    lon: 34.98151\n    lat: 29.53799\n    crs: EPSG:4326\n    uncertainty_radius_m: 1500\n    basis: derived — see docs/mooring_coordinate_derivation.md\n  derivation_steps:\n    - digitized_from: \"Kalman et al. 2025, Fig. 1b (page 7 of kalman_et_al_2025_fulltext_ATC1.pdf)\"\n      raw_point: {lon: 34.97593, lat: 29.52773}\n      method: \"pixel-tick calibration (35.0/35.6 lon, 29.8/29.4 lat) + red-marker color threshold centroid\"\n    - snapped_to: \"data/processed/vectors/coastline.gpkg (layer=shoreline)\"\n      snapped_point: {lon: 34.98336, lat: 29.53956}\n      snap_distance_m: 1496.5\n    - offset_seaward_m: 250\n      bearing_deg_from_north: 225\n      bearing_method: \"local coastline normal, resolved seaward via water polygon containment\"\n  depth_cross_check:\n    source: data/processed/bathymetry/depth_utm36n.tif\n    depth_at_recommended_point_m: -15.34\n    depth_reported_by_paper_m: -13\n    distance_where_raster_crosses_13m_offshore_m: 214\n    note: \"50 m nominal grid, ~450 m true resolution per docs/pitch_limitations.md §4 — agreement within one grid-cell step\"\n  correction_surfaced:\n    finding: \"Kinnet Canal discharge is on the Eila"
+  },
+  {
+   "file": "docs/mooring_coordinate_derivation.md",
+   "section": "6. Rules for consumers of this file",
+   "text": "1. **Never present the recommended coordinate as a reported one.** It is derived; say so\n   every time it appears, per `docs/event_dates.md` §3's precedent.\n2. **Never drop the uncertainty radius.** A point without its 1.5 km radius is a claim of\n   precision this derivation does not support.\n3. **`AQ-O01` and this mooring coordinate are not interchangeable.** See §0.\n4. If someone obtains the paper's underlying GPS log or supplementary data with an exact\n   coordinate, replace this derivation entirely rather than reconciling it — a real\n   measurement supersedes a derived one, it does not average with it."
+  },
+  {
+   "file": "docs/osm_dem_conflicts.md",
+   "section": "1. Mapped culverts, nearest the coast first",
+   "text": "Culverts are the highest-value features in this extract: a DEM routes surface\nflow *around* an embankment, while a culvert carries it *through*. Where a\nculvert crosses the coastal highway, the true outlet is seaward of wherever the\nDEM puts it.\n\n| # | lat | lon | waterway | length m | dist to coast m | nearest road |\n|---:|---|---|---|---:|---:|---|\n| 1 | 29.47387 | 34.97942 | drain | 34 | 39 | شارع الملك حسين |\n| 2 | 29.35519 | 34.96074 | river | 19 | 64 | — |\n| 3 | 29.4872 | 34.98601 | stream | 55 | 79 | شارع الملك حسين |\n| 4 | 29.41698 | 34.97764 | drain | 67 | 105 | — |\n| 5 | 29.3748 | 34.96775 | canal | 39 | 475 | — |\n| 6 | 29.51994 | 35.00984 | stream | 57 | 876 | شارع مكة |\n| 7 | 29.47174 | 34.98896 | drain | 71 | 970 | — |\n| 8 | 29.4287 | 34.98871 | stream | 36 | 1317 | — |\n| 9 | 29.40566 | 34.99083 | drain | 51 | 1662 | — |\n| 10 | 29.55609 | 34.98928 | stream | 66 | 1790 | — |\n| 11 | 29.565 | 34.97905 | stream | 21 | 2091 | طريق الحدود |\n| 12 | 29.57544 | 34.97582 | stream | 30 | 3163 | — |\n| 13 | 29.55514 | 35.02144 | canal | 44 | 3400 | Basman Street |\n| 14 | 29.54884 | 35.02926 | canal | 110 | 3509 | شارع الحسين بن علي |\n| 15 | 29.44015 | 35.01049 | stream | 124 | 3514"
+  },
+  {
+   "file": "docs/osm_dem_conflicts.md",
+   "section": "2. Drainage features within 1500 m of the shoreline",
+   "text": "These are the candidate outlet positions — a mapped channel this close to the\nsea is most likely reaching it.\n\n| lat | lon | name | waterway | culvert | intermittent | dist to coast m |\n|---|---|---|---|---|---|---:|\n| 29.53055 | 35.00025 | — | stream |  | yes | 0 |\n| 29.35598 | 34.96023 | — | river |  | yes | 0 |\n| 29.47423 | 34.97907 | — | drain |  |  | 0 |\n| 29.55064 | 34.9789 | — | canal |  |  | 0 |\n| 29.3959 | 35.03737 | وادي النويبع | stream |  | yes | 0 |\n| 29.55378 | 34.97858 | — | stream |  | yes | 6 |\n| 29.47387 | 34.97942 | — | drain | yes |  | 39 |\n| 29.51947 | 35.00531 | وادي الشلالة | stream |  | yes | 52 |\n| 29.35519 | 34.96074 | — | river | yes | yes | 64 |\n| 29.41664 | 34.97611 | — | drain |  | yes | 69 |\n| 29.48724 | 34.98568 | — | stream |  | yes | 69 |\n| 29.47166 | 34.98374 | — | drain |  | yes | 73 |\n| 29.4872 | 34.98601 | — | stream | yes | yes | 79 |\n| 29.321 | 35.00117 | — | river |  | yes | 80 |\n| 29.41698 | 34.97764 | — | drain | yes | yes | 105 |\n| 29.48724 | 34.99047 | — | stream |  | yes | 133 |\n| 29.41523 | 34.97896 | — | drain |  | yes | 164 |\n| 29.41604 | 34.99641 | — | stream |  | yes | 176 |\n| 29.37439 | 34.96617 | — | canal |  |  | 211 |\n| 29.4184"
+  },
+  {
+   "file": "docs/osm_dem_conflicts.md",
+   "section": "3. Named wadis in the extract",
+   "text": "Named features are worth checking by hand — a named wadi is usually a real,\nlocally-recognised channel rather than an incidental ditch.\n\n| name | lat | lon | waterway | dist to coast m |\n|---|---|---|---|---:|\n| وادي النويبع | 29.3959 | 35.03737 | stream | 0 |\n| وادي الشلالة | 29.51947 | 35.00531 | stream | 52 |\n| وادي الشلالة | 29.51994 | 35.00984 | stream | 876 |\n| وادي الشلالة | 29.52216 | 35.02369 | stream | 932 |\n| נחל שחורת | 29.60268 | 34.98292 | stream | 5274 |\n| وادي اليتيم | 29.61292 | 35.04721 | river | 7329 |\n| وادي اليتيم | 29.57879 | 35.1228 | river | 8642 |\n| وادي اليتيم | 29.5669 | 35.08029 | river | 8806 |\n| Wadi Umran | 29.52383 | 35.13633 | stream | 12617 |"
+  },
+  {
+   "file": "docs/osm_dem_conflicts.md",
+   "section": "4. DEM flow paths vs OSM drainage",
+   "text": "**STATUS: PENDING — blocked on Mahdi's DEM flow paths.**\n\nThis section compares each mapped OSM drainage feature against the\nDEM-derived flow network and lists the ones that fall outside a\n50 m buffer of any modelled flow path — those are\nthe candidate outlet corrections.\n\nIt runs automatically as soon as a flow-path file exists at either:\n\n- `data/processed/vectors/flow_paths.gpkg`\n- `data/processed/dem/flow_paths.gpkg`\n\nRe-run: `.venv/bin/python scripts/osm_drainage_report.py`\n\nSections 1-3 above need nothing from anyone and are final."
+  },
+  {
+   "file": "docs/era5_land_temporal_semantics.md",
+   "section": "A. Facts directly present in file metadata",
+   "text": "Read from `data/raw/era5_land/deaccumulation_validation/era5_land_accum_20161026.nc`\n(cfgrib-converted, `Conventions = CF-1.7`).\n\n| Variable | `GRIB_stepType` | `GRIB_dataType` | `GRIB_stepUnits` | `units` |\n|---|---|---|---|---|\n| `tp` | **`accum`** | `fc` (forecast) | `1` (hours) | `m` |\n| `sro` | **`accum`** | `fc` | `1` | `m` |\n| `ssro` | **`accum`** | `fc` | `1` | `m` |\n| `swvl1` | **`instant`** | `an` (analysis) | `1` | `m**3 m**-3` |\n\nAlso present: `GRIB_centre = 'ecmf'`, and a `history` attribute recording\n`GRIB to CDM+CF via cfgrib-0.9.15.1/ecCodes-2.48.0`.\n\n**What this proves, from the file alone:**\n\n1. `tp`, `sro`, `ssro` are **accumulated** fields (`stepType = accum`). They are\n   *not* per-hour values as delivered.\n2. `swvl1` is an **instantaneous** analysis state (`stepType = instant`). It\n   must never be deaccumulated.\n3. The step unit is hours.\n\n**What the file metadata does *not* settle:** the accumulation *period* — i.e.\nwhether the accumulator resets daily, and what the 00 UTC value covers. The\nfiles carry no `stepRange`, `typeOfStatisticalProcessing`, or forecast-reference\ntime after cfgrib's CF encoding."
+  },
+  {
+   "file": "docs/era5_land_temporal_semantics.md",
+   "section": "B. Facts stated by official documentation",
+   "text": "From the ECMWF/Copernicus ERA5-Land data documentation\n(<https://confluence.ecmwf.int/display/CKB/ERA5-Land%3A+data+documentation>),\nretrieved during this work:\n\n> \"accumulated from the beginning of the forecast to the end of the forecast\n> step. For example, runoff at day=D, step=12 will provide runoff accumulated\n> from day=D, time=0 to day=D, time=12.\"\n\n> \"All forecasts start at 00UTC (time=00 hours).\"\n\n> \"For the CDS time, or validity time, of 00 UTC, the accumulations are over\n> the 24 hours ending at 00 UTC i.e. the accumulation is during the previous\n> day.\"\n\n**What this adds:** the reset period is **daily at 00 UTC**, and the value\nstamped 00 UTC is the **previous** calendar day's 24-hour total. Combined with\nsection A, the convention is fully determined."
+  },
+  {
+   "file": "docs/era5_land_temporal_semantics.md",
+   "section": "C. Observed values in the smoke-test files",
+   "text": "Observations only — **not used as evidence** for the convention.\n\n- Six-hour multi-variable file (2016-10-27 00:00–05:00): `tp` per-step means\n  were `1.463e-4, 0, 0, 0, 0, 0` m; `sro` similar; `ssro` identically zero.\n- Two-day validation window: after reset-aware deaccumulation, each day's 24\n  increments reproduced the following 00 UTC raw total to within GRIB\n  quantisation.\n- Negative increments occurred only at exactly `-7.45e-9` (2⁻²⁷) and\n  `-1.49e-8` m (2⁻²⁶) — GRIB packing steps, 11 of 1632 values.\n\n**Why observation is not evidence.** A dry window makes an accumulated field\nlook flat, and a wet first hour makes it look monotonic. Inferring convention\nfrom value behaviour would give different answers for different weather. The\nimplementation therefore refuses to use it: `mode=\"auto\"` reads metadata only."
+  },
+  {
+   "file": "docs/era5_land_temporal_semantics.md",
+   "section": "D. Engineering assumptions",
+   "text": "1. **Interval-end labelling.** Derived hourly values are labelled by the end of\n   the interval they cover, matching the raw stamps. A day is `T01:00` →\n   `T+1 T00:00`.\n2. **Unresolvable first interval → NaN.** When the leading timestamp is not\n   01 UTC and has no predecessor, the increment is unknown. NaN, never zero.\n3. **Negative tolerance is caller-supplied.** The default `1e-10 m` suits\n   float64 noise; real GRIB-packed data needs ~`1e-7 m`. See\n   `docs/era5_land_accumulation_semantics.md`.\n4. **`mm = m * 1000`, applied after deaccumulation**, never before.\n5. **Sea-mask NaNs are never filled.**"
+  },
+  {
+   "file": "docs/era5_land_temporal_semantics.md",
+   "section": "E. Unresolved ambiguity",
+   "text": "1. **Sub-hourly or non-hourly requests are untested.** All evidence here is for\n   an hourly axis. `normalize_era5_land_fluxes` requires continuous hourly\n   timestamps in cumulative mode and raises otherwise.\n2. **ERA5-Land vs ERA5 differences** in accumulation handling are not\n   investigated; only ERA5-Land is used.\n3. **`expver` / `number` coordinates** appear in the files but their role\n   (ERA5T vs final release) has not been examined. If a window ever mixes\n   `expver` values, results should be re-checked.\n4. **Whether other CDS delivery formats** (GRIB direct, zarr) carry the same\n   `stepType` attribute is unknown — `mode=\"auto\"` will simply raise if the\n   attribute is absent, which is the intended safe behaviour."
+  },
+  {
+   "file": "docs/era5_land_temporal_semantics.md",
+   "section": "F. Determination and implementation",
+   "text": "| Field | Mode | Basis |\n|---|---|---|\n| `tp`, `sro`, `ssro` | **cumulative** | A (`stepType=accum`) + B (daily reset at 00 UTC) |\n| `swvl1` | **instantaneous** | A (`stepType=instant`) — never deaccumulated |\n\n`normalize_era5_land_fluxes(dataset, mode=\"auto\")` resolves this at runtime:\n\n1. Honour an explicit `temporal_semantics_mode` attribute if a previous\n   normalisation wrote one.\n2. Otherwise require `GRIB_stepType` on every flux variable. `accum` →\n   cumulative. `instant` on a flux → error. Missing or mixed → error.\n3. Never inspect values.\n\nFailure raises `ERA5LandTemporalSemanticsError` with instructions to pass an\nexplicit mode citing documentation — the pipeline does not guess.\n\nEvery normalised variable and the dataset carry `temporal_semantics_mode` and\n`temporal_semantics_evidence`, so any downstream consumer can see *why* the\nfield was treated the way it was."
+  },
+  {
+   "file": "docs/pipeline_capability_report.md",
+   "section": "1. Baseline (before the generalisation work)",
+   "text": "Captured at the start of the master task.\n\n| Item | Value |\n|---|---|\n| Branch | `main` |\n| Tests passing | **151** |\n| Data files on disk | 174 |\n| Modified tracked files | none |\n| Untracked paths | `.env.example`, `.gitignore`, `backend/`, `docs/`, `scripts/`, `src/`, `tests/` |\n| Catchment GeoPackages | **absent** — `data/processed/vectors/` does not exist |\n\n### Modules present at baseline\n\n| Module | Size | Role |\n|---|---|---|\n| `backend/src/ingestion/imerg.py` | 29,252 B | IMERG search, Harmony subset download, reader, rolling accumulations |\n| `backend/src/ingestion/era5_land.py` | 28,708 B | ERA5-Land request builder, download, reader, deaccumulation |\n| `backend/src/processing/catchment_rainfall.py` | 31,066 B | Area-weighted catchment aggregation |\n\n### Data present at baseline\n\n| Path | Contents |\n|---|---|\n| `data/raw/imerg/events/AQ-2016-10-28/` | 156 Harmony NetCDF granules (Oct 2016 event window) |\n| `data/raw/imerg/event_smoke_3h/` | 6 granules |\n| `data/raw/imerg/harmony_smoke_test/` | 1 granule |\n| `data/raw/imerg/smoke_test/` | 1 global HDF5 (the only global file, from an early diagnostic) |\n| `data/raw/era5_land/smoke_test/` | 1 single-variable hour |\n| `data/"
+  },
+  {
+   "file": "docs/pipeline_capability_report.md",
+   "section": "2. What the pipeline can retrieve",
+   "text": "| Capability | Status | Evidence |\n|---|---|---|\n| Arbitrary UTC time range | **Yes** | `fetch_imerg_window` / `fetch_era5_land_window` take any hour-aligned UTC bounds; tests cover 2016 and 2020 windows |\n| Arbitrary bounding box | **Yes** | box is a config value; tested with `[-10, 40, -9, 41]` as well as Aqaba |\n| IMERG Final Run | **Yes** | 156-granule Oct 2016 window, 100 % complete |\n| IMERG Early Run | **Yes** | live retrieval 2026-08-01, 6.1 h latency |\n| ERA5-Land hourly | **Yes** | 7 variables, multi-day windows, daily chunking |\n| Rolling accumulations | **Yes** | any set of whole 0.5 h multiples; 1/3/6/24 h proven |\n| Antecedent features | **Yes** | 19 gridded features for any event timestamp |\n| Config-driven execution | **Yes** | `--dry-run` and `--offline-process-only` both proven |\n| Candidate mining | **Yes** (non-exhaustive) | schema proven; `is_exhaustive=false` |\n| Catchment aggregation | **Blocked** | needs `catchments_PROVISIONAL.gpkg` (task P1) |\n\n### Supported temporal ranges\n\nIMERG Final 2000-06 → ~3.5 months ago; IMERG Early → ~6 h ago (measured);\nERA5-Land 1950 → ~5 days ago. Guards: `max_granules` (default 500) and\n`max_expected_timestamps` (default 2000"
+  },
+  {
+   "file": "docs/pipeline_capability_report.md",
+   "section": "3. Example commands",
+   "text": "```bash\n# plan only — no downloads, no writes\npython scripts/run_event_pipeline.py --config configs/october_2016_demo.yaml --dry-run\n\n# reuse local raw files, process and export\npython scripts/run_event_pipeline.py --config configs/october_2016_demo.yaml --offline-process-only\n\n# arbitrary ERA5-Land window over an arbitrary box\npython scripts/fetch_era5_land_window.py \\\n  --start 2016-10-27T00:00:00Z --end 2016-10-27T05:00:00Z \\\n  --north 29.70 --west 34.80 --south 29.25 --east 35.15 \\\n  --variables soil_moisture,total_precipitation \\\n  --output-dir data/raw/era5_land/example_window\n\n# antecedent features for any event time\npython scripts/extract_antecedent_features.py \\\n  --input data/processed/events/era5_land_hourly_20161026_20161027.nc \\\n  --event-time 2016-10-28T00:00:00Z --event-id AQ-2016-10-28 --allow-partial\n\n# near-real-time Early Run proof\npython scripts/run_imerg_early_demo.py\n\n# candidate table\npython scripts/build_rainfall_candidates.py\n```"
+  },
+  {
+   "file": "docs/pipeline_capability_report.md",
+   "section": "4. Known scientific limitations",
+   "text": "1. **ERA5/IMERG grid misalignment.** Both 0.1°, both 5×4 here, but cell centres\n   are offset by half a cell. Index pairing is wrong and is never performed.\n2. **IMERG resolution.** ~11 km cells smooth localized convective storms — the\n   exact mechanism behind Aqaba flash floods.\n3. **ERA5-Land sea mask.** 3 of 20 cells permanently NaN; never interpolated.\n4. **Non-exhaustive candidate scope.** `is_exhaustive=false` on every row.\n5. **GRIB quantisation.** Negative increments at −7.45e−9/−1.49e−8 m require a\n   1e-7 m tolerance, not the 1e-10 m float64 default.\n6. **Early Run gaps.** A granule may simply not exist yet (07:00 UTC on\n   2026-08-01). Reported, never interpolated.\n7. **Oct 2016 ordering anomaly.** The derived rainfall peak falls *after* the\n   documented flood arrival — most likely because the generating catchments lie\n   outside this box. Unresolved until real catchments exist."
+  },
+  {
+   "file": "docs/pipeline_capability_report.md",
+   "section": "5. Catchment integration status",
+   "text": "**SKIPPED_MISSING_DEPENDENCY.** Neither `catchments.gpkg` nor\n`catchments_PROVISIONAL.gpkg` exists; `data/processed/vectors/` was never\ncreated. Task P1 (`tasks/00-contracts.md`, Mahdi, ~1 h, HydroBASINS level 9)\nowns it. The aggregation pipeline is fully built and tested against synthetic\ngeometry (31 tests) and runs unchanged once the file lands. **No polygon was\nfabricated** — 0 GeoPackages exist in the project."
+  },
+  {
+   "file": "docs/pipeline_capability_report.md",
+   "section": "6. What remains for operational deployment",
+   "text": "- Real catchment polygons (P1) → catchment-level rainfall and features.\n- Full historical sweep to make candidate mining exhaustive.\n- Scheduling/orchestration for recurring Early Run ingestion.\n- Late Run (`GPM_3IMERGHHL`, `C2723754845-GES_DISC`) if a middle-latency\n  product is wanted; resolved from CMR but deliberately not added.\n- Provenance beyond config content (dataset checksums, run IDs)."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "1. Test counts",
+   "text": "| Stage | Tests |\n|---|---|\n| Baseline | **151** |\n| Final | **272** |\n| Added | **+121** |\n\nAll 272 pass in ~1.5 s. Every suite is offline: socket guards assert no network\naccess during processing tests, and `cdsapi.Client.retrieve` is never called.\n\n| Suite | Tests |\n|---|---|\n| `test_era5_land_ingestion.py` | 91 |\n| `test_imerg_ingestion.py` | 66 |\n| `test_event_pipeline_config.py` | 38 |\n| `test_catchment_rainfall.py` | 31 |\n| `test_antecedent_features.py` | 25 |\n| `test_event_mining.py` | 21 |"
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "2. Modules and functions added",
+   "text": "**`backend/src/ingestion/era5_land.py`** — `normalize_era5_land_fluxes`,\n`infer_temporal_semantics`, `fetch_era5_land_window`,\n`validate_era5_land_window`, `_chunk_bounds`, `ERA5LandTemporalSemanticsError`,\n`FLUX_HOURLY_M_NAMES`, `DEFAULT_MAX_EXPECTED_TIMESTAMPS`.\n\n**`backend/src/ingestion/imerg.py`** — `IMERG_PRODUCTS` registry,\n`get_imerg_product`, `fetch_imerg_window`, `process_imerg_window`,\n`wettest_windows`, `expected_granule_count`, `expected_granule_timestamps`,\n`granule_timestamp_from_name`, `existing_granules`,\n`missing_granule_timestamps`, `IMERGProductError`. `download_imerg_subset` now\ntakes `collection_id` / `variable`.\n\n**`backend/src/processing/antecedent_features.py`** *(new)* —\n`extract_antecedent_features`, `antecedent_features_to_dataframe`,\n`WIND_DIRECTION_CONVENTION`, `AntecedentFeatureError`.\n\n**`backend/src/processing/event_mining.py`** *(new)* —\n`rank_rainfall_candidates`, `separate_by_run_type`, `EventMiningError`.\n\n**`backend/src/config/event_pipeline.py`** *(new)* — `EventPipelineConfig`,\n`Spatial`, `ImergConfig`, `Era5LandConfig`, `AntecedentConfig`,\n`OutputsConfig`, `ValidationConfig`, `load_event_pipeline_config`, `ConfigError`."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "3. Scripts and configs created",
+   "text": "`scripts/fetch_era5_land_window.py`, `scripts/extract_antecedent_features.py`,\n`scripts/run_event_pipeline.py`, `scripts/run_imerg_early_demo.py`,\n`scripts/build_rainfall_candidates.py`,\n`scripts/validate_era5_land_deaccumulation.py`.\n\n`configs/event_pipeline.example.yaml`, `configs/october_2016_demo.yaml`,\n`configs/imerg_early_live_demo.yaml`."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "4. IMERG Final capabilities proven",
+   "text": "- Registry entry verified through CMR **and** Harmony capabilities:\n  `GPM_3IMERGHH` v07, `C2723754847-GES_DISC`, bbox + variable subsetting true.\n- 156-granule Oct 2016 window, **100 % complete**, reprocessed offline.\n- Arbitrary window and bbox: granule-count maths tested for 2016 and 2020\n  windows and a `[-10, 40, -9, 41]` box.\n- Safety limit aborts before submission; chunking, resume and idempotency proven.\n- Wettest windows (identical to the hand-built Task 16 run):\n\n| Window | Max | UTC span |\n|---|---|---|\n| 1 h | 6.7600 mm | 2016-10-28T02:00Z → 03:00Z |\n| 3 h | 11.7150 mm | 2016-10-28T02:30Z → 05:30Z |\n| 6 h | 12.9900 mm | 2016-10-28T00:00Z → 06:00Z |\n| 24 h | 20.5450 mm | 2016-10-27T05:30Z → 2016-10-28T05:30Z |"
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "5. IMERG Early capabilities — **GO**",
+   "text": "- Collection resolved from CMR (not guessed): `GPM_3IMERGHHE` v07,\n  `C2723758340-GES_DISC`; Harmony capabilities verified.\n- Latest availability resolved from metadata, not wall clock.\n- Measured **2026-08-01T14:06Z**: latest granule 08:00 UTC → **6.12 h latency**.\n- Retrieved 5 of 6 requested granules; **07:00 UTC granule genuinely missing**\n  (83.33 % window completeness). Gap reported, longest contiguous 3-granule run\n  processed, nothing interpolated.\n- Output: `data/processed/live/imerg_early_latest.nc` (52.3 KB) with\n  `run_type=early`, `preliminary=true`, `suitable_for_training=false`.\n  No Final Run file touched."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "6. ERA5-Land capabilities proven",
+   "text": "Seven variables, arbitrary windows, daily chunking that keeps CDS's\n`year × month × day × time` product exact, resume, and structural validation\n(timestamp count, uniqueness, hourly spacing, variables present, spatial subset,\ncommon grid)."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "7. ERA5 temporal semantics — verified, not assumed",
+   "text": "| Evidence class | Finding |\n|---|---|\n| **File metadata** | `tp`/`sro`/`ssro` → `GRIB_stepType='accum'`, `GRIB_dataType='fc'`; `swvl1` → `stepType='instant'`, `dataType='an'` |\n| **Official docs** | ECMWF: accumulations run 00 UTC → forecast step; \"For the CDS time of 00 UTC, the accumulations are over the 24 hours ending at 00 UTC i.e. during the previous day\" |\n| **Observation** | Recorded but **explicitly excluded as evidence** — a dry window makes an accumulated field look flat |\n| **Assumptions** | interval-end labelling; unresolvable first interval → NaN; caller-supplied negative tolerance |\n| **Unresolved** | sub-hourly requests, `expver`/`number` semantics, other delivery formats |\n\n`mode=\"auto\"` reads metadata only and raises `ERA5LandTemporalSemanticsError`\nrather than guessing. Documented in `docs/era5_land_temporal_semantics.md`."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "8. Antecedent features",
+   "text": "19 gridded features for any event timestamp: soil-moisture lags, 24/72/168 h\nprecipitation and runoff totals, event-time wind (speed + meteorological\ndirection), temperature, trailing state means, per-feature valid fractions and a\nquality flag. Windows and offsets are all arguments.\n\nExample run (`AQ-2016-10-28`, 20 cells): `precipitation_prior_24h_mm`\n0.0561–0.7930 mm; flags `{NO_DATA: 3 (sea), PARTIAL_WINDOW: 17}` — honest,\nbecause a 48 h ERA5 window cannot fill a 168 h lookback."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "9. Config-driven pipeline — working",
+   "text": "`--dry-run` prints a credential-free plan with pre-download estimates (156\ngranules, ~4 Harmony jobs, 49 timestamps, ~3 CDS requests).\n`--offline-process-only` reprocessed the whole event from local files with\n**0 downloads, 156 reused**.\n\nA test asserts the string `AQ-2016-10-28` appears **nowhere** in the config\nsource — the event lives only in YAML."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "10. Candidate mining",
+   "text": "`data/processed/events/rainfall_candidates.parquet` — 1 row, 20 columns,\nfull contract schema.\n\n| event_id | peak_time_utc | rain_3h_mm | rain_24h_mm | percentile | anomaly | run_type | quality |\n|---|---|---|---|---|---|---|---|\n| GPM_3IMERGHH | 2016-10-28T05:00:00Z | 11.715 | 20.545 | 100.0 | 3.27 | final | 1.0 |\n\n**`is_exhaustive = false`** on every row, with scope\n`2016-10-25T00:00:00Z .. 2016-10-28T05:30:00Z`."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "11. Catchment integration — SKIPPED_MISSING_DEPENDENCY",
+   "text": "Neither `catchments.gpkg` nor `catchments_PROVISIONAL.gpkg` exists;\n`data/processed/vectors/` was never created. Owner: task P1\n(`tasks/00-contracts.md`). **0 GeoPackages exist in the project** — the 5 found\nby `find` are `pyogrio` test fixtures inside `.venv`. Status recorded in\n`data/processed/events/catchment_integration_status.json`. Non-blocking."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "12. Example outputs",
+   "text": "| Path | Size |\n|---|---|\n| `data/processed/events/AQ-2016-10-28/AQ-2016-10-28_imerg.nc` | 126.3 KB |\n| `data/processed/events/AQ-2016-10-28/AQ-2016-10-28_era5_land.nc` | 166.1 KB |\n| `data/processed/events/AQ-2016-10-28/AQ-2016-10-28_antecedent_features.parquet` | 21.6 KB |\n| `data/processed/events/AQ-2016-10-28/AQ-2016-10-28_summary.json` | — |\n| `data/outputs/AQ-2016-10-28/AQ-2016-10-28_manifest.json` | — |\n| `data/processed/events/rainfall_candidates.parquet` | 12.5 KB |\n| `data/processed/live/imerg_early_latest.nc` | 52.3 KB |\n| `data/raw/era5_land/example_window/…nc` | 33.4 KB |"
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "13. Data completeness and quality findings",
+   "text": "- IMERG Oct 2016: **100 %** (156/156), 0 missing cells.\n- IMERG Early live: **83.33 %** — one granule genuinely absent.\n- ERA5-Land: 17 land cells, **3 permanent sea-mask cells**, mask identical\n  across all seven variables, never interpolated.\n- Antecedent: 17 `PARTIAL_WINDOW` (168 h window vs 48 h data), 3 `NO_DATA` (sea).\n- GRIB quantisation: 11 of 1632 increments negative at exactly 2⁻²⁷/2⁻²⁶."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "14. Documentation",
+   "text": "`docs/pipeline_capability_report.md` (baseline + capabilities + limits),\n`docs/data_dictionary.md` (IMERG Final, IMERG Early, ERA5-Land, derived\nfeatures, candidates, CHIRPS-not-executed), `docs/era5_land_temporal_semantics.md`,\n`docs/era5_land_accumulation_semantics.md`, `docs/data_access_setup.md`\n(refreshed), `README.md` (new), `notebooks/01_event_mining.ipynb` (18 cells,\nexecutes offline — verified with nbconvert)."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "15. Validation results",
+   "text": "- **272 tests pass.**\n- **180 NetCDF files** reopened; **3 project Parquet** files; **990 JSON** files\n  parse. **Zero problems.**\n- No duplicate timestamps, correct spacing, UTC internal times, correct units,\n  no Final/Early mixing, no index merging, no missing-as-zero, no interpolation.\n- Secret scan: **no credential values** anywhere. All keyword hits are variable\n  names, sanitiser denylists, test assertions or docs. No signed URLs stored."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "16. Files modified / created",
+   "text": "**Modified:** `backend/src/ingestion/era5_land.py`,\n`backend/src/ingestion/imerg.py`,\n`backend/src/processing/antecedent_features.py`,\n`backend/src/processing/event_mining.py`, `tests/test_era5_land_ingestion.py`,\n`tests/test_imerg_ingestion.py`, `.gitignore` (added `data/outputs/`),\n`docs/data_access_setup.md`.\n\n**Created:** 5 backend modules/packages, 6 scripts, 3 configs, 3 test files,\n1 notebook, 4 docs, `README.md`."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "17. Downloaded vs reused",
+   "text": "**Downloaded this task:** 6 ERA5-Land hours (example window, 33.4 KB) + 5 IMERG\nEarly granules (~250 KB). **Reused:** all 156 IMERG Oct 2016 granules, 3 ERA5\ndeaccumulation files, 6 smoke granules. **No global HDF5 downloaded** — the\nsingle 7,924,327-byte file predates this task and is untouched."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "18-19. Nothing committed, no credentials exposed",
+   "text": "`git status` shows only untracked source/doc directories; **0 tracked data\nfiles**. `.env` (1512 B), `.env.example` (40 B), `tasks/00-contracts.md`\n(11027 B) and `~/.cdsapirc` (mode 600, 85 B) all unchanged; `~/.netrc` does not\nexist. `data/outputs/` was added to `.gitignore` **before** any output landed."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "20. Remaining blockers and limitations",
+   "text": "1. **Catchment polygons (P1)** — the only hard blocker.\n2. **Candidate mining is non-exhaustive** — demo windows only.\n3. **Oct 2016 ordering anomaly** — derived rainfall peak falls *after* the\n   documented flood arrival; likely because generating catchments lie outside\n   this box. Unresolved until (1).\n4. **ERA5/IMERG grid misalignment** — combine only by area-weighted overlap.\n5. **IMERG ~11 km cells** smooth the convective storms that drive these floods.\n6. **Early Run is preliminary** and can have gaps.\n7. **Two credentials remain exposed in the session transcript** and should be\n   rotated: the Earthdata password and the CDS token."
+  },
+  {
+   "file": "docs/MASTER_TASK_SUMMARY.md",
+   "section": "21. Final verdict — PARTIAL GO",
+   "text": "Every GO criterion is met: arbitrary time range ✓, arbitrary bbox ✓, IMERG\nFinal ✓, ERA5-Land retrieval + antecedent extraction ✓, config-driven execution\n✓, rolling rainfall ✓, candidate schema ✓, tests pass ✓, documentation ✓.\nIMERG Early is additionally **GO**.\n\n**PARTIAL** solely because catchment integration is blocked on a file that does\nnot exist and was correctly not fabricated. The core pipeline is production-ready\nand event-agnostic."
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "The problem this solves",
+   "text": "The obvious way to run this project is sequential: Mahdi delineates catchments → Karam averages rainfall inside them → the model trains. Abd waits for event dates. Nizar waits for outlets.\n\nWith 14 days and five people, that's a chain where one slow link idles four people. Worse, the riskiest task in the project (Abd's imagery gate) sits at the *end* of a dependency chain, so we'd discover the project's biggest problem late."
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "The fix",
+   "text": "**Freeze the contract, not the data.**\n\nOn Day 1 we agree every ID scheme, file path, and table column. Then we generate **provisional versions of every shared input** — crude but structurally correct. Everyone builds their full pipeline against the provisional data immediately. When real data lands, it drops into the same schema and the pipeline re-runs unchanged.\n\nThe cost of a rerun is minutes. The cost of waiting is days.\n\n> **One rule that makes this safe:** every provisional file is named `*_PROVISIONAL.*` and every swap-in is a checklist item in §5. Placeholder data reaching the final demo is the one real risk of this approach — §5 exists to prevent it.\n\n---"
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "1. Spatial contract",
+   "text": "> **Corrected 1 Aug 2026.** The first version of this contract proposed a single\n> 14 × 28 km box. That was wrong by roughly 37×. Wadi Yutum drains from **90 km\n> inland, out to 35.89 °E** — the old box cut off about 85% of it, which would have\n> made headwater rainfall invisible to the model. If you downloaded against the old\n> numbers, re-pull. The boxes below are unchanged since that correction.\n\n**The project needs two extents, not one.** They are written by\n`scripts/01_make_aoi.py` and `scripts/02_provisional_catchments.py`.\n\n### Terrain AOI — land side\n\n`data/aoi/terrain_aoi.geojson` · **derived from the catchments, not guessed**\n\n```text\nTERRAIN_BBOX = 34.75, 29.15, 35.94, 30.30   # W, S, E, N — EPSG:4326\n                                            # ~115 km × 128 km\n```\n\nMust cover the **full contributing catchments**. Anything clipped tighter loses\nupstream drainage area. Used for: DEM, hydrology, rainfall, land cover, soil.\n\n### Marine AOI — sea side\n\n`data/aoi/marine_aoi.geojson` · hand-set, **unconfirmed**\n\n```text\nMARINE_BBOX = 34.80, 29.25, 35.05, 29.60    # W, S, E, N — EPSG:4326\n                                            # ~24 km × 39 km\n```\n\nMust reach far enough "
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "2. ID contract — agreed now, never changed",
+   "text": "These strings are the join keys for every table in the project. Renaming one later breaks every stored result that referenced it.\n\n| Entity | Format | Examples | Owner |\n|---|---|---|---|\n| Catchment | `AQ-C{NN}` | `AQ-C01` … `AQ-C05` | Mahdi |\n| Coastal outlet | `AQ-O{NN}` | `AQ-O01` … `AQ-O05` | Mahdi |\n| Reef zone | `R-{NN}` | `R-01` … `R-08` | Pulga |\n| Event | `AQ-{YYYY}-{MM}-{DD}` | `AQ-2016-10-25` | Karam |\n| Simulation run | `sim_{ULID}` | `sim_01JXYZ` | Nizar |\n\n> **Settled 2 Aug 2026 by the 30 m delineation — outlets ARE 1:1 with catchments.**\n>\n> This flipped twice, so here is the history in one place. The original contract\n> assumed one outlet per catchment. HydroBASINS then suggested **two** outlets for\n> the whole Jordanian coast, and this section said so for a day. The Copernicus\n> GLO-30 run resolves **30 discharge points** on that coast — HydroBASINS was\n> lumping the small coastal wadis into a single strip basin. The five selected\n> catchments each have their own mouth.\n>\n> | Catchment | Outlet | Area | lon, lat |\n> |---|---|---:|---|\n> | `AQ-C01` — Wadi Yutum | `AQ-O01` | 4,453.1 km² | 34.97073, 29.54560 |\n> | `AQ-C02` | `AQ-O02` | 64.9 km² | 34.97643, 29.47270 |"
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "3. File path contract",
+   "text": "Everyone writes to these paths. Downstream code reads these paths. No one asks where anything is.\n\n```text\ndata/\n├── aoi/\n│   └── aqaba_aoi.geojson\n├── raw/<source>/<product>/\n├── processed/\n│   ├── dem/dem_utm36n.tif\n│   ├── vectors/\n│   │   ├── catchments.gpkg          # id, name, geometry, area_km2\n│   │   ├── outlets.gpkg             # id, catchment_id, geometry\n│   │   ├── reef_zones.gpkg          # id, habitat_class, area_km2, sensitivity_weight\n│   │   ├── coastline.gpkg\n│   │   └── observed_plume.gpkg\n│   ├── features/\n│   │   ├── catchment_terrain.parquet     # Mahdi\n│   │   ├── landcover_by_catchment.parquet # Pulga\n│   │   └── soil_by_catchment.parquet      # Pulga\n│   ├── events/\n│   │   └── rainfall_candidates.parquet    # Karam\n│   ├── bathymetry/depth_utm36n.tif\n│   └── plume/\n│       ├── baseline_composite.tif\n│       └── observed_plume_probability.tif\n└── outputs/<run_id>/\n```\n\nAnything provisional gets `_PROVISIONAL` before the extension: `catchments_PROVISIONAL.gpkg`.\n\n---"
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "4. Provisional seed data — built in the first few hours",
+   "text": "This is what removes the blocking. Each item is crude, fast, and structurally identical to the real thing.\n\n### P1 · Provisional catchments — *Mahdi, ~1 hour*\n\nDownload **HydroBASINS level 9** (precomputed, no DEM processing needed) or MERIT Hydro basins, clip to the AOI, pick the 5 that drain to the Gulf, assign `AQ-C01`…`AQ-C05`.\n\n→ `data/processed/vectors/catchments_PROVISIONAL.gpkg`\n\nCoarse and wrong in detail. Structurally perfect. **Karam and Pulga build their entire aggregation pipeline on this and never wait.**\n\n### P2 · Provisional outlets — *Mahdi, ~1 hour*\n\nOpen satellite imagery, find where each wadi visibly meets the sea, click a point. No DEM required.\n\n→ `data/processed/vectors/outlets_PROVISIONAL.gpkg`\n\n**Nizar's particle engine is built against these.** Swapping in real coordinates later is a config change, not a rebuild.\n\n### P3 · Event dates — *anyone, ~1 hour, Day 1*\n\nThe two candidate events are already named in the concept doc: **October 2016** and **February 2013**. Exact dates come from two papers, not from IMERG:\n\n- Ginat et al. 2025 — https://nhess.copernicus.org/articles/25/3201/2025/index.html\n- Katz et al. 2015 — https://www.sciencedirect.com/science/ar"
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "5. Swap-in checkpoints — the part that must not be forgotten",
+   "text": "Provisional data in the final demo would be a serious failure. Every swap is a tracked item.\n\n| # | Provisional | Replaced by | Owner of swap | Re-run cost | Done |\n|---:|---|---|---|---|:--:|\n| 1 | `catchments_PROVISIONAL.gpkg` | **Done 2 Aug** → `catchments.gpkg` | Karam + Pulga re-run | minutes | ☑ |\n| 2 | `outlets_PROVISIONAL.gpkg` | **Done 2 Aug** → `outlets.gpkg` | Nizar re-runs | minutes | ☑ |\n| 3 | `reef_zones_PROVISIONAL.gpkg` | Allen Coral Atlas export | Pulga | minutes | ☐ |\n| 4 | `observed_plume_PROVISIONAL.gpkg` | Real Sentinel-2 derived mask | Abd publishes; Nizar re-calibrates | ~1 hour | ☐ |\n| 5 | `sensitivity_weight = 1.0` | Marine-scientist input, **or stays 1.0 and is labeled an assumption on the slide** | Pulga | none | ☐ |\n| 6 | Provisional AOI | Confirmed analysis box | Everyone re-clips | minutes | ☐ |\n\n### Swaps 1 and 2 have landed — action for Karam, Pulga, Nizar\n\nReal geometry is in the repo. Re-point and re-run; the schema is unchanged.\n\n```text\ndata/processed/vectors/catchments.gpkg          5 catchments, catchment_id + outlet_id\ndata/processed/vectors/outlets.gpkg             5 outlets, lon/lat\ndata/processed/features/catchment_terrain.parquet   area, r"
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "6. What genuinely cannot be decoupled",
+   "text": "Two things, and only two. Everything else above is now parallel.\n\n### Calibration needs a real observation\n\nNizar tunes diffusion, windage, and settling by comparing simulated plumes against Abd's observed mask. You cannot calibrate against an observation that doesn't exist.\n\n**Reduced to:** Nizar builds and tests the full parameter search against the synthetic mask (P5). When Abd's real mask lands, it's a file swap and a re-run — roughly an hour, not days of blocked work.\n\n### Final validation metrics need both sides\n\nIoU, Dice, centroid distance and area error need a real prediction *and* a real observation. This is the last substantive task in the project by definition.\n\n**Reduced to:** the metric code itself is written and unit-tested early against synthetic masks. On the day both real inputs exist, it's one command.\n\n---"
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "7. What this changes about the schedule",
+   "text": "Before:\n\n```text\nDay 1  everyone waits for AOI\nDay 2  Mahdi DEM\nDay 3  Karam waits for catchments → event dates\nDay 4  Mahdi outlets → Nizar unblocked\nDay 5  Abd finally starts the audit   ← the project's biggest risk, discovered late\n```\n\nAfter:\n\n```text\nDay 1  contracts + provisional seeds (half a day, everyone)\nDay 1  ALL FIVE STREAMS RUNNING IN PARALLEL\n       Mahdi   real DEM chain\n       Karam   IMERG on provisional catchments\n       Pulga   land/soil on provisional catchments, reef zones\n       Abd     imagery audit — starts Day 1, not Day 5  ← risk found early\n       Nizar   forecasts + currents + engine on provisional outlets\nDay 4–6 swap-ins as real data replaces provisional\nDay 9   calibration against Abd's real mask\n```\n\n**The single biggest win:** Abd's gate — the one thing that can invalidate the whole concept — is answered on Day 2 or 3 instead of Day 5. If the answer is bad, there are eleven days to change the demo event instead of nine.\n\n---"
+  },
+  {
+   "file": "tasks/00-contracts.md",
+   "section": "8. Day 1 checklist",
+   "text": "Half a day, together, then everyone is independent.\n\n- [ ] Confirm download box and analysis box · commit `data/aoi/aqaba_aoi.geojson`\n- [ ] Confirm ID formats and counts (§2)\n- [ ] Create the folder structure (§3), commit with `.gitkeep` files\n- [ ] Agree `docs/data_dictionary.md` row format\n- [ ] **Mahdi:** P1 provisional catchments, P2 provisional outlets\n- [ ] **Pulga:** P4 provisional reef zones\n- [ ] **Anyone:** P3 event dates from the two papers → `docs/event_dates.md`\n- [x] **Nizar:** P5 synthetic plume mask\n- [ ] Everyone registers their own accounts: NASA Earthdata · Copernicus CDS · Copernicus Data Space · Copernicus Marine · own GEE project\n- [ ] Everyone confirms they can start their stream **today** without needing anything from anyone\n\nLast item is the test. If anyone answers no, the contract has a gap — fix it before the day ends."
+  }
+ ],
+ "files": [
+  "docs/event_dates.md",
+  "docs/event_audit.md",
+  "docs/pitch_limitations.md",
+  "docs/forcing_limitations.md",
+  "docs/data_dictionary.md",
+  "docs/mooring_coordinate_derivation.md",
+  "docs/osm_dem_conflicts.md",
+  "docs/era5_land_temporal_semantics.md",
+  "docs/pipeline_capability_report.md",
+  "docs/MASTER_TASK_SUMMARY.md",
+  "tasks/00-contracts.md"
+ ],
+ "excludes": [
+  "docs/Ali/research/*"
+ ],
+ "retrieval": "keyword"
+}

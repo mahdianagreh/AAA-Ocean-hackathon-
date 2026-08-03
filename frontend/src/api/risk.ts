@@ -1,4 +1,5 @@
 import type { EventSeries } from './event';
+import type { Scenario } from '../app/uiStore';
 import type { Catchment } from './types';
 import { bandForScore } from './types';
 import type { RiskCardData } from '../components/RiskCard';
@@ -56,7 +57,15 @@ export function riskFromSeries(
   series: EventSeries,
   catchments: Catchment[],
   cursor: number,
+  scenario?: Scenario,
 ): RiskCardData[] {
+  // Scenario overrides, or the documented midpoints. Transmission loss is a
+  // control rather than a constant because it is the project's largest
+  // unquantified uncertainty — 20-85% of a flood never reaches the sea — and
+  // letting a judge move it is more honest than a caveat in prose.
+  const loss = (scenario?.transmissionLoss ?? TRANSMISSION_LOSS * 100) / 100;
+  const rainScale = (scenario?.rainfallScale ?? 100) / 100;
+  const wetness = (scenario?.antecedentWetness ?? 50) / 50; // 1.0 at the default
   const by = series.rainfall_daily.by_catchment;
 
   return catchments.map((c) => {
@@ -71,10 +80,11 @@ export function riskFromSeries(
       .reduce((a, b) => a + b, 0);
 
     // Rainfall for this catchment, against its own wet-day climatology.
-    const rainIndex = today === null ? 0 : (today + 0.5 * prior) / WET_DAY_P99;
+    const rainIndex =
+      today === null ? 0 : (today * rainScale + 0.5 * prior * wetness) / WET_DAY_P99;
     // Scaled by how much of it arrives at one outlet, minus what never gets there.
     const conc = concentration(c.area_km2);
-    const index = rainIndex * conc * (1 - TRANSMISSION_LOSS * 0.5);
+    const index = rainIndex * conc * (1 - loss * 0.5);
     const score = Math.round(Math.min(100, index * 100));
 
     return {
@@ -90,8 +100,8 @@ export function riskFromSeries(
       drivers: [
         {
           key: 'rain_today',
-          contribution: today === null ? 0 : (today / WET_DAY_P99) * 0.6,
-          value: { value: today ?? 0, unit: 'mm', provenance: 'modelled' },
+          contribution: today === null ? 0 : ((today * rainScale) / WET_DAY_P99) * 0.6,
+          value: { value: today === null ? null : today * rainScale, unit: 'mm', provenance: 'modelled' },
         },
         {
           key: 'antecedent_rain_48h',
@@ -110,8 +120,8 @@ export function riskFromSeries(
           // flood infiltrates the wadi bed and never reaches the sea; the pipeline
           // does not model it, so this is the midpoint of that range applied as a
           // stated haircut rather than a pretence of a quantity.
-          contribution: -rainIndex * conc * TRANSMISSION_LOSS * 0.5,
-          value: { value: TRANSMISSION_LOSS * 100, unit: '%', provenance: 'modelled' },
+          contribution: -rainIndex * conc * loss * 0.5,
+          value: { value: loss * 100, unit: '%', provenance: 'modelled' },
         },
       ],
       confidence: {

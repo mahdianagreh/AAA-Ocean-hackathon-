@@ -37,7 +37,6 @@ export function MapView({ risk }: { risk?: Array<{ catchment_id: string; band: s
    *  Incrementing only when the style is genuinely loaded means the value can only
    *  move forward, so effects re-run after a restyle and never un-run. */
   const [epoch, setEpoch] = useState(0);
-  const ready = epoch > 0;
 
   // Resolve 'system' to a concrete palette — the style carries baked hex, so it
   // cannot defer to a media query the way the CSS tokens do.
@@ -151,7 +150,7 @@ export function MapView({ risk }: { risk?: Array<{ catchment_id: string; band: s
    */
   useEffect(() => {
     const m = map.current;
-    if (!m || !ready || !m.getLayer('catchments-fill') || !risk?.length) return;
+    if (!m || epoch === 0 || !m.getLayer('catchments-fill') || !risk?.length) return;
 
     // MapLibre cannot read CSS custom properties, so these resolve to hex from
     // the generated palette — the same values, one source.
@@ -187,7 +186,7 @@ export function MapView({ risk }: { risk?: Array<{ catchment_id: string; band: s
    *  store, and unknown layers are skipped rather than throwing. */
   useEffect(() => {
     const m = map.current;
-    if (!m || !ready) return;
+    if (!m || epoch === 0) return;
     const map_: Record<string, string[]> = {
       isobaths: ['isobaths'],
       catchments: ['catchments-fill', 'catchments-line'],

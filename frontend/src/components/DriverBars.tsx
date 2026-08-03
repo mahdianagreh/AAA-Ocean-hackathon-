@@ -19,7 +19,9 @@ export interface Driver {
   key: string;
   /** Signed. Positive raises the predicted risk. */
   contribution: number;
-  value: Value;
+  /** `value` may be null — a day with no rainfall reading is a gap, and 09 rule 4
+   *  forbids coercing that to zero even inside a driver row. */
+  value: Omit<Value, 'value'> & { value: number | null };
 }
 
 export function DriverBars({ drivers }: { drivers: Driver[] }) {

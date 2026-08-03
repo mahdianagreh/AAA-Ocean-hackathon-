@@ -144,6 +144,21 @@
   --dir: -1;
 }
 
+/* Motion — 05-motion-system.md. Three orchestrated moments; everything else is
+   <=150ms, opacity and transform only.
+
+   Three tokens, not a scale, because 01 §7 budgets exactly three moments and a
+   larger scale would invite motion that has not earned its place.
+   --ease-spring settles rather than overshooting hard: the time-scrub has to be
+   interruptible mid-flight, and a bouncy curve fights the next input. */
+@theme {
+  --dur-instant: 90ms;
+  --dur-fast: 150ms;
+  --dur-base: 260ms;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.26, 0.64, 1);
+}
+
 /* Every number on screen gets this, via ValueWithUnit. One property, so nothing
    competes for the same OpenType features — setting font-feature-settings here
    as well would put two properties in charge of the same feature set.

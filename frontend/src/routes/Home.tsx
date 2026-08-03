@@ -4,6 +4,7 @@ import { SideRail } from '../shell/SideRail';
 import { TimeBar } from '../shell/TimeBar';
 import { MapView } from '../map/MapView';
 import { useEventData, useRiskCards } from '../app/useEventData';
+import { OverlayHost } from '../panels/OverlayHost';
 
 /** The one screen. 03 §1: eight storyboard scenes on a single view, with the
  *  limitations text and provenance panel as overlays rather than routes.
@@ -39,6 +40,8 @@ export function Home() {
       </div>
 
       <TimeBar data={data} />
+
+      <OverlayHost />
 
       {/* The map is never the only path to a fact — 09 rule 7. The rail carries
           the values; this carries what the map cannot say at all. */}

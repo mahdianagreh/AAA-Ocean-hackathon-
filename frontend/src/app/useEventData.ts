@@ -54,8 +54,11 @@ export function stepCounts(steps: string[]): Record<Mode, number> {
 
 export function useRiskCards(data: EventData | null) {
   const cursor = useUi((s) => s.cursor);
+  const scenario = useUi((s) => s.scenario);
+  // Memoised on both, so dragging a scenario slider recomputes the cards without
+  // touching the map's geometry — the same reason the fill is a paint expression.
   return useMemo(
-    () => (data ? riskFromSeries(data.series, data.catchments, cursor) : []),
-    [data, cursor],
+    () => (data ? riskFromSeries(data.series, data.catchments, cursor, scenario) : []),
+    [data, cursor, scenario],
   );
 }

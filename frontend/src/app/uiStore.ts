@@ -22,6 +22,32 @@ export type LayerKey =
  *  truth for direction is how a layout ends up half-mirrored. */
 export const dirFor = (lang: Lang): 'ltr' | 'rtl' => (lang === 'ar' ? 'rtl' : 'ltr');
 
+/** Which overlay is open. 03 §1: the limitations text and the provenance panel are
+ *  overlays rather than routes, because the whole product is one screen. */
+export type Overlay = 'provenance' | 'limitations' | 'validation' | 'assistant' | null;
+
+/** The six scenario controls. Defaults are the midpoints of what the documents
+ *  actually say, not round numbers: transmission loss defaults to 50% because the
+ *  measured range is 20–85%, and rainfall/sediment default to 100% because the
+ *  unscaled event is the baseline the demo starts from. */
+export interface Scenario {
+  transmissionLoss: number;
+  rainfallScale: number;
+  antecedentWetness: number;
+  windDirection: number;
+  windSpeed: number;
+  sedimentLoad: number;
+}
+
+export const SCENARIO_DEFAULTS: Scenario = {
+  transmissionLoss: 50,
+  rainfallScale: 100,
+  antecedentWetness: 50,
+  windDirection: 340,
+  windSpeed: 5,
+  sedimentLoad: 100,
+};
+
 interface UiState {
   theme: ThemeChoice;
   lang: Lang;
@@ -31,12 +57,17 @@ interface UiState {
    *  01 §7 calls that choreography "the product". */
   cursor: number;
   layers: Record<LayerKey, boolean>;
+  overlay: Overlay;
+  scenario: Scenario;
 
   setTheme: (t: ThemeChoice) => void;
   setLang: (l: Lang) => void;
   setMode: (m: Mode, stepCounts: Record<Mode, number>) => void;
   setCursor: (i: number) => void;
   toggleLayer: (k: LayerKey) => void;
+  setOverlay: (o: Overlay) => void;
+  setScenario: (k: keyof Scenario, v: number) => void;
+  resetScenario: () => void;
 }
 
 function fromUrl(): { lang: Lang; theme: ThemeChoice; mode: Mode } {
@@ -57,6 +88,8 @@ export const useUi = create<UiState>((set) => ({
   lang: initial.lang,
   mode: initial.mode,
   cursor: 0,
+  overlay: null,
+  scenario: { ...SCENARIO_DEFAULTS },
   layers: {
     isobaths: true,
     catchments: true,
@@ -84,4 +117,17 @@ export const useUi = create<UiState>((set) => ({
 
   setCursor: (cursor) => set({ cursor: Math.max(0, cursor) }),
   toggleLayer: (k) => set((s) => ({ layers: { ...s.layers, [k]: !s.layers[k] } })),
+  setOverlay: (overlay) => set({ overlay }),
+
+  /** Moving a scenario control switches the mode to `scenario`.
+   *
+   *  03 §2 says scenario mode "inherits the base mode's range", so the cursor is
+   *  untouched — only the mode changes. Leaving the mode alone while the numbers
+   *  moved would mean the masthead said Historical while the view showed a what-if,
+   *  which is the kind of quiet inconsistency a judge notices and a presenter
+   *  cannot explain. */
+  setScenario: (k, v) =>
+    set((s) => ({ scenario: { ...s.scenario, [k]: v }, mode: 'scenario' })),
+
+  resetScenario: () => set({ scenario: { ...SCENARIO_DEFAULTS } }),
 }));

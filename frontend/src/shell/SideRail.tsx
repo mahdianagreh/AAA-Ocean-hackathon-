@@ -6,6 +6,7 @@ import { RiskCard } from '../components/RiskCard';
 import { Hyetograph } from '../components/Hyetograph';
 import { Legend } from '../components/Legend';
 import { LayerToggle } from '../components/LayerToggle';
+import { ScenarioDrawer } from '../components/ScenarioDrawer';
 import { ValueWithUnit } from '../components/ValueWithUnit';
 import { HARBOUR_BASIN_OUTLETS } from '../api/types';
 
@@ -173,6 +174,12 @@ export function SideRail({
               </Row>
             ))}
           </section>
+
+          {/* Scene 7, the what-if. In the rail rather than a separate drawer:
+              03 §5 asked whether the drawer blocks the map or pushes it, and the
+              answer is neither — the controls belong beside the numbers they
+              change, so a judge can watch the bands move while dragging. */}
+          <ScenarioDrawer />
 
           <Legend plumeLevels={[0.1, 0.25, 0.5, 0.75]} />
           <LayerToggle layers={layers} onToggle={toggleLayer} />

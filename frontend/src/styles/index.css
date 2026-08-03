@@ -40,8 +40,33 @@
     border-radius: var(--radius-sm);
   }
 
-  /* 01 §7: nothing moves without being asked, and reduced motion must still
-     communicate the state change rather than removing it. */
+  /* The three orchestrated moments — 05-motion-system.md.
+   *
+   *  1. Time-scrub choreography: the hazard fills, the chart cursor and the risk
+   *     bands settle together under the slider. Colour and transform only, so it
+   *     stays on the compositor; animating a width would not.
+   *  2. Plume bloom: contours expanding through the timesteps (Phase 3 data).
+   *  3. Mode transition: a re-layout, not a cross-fade.
+   *
+   *  Everything animated here is interruptible by construction, because these are
+   *  transitions on state rather than keyframed animations with a lifetime. A
+   *  time-scrub that finished its animation before accepting the next input would
+   *  feel broken regardless of how smooth each step was. */
+  [data-risk-card] [data-band],
+  [data-legend-band] {
+    transition:
+      background-color var(--dur-base) var(--ease-out),
+      border-color var(--dur-base) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
+  }
+
+  [data-time-handle='true'] {
+    transition: inset-inline-start var(--dur-fast) var(--ease-spring);
+  }
+
+  /* 01 §7 / 05: nothing moves without being asked, and reduced motion must still
+     communicate the state change rather than removing it. The plume still steps
+     through its timesteps — it cuts instead of tweening. */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

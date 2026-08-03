@@ -93,7 +93,9 @@
     "converted": "Converted",
     "modelled": "Modelled",
     "envelope": "Uncertainty envelope",
-    "missing": "No data"
+    "missing": "No data",
+    "excludedReason": "overview_01_master_all_layers.png is excluded. Its own burned-in caption says the catchments in it are a local test fixture — five latitude bands, not a watershed delineation. Best-looking figure in the set, and the wrong catchments.",
+    "odblNote": "OpenStreetMap is share-alike (ODbL). Any derived table containing OSM-derived columns plausibly carries that obligation, and a licence review is needed before a first paid contract."
   },
   "value": {
     "missing": "No data",
@@ -153,9 +155,79 @@
     "salinityAnomaly": "Salinity anomaly",
     "elevatedDuration": "Elevated duration",
     "sedimentMass": "Sediment mass",
-    "noSeries": "Reported values from Kalman et al. 2025. The five-minute record itself is not in this repository, so these are the published summary points rather than a trace."
+    "noSeries": "Reported values from Kalman et al. 2025. The five-minute record itself is not in this repository, so these are the published summary points rather than a trace.",
+    "salinityMinimum": "Salinity minimum"
   },
   "series": {
     "noSubDaily": "No sub-daily rainfall series is available for this event."
+  },
+  "common": {
+    "close": "Close"
+  },
+  "overlay": {
+    "label": "Panels",
+    "validation": "Validation",
+    "provenance": "Provenance",
+    "limitations": "Limitations",
+    "assistant": "Assistant"
+  },
+  "validation": {
+    "comparison": "Modelled against measured",
+    "quantity": "Quantity",
+    "measured": "Measured",
+    "modelled": "Modelled",
+    "notComputed": "No modelled arrival yet — blocked on:",
+    "satelliteTitle": "Satellite validation",
+    "satelliteBody": "The plan was to compare the model against a satellite photograph of the October 2016 plume. There is no such photograph. The nearest clear pass was five days after the flood, and the plume had already dispersed two to three days earlier — confirmed independently by Sentinel-2 and Landsat 8.",
+    "physicalNull": "This is a physical null, not a data-quality problem.",
+    "physicalNullBody": "The sediment clears faster than these satellites come around, so no amount of searching fixes it. The mooring record is the validation target instead — and comparing against 5-minute in-situ measurements is a stronger test than a photograph would have been.",
+    "target": "The validation target",
+    "source": "Source:",
+    "positionNote": "Position is derived, not reported: the paper gives only \"~250 m offshore the Kinnet Canal outlet, 13 m depth\". Do not read it to finer precision than the {{radius}} m uncertainty radius allows."
+  },
+  "provenancePanel": {
+    "figures": "QA figures",
+    "counts": "{{shown}} shown, of {{manifest}} in the manifest and {{disk}} PNGs on disk.",
+    "sources": "Data sources and licences",
+    "generated": "Generated",
+    "chain": "Chain",
+    "fullRes": "Full resolution"
+  },
+  "limitations": {
+    "oneLine": "The one-line version",
+    "forcing": "Ocean current resolution",
+    "forcingSeeGrid": "Turn on the ocean-model grid layer to see this rather than read it.",
+    "items": "{{n}} things our data cannot tell you",
+    "arabicPending": "The detail below is shown in its source language. Machine-translating scientific caveats is a scientific-integrity risk, so these bodies await review by a human Arabic reader rather than being translated automatically."
+  },
+  "assistant": {
+    "label": "Ask about the pipeline, the data or the limitations",
+    "placeholder": "e.g. why did satellite validation fail",
+    "ask": "Search",
+    "corpusSize": "{{n}} sections across {{files}} documents",
+    "tryThese": "Try:",
+    "citations": "{{n}} citations",
+    "noAnswerTitle": "No sourced answer",
+    "noAnswerBody": "Nothing in the corpus matched closely enough to quote. This is a distinct state rather than a hedged answer, because an uncited answer must not render as an answer.",
+    "searched": "Searched {{n}} documents",
+    "corpusBoundary": "The corpus is the technical and operational documentation only. The market and business research is deliberately not in it, so a question about market size genuinely has no sourced answer here."
+  },
+  "scenario": {
+    "title": "What-if",
+    "reset": "Reset",
+    "notActive": "Moving any control switches to Scenario mode.",
+    "transmissionLoss": "Transmission loss",
+    "transmissionLossNote": "Share of the flood that infiltrates the wadi bed and never reaches the sea. Measured range is 20–85% and the pipeline does not model it, so this is the project's largest single uncertainty.",
+    "rainfallScale": "Rainfall",
+    "rainfallScaleNote": "Scales the measured rainfall for this event. 100% is what actually fell.",
+    "antecedentWetness": "Antecedent wetness",
+    "antecedentWetnessNote": "How wet the catchment was beforehand. A dry wadi absorbs the first rain; a wet one runs.",
+    "windDirection": "Wind direction",
+    "windDirectionNote": "Bearing the wind blows from. Steers the plume once it is in the water.",
+    "windSpeed": "Wind speed",
+    "windSpeedNote": "Surface wind. Drives the plume's advection and its mixing.",
+    "sedimentLoad": "Sediment load",
+    "sedimentLoadNote": "Scales sediment concentration per unit discharge. 100% is the reported 24,400 t.",
+    "caveat": "These controls move a transparent index, not a calibrated model. Use them to see which direction a factor pushes the answer — not to read off a number."
   }
 }
