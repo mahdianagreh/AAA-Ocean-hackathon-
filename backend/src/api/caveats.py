@@ -258,12 +258,22 @@ def soil_is_modelled() -> list[Caveat]:
     )]
 
 
-def build_exposure_caveats(outlet_id: str, zone=None) -> list[Caveat]:
+def build_exposure_caveats(outlet_id: str, zone=None, *, provisional: bool) -> list[Caveat]:
     """Every caveat that applies to one exposure result.
 
     `zone` may be a ReefZoneOut, a plain dict, or None — the routes read zones from
     a GeoPackage in one place and from a Pydantic model in another, and this is not
     worth forcing into one type at the call sites.
+
+    `provisional` is KEYWORD-ONLY AND HAS NO DEFAULT, deliberately. This function
+    used to emit reef_zone_width() unconditionally, so after the Allen Coral Atlas
+    swap /exposure/calculate kept asserting "reef zone width is a flat 250 m
+    assumption" about geometry that is now the Atlas's own 5 m outline —
+    a false statement about a 5 m product, shipped as a caveat, which is the one
+    kind of text a reader is entitled to trust. /reef-zones had been fixed and this
+    path had not. A default would have let the same omission recur silently at the
+    next call site; requiring the argument makes the caller state which geometry
+    they are describing.
     """
     if zone is None:
         status = "PLACEHOLDER_PENDING_MARINE_SCIENTIST"
@@ -272,9 +282,15 @@ def build_exposure_caveats(outlet_id: str, zone=None) -> list[Caveat]:
     else:
         status = getattr(zone, "sensitivity_weight_status", "")
 
+    # The width assumption belongs to the hand-placed geometry only. With real ACA
+    # outlines the honest reason to prefer a fraction over an absolute km2 is that
+    # the Atlas maps optically shallow reef only — which is what reef_shallow_only
+    # says, and it is not interchangeable with the width caveat.
+    geometry_caveats = reef_zone_width() if provisional else reef_shallow_only()
+
     return [
         *harbour_outlet(outlet_id),
         *sensitivity_placeholder(status),
-        *reef_zone_width(),
+        *geometry_caveats,
         *risk_band_thresholds(),
     ]

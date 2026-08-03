@@ -112,10 +112,16 @@ including the two cross-checks the plan requires by name:
 1. **`habitat_sensitivity_weight` is 1.0 for every zone** — a placeholder labelled
    `PLACEHOLDER_PENDING_MARINE_SCIENTIST` in the data file, the API schema, and every
    response. Allen Coral Atlas maps habitat, not sensitivity.
-2. **Reef zone area is order-of-magnitude.** Widths are a flat 250 m assumption, so
-   exposure is reported as `zone_fraction_affected` — a fraction of a named zone —
-   rather than an absolute km², which would launder the assumption into false
-   precision.
+2. **Reef zone area is real geometry, but covers optically shallow reef only.**
+   Corrected 2026-08-03: the outline is now Allen Coral Atlas v2.0's own 5 m benthic
+   polygons — **1.235 km² across the 8 zones**, not the 5.69 km² the earlier
+   hand-drawn 250 m strips claimed, a 4.6× difference that also reordered the
+   per-zone ranking. An absolute km² is therefore defensible now. Exposure is still
+   reported as `zone_fraction_affected` rather than an absolute area, but for a
+   different reason: the Atlas maps optically shallow reef, so anything below the
+   depth its imagery penetrates is outside the mapped zone and outside the fraction.
+   *Anything computed against the provisional areas is an overestimate, not merely
+   imprecise.*
 3. **No validation against an observed exposure outcome.** Nobody has measured what
    sediment actually reached which reef in 2013 or 2016, so the engine is internally
    consistent and physically plausible, not empirically calibrated.

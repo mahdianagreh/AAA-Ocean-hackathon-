@@ -11,6 +11,7 @@ Covers:
   * caching actually caches.
 """
 
+import json
 import os
 import sys
 import tempfile
@@ -252,7 +253,10 @@ CAVEAT_MATRIX = [
     ("reef-zones / placeholder weight",
      lambda: client.get(f"{PREFIX}/reef-zones").json()[0]["caveats"],
      "always", "sensitivity_weight"),
-    ("reef-zones / 250 m width assumption",
+    # Labelled by FIELD, and both the width caveat and the shallow-only caveat use
+    # area_km2 — which is why this row kept passing after the geometry swap made one
+    # of them false. test_obsolete_width_claim_is_gone checks the CLAIM, not the field.
+    ("reef-zones / area qualifier present",
      lambda: client.get(f"{PREFIX}/reef-zones").json()[0]["caveats"],
      "always", "area_km2"),
     ("reef-zones / provisional geometry",
@@ -298,6 +302,54 @@ CAVEAT_MATRIX = [
                          json={"event_id": "E"}).json()["caveats"],
      "always", "metrics"),
 ]
+
+
+def test_obsolete_width_claim_is_gone():
+    """No payload may assert the 250 m width while real ACA geometry is loaded.
+
+    This shipped. /reef-zones gated the width caveat behind `is_provisional` when the
+    Atlas geometry landed; /exposure/calculate built its caveats through a different
+    helper that emitted it unconditionally, so every exposure result asserted "reef
+    zone width is a flat 250 m assumption" about the Atlas's own 5 m polygons — a
+    false statement about a 5 m product, delivered as a caveat, i.e. in the one place
+    a reader is entitled to trust.
+
+    CAVEAT_MATRIX could not catch it: it matches on `field`, and both the width
+    caveat and reef_shallow_only report `area_km2`. So this asserts on the claim.
+
+    A HISTORICAL mention is fine and is deliberately still shipped — reef_area_correction
+    explains that the old 5.69 km² figure came from 250 m strips. What must not appear
+    is the present-tense assertion that the width IS an assumption today.
+    """
+    _, is_provisional = da.reef_zones(include_geometry=False)
+    if is_provisional:
+        print("\n  provisional geometry loaded — the width caveat is CORRECT; skipping")
+        return
+
+    payloads = {
+        "reef-zones": client.get(f"{PREFIX}/reef-zones").json(),
+        "exposure/calculate": client.post(
+            f"{PREFIX}/exposure/calculate",
+            json={"event_id": "E", "outlet_id": "AQ-O02"}).json(),
+        "alerts": client.get(f"{PREFIX}/alerts").json(),
+    }
+    for name, payload in payloads.items():
+        blob = json.dumps(payload, ensure_ascii=False)
+        check(f"{name} does not assert the width is a 250 m assumption",
+              "width is a flat 250 m assumption" not in blob,
+              f"{name} still carries the obsolete width claim")
+
+    # And the replacement must actually be there, or the fix removed a qualifier
+    # instead of correcting it.
+    # The replacement reports `zone_fraction_affected`, not `area_km2`: it qualifies the
+    # fraction the engine outputs, whereas the width caveat qualified the absolute area.
+    # Different field because it is a different claim, which is the whole distinction.
+    exposure = payloads["exposure/calculate"]
+    zone_caveats = exposure["results"][0]["caveats"] if exposure.get("results") else []
+    check("exposure results carry the shallow-only qualifier instead",
+          any(c["field"] == "zone_fraction_affected" and "shallow" in c["message"].lower()
+              for c in zone_caveats),
+          f"fields present: {[c['field'] for c in zone_caveats]}")
 
 
 def test_caveat_coverage_table():
@@ -348,6 +400,7 @@ if __name__ == "__main__":
     print("\n alerts and caching")
     test_alerts_read_from_stored_runs()
     test_cache_actually_caches()
+    test_obsolete_width_claim_is_gone()
     test_caveat_coverage_table()
 
     print()

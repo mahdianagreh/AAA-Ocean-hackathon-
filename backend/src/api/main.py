@@ -534,7 +534,11 @@ def exposure_calculate(req: ExposureRequest):
     contours = _synthetic_contours(outlet["lon"], outlet["lat"], req.horizon_hours)
     overlay = engine.intersect_plume_with_zones(contours, zones_gdf)
 
-    zone_meta = {z["reef_zone_id"]: z for z in da.reef_zones(include_geometry=False)[0]}
+    # Keep the provisional flag rather than discarding it with [0]: it selects which
+    # geometry caveat is TRUE, and a caveat nobody re-reads after a data swap is how
+    # the obsolete 250 m width claim survived here after /reef-zones had dropped it.
+    meta_zones, zones_are_provisional = da.reef_zones(include_geometry=False)
+    zone_meta = {z["reef_zone_id"]: z for z in meta_zones}
 
     results: list[ExposureResult] = []
     for zid in sorted(zones_gdf["reef_zone_id"].unique()):
@@ -561,7 +565,8 @@ def exposure_calculate(req: ExposureRequest):
         # render the same critical warning N times on one panel, which trains a
         # reader to skim past exactly the text that matters most.
         zone_caveats = [
-            c for c in cav.build_exposure_caveats(req.outlet_id, zone_meta.get(zid))
+            c for c in cav.build_exposure_caveats(
+                req.outlet_id, zone_meta.get(zid), provisional=zones_are_provisional)
             if c.field not in ("outlet_id", "risk_level")
         ] + cav.stub_model("The plume input to this exposure run")
 
