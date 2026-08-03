@@ -22,7 +22,13 @@ from models import schema, validation                      # noqa: E402
 from models.feature_store import get_feature_store          # noqa: E402
 from models.predictors import CalibratedGBM, RuleBaseline   # noqa: E402
 
+# docs/model_card.md is reserved for runs on the real feature matrix. It is the
+# file the pitch, the API and any reviewer will read, so a synthetic run must
+# not be able to land there - even correctly banner-marked, a card full of
+# fabricated metrics in the canonical location is one copy-paste from becoming
+# a claim about Aqaba.
 OUT = ROOT / "docs/model_card.md"
+OUT_SYNTHETIC = ROOT / "docs/archive/model_card_SYNTHETIC_harness_check.md"
 
 
 def git_sha() -> str:
@@ -86,12 +92,120 @@ def main():
         print(calib.to_string(index=False))
         print(f"calibrated: {gbm.is_calibrated}")
 
-    write_card(store, df, feats, table, verdict, calib, gbm, args)
-    print(f"\nwrote {OUT.relative_to(ROOT)}")
+    # ---- Component D: sediment proxy -----------------------------------
+    from models.sediment_proxy import SedimentProxy
+
+    base = RuleBaseline().fit(df[feats], df.runoff_label.to_numpy())
+    q = base.runoff_depth(df[feats])
+    sp = SedimentProxy()
+    sed = sp.classify(df[feats], q)
+    tau = sp.sensitivity_to_tau(df[feats], q)
+
+    print("\n=== Component D · sediment class ===")
+    print(sed.sediment_class.value_counts()
+          .reindex(list(sp.classify.__globals__["CLASSES"])).fillna(0)
+          .astype(int).to_string())
+    print(f"basis: {sed.class_basis.iloc[0]}")
+    print("\n=== transmission loss sensitivity (Ali's slider) ===")
+    print(tau.to_string(index=False))
+
+    card = write_card(store, df, feats, table, verdict, calib, gbm, args, sp, sed, tau)
+    print(f"\nwrote {card.relative_to(ROOT)}")
+    if store.is_synthetic:
+        print("  SYNTHETIC RUN - docs/model_card.md was not touched.")
+
+    persist(store, df, feats, reports, table, verdict, sp, sed, args)
 
 
-def write_card(store, df, feats, table, verdict, calib, gbm, args):
-    synthetic = store.provenance.startswith("stub")
+def persist(store, df, feats, reports, table, verdict, sp, sed, args):
+    """Fit the servable model and register it.
+
+    The models fitted above are per-fold and per-split - they exist to measure,
+    and each has seen only part of the data. Serving wants one model fitted on
+    every labelled row, which is a separate fit and never one of the fold
+    models reused.
+    """
+    from models import artifacts
+
+    if store.is_synthetic:
+        print("\nno artifact written: synthetic run.")
+        print("  artifacts.save() refuses synthetic input - a .joblib cannot "
+              "carry a banner.")
+        return None
+
+    from models.sediment_proxy import ANCHOR_CATCHMENT, ANCHOR_EVENT
+
+    y = df.runoff_label.to_numpy()
+    final = CalibratedGBM().fit(df[feats], y)
+    final_base = RuleBaseline().fit(df[feats], y)
+
+    # Anchor the sediment proxy before saving it. Unanchored, classify() bands
+    # against within-dataset quantiles, which is meaningless one row at a time -
+    # serving would return the top class for every request. Anchoring makes the
+    # bands absolute, so a class means the same thing in every response.
+    anchor = df[(df.event_id == ANCHOR_EVENT) & (df.catchment_id == ANCHOR_CATCHMENT)]
+    if len(anchor):
+        idx = sp.index(anchor[feats], final_base.runoff_depth(anchor[feats]))
+        sp = sp.__class__(sp.params).calibrate_to_anchor(float(idx[0]))
+        print(f"\nsediment proxy anchored on {ANCHOR_EVENT}/{ANCHOR_CATCHMENT}")
+    else:
+        print(f"\nsediment proxy NOT anchored: {ANCHOR_EVENT}/{ANCHOR_CATCHMENT} "
+              "is absent from the matrix.")
+        print("  Serving will return the index and withhold the class, by design.")
+
+    # per-catchment LOCO average precision -> the confidence term at serving.
+    # LOCO fold names are the held-out catchment ids.
+    loco = next(r for r in reports
+                if r.model == "calibrated_gbm" and r.split == "loco")
+    catchment_scores = {
+        f.fold: float(f.ap) for f in loco.folds if f.ap is not None
+    }
+
+    # training feature ranges, so serving can tell extrapolation from
+    # interpolation instead of trusting an edge leaf
+    ranges = {
+        c: (float(df[c].min()), float(df[c].max()))
+        for c in feats if pd.api.types.is_numeric_dtype(df[c]) and df[c].notna().any()
+    }
+
+    row = artifacts.save(
+        gbm=final,
+        baseline=final_base,
+        sediment=sp,
+        features=feats,
+        training_event_ids=df.event_id.dropna().astype(str).tolist(),
+        metrics={
+            "verdict": verdict,
+            "comparison": table.to_dict(orient="records"),
+            "catchment_ap_loco": catchment_scores,
+            "is_calibrated": bool(final.is_calibrated),
+            "static_features_included": not args.no_static,
+        },
+        feature_source=store.provenance,
+        is_synthetic=False,
+        feature_ranges=ranges,
+        catchment_scores=catchment_scores,
+    )
+    print(f"\nregistered {row.id}")
+    print(f"  artifact: {row.artifact_path}")
+    print(f"  events:   {len(row.training_event_ids)}")
+    print(f"  ledger:   data/models/model_versions.jsonl")
+    return row
+
+
+def write_card(store, df, feats, table, verdict, calib, gbm, args, sp, sed, tau):
+    from models.sediment_proxy import ANCHOR_EVENT, CLASSES
+
+    # Rendered before the template, because the template is one f-string and
+    # a nested .format() on it would collide with its own placeholders.
+    sed_dist = (sed.sediment_class.value_counts()
+                .reindex(list(CLASSES)).fillna(0).astype(int)
+                .rename_axis("class").rename("rows").to_frame().to_markdown())
+    sed_basis = sed.class_basis.iloc[0]
+    anchor_event = ANCHOR_EVENT
+    tau_default = sp.params.transmission_loss
+    tau_table = tau.to_markdown(index=False)
+    synthetic = store.is_synthetic
     banner = (
         "> ## THIS CARD DESCRIBES A SYNTHETIC RUN\n"
         "> The feature matrix does not exist yet — every rainfall granule has to be\n"
@@ -99,8 +213,9 @@ def write_card(store, df, feats, table, verdict, calib, gbm, args):
         "> with a known generating rule, and exist to prove the harness works.\n"
         "> **They are not results about Aqaba.**\n\n" if synthetic else ""
     )
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(f"""# Model card — Component A, runoff risk classifier
+    out = OUT_SYNTHETIC if synthetic else OUT
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(f"""# Model card — Component A, runoff risk classifier
 
 **Generated:** `scripts/11_train_runoff_model.py` · commit `{git_sha()}`
 **Feature source:** `{store.provenance}`
@@ -172,6 +287,55 @@ Predicted against observed. A calibrated model tracks the two columns together.
 
 ---
 
+## Component D — sediment load proxy
+
+**A formula, not a model.** Nothing here is trained.
+
+```
+sediment_index = b · f(θ) · E(clay, sand, silt, SOC) · Q · D · (1 − τ)
+```
+
+| Term | Meaning | Source |
+|---|---|---|
+| `b` | bare fraction, 0–1 — the erodible surface | ESA WorldCover |
+| `f(θ)` | slope term, `(θ/12°)^1.3` — transport capacity | GLO-30 |
+| `E` | erodibility from soil texture — what is detachable | SoilGrids |
+| `Q` | runoff volume in m³ — the carrier | Component A baseline |
+| `D` | drainage density, km/km² — channel access | GLO-30 |
+| `τ` | transmission loss — what never arrives | **assumption, see below** |
+
+Output is a **relative class**, not a mass, per concept §10.4.
+
+{sed_dist}
+
+Basis: {sed_basis}
+
+### The anchor
+
+One published measurement exists: **≈24,400 t** for {anchor_event} (Kalman et al. 2025).
+It fixes the index→tonnes **scale**. It cannot validate the **shape** — a single point
+constrains one degree of freedom and the formula has six terms. **One point is not a
+curve.** Any mass reported for another event is extrapolation along an unverified line,
+and `mass_estimate_t()` refuses to run until anchored rather than returning a
+comfortable number.
+
+### Transmission loss — the project's largest assumption, now visible
+
+Between **13.2% and 98%** of a desert flood infiltrates the wadi bed and never reaches
+the sea. The Negev, the nearest studied analogue, is **20–85%**. Everything before this
+module implied **τ = 0** — the most optimistic value available, and certainly wrong.
+
+Default **τ = {tau_default}**, the Negev midpoint. Chosen because it is the nearest
+documented setting, *not* because it is measured here. It is not.
+
+{tau_table}
+
+τ enters as the linear factor (1 − τ), so the whole curve follows from one evaluation.
+Every classified row carries the τ used, so the assumption travels with the number
+instead of living in a document.
+
+---
+
 ## What this model cannot do
 
 - **It does not predict a flood reaching the sea.** It predicts the Silver label —
@@ -182,7 +346,10 @@ Predicted against observed. A calibrated model tracks the two columns together.
   Per-catchment totals inherit it.
 - **It says nothing about the sea.** Transport is Component C; this feeds it a
   sediment class, nothing more.
+- **The sediment proxy is not calibrated**, only anchored at one point, and its τ is
+  assumed rather than measured for these wadis.
 """)
+    return out
 
 
 if __name__ == "__main__":

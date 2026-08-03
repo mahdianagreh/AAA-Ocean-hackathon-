@@ -177,3 +177,126 @@ def test_stub_is_labelled_synthetic(matrix):
     """A synthetic row must never be mistakable for data."""
     df, _ = matrix
     assert df.label_basis.str.contains("SYNTHETIC").all()
+
+
+# ══════════════════════════════════════════ Component D · sediment proxy
+
+from models.sediment_proxy import (  # noqa: E402
+    ANCHOR_MASS_T, CLASSES, TAU_DEFAULT, TAU_NEGEV, SedimentParams,
+    SedimentProxy, erodibility)
+
+
+@pytest.fixture(scope="module")
+def sediment_inputs(matrix):
+    df, feats = matrix
+    q = RuleBaseline().fit(df[feats], df.runoff_label.to_numpy()).runoff_depth(df[feats])
+    return df, feats, q
+
+
+def test_default_tau_sits_inside_the_negev_range():
+    """The default must be defensible, not arbitrary."""
+    assert TAU_NEGEV[0] <= TAU_DEFAULT <= TAU_NEGEV[1]
+    assert SedimentParams().tau_in_negev_range
+
+
+def test_tau_outside_zero_one_is_rejected():
+    for bad in (-0.1, 1.0, 1.5):
+        with pytest.raises(ValueError, match="transmission_loss"):
+            SedimentParams(transmission_loss=bad).validate()
+
+
+def test_tau_enters_linearly(sediment_inputs):
+    """(1 - tau) is a plain factor; the scenario slider depends on it."""
+    df, feats, q = sediment_inputs
+    base = SedimentProxy(SedimentParams(transmission_loss=0.0)).index(df[feats], q)
+    half = SedimentProxy(SedimentParams(transmission_loss=0.5)).index(df[feats], q)
+    np.testing.assert_allclose(half, base * 0.5, rtol=1e-9)
+
+
+def test_zero_tau_is_the_optimistic_extreme(sediment_inputs):
+    """tau = 0 was the old implicit assumption. It must be the maximum."""
+    df, feats, q = sediment_inputs
+    idx0 = SedimentProxy(SedimentParams(transmission_loss=0.0)).index(df[feats], q)
+    for t in (0.2, 0.525, 0.85):
+        assert SedimentProxy(SedimentParams(transmission_loss=t)).index(
+            df[feats], q).sum() < idx0.sum()
+
+
+def test_index_rises_with_runoff_bare_slope_and_density(sediment_inputs):
+    """Each term must move the index the direction the physics says."""
+    df, feats, q = sediment_inputs
+    sp = SedimentProxy()
+    row = df[feats].iloc[[0]].copy()
+    base = sp.index(row, [10.0])[0]
+    assert sp.index(row, [20.0])[0] > base                      # more runoff
+    for col, bump in [("bare_fraction", 0.15), ("slope_mean_deg", 6.0),
+                      ("drainage_density_km_km2", 0.4)]:
+        up = row.copy()
+        up[col] = up[col] + bump
+        assert sp.index(up, [10.0])[0] > base, f"{col} did not raise the index"
+
+
+def test_clay_reduces_erodibility_and_organic_carbon_too():
+    e_low_clay = erodibility([10.0], [58.0], [32.0], [3.0])[0]
+    e_high_clay = erodibility([45.0], [58.0], [32.0], [3.0])[0]
+    assert e_high_clay < e_low_clay
+    assert erodibility([21.0], [58.0], [21.0], [40.0])[0] < \
+           erodibility([21.0], [58.0], [21.0], [1.0])[0]
+
+
+def test_mass_requires_anchoring(sediment_inputs):
+    """A mass without the anchor is a number nobody can defend."""
+    df, feats, q = sediment_inputs
+    sp = SedimentProxy()
+    assert not sp.is_anchored
+    with pytest.raises(RuntimeError, match="not anchored"):
+        sp.mass_estimate_t(df[feats], q)
+
+
+def test_anchoring_reproduces_the_published_mass(sediment_inputs):
+    df, feats, q = sediment_inputs
+    sp = SedimentProxy()
+    one = df[feats].iloc[[0]]
+    idx = float(sp.index(one, [q[0]])[0])
+    sp.calibrate_to_anchor(idx)
+    assert sp.is_anchored
+    np.testing.assert_allclose(sp.mass_estimate_t(one, [q[0]])[0], ANCHOR_MASS_T, rtol=1e-6)
+
+
+def test_unanchored_classification_declares_itself_relative(sediment_inputs):
+    """A within-dataset class is a different claim and must say so."""
+    df, feats, q = sediment_inputs
+    out = SedimentProxy().classify(df[feats], q)
+    assert "QUANTILES" in out.class_basis.iloc[0]
+    assert set(out.sediment_class) <= set(CLASSES)
+
+
+def test_anchored_classification_names_the_anchor(sediment_inputs):
+    df, feats, q = sediment_inputs
+    sp = SedimentProxy().calibrate_to_anchor(1.0e8)
+    out = sp.classify(df[feats], q)
+    assert "AQ-2016-10-28" in out.class_basis.iloc[0]
+
+
+def test_classify_records_the_tau_used(sediment_inputs):
+    """The assumption travels with every row, not just the docs."""
+    df, feats, q = sediment_inputs
+    out = SedimentProxy(SedimentParams(transmission_loss=0.7)).classify(df[feats], q)
+    assert (out.transmission_loss == 0.7).all()
+
+
+def test_scenario_does_not_mutate_the_original(sediment_inputs):
+    df, feats, q = sediment_inputs
+    sp = SedimentProxy()
+    scenario = sp.with_transmission_loss(0.9)
+    assert sp.params.transmission_loss == TAU_DEFAULT
+    assert scenario.params.transmission_loss == 0.9
+
+
+def test_sensitivity_table_spans_and_flags_the_negev_range(sediment_inputs):
+    df, feats, q = sediment_inputs
+    t = SedimentProxy().sensitivity_to_tau(df[feats], q)
+    assert t.transmission_loss.min() == 0.0
+    assert t.is_default.sum() == 1
+    assert t.in_negev_range.any() and not t.in_negev_range.all()
+    assert t.mean_index.is_monotonic_decreasing
