@@ -1,0 +1,162 @@
+{
+  "source_product": "ERA5-Land Hourly",
+  "documentation": "docs/era5_land_accumulation_semantics.md",
+  "raw_accumulation_semantics": "Accumulated from 00 UTC to forecast step; 00 UTC represents the previous UTC day's 24-hour total.",
+  "request_files": [
+    "data/raw/era5_land/deaccumulation_validation/era5_land_accum_20161026.nc",
+    "data/raw/era5_land/deaccumulation_validation/era5_land_accum_20161027.nc",
+    "data/raw/era5_land/deaccumulation_validation/era5_land_accum_20161028_0000.nc"
+  ],
+  "files_downloaded_this_run": 0,
+  "files_reused": 3,
+  "raw_timestamp_count": 49,
+  "raw_first_utc": "2016-10-26 00:00:00Z",
+  "raw_last_utc": "2016-10-28 00:00:00Z",
+  "processed_hourly_timestamp_count": 48,
+  "processed_first_utc": "2016-10-26 01:00:00Z",
+  "processed_last_utc": "2016-10-28 00:00:00Z",
+  "dropped_timestamps": [
+    "2016-10-26T00:00:00Z"
+  ],
+  "daily_validation": {
+    "2016-10-26": {
+      "tp": {
+        "cells_compared": 17,
+        "max_abs_difference_m": 2.2351741790771484e-08,
+        "within_tolerance": true
+      },
+      "sro": {
+        "cells_compared": 17,
+        "max_abs_difference_m": 1.4901161193847656e-08,
+        "within_tolerance": true
+      },
+      "ssro": {
+        "cells_compared": 17,
+        "max_abs_difference_m": 0.0,
+        "within_tolerance": true
+      }
+    },
+    "2016-10-27": {
+      "tp": {
+        "cells_compared": 17,
+        "max_abs_difference_m": 0.0,
+        "within_tolerance": true
+      },
+      "sro": {
+        "cells_compared": 17,
+        "max_abs_difference_m": 0.0,
+        "within_tolerance": true
+      },
+      "ssro": {
+        "cells_compared": 17,
+        "max_abs_difference_m": 0.0,
+        "within_tolerance": true
+      }
+    }
+  },
+  "daily_validation_tolerance_m": 1e-07,
+  "daily_validation_residual_explanation": "Residuals equal the GRIB quantisation noise clamped to zero, not rounding error. Clamping a negative increment raises the day sum by that amount; observed maximum 2.235e-8 m = two clamped steps in one cell.",
+  "daily_validation_all_within_tolerance": true,
+  "daily_totals": {
+    "2016-10-26": {
+      "tp": {
+        "area_mean_mm": 0.14627242789548986,
+        "max_cell_mm": 0.8983612060546875,
+        "min_cell_mm": 0.0012814998626708984
+      },
+      "sro": {
+        "area_mean_mm": 0.0007494407541611616,
+        "max_cell_mm": 0.0036954879760742188,
+        "min_cell_mm": 0.0
+      },
+      "ssro": {
+        "area_mean_mm": 0.0,
+        "max_cell_mm": 0.0,
+        "min_cell_mm": 0.0
+      }
+    },
+    "2016-10-27": {
+      "tp": {
+        "area_mean_mm": 0.2540099153788212,
+        "max_cell_mm": 0.7929980638436973,
+        "min_cell_mm": 0.05613564280793071
+      },
+      "sro": {
+        "area_mean_mm": 0.001427005319034352,
+        "max_cell_mm": 0.004291534423828125,
+        "min_cell_mm": 0.0002384185791015625
+      },
+      "ssro": {
+        "area_mean_mm": 0.0,
+        "max_cell_mm": 0.0,
+        "min_cell_mm": 0.0
+      }
+    }
+  },
+  "variable_statistics": {
+    "total_precipitation_hourly_mm": {
+      "units": "mm",
+      "min": 0.0,
+      "max": 0.4197359085083008,
+      "mean": 0.008339215484881481,
+      "valid": 816,
+      "nan": 144,
+      "materially_negative": 0,
+      "tiny_negatives_clamped": 5
+    },
+    "surface_runoff_hourly_mm": {
+      "units": "mm",
+      "min": 0.0,
+      "max": 0.002682209014892578,
+      "mean": 4.5342626524906534e-05,
+      "valid": 816,
+      "nan": 144,
+      "materially_negative": 0,
+      "tiny_negatives_clamped": 6
+    },
+    "subsurface_runoff_hourly_mm": {
+      "units": "mm",
+      "min": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "valid": 816,
+      "nan": 144,
+      "materially_negative": 0,
+      "tiny_negatives_clamped": 0
+    }
+  },
+  "soil_moisture": {
+    "units": "m**3 m**-3",
+    "min": 0.0,
+    "max": 0.022674560546875,
+    "mean": 0.002293119243547028,
+    "deaccumulated": false
+  },
+  "missing_data": {
+    "land_cells": 17,
+    "sea_mask_cells": 3,
+    "interpolation_performed": false,
+    "policy": "preserve_nan"
+  },
+  "noise_clamping": {
+    "counts": {
+      "tp": 5,
+      "sro": 6,
+      "ssro": 0
+    },
+    "negative_tolerance_m": 1e-07,
+    "observed_grib_quantisation_step_m": 1.4901161193847656e-08,
+    "rationale": "ERA5-Land is GRIB-packed; observed negative increments are exact multiples of the 2**-26 quantisation step, not physical decreases. Tolerance sits above the step and far below 1e-4 mm."
+  },
+  "assumptions": [
+    "Accumulated from 00 UTC to forecast step; 00 UTC represents the previous UTC day's 24-hour total.",
+    "01 UTC is a daily reset; its raw value IS the first hour's total and is never differenced against 00 UTC.",
+    "Hourly increments are labelled by interval end time.",
+    "A UTC day spans T01:00 through T+1 T00:00 for these variables.",
+    "Millimetres = metres * 1000, applied after deaccumulation.",
+    "Sea-mask NaNs are preserved and never interpolated.",
+    "Increments in [-1e-10, 0) m are float noise and clamp to zero; anything more negative raises.",
+    "swvl1 is instantaneous and is not deaccumulated.",
+    "No comparison or merge with IMERG was performed."
+  ]
+}
