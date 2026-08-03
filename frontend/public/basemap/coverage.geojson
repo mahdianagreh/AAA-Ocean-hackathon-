@@ -1,0 +1,1 @@
+{"type":"FeatureCollection","features":[{"type":"Feature","properties":{"role":"osm_extract_extent"},"geometry":{"type":"Polygon","coordinates":[[[35.00129,29.30354],[35.00129,29.55428],[34.91634,29.55428],[34.91634,29.30354],[35.00129,29.30354]]]}}]}

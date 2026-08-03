@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""QA: validate the ReefShield frontend palette.
+"""QA: validate the ReefShield frontend palette, and emit it as code.
 
 Checks, in order:
   1. every colour is inside the sRGB gamut
@@ -13,9 +13,24 @@ Values printed here are the source of truth for docs/Ali/frontend/02-design-toke
 If a token changes, re-run this and paste the results back into that document —
 claims in this project carry evidence.
 
-    python3 scripts/qa_frontend_palette.py
+    python3 scripts/qa_frontend_palette.py              # the report (default)
+    python3 scripts/qa_frontend_palette.py --emit-css   # frontend token custom properties
+    python3 scripts/qa_frontend_palette.py --emit-ts    # hex, for MapLibre
+
+The two emitters exist so the frontend never transcribes a colour by hand. They
+have different consumers and therefore different notation: the DOM reads OKLCH
+from CSS, and MapLibre reads hex from TypeScript because its colour parser
+accepts only named / hex / rgb() / hsl() — oklch() fails style validation and
+the layer silently renders at the property default.
+
+The no-argument report is contract: scripts/qa_frontend_docs.py shells out to
+this script with no arguments and regexes its stdout, so that output must stay
+byte-identical. scripts/qa_frontend_tokens.py checks the emitted files against
+the emitters, so a hand-edit of either generated file fails CI.
 """
+import argparse
 import math
+import sys
 
 # ---------- OKLCH -> sRGB ----------------------------------------------------
 
@@ -109,83 +124,318 @@ HAZARD = [
     ("critical", "81-100", (0.535, 0.165, 32), (0.735, 0.150, 34)),
 ]
 
+GROUND_ORDER = ["canvas", "surface", "surface-2", "hairline", "hairline-2",
+                "ink-3", "ink-2", "ink", "accent"]
+
 def band(v):
     return tuple(encode(x) for x in oklch_to_srgb(*v))
 
-rows = []
-print("=" * 84)
-print("GROUND / NEUTRALS")
-print("=" * 84)
-for theme, toks in GROUND.items():
-    bg = clamp(*toks["canvas"])
-    print(f"\n  [{theme}]")
-    for name, raw in toks.items():
-        v = clamp(*raw)
-        clamped = " (chroma clamped)" if abs(v[1] - raw[1]) > 1e-6 else ""
-        note = ""
-        if name.startswith("ink") or name == "accent":
-            c = contrast(v, bg)
-            note = f"   contrast vs canvas {c:5.2f}  [{'AA' if c >= 4.5 else 'AA-large' if c >= 3 else 'FAIL'}]"
-        print(f"    --{name:11} oklch({v[0]:.3f} {v[1]:.3f} {v[2]:.0f})   {hexof(*v)}{note}{clamped}")
-        GROUND[theme][name] = v
 
-print()
-print("=" * 84)
-print("HAZARD RAMP  (concept §14.5)")
-print("=" * 84)
-for theme, idx, direction in (("light", 2, "darkens"), ("dark", 3, "lightens")):
-    canvas, ink, surface = GROUND[theme]["canvas"], GROUND[theme]["ink"], GROUND[theme]["surface"]
-    inverse = GROUND["dark" if theme == "light" else "light"]["ink"]
-    print(f"\n  [{theme}] — ramp {direction} with risk")
-    print(f"    {'band':10} {'score':8} {'oklch':27} {'hex':9} {'L':>6} {'fill/canvas':>12} {'text on it':>22}")
-    prev = None
-    for name, score, lv, dv in HAZARD:
-        v = clamp(*(lv if theme == "light" else dv))
-        ci, cv = contrast(ink, v), contrast(inverse, v)
-        best, bc = ("--ink", ci) if ci >= cv else ("--ink-inverse", cv)
-        mono = "" if prev is None else (" MONOTONIC-BREAK" if (theme == "light") != (v[0] < prev) else "")
-        print(f"    {name:10} {score:8} oklch({v[0]:.3f} {v[1]:.3f} {v[2]:>3.0f})   {hexof(*v)} "
-              f"{v[0]:6.3f} {contrast(v, canvas):12.2f} {best:>14} {bc:5.2f} "
-              f"{'AA' if bc >= 4.5 else 'AA-lg' if bc >= 3 else 'FAIL'}{mono}")
-        prev = v[0]
+# ---------- resolve: every derived decision, computed once -------------------
 
-print()
-print("=" * 84)
-print("COLOUR-VISION SEPARATION — adjacent bands under simulated CVD")
-print("=" * 84)
-worst = (1.0, "")
-for theme, idx in (("light", 2), ("dark", 3)):
-    for kind in CVD:
-        ds = []
-        for i in range(len(HAZARD) - 1):
-            a = simulate(band(clamp(*HAZARD[i][idx])), kind)
-            b = simulate(band(clamp(*HAZARD[i + 1][idx])), kind)
-            d = dist(a, b)
-            ds.append(d)
-            if d < worst[0]:
-                worst = (d, f"{theme}/{kind}: {HAZARD[i][0]}->{HAZARD[i+1][0]}")
-        print(f"  {theme:6} {kind:13} adjacent distances  " +
-              "  ".join(f"{d:.3f}" for d in ds) + f"   min {min(ds):.3f} "
-              f"{'ok' if min(ds) >= 0.10 else 'TOO CLOSE'}")
-print(f"\n  worst case overall: {worst[0]:.3f}  ({worst[1]})")
-print("  lightness is monotonic in both themes, so the ramp also reads in greyscale.")
+def resolve():
+    """Clamped tokens plus the two decisions the report and emitters share.
 
-print()
-print("=" * 84)
-print("ACCENT SEPARATION — accent must never read as a risk level")
-print("=" * 84)
-for theme, idx in (("light", 2), ("dark", 3)):
-    acc = GROUND[theme]["accent"]
-    m = min(dist(band(acc), band(clamp(*h[idx]))) for h in HAZARD)
-    print(f"  {theme:6} min distance to any hazard band {m:.3f}  {'ok' if m >= 0.25 else 'TOO CLOSE'}")
+    `on` is the ink/ink-inverse flip, decided by measured contrast rather than
+    picked per band — 02-design-tokens.md §2 notes the flip happens mid-ramp,
+    and hard-coding --ink across the scale fails exactly the bands that matter.
 
-print()
-print("=" * 84)
-print("FILL VISIBILITY — low bands against canvas")
-print("=" * 84)
-for theme, idx in (("light", 2), ("dark", 3)):
-    c = contrast(clamp(*HAZARD[0][idx]), GROUND[theme]["canvas"])
-    print(f"  {theme:6} 'minimal' fill vs canvas {c:.2f} — "
-          f"{'needs a stroke to be visible' if c < 1.5 else 'visible unaided'}")
-print("\n  RULE: every hazard fill carries a 1px stroke at the next band up.")
-print("        A fill alone is not a boundary, and 'minimal' is nearly canvas-coloured.")
+    `stroke` is the fill-visibility rule: every hazard fill carries a 1px
+    stroke at the next band up, because 'minimal' on light canvas measures 1.29
+    and a fill alone is not a boundary. 'critical' has no next band, so it takes
+    ink, the token furthest from canvas in either theme.
+
+    clamp() is idempotent, so this is safe whether or not report() has already
+    written clamped values back into GROUND.
+    """
+    out = {}
+    for theme in ("light", "dark"):
+        idx = 2 if theme == "light" else 3
+        ground = {name: clamp(*GROUND[theme][name]) for name in GROUND_ORDER}
+        other = "dark" if theme == "light" else "light"
+        ground["ink-inverse"] = clamp(*GROUND[other]["ink"])
+
+        bands = []
+        for i, entry in enumerate(HAZARD):
+            name, score = entry[0], entry[1]
+            v = clamp(*entry[idx])
+            ci = contrast(ground["ink"], v)
+            cv = contrast(ground["ink-inverse"], v)
+            bands.append({
+                "name": name,
+                "score": score,
+                "lch": v,
+                "hex": hexof(*v),
+                "on": "ink" if ci >= cv else "ink-inverse",
+                "on_contrast": max(ci, cv),
+                "stroke": HAZARD[i + 1][0] if i + 1 < len(HAZARD) else "ink",
+            })
+        out[theme] = {"ground": ground, "hazard": bands}
+    return out
+
+
+def _lch(v):
+    return f"oklch({v[0]:.3f} {v[1]:.3f} {v[2]:.0f})"
+
+
+def _css_block(res, theme, indent):
+    pad = " " * indent
+    g, hz = res[theme]["ground"], res[theme]["hazard"]
+    out = []
+    for name in GROUND_ORDER + ["ink-inverse"]:
+        out.append(f"{pad}--{name}: {_lch(g[name])};")
+    out.append("")
+    for b in hz:
+        out.append(f"{pad}--risk-{b['name']}: {_lch(b['lch'])};")
+    out.append("")
+    for b in hz:
+        target = f"var(--risk-{b['stroke']})" if b["stroke"] != "ink" else "var(--ink)"
+        out.append(f"{pad}--risk-{b['name']}-stroke: {target};")
+    out.append("")
+    for b in hz:
+        out.append(f"{pad}--risk-{b['name']}-on: var(--{b['on']});")
+    return "\n".join(out)
+
+
+CSS_STATIC = """\
+  --state-focus: var(--accent);
+  --state-selected: var(--accent);
+  --data-measured: var(--ink-2);
+  --data-modelled: var(--ink-3);
+  --data-envelope: color-mix(in oklab, var(--ink-3) 12%, transparent);
+  --data-missing: transparent;"""
+
+
+def emit_css(res):
+    """The token layer, as plain custom properties in four scopes.
+
+    Plain properties rather than Tailwind's @theme, because @theme cannot be
+    nested in a media query or a selector — so the light/dark/[data-theme]
+    redefinition that 02-design-tokens.md §6 requires has to live here, and
+    theme.css bridges it into Tailwind with `@theme inline`.
+
+    Four scopes, not two: an explicit user choice must beat the OS preference in
+    both directions, which needs [data-theme="light"] as well as ="dark".
+    """
+    parts = [
+        "/* GENERATED by scripts/qa_frontend_palette.py --emit-css — do not edit.",
+        " *",
+        " * Every value is computed and validated by that script: sRGB gamut, WCAG",
+        " * contrast for each text/ground pair, monotonic hazard lightness, and",
+        " * adjacent-band separation under simulated deuteranopia, protanopia and",
+        " * tritanopia. Hand-editing this file is checked and rejected by",
+        " * scripts/qa_frontend_tokens.py.",
+        " *",
+        " * Regenerate:  python3 scripts/qa_frontend_palette.py --emit-css \\",
+        " *                > frontend/src/styles/tokens.generated.css",
+        " */",
+        "",
+        ":root {",
+        _css_block(res, "light", 2),
+        "",
+        CSS_STATIC,
+        "}",
+        "",
+        "@media (prefers-color-scheme: dark) {",
+        "  :root {",
+        _css_block(res, "dark", 4),
+        "  }",
+        "}",
+        "",
+        "/* An explicit choice wins over the OS in both directions. */",
+        ':root[data-theme="dark"] {',
+        _css_block(res, "dark", 2),
+        "}",
+        "",
+        ':root[data-theme="light"] {',
+        _css_block(res, "light", 2),
+        "}",
+        "",
+    ]
+    return "\n".join(parts)
+
+
+def emit_ts(res):
+    """Hex, for MapLibre only.
+
+    MapLibre's colour parser accepts named colours, hex, rgb() and hsl() and
+    nothing else, so a style JSON carrying oklch() fails validation and the
+    layer renders at its property default — silently. The map therefore reads
+    hex from here while the DOM reads OKLCH from tokens.generated.css, and both
+    come out of one validated source.
+    """
+    lines = [
+        "// GENERATED by scripts/qa_frontend_palette.py --emit-ts — do not edit.",
+        "//",
+        "// Hex rather than OKLCH on purpose: MapLibre's colour parser handles only",
+        "// named / hex / rgb() / hsl(). An oklch() value fails style validation and",
+        "// the layer silently falls back to the property default.",
+        "//",
+        "// Regenerate:  python3 scripts/qa_frontend_palette.py --emit-ts \\",
+        "//                > frontend/src/design/palette.generated.ts",
+        "",
+        "export const palette = {",
+    ]
+    for theme in ("light", "dark"):
+        g, hz = res[theme]["ground"], res[theme]["hazard"]
+        lines.append(f"  {theme}: {{")
+        for name in GROUND_ORDER + ["ink-inverse"]:
+            key = name.replace("-", "_")
+            lines.append(f"    {key}: '{hexof(*g[name])}',")
+        lines.append("    risk: {")
+        for b in hz:
+            lines.append(f"      {b['name']}: '{b['hex']}',")
+        lines.append("    },")
+        lines.append("    riskStroke: {")
+        for b in hz:
+            src = g["ink"] if b["stroke"] == "ink" else next(
+                x["lch"] for x in hz if x["name"] == b["stroke"])
+            lines.append(f"      {b['name']}: '{hexof(*src)}',")
+        lines.append("    },")
+        # The --data-* aliases, resolved. The CSS refers to them through var(),
+        # but MapLibre cannot read custom properties, so the map needs the hex
+        # under the same semantic name — otherwise the style would reach for
+        # ink_2 directly and the alias would stop meaning anything.
+        lines.append(f"    data_measured: '{hexof(*g['ink-2'])}',")
+        lines.append(f"    data_modelled: '{hexof(*g['ink-3'])}',")
+        lines.append("  },")
+    lines += [
+        "} as const;",
+        "",
+        "export type ThemeName = keyof typeof palette;",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+# ---------- the report ------------------------------------------------------
+
+def report():
+    """The human-readable validation report.
+
+    This output is byte-for-byte contract with scripts/qa_frontend_docs.py,
+    which regexes it to prove every value quoted in 02-design-tokens.md was
+    actually produced here. Do not reformat.
+    """
+    rows = []
+    print("=" * 84)
+    print("GROUND / NEUTRALS")
+    print("=" * 84)
+    for theme, toks in GROUND.items():
+        bg = clamp(*toks["canvas"])
+        print(f"\n  [{theme}]")
+        for name, raw in toks.items():
+            v = clamp(*raw)
+            clamped = " (chroma clamped)" if abs(v[1] - raw[1]) > 1e-6 else ""
+            note = ""
+            if name.startswith("ink") or name == "accent":
+                c = contrast(v, bg)
+                note = f"   contrast vs canvas {c:5.2f}  [{'AA' if c >= 4.5 else 'AA-large' if c >= 3 else 'FAIL'}]"
+            print(f"    --{name:11} oklch({v[0]:.3f} {v[1]:.3f} {v[2]:.0f})   {hexof(*v)}{note}{clamped}")
+            GROUND[theme][name] = v
+
+    print()
+    print("=" * 84)
+    print("TEXT ON EVERY GROUND — not just canvas")
+    print("=" * 84)
+    print("  The original check measured ink against --canvas only. axe then found")
+    print("  --ink-3 on --surface-2 at 4.38, below AA, in a panel that had every right")
+    print("  to exist. A ground the tokens offer is a ground text will land on, so all")
+    print("  three are checked and the failures are named rather than discovered later.")
+    for theme in ("light", "dark"):
+        print(f"\n  [{theme}]")
+        grounds = {n: clamp(*GROUND[theme][n]) for n in ("canvas", "surface", "surface-2")}
+        for ink in ("ink", "ink-2", "ink-3", "accent"):
+            v = clamp(*GROUND[theme][ink])
+            row = []
+            for gname, g in grounds.items():
+                c = contrast(v, g)
+                tag = "AA" if c >= 4.5 else "AA-lg" if c >= 3 else "FAIL"
+                row.append(f"{gname} {c:5.2f} {tag:5}")
+            print(f"    --{ink:8} " + "  ".join(row))
+    print("\n  RULE: body text at --text-2xs or --text-xs uses --ink or --ink-2 on")
+    print("        --surface-2. --ink-3 is for text on --canvas and --surface only.")
+
+    print()
+    print("=" * 84)
+    print("HAZARD RAMP  (concept §14.5)")
+    print("=" * 84)
+    for theme, idx, direction in (("light", 2, "darkens"), ("dark", 3, "lightens")):
+        canvas, ink, surface = GROUND[theme]["canvas"], GROUND[theme]["ink"], GROUND[theme]["surface"]
+        inverse = GROUND["dark" if theme == "light" else "light"]["ink"]
+        print(f"\n  [{theme}] — ramp {direction} with risk")
+        print(f"    {'band':10} {'score':8} {'oklch':27} {'hex':9} {'L':>6} {'fill/canvas':>12} {'text on it':>22}")
+        prev = None
+        for name, score, lv, dv in HAZARD:
+            v = clamp(*(lv if theme == "light" else dv))
+            ci, cv = contrast(ink, v), contrast(inverse, v)
+            best, bc = ("--ink", ci) if ci >= cv else ("--ink-inverse", cv)
+            mono = "" if prev is None else (" MONOTONIC-BREAK" if (theme == "light") != (v[0] < prev) else "")
+            print(f"    {name:10} {score:8} oklch({v[0]:.3f} {v[1]:.3f} {v[2]:>3.0f})   {hexof(*v)} "
+                  f"{v[0]:6.3f} {contrast(v, canvas):12.2f} {best:>14} {bc:5.2f} "
+                  f"{'AA' if bc >= 4.5 else 'AA-lg' if bc >= 3 else 'FAIL'}{mono}")
+            prev = v[0]
+
+    print()
+    print("=" * 84)
+    print("COLOUR-VISION SEPARATION — adjacent bands under simulated CVD")
+    print("=" * 84)
+    worst = (1.0, "")
+    for theme, idx in (("light", 2), ("dark", 3)):
+        for kind in CVD:
+            ds = []
+            for i in range(len(HAZARD) - 1):
+                a = simulate(band(clamp(*HAZARD[i][idx])), kind)
+                b = simulate(band(clamp(*HAZARD[i + 1][idx])), kind)
+                d = dist(a, b)
+                ds.append(d)
+                if d < worst[0]:
+                    worst = (d, f"{theme}/{kind}: {HAZARD[i][0]}->{HAZARD[i+1][0]}")
+            print(f"  {theme:6} {kind:13} adjacent distances  " +
+                  "  ".join(f"{d:.3f}" for d in ds) + f"   min {min(ds):.3f} "
+                  f"{'ok' if min(ds) >= 0.10 else 'TOO CLOSE'}")
+    print(f"\n  worst case overall: {worst[0]:.3f}  ({worst[1]})")
+    print("  lightness is monotonic in both themes, so the ramp also reads in greyscale.")
+
+    print()
+    print("=" * 84)
+    print("ACCENT SEPARATION — accent must never read as a risk level")
+    print("=" * 84)
+    for theme, idx in (("light", 2), ("dark", 3)):
+        acc = GROUND[theme]["accent"]
+        m = min(dist(band(acc), band(clamp(*h[idx]))) for h in HAZARD)
+        print(f"  {theme:6} min distance to any hazard band {m:.3f}  {'ok' if m >= 0.25 else 'TOO CLOSE'}")
+
+    print()
+    print("=" * 84)
+    print("FILL VISIBILITY — low bands against canvas")
+    print("=" * 84)
+    for theme, idx in (("light", 2), ("dark", 3)):
+        c = contrast(clamp(*HAZARD[0][idx]), GROUND[theme]["canvas"])
+        print(f"  {theme:6} 'minimal' fill vs canvas {c:.2f} — "
+              f"{'needs a stroke to be visible' if c < 1.5 else 'visible unaided'}")
+    print("\n  RULE: every hazard fill carries a 1px stroke at the next band up.")
+    print("        A fill alone is not a boundary, and 'minimal' is nearly canvas-coloured.")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(
+        description="Validate the ReefShield palette, or emit it as code.")
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument("--emit-css", action="store_true",
+                   help="write the token custom properties to stdout")
+    g.add_argument("--emit-ts", action="store_true",
+                   help="write the hex palette for MapLibre to stdout")
+    args = ap.parse_args(argv)
+
+    if args.emit_css:
+        sys.stdout.write(emit_css(resolve()))
+    elif args.emit_ts:
+        sys.stdout.write(emit_ts(resolve()))
+    else:
+        report()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

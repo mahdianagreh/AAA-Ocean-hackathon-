@@ -65,12 +65,19 @@ def claims(text, pattern):
     """Every distinct number the docs assert for this pattern."""
     return sorted({float(m) for m in re.findall(pattern, text)})
 
-check("docs say 34 figures in the manifest", manifest == 34 and "34 figures" in allmd,
-      f"manifest has {manifest}")
-check("docs say 36 PNGs on disk", len(figs) == 36 and "36 PNGs" in allmd,
-      f"disk has {len(figs)}")
-check("'11 files over 1 MB'", over1mb == 11 and "11 files over 1 MB" in allmd,
-      f"actual {over1mb}")
+# These compare the docs against DISK, not against a constant.
+#
+# They used to assert `manifest == 34`, which made the gate fail the moment anyone
+# added a QA figure — and main added nine. The invariant that matters is "the docs
+# agree with the repo", not "the repo has exactly 34 figures", so the expected value
+# is now measured and the doc claim is checked against it. A figure added with the
+# docs updated passes; a figure added silently does not.
+check(f"docs say {manifest} figures in the manifest", f"{manifest} figures" in allmd,
+      f"manifest has {manifest}; no doc says so")
+check(f"docs say {len(figs)} PNGs on disk", f"{len(figs)} PNGs" in allmd,
+      f"disk has {len(figs)}; no doc says so")
+check(f"'{over1mb} files over 1 MB'", f"{over1mb} files over 1 MB" in allmd,
+      f"actual {over1mb}; no doc says so")
 
 # every MB figure the docs assert must match the real file, to 0.1 MB
 fig_claims = claims(allmd, r"(\d+) MB of (?:PNGs|QA figures)") + claims(allmd, r"\*\*(\d+) MB\*\*")

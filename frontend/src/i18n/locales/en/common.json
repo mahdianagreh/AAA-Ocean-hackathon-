@@ -1,0 +1,244 @@
+{
+  "brand": {
+    "name": "ReefShield",
+    "place": "Aqaba",
+    "tagline": "Wadi-to-reef sediment forecasting"
+  },
+  "chrome": {
+    "language": "Language",
+    "theme": "Appearance",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "dataSourceHint": "Which client is serving this view: fixtures reads the committed snapshot, http reads the live API."
+  },
+  "mode": {
+    "label": "Mode",
+    "historical": "Historical",
+    "forecast": "Forecast",
+    "scenario": "Scenario",
+    "phase2": "Arrives in Phase 2, with the time cursor it has to preserve.",
+    "forecastPending": "no live forcing wired yet",
+    "scenarioPending": "controls arrive with the scenario drawer"
+  },
+  "connection": {
+    "checking": "Checking",
+    "live": "Live API",
+    "snapshot": "Offline snapshot",
+    "offline": "No connection",
+    "noModel": "no trained model registered"
+  },
+  "map": {
+    "label": "Map of the Gulf of Aqaba: catchments, coastal outlets and reef zones",
+    "faultTitle": "The map cannot render Arabic labels",
+    "faultBody": "The right-to-left text plugin did not load, so Arabic place names would render unshaped and in the wrong order. This is shown rather than hidden, because the failure is otherwise invisible in English.",
+    "textEquivalent": "Everything the map shows is also listed in the side rail: five catchments with their areas, five coastal outlets with their upstream areas, and eight reef zones. The basemap detail stops at 35.0°E, short of the eastern edge of catchment AQ-C01."
+  },
+  "rail": {
+    "label": "Layers and values",
+    "loading": "Reading the snapshot…",
+    "catchments": "Catchments",
+    "outlets": "Coastal outlets",
+    "reefZones": "Reef zones",
+    "unnamed": "unnamed",
+    "reefProvisional": "Reef geometry is real Allen Coral Atlas habitat (v2.0). Sensitivity weighting is still 1.0 on all eight zones pending marine-science review — so exposure varies only through the hazard term, and these zones do not differ in sensitivity.",
+    "coverage": "Basemap coverage",
+    "coverageNote": "The dashed boundary is where the OpenStreetMap extract ends, at 35.0°E. Catchment AQ-C01 continues past it — Wadi Yutum drains from 90 km inland — so the absence of detail out there is a gap in the basemap, not empty desert.",
+    "risk": "Exposure by catchment",
+    "worst": "highest",
+    "mooring": "Mooring record"
+  },
+  "time": {
+    "label": "Time",
+    "phase2": "Time slider arrives in Phase 2 and will drive every time-varying layer at once.",
+    "attribution": "Roads, wadis and place names © OpenStreetMap contributors, ODbL.",
+    "slider": "Event time",
+    "dailyOnly": "Steps are daily — no sub-daily series exists for this event.",
+    "wettest3h": "Wettest 3 h was {{mm}} mm at one grid cell from {{start}} UTC."
+  },
+  "glyph": {
+    "catchment": "Catchment",
+    "outlet": "Coastal outlet",
+    "reefZone": "Reef zone"
+  },
+  "specimen": {
+    "title": "Component specimen",
+    "subtitle": "Every component, both themes × both directions. A primitive that is not here has not been checked.",
+    "pane": "{{theme}} · {{dir}}",
+    "sectionGlyphs": "Domain glyphs",
+    "sectionValues": "Values and units",
+    "sectionHazard": "Hazard ramp",
+    "sectionProvenance": "Provenance forms",
+    "canaryTitle": "Bidi canary",
+    "canaryNote": "Each value below must keep its number before its unit, in both directions.",
+    "hazardNote": "Every fill carries a 1px stroke at the next band up. A fill alone is not a boundary.",
+    "provenanceNote": "Measured, modelled and envelope differ by form, not by hue — so the distinction survives colour-blindness, greyscale and a photograph of the screen.",
+    "sectionControls": "Controls",
+    "controlsNote": "Drag the slider in the ar/rtl panes: the track keeps left = earlier, because the chart below it does. The mode switch does mirror — it is navigation, not a time axis.",
+    "sectionRiskCards": "Risk cards",
+    "riskCardsNote": "Every band, plus a null runoff probability rendered as a gap and a row with missing rainfall hatched rather than drawn as zero.",
+    "sectionLegend": "Legend",
+    "sectionStates": "Component states",
+    "statesNote": "Loading, empty, error, stale and a declared gap. A component whose empty, error and stale states were never designed will improvise them on stage."
+  },
+  "hazard": {
+    "minimal": "Minimal",
+    "low": "Low",
+    "moderate": "Moderate",
+    "high": "High",
+    "critical": "Critical",
+    "band": "{{name}} · score {{range}}"
+  },
+  "provenance": {
+    "measured": "Measured",
+    "reported": "Reported",
+    "converted": "Converted",
+    "modelled": "Modelled",
+    "envelope": "Uncertainty envelope",
+    "missing": "No data",
+    "excludedReason": "overview_01_master_all_layers.png is excluded. Its own burned-in caption says the catchments in it are a local test fixture — five latitude bands, not a watershed delineation. Best-looking figure in the set, and the wrong catchments.",
+    "odblNote": "OpenStreetMap is share-alike (ODbL). Any derived table containing OSM-derived columns plausibly carries that obligation, and a licence review is needed before a first paid contract."
+  },
+  "value": {
+    "missing": "No data",
+    "missingLong": "No data — this is a gap, not a zero"
+  },
+  "chart": {
+    "hyetograph": "Rainfall per catchment",
+    "peak": "peak"
+  },
+  "risk": {
+    "score": "Exposure score",
+    "runoffProbability": "Runoff probability",
+    "drivers": "What is driving it",
+    "confidenceLabel": "Confidence",
+    "confidence": "{{n}} of {{total}} days exceed {{threshold}}",
+    "thresholdWetDay": "this catchment's wet-day 99th percentile",
+    "provisional": "Provisional index, not model output — no trained model is registered."
+  },
+  "driver": {
+    "rain_today": "Rainfall this day",
+    "antecedent_rain_48h": "Antecedent rain, 48 h",
+    "catchment_area": "Catchment area",
+    "transmission_loss": "Transmission loss"
+  },
+  "legend": {
+    "hazard": "Exposure",
+    "plume": "Plume",
+    "reef": "Reef zones",
+    "relativeDensity": "relative density",
+    "densityCaveat": "Peak-normalised relative density, not a probability of impact. A 0.50 band is half the peak density of this simulation, which describes the cloud's own shape — not a chance the water reaches that place.",
+    "reefEqualSensitivity": "Geometry is Allen Coral Atlas habitat. All eight zones still carry the same sensitivity (1.0) pending marine-science review, so a darker zone means more hazard reaching it — not a more fragile reef."
+  },
+  "layers": {
+    "title": "Layers",
+    "isobaths": "Isobaths",
+    "catchments": "Catchments",
+    "rainfall": "Rainfall",
+    "plume": "Plume contours",
+    "reef": "Reef zones",
+    "outlets": "Coastal outlets",
+    "mooring": "Mooring",
+    "modelGrid": "Ocean-model grid (~9 km)",
+    "coverage": "Basemap coverage",
+    "labels": "Labels",
+    "modelGridNote": "Turn on the ocean-model grid to see the resolution problem: two to three cells span the entire Gulf, and the release point sits on a cell the model masks as land.",
+    "family": {
+      "base": "Base",
+      "land": "Land",
+      "marine": "Marine",
+      "honesty": "Resolution"
+    }
+  },
+  "mooring": {
+    "turbidity_onset": "Turbidity onset",
+    "turbidity_cleared": "Turbidity cleared",
+    "peakSediment": "Peak suspended sediment",
+    "salinityAnomaly": "Salinity anomaly",
+    "elevatedDuration": "Elevated duration",
+    "sedimentMass": "Sediment mass",
+    "noSeries": "Reported values from Kalman et al. 2025. The five-minute record itself is not in this repository, so these are the published summary points rather than a trace.",
+    "salinityMinimum": "Salinity minimum"
+  },
+  "series": {
+    "noSubDaily": "No sub-daily rainfall series is available for this event."
+  },
+  "common": {
+    "close": "Close"
+  },
+  "overlay": {
+    "label": "Panels",
+    "validation": "Validation",
+    "provenance": "Provenance",
+    "limitations": "Limitations",
+    "assistant": "Assistant"
+  },
+  "validation": {
+    "comparison": "Modelled against measured",
+    "quantity": "Quantity",
+    "measured": "Measured",
+    "modelled": "Modelled",
+    "notComputed": "No modelled arrival yet — blocked on:",
+    "satelliteTitle": "Satellite validation",
+    "satelliteBody": "The plan was to compare the model against a satellite photograph of the October 2016 plume. There is no such photograph. The nearest clear pass was five days after the flood, and the plume had already dispersed two to three days earlier — confirmed independently by Sentinel-2 and Landsat 8.",
+    "physicalNull": "This is a physical null, not a data-quality problem.",
+    "physicalNullBody": "The sediment clears faster than these satellites come around, so no amount of searching fixes it. The mooring record is the validation target instead — and comparing against 5-minute in-situ measurements is a stronger test than a photograph would have been.",
+    "target": "The validation target",
+    "source": "Source:",
+    "positionNote": "Position is derived, not reported: the paper gives only \"~250 m offshore the Kinnet Canal outlet, 13 m depth\". Do not read it to finer precision than the {{radius}} m uncertainty radius allows."
+  },
+  "provenancePanel": {
+    "figures": "QA figures",
+    "counts": "{{shown}} shown, of {{manifest}} in the manifest and {{disk}} PNGs on disk.",
+    "sources": "Data sources and licences",
+    "generated": "Generated",
+    "chain": "Chain",
+    "fullRes": "Full resolution"
+  },
+  "limitations": {
+    "oneLine": "The one-line version",
+    "forcing": "Ocean current resolution",
+    "forcingSeeGrid": "Turn on the ocean-model grid layer to see this rather than read it.",
+    "items": "{{n}} things our data cannot tell you",
+    "arabicPending": "The detail below is shown in its source language. Machine-translating scientific caveats is a scientific-integrity risk, so these bodies await review by a human Arabic reader rather than being translated automatically."
+  },
+  "assistant": {
+    "label": "Ask about the pipeline, the data or the limitations",
+    "placeholder": "e.g. why did satellite validation fail",
+    "ask": "Search",
+    "corpusSize": "{{n}} sections across {{files}} documents",
+    "tryThese": "Try:",
+    "citations": "{{n}} citations",
+    "noAnswerTitle": "No sourced answer",
+    "noAnswerBody": "Nothing in the corpus matched closely enough to quote. This is a distinct state rather than a hedged answer, because an uncited answer must not render as an answer.",
+    "searched": "Searched {{n}} documents",
+    "corpusBoundary": "The corpus is the technical and operational documentation only. The market and business research is deliberately not in it, so a question about market size genuinely has no sourced answer here."
+  },
+  "scenario": {
+    "title": "What-if",
+    "reset": "Reset",
+    "notActive": "Moving any control switches to Scenario mode.",
+    "transmissionLoss": "Transmission loss",
+    "transmissionLossNote": "Share of the flood that infiltrates the wadi bed and never reaches the sea. Measured range is 20–85% and the pipeline does not model it, so this is the project's largest single uncertainty.",
+    "rainfallScale": "Rainfall",
+    "rainfallScaleNote": "Scales the measured rainfall for this event. 100% is what actually fell.",
+    "antecedentWetness": "Antecedent wetness",
+    "antecedentWetnessNote": "How wet the catchment was beforehand. A dry wadi absorbs the first rain; a wet one runs.",
+    "windDirection": "Wind direction",
+    "windDirectionNote": "Bearing the wind blows from. Steers the plume once it is in the water.",
+    "windSpeed": "Wind speed",
+    "windSpeedNote": "Surface wind. Drives the plume's advection and its mixing.",
+    "sedimentLoad": "Sediment load",
+    "sedimentLoadNote": "Scales sediment concentration per unit discharge. 100% is the reported 24,400 t.",
+    "caveat": "These controls move a transparent index, not a calibrated model. Use them to see which direction a factor pushes the answer — not to read off a number."
+  },
+  "states": {
+    "errorTitle": "Something did not load",
+    "stale": "Last updated {{age}} ago — this may no longer be current."
+  },
+  "reef": {
+    "habitat": "Habitat",
+    "geomorphic": "Geomorphic zone",
+    "source": "Source"
+  }
+}

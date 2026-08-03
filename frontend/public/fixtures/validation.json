@@ -1,0 +1,58 @@
+{
+ "satellite": {
+  "verdict": "NO-GO",
+  "heading": "3. Go / no-go — FINAL, pixel-level QC complete",
+  "excerpt": "**Primary event (Oct 2016): NO-GO for image-based validation.** The only\ncandidate post-event scene (2016-11-02, +5 days) numerically clears the gate\n(cloud, timing) but **fails the visual-plume criterion** — confirmed by two\nindependent sensors (Sentinel-2 + Landsat 8) and explained by the in-situ\nmooring record showing the plume signal had already dispersed 2.5–3.5 days\nbefore either satellite pass (§1a). This is not a weak/marginal result to\ngrade Silver or Bronze — it's a genuine null: **no plume is present in any\nimagery this project can access for this event**, for a real physical reason\n(dispersal faster than the revisit gap), not a data-quality problem.\n\n**Backup event (Feb 2013): weaker still.** No Sentinel-2 possible at all\n(pre-launch); Landsat 8 unavailable (pre-commissioning); only degraded\nLandsat 7 remains, and even that can't be properly scored until the exact\ndate resolves (§2).",
+  "source": "docs/event_audit.md",
+  "is_physical_null": true
+ },
+ "mooring_target": {
+  "citation": "Kalman, A., Katz, T., Vincze, M., Longenecker, J., Mathalon, A., Hill, P., and Goodman-Tchernov, B. (2025). Anatomy of a Flash Flood in a Hyperarid Environment: From Atmospheric Masses to Sediment Dispersal in the Sea. Natural Hazards and Earth System Sciences, 25, 3201-3219.",
+  "doi": "10.5194/nhess-25-3201-2025",
+  "timing_utc": {
+   "turbidity_onset": "2016-10-28T06:50:00Z",
+   "turbidity_cleared": "2016-10-29T14:15:00Z",
+   "elevated_duration_hours": 31.42,
+   "provenance": {
+    "turbidity_onset": "reported (timezone-converted from 09:50 local, IDT UTC+3, via ZoneInfo)",
+    "turbidity_cleared": "reported (timezone-converted from 17:15 local Oct 29, IDT UTC+3, via ZoneInfo)",
+    "elevated_duration_hours": "derived (differenced from the two timestamps above; matches paper's own '~31 h' prose statement)"
+   }
+  },
+  "magnitude": {
+   "peak_suspended_sediment_g_l": 2.18,
+   "peak_suspended_sediment_location": "near seafloor",
+   "salinity_minimum_psu": 38.75,
+   "salinity_background_mean_psu": 40.53,
+   "salinity_anomaly_delta_psu": -1.75,
+   "salinity_anomaly_sigma": 19,
+   "sediment_mass_total_t": 24400,
+   "provenance": "reported"
+  },
+  "position": {
+   "lon": 34.98151,
+   "lat": 29.53799,
+   "crs": "EPSG:4326",
+   "depth_m": -13,
+   "uncertainty_radius_m": 1500,
+   "provenance": "derived",
+   "derivation_doc": "docs/mooring_coordinate_derivation.md",
+   "note": "Paper states only '~250 m offshore the Kinnet Canal outlet, 13 m depth', no decimal coordinate. Do not use to more precision than the 1.5 km radius implies. Do not substitute AQ-O01 (Wadi Yutum, Jordan) for this point -- see derivation doc §0."
+  },
+  "calibration_use": {
+   "objective_targets": [
+    "arrival_time_error",
+    "duration_error",
+    "peak_timing_error"
+   ],
+   "never_compute": [
+    "iou",
+    "dice",
+    "centroid_distance"
+   ],
+   "why_never": "No real observed plume mask exists for AQ-2016-10-28 (the Sentinel-2 extraction is a documented artifact, not ground truth -- see docs/pitch_limitations.md and docs/event_audit.md). Spatial metrics against this target would be meaningless."
+  }
+ },
+ "modelled": null,
+ "modelled_blocked_on": "no registered simulation run (data/outputs/<run_id>/ has never been created)"
+}

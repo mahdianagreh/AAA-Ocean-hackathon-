@@ -1,0 +1,58 @@
+{
+ "one_line": "We built a working sediment-to-reef data foundation for Aqaba from five open\ndatasets in two weeks. **Three of those five datasets are global models or global\nproducts, not local measurements.** Our outputs are therefore a defensible *relative*\nranking of which catchments threaten which reefs — not an absolute prediction of how\nmuch sediment lands where.\n\n---",
+ "items": [
+  {
+   "n": 1,
+   "title": "Our land cover is a single snapshot from 2021",
+   "body": "ESA WorldCover gives us 10 m land cover for one epoch, 2021. There is no time series.\n\n**What that means:** we model the February 2013 and October 2016 flood events using\n2021 land cover. Aqaba grew between those dates. Any change in bare ground or built-up\narea across that decade is invisible to us, and it runs in the direction that matters\n— more development means more runoff.\n\n**What we would do with more time:** Landsat-based change detection across 2013–2021\nto at least bound the error.\n\n---"
+  },
+  {
+   "n": 2,
+   "title": "Our soil data is a global model, not Aqaba's soil",
+   "body": "SoilGrids is a machine-learning product trained on global soil profiles. Nobody has\nsampled the soil in our catchments for this project.\n\n**If you ask us how we know Aqaba's soil texture, the honest answer is: we don't.**\nWe use SoilGrids as a *relative* erodibility ranking between our own catchments,\nwhere the model's systematic biases largely cancel. We never quote a clay percentage\nas a measured local property.\n\nWe did verify the data is internally consistent — clay + sand + silt sums to exactly\n100.00%, bulk density falls in the real-soil range of 1.09–1.46 kg/dm³, and organic\ncarbon is appropriately low for desert at ~12 g/kg. That confirms we are reading the\nproduct correctly. It does not make it a local measurement.\n\n**Phase 2:** field sampling at a handful of wadi outlets would anchor the ranking.\n\n---"
+  },
+  {
+   "n": 3,
+   "title": "We could not obtain GEBCO, and we say so",
+   "body": "Our brief specified GEBCO 15 arc-second bathymetry. **Every programmatic route to\nGEBCO is currently closed** — its WCS service returns empty capabilities, its download\nendpoint rejects automated requests, and the published tile paths return 404. It is\navailable only through an interactive web form.\n\nRather than stall or quietly fake it, we substituted **GMRT**, a bathymetric synthesis\nwhose deep-water source in this region is GEBCO itself. We then checked it two ways:\n\n- GMRT agrees with NOAA's independent global relief mosaic on the basin's deepest\n  point to within **0.2 metres**.\n- Our derived coastline agrees with OpenStreetMap's independently traced coastline to\n  a **median of 62 metres** — about one pixel.\n\n**We kept the file named `gmrt_aqaba.tif`, not `gebco_aqaba.tif`.** Mislabelling it\nwould have been the easy path and a genuine integrity failure. The pipeline\nautomatically prefers real GEBCO the moment someone downloads it by hand.\n\n---"
+  },
+  {
+   "n": 4,
+   "title": "Our bathymetry cannot see the reef shelf",
+   "body": "This is the most important limitation on this page.\n\nThe effective resolution of our depth data is about **450 metres**. The Gulf of Aqaba\nhas one of the steepest coastal drop-offs in the world — the reef shelf is often only\ntens of metres wide before the seabed plunges past 200 m.\n\n**Consequence:** our depth grid claims −372 m only 100 m offshore in places. That is\nan interpolation artefact, not a real slope. So:\n\n- Our plume model is credible at **basin scale** and as a \"particles stop at the\n  shore\" boundary.\n- It is **not** credible for reef-scale depth, small channels, or harbour structures.\n- We therefore did **not** derive our reef zone boundaries from depth contours, even\n  though that would have looked more rigorous. Deriving a reef edge from an\n  interpolation artefact would have dressed up a guess as a measurement.\n\nOur reef zone widths are an explicit, documented 250 m assumption.\n\n---"
+  },
+  {
+   "n": 5,
+   "title": "Our reef sensitivity weights are assumptions, not data",
+   "body": "Every reef zone carries `sensitivity_weight = 1.0`. **That is a placeholder, and it is\nlabelled as one inside the data file itself**, not just in a footnote — the column\n`sensitivity_weight_status` literally reads\n`PLACEHOLDER_PENDING_MARINE_SCIENTIST`.\n\nAllen Coral Atlas maps *habitat*, not *sensitivity*. Deciding that one reef is twice\nas vulnerable as another requires marine-science expertise this team does not have.\n\nWe did find one piece of real evidence that bears on it: the **Aqaba Marine Park**\nboundary, which we extracted from OSM. Four of our eight zones fall 67–85% inside the\nlegally protected reserve. We stored that overlap as a measured percentage and\n**deliberately did not convert it into a weight** — that conversion is a scientist's\njudgement, not ours.\n\n**If our exposure ranking looks confident, that confidence comes from the sediment\nside, not the sensitivity side.**\n\n---"
+  },
+  {
+   "n": 6,
+   "title": "Allen Coral Atlas maps shallow reef only",
+   "body": "The real habitat export landed on 2026-08-03, and it still only covers optically shallow reef.\nDeeper habitat is not in the product, so our exposure map is **silent** about it —\nwhich is different from saying it is safe.\n\n---"
+  },
+  {
+   "n": 7,
+   "title": "OpenStreetMap tells us what is mapped, not what exists",
+   "body": "We use OSM for roads, buildings and — most valuably — 46 mapped culverts that correct\nwhere wadis actually reach the sea. A DEM routes water *around* a road embankment; a\nculvert carries it *through*.\n\n**But OSM completeness in Aqaba is unverified.** So we adopted a one-way rule: a\nmapped feature is positive evidence, and an unmapped one is *no* evidence. We never\nuse OSM's silence to rule a channel out. Our conflict report for the terrain lead\nstates this in its own header so it cannot be misread downstream.\n\n---"
+  },
+  {
+   "n": 8,
+   "title": "What we would fix first, given another week",
+   "body": "1. Field-sample soil at the main wadi outlets — turns limitation 2 from a caveat into\n   a calibration.\n2. Get high-resolution nearshore bathymetry — this single fix unlocks reef-scale\n   plume behaviour and would let us replace the 250 m assumption in limitation 4.\n3. Sit down with an Aqaba marine scientist for one hour and replace limitation 5's\n   placeholder weights with real ones.\n\n---"
+  },
+  {
+   "n": 9,
+   "title": "Our satellite-based plume validation failed — and we can say exactly why",
+   "body": "We built a full Sentinel-2 extraction pipeline to validate the marine plume model against\na real satellite-observed mask for the October 2016 flood. **It found nothing, for a good\nphysical reason, and we are more confident in the result because of that than we would\nhave been in a weak positive.**\n\n**The evidence — three independent lines, not one:**\n\n1. Two independent sensors, both cloud-free over the AOI water (0.07% cloud/shadow):\n   Sentinel-2 (2016-11-02, +5 days) and Landsat 8 (2016-11-01, +4 days). Neither shows any\n   sediment discoloration near the outlet or shoreline.\n2. The Kalman et al. (2025) in-situ mooring — 250 m offshore the flood's actual discharge\n   point, sampling every 5 minutes through the whole event — shows the turbidity/salinity\n   signal lasted **~31 hours** and had returned to background by **17:15 local, 29 October**.\n   Both satellite passes are **2.5–3.5 days after that** — the plume was physically gone\n   before either sensor had a chance to see it. This is not a cloud-cover failure or a\n   revisit-timing accident we could have engineered around; a single-satellite ~5-day\n   revisit cadence cannot catch a plume that disperses in a day and a half.\n3. We ran the extraction anyway, end to end, to see what a naive approach would show. It\n   surfaced a plausible-looking anomaly — and it turned out to be an artifact, not a plume\n   (next section).\n\n**What that means:** we did not fail to find a plume. We found that no visible plume could\nhave existed in the imagery available to us, and confirmed it with a second, independent,\nquantitative signal.\n\n**What we did with the negative result:** we did not discard the null result and we did\nnot report a weak positive to have something to show. We pivoted validation to the mooring\nrecord — a continuous, quantitative, satellite-independent measurement of exactly what\nthis project claims to predict, and arguably a **better** calibration target than a\nhand-drawn mask from a fuzzy image would ever have been. See\n`docs/mooring_coordinate_derivation.md` and\n`data/processed/marine/mooring_target_AQ-2016-10-28.json` for that pivot in full, including\nthe honestly-stated 1.5 km position uncertainty on the mooring's own coordinate (the paper\nnever publishes it as a decimal lat/lon either).\n\n### The methodology finding — worth stating on its own\n\nNaive per-pixel differencing of Sentinel-2 L2A reflectance over open water, even between a\nsame-season baseline and the event date, produces a **coastline-hugging anomaly** that\nsurvives an 80 m coastal buffer. It is not a plume. Sen2Cor's atmospheric correction is\nland-optimised; sun-angle and residual aerosol differences between acquisition dates swamp\nthe genuinely subtle water-leaving radiance signal a real sediment plume would produce at\nbasin scale. **This is a real, generalisable lesson for anyone trying the same thing**, not\na mistake specific to this dataset — and we would rather be the team that found and named\nit than the team that shipped it as a detection.\n\n**What we kept, and why it isn't wasted:** the extraction pipeline itself\n(`backend/src/models/plume_segmentation.py`) is built, documented, and runs credential-free\nagainst Microsoft Planetary Computer. It stays in the system as the **live/operational**\npath — the thing that runs automatically the next time a flood is caught with better revisit\nluck (an early-warning tasking request, or a future higher-cadence constellation). It is\nnot the validation method for a flood that already happened and already dispersed.\n\n**`observed_plume.gpkg` and `observed_plume_probability.tif` are flagged everywhere they\nappear** (`docs/data_dictionary.md` §8, `docs/mooring_coordinate_derivation.md`,\n`backend/src/models/backtest_metrics.py`'s `assert_spatial_metrics_allowed`) as a documented\nartifact, not ground truth. No spatial metric (IoU, Dice, centroid distance) is computed\nagainst it for this event, in code, not just in a comment.\n\n---"
+  }
+ ],
+ "forcing": {
+  "statement": "> The best free global ocean current models — Copernicus Marine and HYCOM — run at\n> roughly 1/12 degree, about 9 km per grid cell. The Gulf of Aqaba is only 15–25 km wide.\n> That means the entire gulf is spanned by two or three grid cells, so the nearshore\n> circulation — precisely where the reefs are — is not resolved. We saw this directly: our\n> own provisional wadi outlet coordinate lands on a grid cell the model treats as masked\n> land, not water. This is exactly why ReefShield does not output a single plume\n> trajectory. It outputs a probabilistic exposure zone, built from many particles run\n> under stochastic diffusion, with an explicit confidence figure attached. Higher-resolution\n> local current measurements are a Phase 2 item, not a hackathon MVP requirement.",
+  "source": "docs/forcing_limitations.md"
+ },
+ "sources": [
+  "docs/pitch_limitations.md",
+  "docs/forcing_limitations.md"
+ ]
+}
