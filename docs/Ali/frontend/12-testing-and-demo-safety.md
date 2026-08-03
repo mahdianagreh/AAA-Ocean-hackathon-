@@ -2,7 +2,7 @@
 
 **Status:** scaffold — filled during Phase 5–6 · **Owner:** Ali
 
-The backend has **336 tests across 13 files** and is still growing. A frontend with no tests would be out of step
+The backend has **368 tests across 14 files** and is still growing. A frontend with no tests would be out of step
 with this repo — and the demo runs live in front of judges.
 
 ---
