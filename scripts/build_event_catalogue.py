@@ -62,7 +62,15 @@ OUT_CLIMATOLOGY = (
 OUT_SUMMARY = OUT_EVENTS.with_suffix(".summary.json")
 
 #: A "wet day". The standard meteorological threshold, and the one ETCCDI uses.
+#: Governs the PERCENTILES only — not which days merge into a storm.
 WET_DAY_MM = 1.0
+
+#: Floor for treating a day as part of a storm when merging consecutive days.
+#: Deliberately below WET_DAY_MM — see the comment at the merge site. Whether two
+#: adjacent days are the same storm is a question about rain continuity, not about
+#: the percentile convention, and conflating the two silently produced 152
+#: consecutive-day pairs at --top-n 675.
+MERGE_MIN_MM = 0.1
 
 #: Percentiles retained for the climatology table.
 PERCENTILES = (0.50, 0.75, 0.90, 0.95, 0.99, 0.999)
@@ -256,12 +264,22 @@ def main() -> int:
 
     by_day["event_id"] = by_day["date"].dt.strftime("AQ-%Y-%m-%d")
 
-    # Merge consecutive wet days into storms BEFORE ranking, so the top-N are
+    # Merge consecutive rain days into storms BEFORE ranking, so the top-N are
     # N distinct storms rather than N days that may include the same storm
-    # twice. Only wet days can join a storm — otherwise every day in the
-    # record chains into one run.
-    wet = by_day[by_day["max_daily_mm"] >= WET_DAY_MM].copy()
-    dry = by_day[by_day["max_daily_mm"] < WET_DAY_MM].copy()
+    # twice. A day needs measurable rain to join a storm — otherwise every day in
+    # the record chains into one run.
+    #
+    # The merge floor is MERGE_MIN_MM, NOT WET_DAY_MM, and the difference matters.
+    # WET_DAY_MM = 1.0 is the ETCCDI convention for computing percentiles and is
+    # correct for that. Using it here too meant that when --top-n reached below
+    # 1 mm, every selected day under that threshold bypassed merging: at
+    # --top-n 675 (floor 0.399 mm) the catalogue came out with 152 consecutive-day
+    # pairs, i.e. one drizzle episode counted as two events, which is the
+    # train/test leakage this merge exists to prevent. Whether two adjacent days
+    # are the same storm is a question about rain continuity, not about the
+    # percentile convention.
+    wet = by_day[by_day["max_daily_mm"] >= MERGE_MIN_MM].copy()
+    dry = by_day[by_day["max_daily_mm"] < MERGE_MIN_MM].copy()
     storms = group_into_storms(
         wet, protected_ids={item["event_id"] for item in literature_dates()}
     )

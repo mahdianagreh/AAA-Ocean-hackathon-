@@ -125,6 +125,53 @@ def test_percentile_set_spans_ordinary_to_extreme():
     assert max(catalogue.PERCENTILES) >= 0.999
 
 
+def test_the_merge_floor_is_below_the_wet_day_threshold():
+    """Merging storms and computing percentiles are different questions.
+
+    `WET_DAY_MM = 1.0` is the ETCCDI convention and is right for percentiles. It was
+    also being used to decide which consecutive days join a storm, which is fine while
+    --top-n stays above 1 mm and breaks silently the moment it does not: at
+    --top-n 675 the floor is ~0.2 mm, every selected day under 1 mm bypassed merging,
+    and the catalogue came out with **152 consecutive-day pairs** — one drizzle episode
+    counted as two events. That is precisely the train/test leakage the merge exists to
+    prevent, and it produced a larger, healthier-looking catalogue while doing it.
+    """
+    assert catalogue.MERGE_MIN_MM < catalogue.WET_DAY_MM
+    assert catalogue.MERGE_MIN_MM > 0, (
+        "a zero floor would chain every day in the record into one storm"
+    )
+
+
+def test_consecutive_days_never_survive_as_separate_storms():
+    """The invariant, stated directly on the merge function.
+
+    Two adjacent days each carrying measurable rain are one storm. If they both come
+    out as storms, the same rainfall can land in train and in test.
+    """
+    days = pd.to_datetime(["2016-10-26", "2016-10-27", "2016-10-28", "2017-03-01"])
+    frame = pd.DataFrame({
+        "date": days,
+        "event_id": days.strftime("AQ-%Y-%m-%d"),
+        "max_daily_mm": [0.4, 0.6, 10.2, 5.0],     # first two are BELOW WET_DAY_MM
+        "mean_daily_mm": [0.2, 0.3, 9.6, 4.0],
+        "wettest_catchment": ["AQ-C01"] * 4,
+        "catchments_exceeding_p99": [0, 0, 0, 0],
+        "max_anomaly_ratio": [0.1, 0.1, 0.7, 0.4],
+        "min_valid_area_fraction": [1.0] * 4,
+    })
+
+    eligible = frame[frame["max_daily_mm"] >= catalogue.MERGE_MIN_MM]
+    storms = catalogue.group_into_storms(eligible, protected_ids=set())
+
+    gaps = pd.to_datetime(storms["date"]).sort_values().diff().dt.days
+    assert not (gaps == 1).any(), (
+        f"consecutive days survived as separate storms:\n{storms[['event_id', 'storm_days']]}"
+    )
+    # The Oct 2016 run is one storm of three days, not three storms.
+    oct_storm = storms[storms["date"].dt.month == 10].iloc[0]
+    assert oct_storm["storm_days"] == 3, storms[["event_id", "storm_days"]]
+
+
 def test_top_n_is_generous_by_design():
     """A tight top-N would drop exactly the short-burst days the daily screen
     already under-ranks. The generosity is the mitigation."""
