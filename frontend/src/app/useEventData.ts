@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { loadEventSeries, timestepsFor, type EventSeries } from '../api/event';
-import { riskFromSeries } from '../api/risk';
+import { riskFromPredictions, riskFromSeries } from '../api/risk';
+import { loadPredictions, type Predictions } from '../api/predictions';
 import type { Catchment, Outlet, ReefZone } from '../api/types';
 import { useUi, type Mode } from './uiStore';
 
@@ -18,6 +19,9 @@ export interface EventData {
   catchments: Catchment[];
   outlets: Outlet[];
   reef: ReefZone[];
+  /** null when no artefact is registered, in which case the cards fall back to the
+   *  transparent stand-in index and say so. */
+  predictions: Predictions | null;
 }
 
 export function useEventData() {
@@ -27,10 +31,16 @@ export function useEventData() {
   useEffect(() => {
     let live = true;
     const c = api();
-    void Promise.all([loadEventSeries(), c.catchments(), c.outlets(), c.reefZones()])
-      .then(([series, catchments, outlets, reef]) => {
+    void Promise.all([
+      loadEventSeries(),
+      c.catchments(),
+      c.outlets(),
+      c.reefZones(),
+      loadPredictions(),
+    ])
+      .then(([series, catchments, outlets, reef, predictions]) => {
         if (!live) return;
-        setData({ series, steps: timestepsFor(series), catchments, outlets, reef });
+        setData({ series, steps: timestepsFor(series), catchments, outlets, reef, predictions });
       })
       .catch((e: Error) => live && setError(e.message));
     return () => {
@@ -55,10 +65,23 @@ export function stepCounts(steps: string[]): Record<Mode, number> {
 export function useRiskCards(data: EventData | null) {
   const cursor = useUi((s) => s.cursor);
   const scenario = useUi((s) => s.scenario);
-  // Memoised on both, so dragging a scenario slider recomputes the cards without
-  // touching the map's geometry — the same reason the fill is a paint expression.
-  return useMemo(
-    () => (data ? riskFromSeries(data.series, data.catchments, cursor, scenario) : []),
-    [data, cursor, scenario],
-  );
+  const mode = useUi((s) => s.mode);
+
+  return useMemo(() => {
+    if (!data) return [];
+
+    // Real model output wherever it exists — it is strictly better evidence than
+    // the proxy, and the proxy only ever existed because data/models/ was empty.
+    //
+    // Scenario mode is the one exception, and deliberately: the predictions are
+    // model output at fixed inputs, so re-deriving them for an arbitrary
+    // transmission-loss slider would mean inventing a prediction the model never
+    // made. What-if therefore falls back to the transparent index, and the card
+    // labels itself provisional again — which is the honest answer to "what would
+    // happen if", given we cannot re-run a GBM in the browser.
+    if (data.predictions && mode !== 'scenario') {
+      return riskFromPredictions(data.predictions, data.catchments, cursor);
+    }
+    return riskFromSeries(data.series, data.catchments, cursor, scenario);
+  }, [data, cursor, scenario, mode]);
 }

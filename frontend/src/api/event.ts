@@ -1,6 +1,6 @@
 import type { Provenance, Value } from './types';
 
-/** The demo event's series, derived by scripts/14_frontend_event_series.py.
+/** The demo event's series, derived by scripts/frontend_event_series.py.
  *
  *  The shapes carry their own gaps deliberately. There is no sub-daily rainfall
  *  series in the repo and no 5-minute mooring record, so `subdaily.available` and

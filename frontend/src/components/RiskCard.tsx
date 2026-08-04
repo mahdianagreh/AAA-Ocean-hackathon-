@@ -31,6 +31,14 @@ export interface RiskCardData {
   band: HazardBand;
   score: number;
   runoff_probability: number | null;
+  /** The catchment's own area, always shown.
+   *
+   *  Not a driver. It reached the screen only as a stand-in driver until a real
+   *  model was registered, and the model's top-4 SHAP attributions do not rank
+   *  `area_km2` on these rows — so the number silently left the rail, and the map
+   *  polygon became the only path to it. 09 rule 7 says the map is never the only
+   *  path to a fact, so this is a field of the card, not an accident of ranking. */
+  area_km2: number;
   drivers: Driver[];
   confidence: ConfidenceComponents;
   /** The caveat travels with the card, not in a footer someone can forget. */
@@ -38,6 +46,10 @@ export interface RiskCardData {
   /** True when the numbers are a stand-in rather than model output. 01 §6.6:
    *  provisional data is labelled in the UI, not only in the repo. */
   provisional?: boolean;
+  /** Set when these numbers came from a registered artefact. Shown on the card,
+   *  because "which model said this" is the first thing anyone asks of a prediction
+   *  — and it is what makes a stored prediction reproducible at all. */
+  modelVersion?: string;
 }
 
 /** The risk card — scenes 3 and 8.
@@ -94,9 +106,18 @@ export function RiskCard({ data }: { data: RiskCardData }) {
         <div className="flex items-baseline justify-between gap-2">
           <dt className="text-ink-2">{t('risk.runoffProbability')}</dt>
           <dd>
-            {/* null renders as a gap, which is the honest state while the model
-                endpoint answers 503. */}
+            {/* A registered model fills this. null renders as a gap, which is the
+                honest state on the one path that has no probability to report:
+                what-if mode cannot re-run the model in the browser. */}
             <ValueWithUnit value={data.runoff_probability} digits={3} provenance="modelled" />
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-2">
+          <dt className="text-ink-2">{t('rail.area')}</dt>
+          <dd>
+            {/* modelled, not measured: this is a DEM watershed delineation, and the
+                same 4,453 km² that carries 96% of the discharge. */}
+            <ValueWithUnit value={data.area_km2} unit="km²" digits={2} provenance="modelled" />
           </dd>
         </div>
       </dl>
@@ -106,6 +127,19 @@ export function RiskCard({ data }: { data: RiskCardData }) {
 
       {data.caveat ? (
         <p className="border-t border-hairline pt-2 text-2xs text-ink-3">{data.caveat}</p>
+      ) : null}
+
+      {data.modelVersion ? (
+        <p className="flex flex-wrap items-baseline gap-1.5 border-t border-hairline pt-2 text-2xs text-ink-3">
+          {t('risk.modelledBy')}
+          <code
+            dir="ltr"
+            style={{ unicodeBidi: 'isolate' }}
+            className="font-mono num text-ink-2"
+          >
+            {data.modelVersion}
+          </code>
+        </p>
       ) : null}
 
       {data.provisional ? (

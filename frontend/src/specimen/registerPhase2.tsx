@@ -39,10 +39,16 @@ function card(band: (typeof BANDS)[number], score: number): RiskCardData {
     catchment_id: 'AQ-C01',
     name: 'Wadi Yutum',
     band,
+    // The real AQ-C01 area, because a specimen that invents a number teaches the
+    // wrong column width — 7 digits is what the widest card actually has to hold.
+    area_km2: 4453.08,
     score,
-    // null on purpose in half of them, so the gap rendering is on the page.
+    // null on purpose in half of them, so the gap rendering is on the page. This is
+    // now the ONLY place the main view guarantees a visible gap in default mode: the
+    // registered model fills runoff_probability everywhere else.
     runoff_probability: band === 'critical' ? 0.8121 : null,
     provisional: band !== 'critical',
+    modelVersion: band === 'critical' ? 'runoff_weighted_gbm_2194b48_20260803T214757Z' : undefined,
     caveat:
       band === 'high'
         ? 'Engineered Wadi Yutum flood channel; mouth verified against imagery at the shoreline.'
@@ -173,7 +179,11 @@ export function registerPhase2Specimens() {
           title="No plume at this step"
           body="No cell reached the lowest density band. This is a quiet step, not a failed layer — and the two must never look the same."
         />
-        <ErrorState message="event.json: HTTP 503 {&quot;error&quot;:&quot;no trained model registered&quot;}" />
+        {/* A real failure the demo can still hit, rather than the obsolete one.
+            The API does not start at all (OPEN-ISSUES #21), so a wrong
+            VITE_DATA_SOURCE fails at connect — where "no trained model" is a
+            state the registered artefact has now made unreachable. */}
+        <ErrorState message="event.json: TypeError: Failed to fetch (http://localhost:8000)" />
         <Stale ageLabel="18 min">
           <div className="flex items-baseline justify-between gap-2 rule bg-surface p-2 text-xs">
             <span className="text-ink-2">Runoff probability</span>

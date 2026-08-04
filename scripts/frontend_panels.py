@@ -15,7 +15,7 @@ Four outputs:
 Thumbnails use `sips`, which is a macOS built-in — so this script runs on the
 host rather than in the worker container. It needs no geospatial stack.
 
-    python3 scripts/15_frontend_panels.py --out frontend/public/fixtures
+    python3 scripts/frontend_panels.py --out frontend/public/fixtures
 """
 import argparse
 import json

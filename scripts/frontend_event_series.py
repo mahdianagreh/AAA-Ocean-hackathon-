@@ -27,7 +27,7 @@ to avoid inventing.
 
     docker compose run --rm --entrypoint "" \\
       -v "$PWD/frontend/public/fixtures:/out" \\
-      worker python /app/scripts/14_frontend_event_series.py --out /out
+      worker python /app/scripts/frontend_event_series.py --out /out
 """
 import argparse
 import json

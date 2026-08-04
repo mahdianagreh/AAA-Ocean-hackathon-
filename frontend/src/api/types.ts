@@ -71,7 +71,8 @@ export interface Health {
   version: string;
   commit: string;
   time_utc: string;
-  /** False today: data/models/ does not exist. */
+  /** True since 3 Aug 2026. Read false while data/models/ was empty, and the
+   *  interface renders both states rather than assuming either. */
   model_available: boolean;
   data_volume_mounted: boolean;
 }
