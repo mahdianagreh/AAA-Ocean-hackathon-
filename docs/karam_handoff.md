@@ -65,9 +65,22 @@ named it.** Full write-up in `reports/model/label_problem.md`; the short version
 - **ERA5 largely missed October 2016.** 0.77 mm and p92.6, against IMERG's 9.58 mm
   and p99.5. The one storm with a mooring record and a published sediment mass is
   an ordinary damp day in the product our label comes from.
+- **It is a detection failure, not a scaling one.** On days IMERG calls wet
+  (> 1 mm), ERA5 is essentially dry on **35%** — and on **20% of the heaviest IMERG
+  days in the record.** Where it does see a storm the magnitude is about right
+  (ratio 0.99), which is why any "ratio on days both are wet" comparison looks
+  reassuring and is worthless.
+- **The label inherits the blind spot.** Of the 276 catchment-days where IMERG
+  observed > 1 mm and ERA5 saw nothing, `target` is positive on **exactly one** —
+  against 51.1% on IMERG-wet days generally. Those are real storms labelled as
+  non-events.
 - Our label fires on **3.21% of calendar days**. Kalman et al. (2025) put
   sea-reaching floods at **0.156%** — 13 events since 1994, *"less than 0.5% of
   days."* **21× too generous.**
+- And your sweep matters more than I thought: a model given **one column of ERA5's
+  own rainfall** scores AP **0.9785** against our 20-feature 0.7445. Stripping every
+  ERA5-sourced feature drops us to **0.6623**. The whole modelling difficulty was
+  the ERA5↔IMERG mismatch, not hydrology.
 
 The fix needs the dates of those 13 floods, and they are in two papers we do not
 have:

@@ -29,7 +29,20 @@ So a model predicting `sro` from rainfall features is substantially recovering
 **ERA5's internal rainfall→runoff mapping**, not the physical response of these
 wadis. Where the features come from IMERG and the label from ERA5, part of the
 0.741 AP is the model learning the ERA5↔IMERG offset — the two products agree
-only at r = 0.573, and ERA5 runs at a median **0.43×** IMERG on wet days.
+only at r = 0.573.
+
+**Correction to an earlier version of this report.** It said ERA5 runs at a median
+0.43× IMERG on wet days. That figure conditioned on *both* products being wet,
+which selects the rows where they already agree — measured that way the ratio is
+0.99, and the statement was meaningless. Measured on the days IMERG calls wet,
+ERA5 is **essentially dry (< 0.1 mm) on 35% of them**, and on **20% of the
+heaviest IMERG days in the record.** The failure is detection, not scaling; see
+`reports/model/label_leakage.md`.
+
+The label inherits that blind spot directly: of the 276 catchment-days where IMERG
+observed > 1 mm and ERA5 saw nothing, **`target` is positive on exactly one.**
+Against 51.1% on IMERG-wet days generally. Those 276 real storms are labelled
+non-events, and October 2016 is among them.
 
 ## 2 · ERA5 largely missed the one event we can verify
 
@@ -92,9 +105,31 @@ data request open on the project.
 ## What this means for each component
 
 **Component A** keeps its metrics but must change its stated claim. It predicts
-ERA5-Land surface-runoff generation with LOCO AP 0.741, and that is a defensible,
-reproducible result. It does **not** predict whether runoff reaches the sea, and
-the model card must say so.
+ERA5-Land surface-runoff generation with LOCO AP 0.741 — reproducible, but not what
+we said it was, and not all of it is hydrology. `scripts/22_label_leakage_diagnostic.py`
+decomposes it:
+
+| model | features | mean AP |
+|---|---|---:|
+| M1 IMERG + neutral — no ERA5 input at all | 15 | **0.6623** |
+| M2 CD- shipped | 20 | **0.7445** |
+| M3 **ERA5 same-day rain, one column** | 1 | **0.9785** |
+| M4 ERA5 + neutral, no IMERG | 12 | 0.9855 |
+
+Three things follow. **M2 − M1 = +0.082**: five ERA5 state variables
+(`soil_moisture_lag{1,3}d`, `wind_*`, `temp_c`) contribute 15% of the model's lift
+over baseline, and they are drawn from the same product as the label — that is
+leakage, at 5× the ±0.017 noise floor. **M3 = 0.9785, with three of five
+catchments at a perfect 1.000**: the label is very nearly a deterministic function
+of its own forcing, so 20 engineered features are a lossy proxy for one ERA5
+column. And the shipped model's held-out predictions explain ERA5 rainfall with
+**incremental R² = +0.208 beyond their own IMERG input** — the model learned to
+correct IMERG toward ERA5, a product offset rather than a physical response.
+
+The defensible number is therefore **M1's 0.662**, not 0.741: independent
+satellite rainfall predicting ERA5's runoff, with no feature sharing the label's
+atmosphere. The model card must state that, and must state that the target is
+runoff *generation* in a reanalysis, not water reaching the sea.
 
 **Component B** stays a formula: `k` anchored on one published mass, `τ` reported
 as the 20–85% Negev band. Nothing about it is trained. The ranking test is retired
