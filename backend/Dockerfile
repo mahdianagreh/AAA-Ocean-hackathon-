@@ -30,12 +30,29 @@ RUN useradd --create-home --uid 10001 reefshield
 # ─────────────────────────────────────────────────────────── api
 FROM base AS api
 
+# proj-data for coordinate transforms. The geopandas/pyproj wheels bundle their own
+# PROJ, but not the datum grids, and the exposure engine cannot report an area without
+# EPSG:4326 -> EPSG:32636. Same reason the worker target installs it; the api target
+# needs it now that exposure.engine is imported at module scope.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends proj-data \
+ && rm -rf /var/lib/apt/lists/*
+
 # Requirements copied alone first, so a code change does not invalidate the
 # dependency layer. Rebuilds go from minutes to seconds.
 COPY backend/requirements-api.txt /tmp/
-RUN pip install -r /tmp/requirements-api.txt
+RUN pip install --only-binary=:all: -r /tmp/requirements-api.txt
 
 COPY --chown=reefshield:reefshield backend/ /app/backend/
+
+# The one writable path, created BEFORE the volume is attached and owned by the
+# non-root user. Docker seeds a fresh named volume from whatever the image has at the
+# mount point, ownership included; if the directory does not exist in the image the
+# volume lands owned by root and sqlite fails with "unable to open database file"
+# despite the mount being present and writable-looking. That is what kept /alerts at
+# a bare 500 after the volume was added.
+RUN mkdir -p /app/var && chown reefshield:reefshield /app/var
+
 USER reefshield
 
 EXPOSE 8000

@@ -48,11 +48,11 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from ..exposure import engine, store
-from ..rag import answer as rag_answer
-from ..rag import corpus as rag_corpus
-from ..rag import explain as rag_explain
-from ..rag import index as rag_index
+from exposure import engine, store
+from rag import answer as rag_answer
+from rag import corpus as rag_corpus
+from rag import explain as rag_explain
+from rag import index as rag_index
 from . import caveats as cav
 from . import data_access as da
 from .schemas import (
@@ -152,7 +152,7 @@ def ops_health():
     `/api/v1/health` is the richer, artifact-aware version for the dashboard.
     """
     try:
-        from ..models import artifacts
+        from models import artifacts
         model_available = artifacts.latest_version() is not None
     except Exception:
         model_available = False
@@ -176,7 +176,7 @@ def models():
     absence for a healthy default.
     """
     try:
-        from ..models.runoff_model import available_versions, model_info
+        from models.runoff_model import available_versions, model_info
     except Exception as exc:
         raise HTTPException(503, {
             "error": "model layer unavailable",
@@ -369,7 +369,7 @@ def runoff_predict(req: RunoffRequest):
         raise HTTPException(404, f"unknown catchment {req.catchment_id}")
 
     try:
-        from ..models.runoff_model import predict_one
+        from models.runoff_model import predict_one
 
         real = predict_one(req.model_dump(exclude_none=True))
     except (FileNotFoundError, ImportError, ModuleNotFoundError):

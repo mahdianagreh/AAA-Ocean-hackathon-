@@ -266,7 +266,43 @@ finds it in the history — where *"we removed the file"* is not an answer.
 
 ## Found while merging `main` into `frontend` — 2026-08-03
 
-### 21 · Pulga / Karam — **the API does not start.** 🔴
+### 21 · Pulga / Karam — the API does not start ✅ CLOSED 2026-08-04
+
+**`docker compose up` now brings api to healthy in ~8 s and the worker starts behind
+it. All eight GET endpoints answer 200.** Five faults stacked on top of each other, and
+each one was hidden by the one in front:
+
+1. **The import root.** Diagnosis below was exactly right. Fixed to absolute imports —
+   and three more `from ..models import ...` lines sat *inside* `try/except Exception`
+   blocks, so in the container they degraded **silently**: `/health` reported
+   `model_available: false` and `/models` returned 503 regardless of what was
+   registered. A static AST check now rejects any import above the `api` package,
+   because a grep would have missed those three.
+2. **The tests validated a layout nobody deploys.** They import
+   `backend.src.api.main`, which gives `..` a parent to resolve against; the container
+   runs `--app-dir /app/backend/src`, which does not. That is why the suite was green
+   while nothing ran. `tests/test_api_startup.py` now imports the app in a subprocess
+   with only `backend/src` on the path, i.e. the container's own layout.
+3. **`geopandas` was absent from the api image.** `exposure/engine.py` imports it at
+   module scope and cannot not: every area it reports is EPSG:32636 and
+   `_assert_measure_crs` refuses anything else. The "no geospatial stack" intent had to
+   give way for the vector half only — rasterio and whitebox stay in the worker.
+4. **`./data` is read-only, and `exposure.store` writes SQLite.** The read-only mount
+   is correct discipline, so the store now points at a named volume via
+   `REEFSHIELD_EXPOSURE_DB` instead of relaxing it.
+5. **The named volume landed owned by root** while the container runs as uid 10001, so
+   sqlite still failed with "unable to open database file" on a mount that looked
+   present and writable. Docker seeds a named volume from whatever the image has at the
+   mount point, ownership included, so `/app/var` is now created and chowned in the
+   image.
+
+Two things fixed alongside, both of which would have bitten on a laptop nobody controls:
+`docs/` is mounted read-only (`/events` was 503 "docs/event_dates.md is not present" —
+the file was on the host all along), and the host ports are overridable
+(`API_PORT=8100 docker compose up`) because a hard-coded 8000 makes `up` fail outright
+if anything else holds it, which it did here.
+
+<details><summary>Original report</summary>
 
 `docker compose up` brings the api container up unhealthy, and the worker will not
 start behind it because of `depends_on: service_healthy`:
@@ -288,6 +324,8 @@ of you owns it — but **nothing in the compose stack starts right now**, so thi
 outranks everything else on this list.
 
 Workaround while it stands: `docker compose run --rm --no-deps worker …`.
+
+</details>
 
 ### 22 · Karam — two parallel GeoJSON exports ✅ CLOSED 2026-08-03
 

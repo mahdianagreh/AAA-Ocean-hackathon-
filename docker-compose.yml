@@ -27,18 +27,35 @@ services:
       dockerfile: backend/Dockerfile
       target: api
     ports:
-      - "8000:8000"
+      # Host port is overridable: `API_PORT=8100 docker compose up`.
+      # A hard-coded 8000 made `up` fail outright with "port is already allocated"
+      # on a machine that had anything else on 8000 — and DoD item 6 is judged on a
+      # laptop nobody controls. The container port stays 8000: the Dockerfile
+      # HEALTHCHECK and CORS defaults both target it.
+      - "${API_PORT:-8000}:8000"
     environment:
       <<: *supabase
       REEFSHIELD_ROOT: /app
       REEFSHIELD_CORS_ORIGINS: http://localhost:5173,http://localhost:3000
       GIT_SHA: ${GIT_SHA:-unknown}
+      # Exposure runs are WRITTEN, and ./data is mounted read-only on purpose. Without
+      # this the store fell over with "unable to open database file" and /alerts
+      # returned a bare 500. Pointing it at a named volume keeps data/ read-only rather
+      # than relaxing that rule to make a write succeed.
+      REEFSHIELD_EXPOSURE_DB: /app/var/exposure_runs.sqlite
     volumes:
       # Read-only: the API reads geometry and model artifacts, and must never
       # be the thing that writes to data/.
       - ./data:/app/data:ro
+      # The API also reads prose: docs/event_dates.md is the single source of truth for
+      # event timing, and the RAG corpus indexes data_dictionary.md, model_card.md and
+      # forcing_limitations.md. Without this /events answered 503 "docs/event_dates.md
+      # is not present" — the artifact was on the host all along, just not in the image.
+      - ./docs:/app/docs:ro
       # Live reload in development. Drop this line for a production image.
       - ./backend/src:/app/backend/src:ro
+      # The one writable path. Named, so it survives `down` but not `down -v`.
+      - exposure_runs:/app/var
     restart: unless-stopped
 
   worker:
@@ -69,12 +86,18 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "5173:5173"
+      - "${FRONTEND_PORT:-5173}:5173"
     environment:
-      VITE_API_URL: http://localhost:8000
+      VITE_API_URL: http://localhost:${API_PORT:-8000}
     volumes:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
       api:
         condition: service_healthy
+
+volumes:
+  # Exposure runs. A named volume rather than a bind mount into ./data, because ./data
+  # is read-only by design and the API must not be the thing that writes to it.
+  # `docker compose down` keeps it; `down -v` discards it.
+  exposure_runs:
