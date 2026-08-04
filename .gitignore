@@ -90,3 +90,11 @@ frontend/.env.local
 !data/models/
 !data/models/*.joblib
 !data/models/*.jsonl
+
+# Baked satellite basemap for the plume renderer. Derived, ~8 MB, and regenerated in
+# ~30 s by scripts/fetch_basemap_raster.py. Same reasoning as the ACA raster: the
+# committed contract paths are the small shared artefacts, not the imagery. The renderer
+# degrades to a plain background and SAYS SO when it is absent, so a fresh clone is
+# honest rather than broken.
+data/processed/basemap/
+

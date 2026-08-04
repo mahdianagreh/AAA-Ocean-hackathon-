@@ -33,3 +33,11 @@ geopandas==1.1.4
 shapely==2.1.2
 pyproj==3.7.2
 pyogrio==0.13.0
+
+# Rendering — backend/src/rendering/plume_map.py draws the prediction onto real
+# satellite imagery. matplotlib for the figure, pillow to read the baked JPEG basemap.
+# Deliberately NOT contextily or rasterio: tiles are baked once offline by
+# scripts/fetch_basemap_raster.py, so the request path never touches the network and the
+# api image never grows a tile stack it uses once.
+matplotlib==3.10.8
+pillow==12.1.0

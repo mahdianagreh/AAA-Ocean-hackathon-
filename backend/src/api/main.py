@@ -529,6 +529,100 @@ def plume_simulate(req: PlumeRequest):
     return result
 
 
+@app.get(f"{PREFIX}/plume/map", tags=["model"],
+         responses={200: {"content": {"image/png": {}}}})
+def plume_map(
+    event_id: str,
+    outlet_id: str,
+    horizon_hours: int = Query(24, ge=1, le=120),
+    upto_hours: float | None = Query(
+        None, description="Draw only contours at or before this time — one animation frame"),
+    with_exposure: bool = Query(
+        True, description="Colour reef zones by their exposure risk level"),
+    clip_to_sea: bool = Query(
+        True, description="False shows the unclipped output, which is how the stub's "
+                          "circles-over-the-city fault becomes visible"),
+):
+    """The prediction as a picture: real satellite imagery, real plume, real reef.
+
+    Answers "the model says a flood is coming — where does the mud go?" without
+    generating anything. A diffusion model has never seen Aqaba: it would draw a
+    confident wrong coastline with an invented plume, and because the result would look
+    like satellite imagery it would read as an OBSERVATION. That is unusable here, where
+    the validation story is "the satellite could not see the plume, so we said so".
+
+    Every pixel has a provenance, listed in the footer burned into the image, so the
+    picture stays self-describing if someone screenshots it into a slide.
+
+    Returns image/png. The extent is fixed by the baked basemap, so successive
+    `upto_hours` values register against each other as animation frames.
+    """
+    from fastapi.responses import Response
+
+    from rendering import plume_map as renderer
+
+    plume = plume_simulate(PlumeRequest(event_id=event_id, outlet_id=outlet_id,
+                                        horizon_hours=horizon_hours))
+    contours = [c.model_dump() for c in plume.contours]
+
+    # Exposure is best-effort: a picture of where the plume goes is useful even when the
+    # scoring cannot run, so a failure here downgrades the reef colouring rather than
+    # failing the whole request.
+    by_zone: dict[str, dict] = {}
+    if with_exposure:
+        try:
+            run = exposure_calculate(ExposureRequest(
+                event_id=event_id, outlet_id=outlet_id, horizon_hours=horizon_hours))
+            by_zone = {r.reef_zone_id: {"risk_level": r.risk_level,
+                                        "risk_score": r.risk_score}
+                       for r in run.results}
+        except HTTPException:
+            by_zone = {}
+
+    png = renderer.render(
+        contours,
+        event_id=event_id, outlet_id=outlet_id, horizon_hours=horizon_hours,
+        exposure_by_zone=by_zone, upto_hours=upto_hours, clip_to_sea=clip_to_sea,
+    )
+    return Response(
+        content=png, media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=3600",
+            # Machine-readable provenance beside the burned-in footer, so a client can
+            # label the image without parsing pixels.
+            "X-ReefShield-Plume-Source": "stub" if plume.is_stub else "particle-engine",
+            "X-ReefShield-Basemap": ("esri-worldimagery-baked"
+                                     if renderer.load_basemap() else "absent"),
+            "X-ReefShield-Generated-Imagery": "none",
+        },
+    )
+
+
+@app.get(f"{PREFIX}/plume/map/frames", tags=["model"])
+def plume_map_frames(event_id: str, outlet_id: str,
+                     horizon_hours: int = Query(24, ge=1, le=120)):
+    """The timesteps available to animate, and the URL for each frame.
+
+    Returned rather than assumed so the client never guesses a `upto_hours` the
+    simulation did not produce.
+    """
+    from rendering import plume_map as renderer
+
+    plume = plume_simulate(PlumeRequest(event_id=event_id, outlet_id=outlet_id,
+                                        horizon_hours=horizon_hours))
+    times = renderer.frame_times(c.model_dump() for c in plume.contours)
+    base = (f"{PREFIX}/plume/map?event_id={event_id}&outlet_id={outlet_id}"
+            f"&horizon_hours={horizon_hours}")
+    return {
+        "event_id": event_id,
+        "outlet_id": outlet_id,
+        "frame_count": len(times),
+        "frames": [{"t_hours": t, "url": f"{base}&upto_hours={t:g}"} for t in times],
+        "basemap_present": renderer.load_basemap() is not None,
+        "plume_source": "stub" if plume.is_stub else "particle-engine",
+    }
+
+
 # -------------------------------------------------------------------- exposure
 
 @app.post(f"{PREFIX}/exposure/calculate", response_model=ExposureRun, tags=["exposure"])
