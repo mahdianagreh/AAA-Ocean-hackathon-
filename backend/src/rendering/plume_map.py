@@ -304,10 +304,16 @@ def render(
                              label="reef zones (Allen Coral Atlas v2.0)"))
     ax.legend(handles=handles, loc="lower left", fontsize=7.5, framealpha=0.86)
 
+    # Dark on the white figure margin. This was near-white, chosen for a dark basemap —
+    # but the footer sits OUTSIDE the axes, on the figure background, so it rendered
+    # almost invisible. This line is the whole honesty mechanism: it is what tells a
+    # reader who screenshots the image into a slide that the plume is model output and
+    # the background is a real photograph. An unreadable provenance note is no
+    # provenance note.
     fig.text(0.5, 0.008,
              f"Background: {ground}.  Plume: model output.  "
              f"Reef: real ACA geometry.  No part of this image is generated.",
-             ha="center", fontsize=6.4, color="#e8eef1" if basemap else "#9fb6c0")
+             ha="center", fontsize=6.8, color="#2b3a42")
 
     buf = io.BytesIO()
     fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0.06,
