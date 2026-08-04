@@ -379,22 +379,59 @@ def runoff_predict(req: RunoffRequest):
 
     if real is not None:
         # Trust the model's own numbers; do not re-derive or rescale them here.
+        #
+        # Read the keys the model ACTUALLY returns. Three of the four this block used to
+        # ask for do not exist in `predict_one`'s output, and every one failed softly:
+        #
+        #   predicted_runoff_m3  absent -> defaulted to 0.0, so a real prediction was
+        #                        rendered as "0 m3 of runoff". A fabricated zero
+        #                        presented as a model output is the one thing this
+        #                        project must never ship.
+        #   model_version        absent -> fell back to "runoff-real" and the provenance
+        #                        line read "Mahdi's runoff model None", so which artefact
+        #                        produced a stored number was unrecoverable. The key is
+        #                        `model_version_id`.
+        #   relative_sediment_intensity  absent -> the chained fallback quietly served
+        #                        `runoff_probability` under a sediment label. It returned
+        #                        a real number, which is why nothing looked wrong.
+        #
+        # Component A is a runoff CLASSIFIER, not a volume regressor: there is no m3 to
+        # report, so the field is None and reads as a gap. `sediment_index` is the
+        # sediment measure and is unanchored — comparable between requests, no absolute
+        # meaning — which `sediment_basis` states and which travels as a caveat.
+        sediment_index = real.get("sediment_index")
         return RunoffPrediction(
             catchment_id=req.catchment_id,
-            predicted_runoff_m3=float(real.get("predicted_runoff_m3", 0.0)),
-            relative_sediment_intensity=float(
-                real.get("relative_sediment_intensity",
-                         real.get("runoff_probability", 0.0))),
+            predicted_runoff_m3=None,
+            relative_sediment_intensity=(
+                float(sediment_index) if sediment_index is not None
+                else float(real.get("runoff_probability", 0.0))),
+            runoff_probability=real.get("runoff_probability"),
+            severity=real.get("severity"),
+            confidence=real.get("confidence"),
             # Lowercased, and None is preserved rather than replaced. The proxy emits
             # "Medium" (capitalised) and returns None when it has not run; `.get(k, default)`
             # does not help with the second case because the key IS present and holds None.
             sediment_class=(str(real["sediment_class"]).lower()
                             if real.get("sediment_class") is not None else None),
-            model_version=str(real.get("model_version", "runoff-real")),
+            model_version=str(real.get("model_version_id", "unregistered")),
             is_stub=False,
-            provenance=[Provenance(kind="derived",
-                                   detail=f"Mahdi's runoff model {real.get('model_version')}")],
-            caveats=cav.landcover_epoch() + cav.soil_is_modelled(),
+            provenance=[
+                Provenance(kind="derived",
+                           detail=f"Mahdi's runoff model {real.get('model_version_id')}"),
+                Provenance(kind="source", detail=str(real.get("basis", "unknown"))),
+            ],
+            caveats=(cav.landcover_epoch() + cav.soil_is_modelled()
+                     + [Caveat(field="predicted_runoff_m3",
+                               message="Component A predicts runoff OCCURRENCE, not "
+                                       "volume. No m3 figure exists; this is a gap, "
+                                       "not a zero.",
+                               severity="critical",
+                               source="backend/src/models/runoff_model.py"),
+                        Caveat(field="relative_sediment_intensity",
+                               message=str(real.get("sediment_basis", "unanchored")),
+                               severity="warning",
+                               source="backend/src/models/sediment_proxy.py")]),
         )
 
     lc = da.landcover_for(req.catchment_id) or {}

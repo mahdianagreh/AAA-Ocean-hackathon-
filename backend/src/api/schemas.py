@@ -144,9 +144,33 @@ class RunoffRequest(BaseModel):
 
 class RunoffPrediction(BaseModel):
     catchment_id: str
-    predicted_runoff_m3: float
+
+    # `None`, not 0.0. Component A is a runoff CLASSIFIER — it predicts whether runoff
+    # occurs, not how many cubic metres. There is no volume to report, and a 0.0 here
+    # renders on a risk card as "0 m3 of runoff", which is a fabricated number wearing
+    # the authority of a model output. The field stays so the shape does not change if a
+    # volume regressor is trained later.
+    predicted_runoff_m3: float | None = Field(
+        default=None,
+        description="None while Component A is occurrence-only. A gap, never a zero.",
+    )
     relative_sediment_intensity: float = Field(
         ge=0, le=1, description="Normalised 0-1; feeds the exposure formula"
+    )
+
+    # What the classifier actually produces. Carried explicitly rather than squeezed
+    # into relative_sediment_intensity, which is a sediment quantity and was silently
+    # being served the runoff probability instead.
+    runoff_probability: float | None = Field(
+        default=None, ge=0, le=1,
+        description="Probability that runoff occurs. None when no model is registered.",
+    )
+    severity: str | None = Field(
+        default=None, description="Model's own severity band for the probability."
+    )
+    confidence: float | None = Field(
+        default=None, ge=0, le=1,
+        description="Derived, with its components in the model's confidence_terms.",
     )
     # Vocabulary is `low|medium|high|extreme`, lowercase, and `None` when the sediment
     # proxy has not run for this row.
