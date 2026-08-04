@@ -385,7 +385,11 @@ def runoff_predict(req: RunoffRequest):
             relative_sediment_intensity=float(
                 real.get("relative_sediment_intensity",
                          real.get("runoff_probability", 0.0))),
-            sediment_class=real.get("sediment_class", "moderate"),
+            # Lowercased, and None is preserved rather than replaced. The proxy emits
+            # "Medium" (capitalised) and returns None when it has not run; `.get(k, default)`
+            # does not help with the second case because the key IS present and holds None.
+            sediment_class=(str(real["sediment_class"]).lower()
+                            if real.get("sediment_class") is not None else None),
             model_version=str(real.get("model_version", "runoff-real")),
             is_stub=False,
             provenance=[Provenance(kind="derived",
@@ -405,7 +409,7 @@ def runoff_predict(req: RunoffRequest):
     runoff_m3 = req.rainfall_mm_3h * 1e-3 * area * 1e6 * 0.35
 
     cls = ("extreme" if intensity > 0.75 else "high" if intensity > 0.5
-           else "moderate" if intensity > 0.25 else "low")
+           else "medium" if intensity > 0.25 else "low")
 
     return RunoffPrediction(
         catchment_id=req.catchment_id,
