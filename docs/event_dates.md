@@ -494,14 +494,98 @@ sea_reaching_flood_record:
   known_unresolved_candidates:
     # Mentioned in the literature WITHOUT a usable date. Not usable as labels
     # until a date is confirmed - listed so nobody re-discovers them.
-    - period: 2006
-      note: "exceptionally large Aqaba flood, extensive damage (Farhan and Anbar 2014)"
+    #
+    # PARTIAL PROGRESS 5 Aug 2026 (Karam, Request 0). The twelve missing DATES are
+    # still blocked on the two paywalled papers, but Kalman et al. (2025) is fully
+    # open access at 10.5194/nhess-25-3201-2025 and quotes enough of them to attach
+    # a MAGNITUDE to two candidates and to date a third event outright. Text
+    # extracted from the preprint PDF; quotes verified verbatim.
     - period: 2013-02
-      note: same as backup_event above; Katz et al. paywalled, no date
+      note: same as backup_event above; Katz et al. paywalled, no exact day
+      sediment_mass_t: 21000
+      mass_source_citation: Katz et al. (2015b), quoted in Kalman et al. (2025)
+      mass_source_quote: >-
+        "similar to the reported 21,000 tons of suspended sediment transported to
+        the GEA from the Kinnet Canal during the Feb 2013 flash flood event"
+      status_change: >-
+        Previously recorded as dead for lack of any figure. The MASS is now
+        confirmed from an open-access source, so this event is usable for
+        sediment-mass validation even though satellite matching remains
+        impossible without a day. 86% of the Oct 2016 mass.
+      imerg_candidates_derived:
+        # DERIVED, not reported. The two wettest February 2013 storms in our own
+        # IMERG record; the paper gives only the month, so which of these is the
+        # Katz event is unknown. Listed to narrow a future search from 28 days to 2.
+        - event_id: AQ-2013-02-01
+          max_daily_mm: 6.95
+          catalogue_rank: 31
+        - event_id: AQ-2013-02-06
+          max_daily_mm: 5.93
+          catalogue_rank: 42
+    - period: 2006-02
+      note: "exceptionally large Aqaba flood, extensive damage (Farhan and Anbar 2014)"
+      magnitude_source_citation: Katz et al. (2015), quoted in Kalman et al. (2025)
+      seafloor_deposition_kg_m2: 10
+      comparison_quote: >-
+        "circa 10 kg sediment per meter square coverage of the alluvium on the
+        seafloor primary deposition zone after a historical flooding in February
+        2006, which magnitude corresponds with 6 kg sediment on average per meter
+        square coverage produced by the October 2016 event"
+      significant_because: >-
+        LARGER THAN OUR DEMO EVENT. 10 kg/m2 against Oct 2016's 6 kg/m2 on the
+        same measure and in the same deposition zone. AQ-2016-10-28 is the
+        best-INSTRUMENTED documented flood, not the biggest. Do not describe it as
+        the largest.
+      imerg_candidate_derived:
+        event_id: AQ-2006-02-02
+        max_daily_mm: 3.36
+        catalogue_rank: 96
     - period: 1966-03-11
       note: "50-year return period storm (Farhan and Anbar 2014); pre-satellite, not usable"
     - period: 1940
       note: "'washed away half of modern Aqaba'; historical record only"
+
+# ---------------------------------------------------------------------------
+# Dated flood-producing RAINFALL events that are not confirmed sea-reaching
+# floods. Kept separate from sea_reaching_flood_record on purpose: a storm that
+# flooded streets is not evidence that sediment reached the reef, and merging the
+# two would inflate the very base rate Mahdi found to be 21x too generous.
+#
+# Added 5 Aug 2026 from Kalman et al. (2025), open access.
+# ---------------------------------------------------------------------------
+dated_flood_producing_rainfall:
+  - date: 2017-03-01
+    location: Eilat, Israel
+    source_citation: Kalman et al. (2025)
+    source_quote: >-
+      "a local flashflood event recorded on 1 March 2017, when 14.5 mm of rain
+      fell in under 3 hours and temporarily flooded the streets of Eilat"
+    reported:
+      rain_mm: 14.5
+      duration_hours_under: 3
+      effect: streets of Eilat temporarily flooded
+    published_use: >-
+      The paper uses this 14.5 mm / 3 h figure AS A THRESHOLD for assessing
+      flashflood potential across the basin from GPM-IMERG - the same product our
+      pipeline is built on.
+    derived_from_our_imerg:
+      # DERIVED. This comparison is the reason the threshold cannot be adopted
+      # as-is, and it must travel with the number.
+      our_max_catchment_daily_mm: 2.93
+      our_wettest_catchment: AQ-C01
+      our_catalogue_rank: 106
+      discrepancy_factor: 4.9
+      interpretation: >-
+        NOT a contradiction and NOT a product failure. The published 14.5 mm is a
+        POINT total over <3 h in Eilat city; ours is an AREA MEAN over a 4,453 km2
+        catchment for a whole day. A localised convective cell that floods a town
+        averages away over a catchment that size, and IMERG's ~11 km cells smooth
+        it further.
+      consequence: >-
+        A published point threshold cannot be compared to a catchment-mean daily
+        depth without a scale correction. Any threshold we quote must state which
+        of the two it is. This is the same class of mismatch Mahdi found between
+        ERA5 and IMERG - a detection-scale problem, not a calibration one.
 ```
 
 ---
