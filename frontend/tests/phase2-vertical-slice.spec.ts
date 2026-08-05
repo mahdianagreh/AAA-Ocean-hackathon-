@@ -89,21 +89,50 @@ test.describe('the choreography', () => {
 });
 
 test.describe('honest states are on screen', () => {
-  test('runoff probability is a gap, not a fabricated number', async ({ page }) => {
+  test('runoff probability is model output, or a gap — never a fabricated number', async ({
+    page,
+  }) => {
     await ready(page);
-    // data/models/ does not exist, so there is no trained artefact. A number here
-    // would be indistinguishable from model output.
+    // Both halves of this were once one assertion: `expect(a gap)`, correct while
+    // data/models/ was empty. A trained artefact is registered now, so the number is
+    // real and must be attributed; the gap is still required where nothing computed
+    // one. Asserting only the first half would let a fabricated number through, and
+    // only the second would fail the moment honesty improved.
     const card = page.locator('[data-risk-card]').first();
+    await expect(card.getByText(/runoff_weighted_gbm_\w+/)).toBeVisible();
+    await expect(card.locator('[data-missing="true"]')).toHaveCount(0);
+
+    await page.locator('[data-mode="scenario"]').click();
+    await page.waitForTimeout(700);
+    // The model cannot be re-run in the browser against moved sliders, so what-if
+    // reports no probability rather than one nothing computed.
     await expect(card.locator('[data-missing="true"]').first()).toBeVisible();
   });
 
-  test('every card says the index is provisional', async ({ page }) => {
+  test('every card attributes its numbers — a model version or a provisional flag', async ({
+    page,
+  }) => {
     await ready(page);
-    const n = await page.locator('[data-risk-card]').count();
-    for (let i = 0; i < n; i++) {
-      await expect(
-        page.locator('[data-risk-card]').nth(i).getByText(/Provisional index/),
-      ).toBeVisible();
+    // The invariant, not the state: a card says which of the two it is showing.
+    // Never neither (an unattributed number), never both (a claim contradicting
+    // itself). This replaces "every card says the index is provisional", which was
+    // true only while the index was the only path.
+    for (const mode of ['default', 'scenario'] as const) {
+      if (mode === 'scenario') {
+        await page.locator('[data-mode="scenario"]').click();
+        await page.waitForTimeout(700);
+      }
+      const attribution = await page.evaluate(() =>
+        [...document.querySelectorAll('[data-risk-card]')].map((c) => ({
+          id: c.getAttribute('data-risk-card'),
+          model: /runoff_weighted_gbm_/.test(c.textContent ?? ''),
+          provisional: /Provisional index|Stand-in index/.test(c.textContent ?? ''),
+        })),
+      );
+      expect(attribution.length).toBe(5);
+      for (const a of attribution) {
+        expect(a.model !== a.provisional, `${mode}/${a.id}: model=${a.model} provisional=${a.provisional}`).toBe(true);
+      }
     }
   });
 

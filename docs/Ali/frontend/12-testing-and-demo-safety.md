@@ -2,8 +2,15 @@
 
 **Status:** scaffold — filled during Phase 5–6 · **Owner:** Ali
 
-The backend has **431 tests across 20 files** and is still growing. A frontend with no tests would be out of step
+The backend has **433 tests across 20 files** and is still growing. A frontend with no tests would be out of step
 with this repo — and the demo runs live in front of judges.
+
+That 433 is a count of `def test_` functions, not a result. Run on 3 Aug 2026 — the first time
+anyone had actually run it — the suite gives **421 passed, 4 failed, 49 skipped**. The four
+failures are a real API contract defect ([`OPEN-ISSUES.md`](../../OPEN-ISSUES.md) item 24); the 49
+skips nobody has looked at. Both numbers belong here, because the gap between them is the point:
+a grep counts a skipped test and a failing test as passes, and quoting it is how "the backend has
+433 tests" turns into "the backend is fine".
 
 ---
 

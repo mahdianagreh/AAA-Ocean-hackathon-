@@ -1,0 +1,1024 @@
+{
+ "event_id": "AQ-2016-10-28",
+ "model": {
+  "version_id": "runoff_weighted_gbm_2194b48_20260803T214757Z",
+  "algorithm": "weighted_gbm",
+  "is_synthetic": false,
+  "cv_scheme": "leave_one_catchment_out",
+  "mean_AP": 0.7474,
+  "baseline_mean_AP": 0.2004,
+  "trained_at": "2026-08-03T21:47:57.883249+00:00",
+  "n_training_events": 2362,
+  "features": [
+   "precipitation_mm_day",
+   "precip_prior_1d_mm",
+   "precip_prior_3d_mm",
+   "precip_prior_7d_mm",
+   "rain_over_p50",
+   "rain_over_p90",
+   "rain_over_p99",
+   "rain_self_percentile",
+   "soil_moisture_lag1d",
+   "soil_moisture_lag3d",
+   "dry_days_before",
+   "wind_speed_ms",
+   "wind_direction_deg",
+   "temp_c",
+   "season_sin",
+   "season_cos",
+   "area_km2",
+   "slope_mean_deg",
+   "drainage_density_km_km2",
+   "elongation_ratio"
+  ]
+ },
+ "feature_source": "data/processed/features/training_set_full.parquet",
+ "derivation": "offline: scripts/frontend_predictions.py over the registered artefact",
+ "by_catchment": {
+  "AQ-C01": [
+   {
+    "t": "2016-10-26T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.8281,
+    "severity": "extreme",
+    "confidence": 0.61,
+    "confidence_terms": {
+     "catchment_ap": 0.61,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "season_cos",
+      "contribution": 1.00963,
+      "value": 0.4334685453485363
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.71845,
+      "value": 0.9508890770533446
+     },
+     {
+      "key": "season_sin",
+      "contribution": 0.49003,
+      "value": -0.9011686968561569
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.48694,
+      "value": 0.2970033966777166
+     }
+    ]
+   },
+   {
+    "t": "2016-10-27T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.904,
+    "severity": "extreme",
+    "confidence": 0.61,
+    "confidence_terms": {
+     "catchment_ap": 0.61,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 671554.583057,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "rain_self_percentile",
+      "contribution": 1.2712,
+      "value": 0.9953429297205758
+     },
+     {
+      "key": "season_cos",
+      "contribution": 0.87647,
+      "value": 0.4489059314938798
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.86153,
+      "value": 1.5155536285027715
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": 0.60543,
+      "value": 1.8767347632668232
+     }
+    ]
+   },
+   {
+    "t": "2016-10-28T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.723,
+    "severity": "high",
+    "confidence": 0.61,
+    "confidence_terms": {
+     "catchment_ap": 0.61,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 145434.918649,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.99564,
+      "value": 0.9894157493649449
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.77415,
+      "value": 1.0190859284850926
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": 0.60242,
+      "value": 9.576631823146164
+     },
+     {
+      "key": "precip_prior_3d_mm",
+      "contribution": -0.51281,
+      "value": 11.461350847038071
+     }
+    ]
+   },
+   {
+    "t": "2016-10-29T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0318,
+    "severity": "none",
+    "confidence": 0.61,
+    "confidence_terms": {
+     "catchment_ap": 0.61,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "rain_self_percentile",
+      "contribution": -1.60904,
+      "value": 0.11494496189669771
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": 1.48543,
+      "value": 6.4395020735044515
+     },
+     {
+      "key": "wind_direction_deg",
+      "contribution": -0.69876,
+      "value": 20.8640079498291
+     },
+     {
+      "key": "temp_c",
+      "contribution": -0.49098,
+      "value": 19.792755126953125
+     }
+    ]
+   },
+   {
+    "t": "2016-10-30T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0019,
+    "severity": "none",
+    "confidence": 0.61,
+    "confidence_terms": {
+     "catchment_ap": 0.61,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "rain_self_percentile",
+      "contribution": -1.73319,
+      "value": 0.11494496189669771
+     },
+     {
+      "key": "temp_c",
+      "contribution": -0.70474,
+      "value": 19.90887451171875
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": -0.6604,
+      "value": 0.0
+     },
+     {
+      "key": "precip_prior_3d_mm",
+      "contribution": -0.43606,
+      "value": 16.016133896650608
+     }
+    ]
+   }
+  ],
+  "AQ-C02": [
+   {
+    "t": "2016-10-26T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.5273,
+    "severity": "high",
+    "confidence": 0.752,
+    "confidence_terms": {
+     "catchment_ap": 0.752,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -0.93519,
+      "value": 22.5286865234375
+     },
+     {
+      "key": "season_cos",
+      "contribution": 0.8122,
+      "value": 0.4334685453485363
+     },
+     {
+      "key": "season_sin",
+      "contribution": 0.51101,
+      "value": -0.9011686968561569
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.4866,
+      "value": 0.9093988145639289
+     }
+    ]
+   },
+   {
+    "t": "2016-10-27T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.7766,
+    "severity": "extreme",
+    "confidence": 0.752,
+    "confidence_terms": {
+     "catchment_ap": 0.752,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 18408.030612,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "rain_self_percentile",
+      "contribution": 1.2992,
+      "value": 0.9953429297205758
+     },
+     {
+      "key": "temp_c",
+      "contribution": -1.12615,
+      "value": 21.63018798828125
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.66064,
+      "value": 1.2552097299702394
+     },
+     {
+      "key": "season_cos",
+      "contribution": 0.64801,
+      "value": 0.4489059314938798
+     }
+    ]
+   },
+   {
+    "t": "2016-10-28T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.1072,
+    "severity": "low",
+    "confidence": 0.752,
+    "confidence_terms": {
+     "catchment_ap": 0.752,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 13312.901153,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -1.84169,
+      "value": 21.7364501953125
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.7744,
+      "value": 0.9932260795935648
+     },
+     {
+      "key": "precip_prior_3d_mm",
+      "contribution": -0.68403,
+      "value": 9.665982517861465
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.55632,
+      "value": 1.130848609478093
+     }
+    ]
+   },
+   {
+    "t": "2016-10-29T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0388,
+    "severity": "none",
+    "confidence": 0.752,
+    "confidence_terms": {
+     "catchment_ap": 0.752,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": 1.47063,
+      "value": 8.29330444732949
+     },
+     {
+      "key": "temp_c",
+      "contribution": -1.36665,
+      "value": 21.775909423828125
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": -0.66607,
+      "value": 0.32176121930567314
+     },
+     {
+      "key": "soil_moisture_lag1d",
+      "contribution": -0.36303,
+      "value": 0.010733922012150288
+     }
+    ]
+   },
+   {
+    "t": "2016-10-30T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0038,
+    "severity": "none",
+    "confidence": 0.752,
+    "confidence_terms": {
+     "catchment_ap": 0.752,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -1.30874,
+      "value": 21.31121826171875
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": -0.75005,
+      "value": 0.32176121930567314
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": -0.68988,
+      "value": 0.0
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": -0.37048,
+      "value": 0.0
+     }
+    ]
+   }
+  ],
+  "AQ-C03": [
+   {
+    "t": "2016-10-26T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.5394,
+    "severity": "high",
+    "confidence": 0.769,
+    "confidence_terms": {
+     "catchment_ap": 0.769,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -0.84166,
+      "value": 21.797576904296875
+     },
+     {
+      "key": "season_cos",
+      "contribution": 0.81421,
+      "value": 0.4334685453485363
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.50829,
+      "value": 0.936917866215072
+     },
+     {
+      "key": "season_sin",
+      "contribution": 0.50118,
+      "value": -0.9011686968561569
+     }
+    ]
+   },
+   {
+    "t": "2016-10-27T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.7908,
+    "severity": "extreme",
+    "confidence": 0.769,
+    "confidence_terms": {
+     "catchment_ap": 0.769,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 24006.421086,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "rain_self_percentile",
+      "contribution": 1.31435,
+      "value": 0.9970364098221846
+     },
+     {
+      "key": "temp_c",
+      "contribution": -0.8933,
+      "value": 20.867340087890625
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.74813,
+      "value": 1.4696005860408325
+     },
+     {
+      "key": "season_cos",
+      "contribution": 0.664,
+      "value": 0.4489059314938798
+     }
+    ]
+   },
+   {
+    "t": "2016-10-28T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.1285,
+    "severity": "low",
+    "confidence": 0.769,
+    "confidence_terms": {
+     "catchment_ap": 0.769,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 5212.666588,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -1.38792,
+      "value": 21.31805419921875
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.83382,
+      "value": 0.9885690093141406
+     },
+     {
+      "key": "precip_prior_3d_mm",
+      "contribution": -0.57201,
+      "value": 11.215147223855045
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": 0.43095,
+      "value": 10.20196726829546
+     }
+    ]
+   },
+   {
+    "t": "2016-10-29T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0699,
+    "severity": "low",
+    "confidence": 0.769,
+    "confidence_terms": {
+     "catchment_ap": 0.769,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": 1.7491,
+      "value": 6.396268879303473
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": -1.29457,
+      "value": 0.26756985605419137
+     },
+     {
+      "key": "temp_c",
+      "contribution": -0.73963,
+      "value": 21.26898193359375
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": -0.2615,
+      "value": 0.0
+     }
+    ]
+   },
+   {
+    "t": "2016-10-30T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0007,
+    "severity": "none",
+    "confidence": 0.769,
+    "confidence_terms": {
+     "catchment_ap": 0.769,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "rain_self_percentile",
+      "contribution": -1.45132,
+      "value": 0.26756985605419137
+     },
+     {
+      "key": "temp_c",
+      "contribution": -1.14197,
+      "value": 20.92791748046875
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": -0.77389,
+      "value": 0.0
+     },
+     {
+      "key": "wind_direction_deg",
+      "contribution": -0.53597,
+      "value": 355.8946228027344
+     }
+    ]
+   }
+  ],
+  "AQ-C04": [
+   {
+    "t": "2016-10-26T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0131,
+    "severity": "none",
+    "confidence": 0.802,
+    "confidence_terms": {
+     "catchment_ap": 0.802,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -2.01246,
+      "value": 24.7703857421875
+     },
+     {
+      "key": "wind_direction_deg",
+      "contribution": -0.69926,
+      "value": 9.615726470947266
+     },
+     {
+      "key": "soil_moisture_lag1d",
+      "contribution": -0.59186,
+      "value": 0.0
+     },
+     {
+      "key": "season_cos",
+      "contribution": 0.52921,
+      "value": 0.4334685453485363
+     }
+    ]
+   },
+   {
+    "t": "2016-10-27T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0413,
+    "severity": "none",
+    "confidence": 0.802,
+    "confidence_terms": {
+     "catchment_ap": 0.802,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 4802.974153,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -2.84175,
+      "value": 24.136138916015625
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.85823,
+      "value": 0.9970364098221846
+     },
+     {
+      "key": "wind_direction_deg",
+      "contribution": -0.67241,
+      "value": 96.51109313964844
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.5273,
+      "value": 1.3000925741544882
+     }
+    ]
+   },
+   {
+    "t": "2016-10-28T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0223,
+    "severity": "none",
+    "confidence": 0.802,
+    "confidence_terms": {
+     "catchment_ap": 0.802,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 2608.367398,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -3.05775,
+      "value": 24.6534423828125
+     },
+     {
+      "key": "precip_prior_3d_mm",
+      "contribution": -0.70379,
+      "value": 10.223327451878507
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.62588,
+      "value": 0.9932260795935648
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.50714,
+      "value": 1.0969307834043704
+     }
+    ]
+   },
+   {
+    "t": "2016-10-29T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0219,
+    "severity": "none",
+    "confidence": 0.802,
+    "confidence_terms": {
+     "catchment_ap": 0.802,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -1.93497,
+      "value": 24.12371826171875
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": 1.52353,
+      "value": 7.993663697902669
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": -0.59709,
+      "value": 0.3617696867061812
+     },
+     {
+      "key": "soil_moisture_lag1d",
+      "contribution": -0.40042,
+      "value": 0.0024159748572856188
+     }
+    ]
+   },
+   {
+    "t": "2016-10-30T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0014,
+    "severity": "none",
+    "confidence": 0.802,
+    "confidence_terms": {
+     "catchment_ap": 0.802,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -1.96211,
+      "value": 23.099395751953125
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": -0.78403,
+      "value": 0.3617696867061812
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": -0.72148,
+      "value": 0.0
+     },
+     {
+      "key": "wind_direction_deg",
+      "contribution": -0.41214,
+      "value": 353.12091064453125
+     }
+    ]
+   }
+  ],
+  "AQ-C05": [
+   {
+    "t": "2016-10-26T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0116,
+    "severity": "none",
+    "confidence": 0.803,
+    "confidence_terms": {
+     "catchment_ap": 0.803,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -2.01856,
+      "value": 24.7969970703125
+     },
+     {
+      "key": "wind_direction_deg",
+      "contribution": -0.77212,
+      "value": 13.898612976074219
+     },
+     {
+      "key": "soil_moisture_lag1d",
+      "contribution": -0.60154,
+      "value": 0.0
+     },
+     {
+      "key": "season_cos",
+      "contribution": 0.48869,
+      "value": 0.4334685453485363
+     }
+    ]
+   },
+   {
+    "t": "2016-10-27T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0368,
+    "severity": "none",
+    "confidence": 0.803,
+    "confidence_terms": {
+     "catchment_ap": 0.803,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 4025.121265,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -2.76417,
+      "value": 24.00103759765625
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.87711,
+      "value": 0.9970364098221846
+     },
+     {
+      "key": "wind_direction_deg",
+      "contribution": -0.73219,
+      "value": 95.05452728271484
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.51663,
+      "value": 1.3693534595076982
+     }
+    ]
+   },
+   {
+    "t": "2016-10-28T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0237,
+    "severity": "none",
+    "confidence": 0.803,
+    "confidence_terms": {
+     "catchment_ap": 0.803,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 1799.403375,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -3.02851,
+      "value": 24.58294677734375
+     },
+     {
+      "key": "precip_prior_3d_mm",
+      "contribution": -0.70103,
+      "value": 10.450072071172892
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": 0.62385,
+      "value": 0.9928027095681625
+     },
+     {
+      "key": "rain_over_p90",
+      "contribution": 0.4996,
+      "value": 1.1034175680362248
+     }
+    ]
+   },
+   {
+    "t": "2016-10-29T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.0239,
+    "severity": "none",
+    "confidence": 0.803,
+    "confidence_terms": {
+     "catchment_ap": 0.803,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -1.79631,
+      "value": 24.113800048828125
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": 1.69487,
+      "value": 7.83801635278852
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": -0.86694,
+      "value": 0.2876799322607959
+     },
+     {
+      "key": "soil_moisture_lag1d",
+      "contribution": -0.34596,
+      "value": 0.007862727157771587
+     }
+    ]
+   },
+   {
+    "t": "2016-10-30T00:00:00Z",
+    "is_stub": false,
+    "runoff_probability": 0.001,
+    "severity": "none",
+    "confidence": 0.803,
+    "confidence_terms": {
+     "catchment_ap": 0.803,
+     "missing_fraction": 0.0,
+     "features_out_of_range": [],
+     "calibrated": true
+    },
+    "sediment_class": null,
+    "sediment_index": 0.0,
+    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "transmission_loss": 0.525,
+    "drivers": [
+     {
+      "key": "temp_c",
+      "contribution": -1.88137,
+      "value": 23.16082763671875
+     },
+     {
+      "key": "rain_self_percentile",
+      "contribution": -1.17592,
+      "value": 0.2876799322607959
+     },
+     {
+      "key": "precip_prior_1d_mm",
+      "contribution": -0.77792,
+      "value": 0.0
+     },
+     {
+      "key": "wind_direction_deg",
+      "contribution": -0.45244,
+      "value": 354.25482177734375
+     }
+    ]
+   }
+  ]
+ }
+}
