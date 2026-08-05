@@ -134,6 +134,44 @@ def _feature_table(name: str) -> dict[str, dict]:
     }
 
 
+def training_row(event_id: str, catchment_id: str) -> dict | None:
+    """The real feature row for one (event, catchment), or None.
+
+    Exists because the exposure endpoint was asking the runoff model for a synthetic
+    `30 mm/3h` with no other features. The model needs 20, and the sediment magnitude is
+    a curve-number depth driven by `precipitation_mm_day` — absent, that depth is 0, the
+    sediment index is 0, and since exposure is a PRODUCT of five terms every reef zone
+    came back `minimal` regardless of the plume. A synthetic request is fine for shaping
+    a response and useless for computing one.
+
+    Returns None rather than a default row when the event is not in the training set:
+    an invented feature vector produces a confident number about a storm we never
+    measured, which is the failure this project keeps having to undo.
+    """
+    import pandas as pd
+
+    path = FEATURES / "training_set_full.parquet"
+    if not path.exists():
+        return None
+
+    frame = pd.read_parquet(path)
+    if "date" not in frame.columns or "catchment_id" not in frame.columns:
+        return None
+
+    # Event ids are AQ-YYYY-MM-DD; the training set is keyed by date, so the id is
+    # parsed rather than matched as a string — the contract owns the format.
+    try:
+        day = pd.to_datetime(event_id.removeprefix("AQ-")).date()
+    except (ValueError, TypeError):
+        return None
+
+    hit = frame[(pd.to_datetime(frame["date"]).dt.date == day)
+                & (frame["catchment_id"] == catchment_id)]
+    if hit.empty:
+        return None
+    return {k: _clean(v) for k, v in hit.iloc[0].items()}
+
+
 def landcover_for(cid: str) -> dict | None:
     return _feature_table("landcover").get(cid)
 

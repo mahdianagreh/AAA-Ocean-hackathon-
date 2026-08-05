@@ -155,3 +155,75 @@ def test_driver_attributions_are_absent_not_zero_when_shap_is_unavailable():
     status = out["feature_attributions_status"]
     assert status and "unavailable" in status.lower()
     assert "gap" in status.lower(), "the status must say this is a gap, not zero influence"
+
+
+def test_the_proxy_is_anchored_and_returns_a_class():
+    """Unanchored, `classify()` is skipped and the exposure product collapses to zero.
+
+    This is the wiring that unblocked the product. The magnitude input was already
+    right — `predict` feeds `baseline.runoff_depth(X)`, the IMERG-driven curve-number
+    depth that scripts/26 ranked 12th of 2,362 days against 176th and 193rd for the two
+    ERA5-derived alternatives. Only the SCALE was missing, so every response carried
+    `sediment_class: null` and every reef zone read `minimal`.
+    """
+    import pandas as pd
+
+    from models.runoff_model import _bundle, predict_one
+
+    bundle = _bundle()
+    if not (PROJECT_ROOT / "data/models/sediment_anchor.json").exists():
+        pytest.skip("anchor not written — run scripts/27_anchor_sediment_proxy.py")
+
+    assert bundle["sediment"].is_anchored, bundle.get("sediment_anchor_status")
+    assert bundle.get("sediment_anchor_index", 0) > 0
+
+    frame = pd.read_parquet(PROJECT_ROOT / "data/processed/features/training_set_full.parquet")
+    day = pd.to_datetime("2016-10-28").date()
+    row = frame[(pd.to_datetime(frame["date"]).dt.date == day)
+                & (frame["catchment_id"] == "AQ-C01")]
+    if row.empty:
+        pytest.skip("anchor row absent")
+
+    out = predict_one(row.iloc[0].to_dict())
+    assert out["sediment_class"] in CANONICAL or out["sediment_class"] in (
+        "Low", "Medium", "High", "Extreme"), out["sediment_class"]
+    assert out["sediment_index"] > 0
+    assert out["anchor_index_for_normalisation"] > 0
+    assert "banded against" in str(out["sediment_basis"])
+
+
+def test_a_drifted_anchor_refuses_rather_than_reporting_wrong_tonnes():
+    """`k = mass / index_at_anchor`, so it is valid only for the formula that made it.
+
+    Change a term in `SedimentProxy.index()` and a stored `k` becomes a wrong
+    tonnes-per-index scale that still multiplies cleanly — confident wrong masses, no
+    error, nothing to notice. So the index is re-verified at load and a mismatch leaves
+    the proxy UNANCHORED with the reason attached, degrading to relative classes.
+    """
+    import importlib
+    import json
+
+    anchor_path = PROJECT_ROOT / "data/models/sediment_anchor.json"
+    if not anchor_path.exists():
+        pytest.skip("anchor not written")
+
+    original = anchor_path.read_text()
+    try:
+        drifted = json.loads(original)
+        drifted["index_at_anchor"] = float(drifted["index_at_anchor"]) * 1.5
+        anchor_path.write_text(json.dumps(drifted))
+
+        import models.runoff_model as rm
+        importlib.reload(rm)
+        bundle = rm._bundle()
+
+        assert not bundle["sediment"].is_anchored, (
+            "a drifted anchor was applied anyway — k is now a wrong tonnes-per-index "
+            "scale and every mass it produces is confidently wrong"
+        )
+        status = bundle.get("sediment_anchor_status", "")
+        assert "NOT APPLIED" in status and "drift" in status.lower()
+    finally:
+        anchor_path.write_text(original)
+        import models.runoff_model as rm
+        importlib.reload(rm)
