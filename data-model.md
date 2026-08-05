@@ -635,11 +635,19 @@ CREATE TABLE reef_exposures (
     arrival_window_hours_low  numeric,
     arrival_window_hours_high numeric,
     risk_score               numeric CHECK (risk_score BETWEEN 0 AND 100),
-    risk_level               text CHECK (risk_level IN ('low','moderate','high','severe')),
+    risk_level               text CHECK (risk_level IN ('minimal','low','moderate','high','critical')),
     confidence               numeric,
     formula_terms            jsonb NOT NULL,        -- each multiplicand of the §10.7 formula
     UNIQUE (run_id, reef_zone_id)
 );
+
+> **Corrected 5 Aug 2026 (Nizar).** `reef_exposures.risk_level` was specified above as
+> `('low','moderate','high','severe')` — a transcription slip. `backend/src/exposure/
+> engine.py`'s `RISK_BANDS`, which matches concept §14.5 exactly, produces
+> `minimal/low/moderate/high/critical`. The live constraint was wrong from the day this
+> table was created in Phase 2 and has been altered to match
+> (`supabase/migrations/20260805080814_fix_reef_exposures_risk_level.sql`); the DDL
+> above now reflects the corrected constraint.
 
 CREATE TABLE calibration_trials (
     id                     bigserial PRIMARY KEY,

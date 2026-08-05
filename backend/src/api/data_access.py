@@ -39,6 +39,11 @@ ARTIFACTS: dict[str, Path] = {
     "urban": FEATURES / "urban_by_catchment.parquet",
     "event_dates": DOCS / "event_dates.md",
     "data_dictionary": DOCS / "data_dictionary.md",
+    # Frozen by scripts/build_forecast_snapshot.py from forecast_runs/
+    # forecast_catchment_rainfall/forecast_exceedance — the network-free demo path.
+    # Live means "latest cached forecast" (tasks/phase3/00-phase3-plan.md), never a
+    # request-time GFS/GEFS/Postgres call.
+    "forecast_snapshot": DATA / "processed" / "forecasts" / "latest_snapshot.json",
 }
 
 
@@ -132,6 +137,44 @@ def _feature_table(name: str) -> dict[str, dict]:
         row[idcol]: {k: _clean(v) for k, v in row.items() if k != idcol}
         for _, row in df.iterrows()
     }
+
+
+def training_row(event_id: str, catchment_id: str) -> dict | None:
+    """The real feature row for one (event, catchment), or None.
+
+    Exists because the exposure endpoint was asking the runoff model for a synthetic
+    `30 mm/3h` with no other features. The model needs 20, and the sediment magnitude is
+    a curve-number depth driven by `precipitation_mm_day` — absent, that depth is 0, the
+    sediment index is 0, and since exposure is a PRODUCT of five terms every reef zone
+    came back `minimal` regardless of the plume. A synthetic request is fine for shaping
+    a response and useless for computing one.
+
+    Returns None rather than a default row when the event is not in the training set:
+    an invented feature vector produces a confident number about a storm we never
+    measured, which is the failure this project keeps having to undo.
+    """
+    import pandas as pd
+
+    path = FEATURES / "training_set_full.parquet"
+    if not path.exists():
+        return None
+
+    frame = pd.read_parquet(path)
+    if "date" not in frame.columns or "catchment_id" not in frame.columns:
+        return None
+
+    # Event ids are AQ-YYYY-MM-DD; the training set is keyed by date, so the id is
+    # parsed rather than matched as a string — the contract owns the format.
+    try:
+        day = pd.to_datetime(event_id.removeprefix("AQ-")).date()
+    except (ValueError, TypeError):
+        return None
+
+    hit = frame[(pd.to_datetime(frame["date"]).dt.date == day)
+                & (frame["catchment_id"] == catchment_id)]
+    if hit.empty:
+        return None
+    return {k: _clean(v) for k, v in hit.iloc[0].items()}
 
 
 def landcover_for(cid: str) -> dict | None:
@@ -458,6 +501,17 @@ PLUME_CACHE = TTLCache(ttl_seconds=1800)
 EXPOSURE_CACHE = TTLCache(ttl_seconds=1800)
 
 
+@lru_cache(maxsize=1)
+def forecast_snapshot() -> dict | None:
+    """The frozen GFS/GEFS snapshot (scripts/build_forecast_snapshot.py), the
+    only forecast data any endpoint may serve. None if the file is absent —
+    missing is missing, never a live GFS/GEFS/Postgres call to fill the gap."""
+    path = ARTIFACTS["forecast_snapshot"]
+    if not path.exists():
+        return None
+    return json.loads(path.read_text())
+
+
 def clear_all_caches() -> None:
     catchments.cache_clear()
     reef_zones.cache_clear()
@@ -465,5 +519,6 @@ def clear_all_caches() -> None:
     events.cache_clear()
     data_sources.cache_clear()
     _feature_table.cache_clear()
+    forecast_snapshot.cache_clear()
     PLUME_CACHE._store.clear()
     EXPOSURE_CACHE._store.clear()
