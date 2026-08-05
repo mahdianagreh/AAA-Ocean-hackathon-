@@ -150,6 +150,7 @@ def _stub_response(df: pd.DataFrame) -> list[dict[str, Any]]:
             # rejected by both.
             "sediment_class": "medium",
             "sediment_index": None,
+            "sediment_intensity_0_1": None,
             "transmission_loss": None,
         })
     return out
@@ -202,6 +203,11 @@ def predict(
     sed_index = sediment.index(X, depth)
     anchored = bool(getattr(sediment, "is_anchored", False))
     sed = sediment.classify(X, depth) if anchored else None
+    # `sed_index` is unbounded (proportional to runoff volume) - right for
+    # ranking and for mass_estimate_t(), wrong for anything that multiplies it
+    # against other [0, 1] terms. `relative_sediment_intensity_0_1` is the
+    # rescaled, bounded counterpart the exposure formula actually needs.
+    sed_intensity01 = sediment.relative_intensity(X, depth) if anchored else None
     unanchored_note = (
         "UNANCHORED - index is comparable between requests, but no absolute "
         f"class exists. Anchor the proxy at training time on {SEDIMENT_ANCHOR}."
@@ -268,6 +274,8 @@ def predict(
             "feature_attributions_status": shap_unavailable,
             "sediment_class": str(sed.sediment_class.iloc[i]) if sed is not None else None,
             "sediment_index": round(float(sed_index[i]), 6),
+            "sediment_intensity_0_1": (round(float(sed_intensity01[i]), 6)
+                                      if sed_intensity01 is not None else None),
             "sediment_basis": (str(sed.class_basis.iloc[i]) if sed is not None
                                else unanchored_note),
             "transmission_loss": float(sediment.params.transmission_loss),

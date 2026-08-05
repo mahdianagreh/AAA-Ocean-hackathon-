@@ -397,14 +397,15 @@ def runoff_predict(req: RunoffRequest):
         #
         # Component A is a runoff CLASSIFIER, not a volume regressor: there is no m3 to
         # report, so the field is None and reads as a gap. `sediment_index` is the
-        # sediment measure and is unanchored — comparable between requests, no absolute
-        # meaning — which `sediment_basis` states and which travels as a caveat.
-        sediment_index = real.get("sediment_index")
+        # sediment measure's raw, unbounded scale (right for ranking and mass_estimate_t,
+        # wrong for this field); `sediment_intensity_0_1` is the same measure rescaled
+        # against the Extreme-class threshold, which is what this [0, 1] field needs.
+        sed01 = real.get("sediment_intensity_0_1")
         return RunoffPrediction(
             catchment_id=req.catchment_id,
             predicted_runoff_m3=None,
             relative_sediment_intensity=(
-                float(sediment_index) if sediment_index is not None
+                float(sed01) if sed01 is not None
                 else float(real.get("runoff_probability", 0.0))),
             runoff_probability=real.get("runoff_probability"),
             severity=real.get("severity"),
@@ -651,15 +652,40 @@ def exposure_calculate(req: ExposureRequest):
     if cached is not None:
         return cached
 
-    # Sediment intensity: from the runoff stub when a catchment is named, else the
-    # outlet's own catchment. Reported in formula_terms either way.
+    # Sediment intensity: the REAL model on the REAL feature row for this
+    # (event, catchment) when one exists — not a fixed "30 mm/3h" scenario
+    # standing in for whichever event was actually asked for. Falls back to
+    # the scenario endpoint only when no historical row exists (an event this
+    # system has no feature data for), and says so honestly rather than
+    # presenting the fallback as a replay.
     cid = req.catchment_id or outlet.get("catchment_id")
     intensity, intensity_source = 0.5, "default 0.5 (no catchment supplied)"
+    real_model_version: str | None = None
     if cid:
-        pred = runoff_predict(RunoffRequest(catchment_id=cid, rainfall_mm_3h=30.0,
-                                            event_id=req.event_id))
-        intensity = pred.relative_sediment_intensity
-        intensity_source = f"runoff stub for {cid} at 30 mm/3h"
+        row = da.historical_features(req.event_id, cid)
+        if row is not None:
+            from models.runoff_model import predict_one
+
+            real = predict_one(row)
+            sed01 = real.get("sediment_intensity_0_1")
+            intensity = (float(sed01) if sed01 is not None
+                        else float(real.get("runoff_probability", 0.0)))
+            intensity_source = (f"real feature row for {cid} on {row['date']} "
+                               f"({req.event_id}), model {real.get('model_version_id')}")
+            real_model_version = real.get("model_version_id")
+        else:
+            pred = runoff_predict(RunoffRequest(catchment_id=cid, rainfall_mm_3h=30.0,
+                                                event_id=req.event_id))
+            intensity = pred.relative_sediment_intensity
+            intensity_source = (
+                f"no historical feature row for {cid}/{req.event_id} — scenario "
+                f"fallback at 30 mm/3h via /runoff/predict"
+                + ("" if pred.is_stub else f", model {pred.model_version}"))
+            real_model_version = None if pred.is_stub else pred.model_version
+
+    model_versions = dict(MODEL_VERSIONS)
+    if real_model_version:
+        model_versions["runoff_model"] = real_model_version
 
     # Confidence: coarse global currents and a substituted bathymetry product are
     # both real reasons not to claim high confidence.
@@ -688,7 +714,7 @@ def exposure_calculate(req: ExposureRequest):
             "confidence_adjustment_reason":
                 "coarse global current model + GMRT-substituted bathymetry",
             "plume_source": "SYNTHETIC_STUB",
-            "model_versions": MODEL_VERSIONS,
+            "model_versions": model_versions,
         })
         # Per-result caveats are ZONE-scoped. Anything that qualifies the whole run
         # — the outlet's harbour warning, the risk-band note — is attached once at

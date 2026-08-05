@@ -35,9 +35,15 @@ from models import artifacts                              # noqa: E402
 from models import features as FX                         # noqa: E402
 from models.imbalance import build_fold, stratified_negative_sample  # noqa: E402
 from models.predictors import RuleBaseline, WeightedGBM    # noqa: E402
-from models.sediment_proxy import SedimentProxy            # noqa: E402
+from models.sediment_proxy import (ANCHOR_CATCHMENT, ANCHOR_EVENT,  # noqa: E402
+                                   ANCHOR_MASS_T, SedimentProxy)
 
 DATA = ROOT / "data/processed/features/training_set_full.parquet"
+
+# Same convention as scripts/20 and scripts/26: the mooring records turbidity
+# elevated for 31.4 h from 06:50 UTC on the 28th, so the published mass spans
+# the 27th-29th.
+ANCHOR_WINDOW = ("2016-10-27", "2016-10-29")
 
 
 def measure(df, feats):
@@ -107,7 +113,38 @@ def main():
     baseline = RuleBaseline().fit(fit[feats], fit[FX.TARGET].to_numpy())
     sediment = SedimentProxy()
 
+    # Anchor the sediment proxy on the one documented mass (Kalman et al. 2025,
+    # ~24,400 t, Oct 2016 / AQ-C01). Computed on the SAME shape serving uses —
+    # `X = df.reindex(columns=feats)` and `baseline.runoff_depth(X)`, not a
+    # fitted magnitude model (scripts/26 found that path still reproduces
+    # ERA5's underestimate of this exact storm) — so the anchor value is what
+    # a live API request for this event/catchment would actually produce.
+    anchor_mask = ((df.date >= ANCHOR_WINDOW[0]) & (df.date <= ANCHOR_WINDOW[1])
+                  & (df.catchment_id == ANCHOR_CATCHMENT))
+    anchor_X = df.loc[anchor_mask].reindex(columns=feats)
+    if anchor_X.empty:
+        raise SystemExit(
+            f"{ANCHOR_CATCHMENT} absent from {ANCHOR_WINDOW} — cannot anchor "
+            "the sediment proxy")
+    anchor_depth = baseline.runoff_depth(anchor_X)
+    anchor_index = float(sediment.index(anchor_X, anchor_depth).sum())
+    sediment.calibrate_to_anchor(anchor_index, mass_t=ANCHOR_MASS_T)
+    print(f"\nsediment proxy anchored: {ANCHOR_EVENT} / {ANCHOR_CATCHMENT} "
+          f"({ANCHOR_WINDOW[0]}..{ANCHOR_WINDOW[1]})  "
+          f"index={anchor_index:.6g}  k={sediment._k:.6g}  "
+          f"(-> {ANCHOR_MASS_T:,.0f} t)")
+
     metrics = {
+        "sediment_anchor": {
+            "event": ANCHOR_EVENT, "catchment": ANCHOR_CATCHMENT,
+            "window": list(ANCHOR_WINDOW), "index_at_anchor": round(anchor_index, 6),
+            "k": sediment._k, "mass_t": ANCHOR_MASS_T,
+            "note": ("index computed from RuleBaseline.runoff_depth on the "
+                     "serving feature shape (feats-only), matching "
+                     "runoff_model.predict exactly — not a fitted magnitude "
+                     "model, which scripts/26 found still reproduces ERA5's "
+                     "underestimate of this storm"),
+        },
         "cv_scheme": "leave_one_catchment_out",
         "mean_AP": round(float(mean_ap), 4),
         "mean_ROC_AUC": round(float(per.ROC_AUC.mean()), 4),

@@ -39,6 +39,7 @@ ARTIFACTS: dict[str, Path] = {
     "urban": FEATURES / "urban_by_catchment.parquet",
     "event_dates": DOCS / "event_dates.md",
     "data_dictionary": DOCS / "data_dictionary.md",
+    "training_set": FEATURES / "training_set_full.parquet",
 }
 
 
@@ -261,6 +262,56 @@ def events() -> list[dict]:
             "source": "docs/event_dates.md",
         }
     return sorted(seen.values(), key=lambda x: x["event_id"])
+
+
+# ------------------------------------------------------------ runoff features
+
+@lru_cache(maxsize=1)
+def _training_set():
+    """The real feature table Component A trains on. None if absent.
+
+    Missing is missing (standing law #1): callers that need a real historical
+    feature row must handle None rather than receiving a fabricated one.
+    """
+    path = ARTIFACTS["training_set"]
+    if not path.exists():
+        return None
+    import pandas as pd
+    return pd.read_parquet(path)
+
+
+def historical_features(event_id: str | None, catchment_id: str) -> dict | None:
+    """The real feature row for one (event, catchment) - never a placeholder.
+
+    The event id IS the date, by the ID contract (`AQ-YYYY-MM-DD`), so no
+    separate lookup is needed to know which day to pull. Returns None when the
+    training table is absent or this (date, catchment) pair was never
+    observed - the caller reports that as a gap, not a scenario dressed up as
+    a replay.
+    """
+    import re
+
+    if not event_id:
+        return None
+    m = re.fullmatch(r"AQ-(\d{4}-\d{2}-\d{2})", event_id)
+    if not m:
+        return None
+    date = m.group(1)
+
+    df = _training_set()
+    if df is None:
+        return None
+
+    from models import features as FX
+
+    row = df[(df["date"].dt.strftime("%Y-%m-%d") == date)
+            & (df["catchment_id"] == catchment_id)]
+    if row.empty:
+        return None
+
+    r = row.iloc[0]
+    return {"catchment_id": catchment_id, "date": date,
+            **{f: _clean(r[f]) for f in FX.FEATURES}}
 
 
 # ---------------------------------------------------------------- data sources
