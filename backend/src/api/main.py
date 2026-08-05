@@ -279,10 +279,29 @@ def get_catchment(catchment_id: str):
 
 @app.get(f"{PREFIX}/outlets", response_model=list[OutletOut], tags=["geometry"])
 def list_outlets():
+    """`caveat` prefers the geometry team's own per-outlet text over the harbour-only
+    fallback, so AQ-O02/AQ-O03's "unmodelled path to the sea" candidate corrections
+    and AQ-O01/AQ-O05's positive verifications reach the screen too — not only
+    AQ-O04's. `cav.harbour_outlet()` still backstops AQ-O04 specifically, so a
+    missing or edited source caveat can never silently drop that one warning.
+
+    `upstream_km2`/`nearest_culvert_m` are passed through as plain floats, matching
+    `frontend/src/api/types.ts`'s `Outlet` interface exactly (it already declares
+    both as `number`, predating this pass) — NOT wrapped in `Value`, which would
+    have broken `SideRail.tsx:147`'s existing `o.upstream_km2` read the moment live
+    mode replaced fixtures.
+
+    Each row is copied before mutation regardless: `da.outlets()` is `@lru_cache`d,
+    so writing into its dicts in place is unsafe for any future field that does
+    need transforming here.
+    """
     out = []
-    for o in da.outlets():
+    for raw in da.outlets():
+        o = dict(raw)
+        source_caveat = o.pop("source_caveat", None)
         harbour = cav.harbour_outlet(o["outlet_id"])
-        out.append(OutletOut(**o, caveat=harbour[0].message if harbour else None))
+        caveat = source_caveat or (harbour[0].message if harbour else None)
+        out.append(OutletOut(**o, caveat=caveat))
     return out
 
 

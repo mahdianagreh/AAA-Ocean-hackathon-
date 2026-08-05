@@ -225,6 +225,30 @@ question refuses rather than confabulates.
 2. **Answers quote; they do not synthesise.** Ask "why is sensitivity 1.0" and you
    get the passages that say so, not a rewritten essay. That is the intended
    trade-off.
+3. **A disqualifying scope word used to not disqualify — fixed 2026-08-05.**
+   `min_term_coverage` (0.4, `index.py:233`) was built to reject a question whose
+   only shared word is unrelated — the retired "airspeed velocity of an unladen
+   swallow" control, which matched a chunk about ocean current *velocity*. It had
+   no way to weigh one scope-narrowing term against several genuinely-matching
+   ones: a question naming a neighbouring country (the same three this corpus's
+   own `reef_scope_is_jordan()` caveat names as deliberately excluded water — see
+   `docs/data_dictionary.md` §4) could match on unrelated shared words like
+   "reef"/"sensitivity"/"weight" and answer with Jordan-only figures as if the
+   country qualifier had been satisfied rather than contradicted, because overall
+   coverage stayed comfortably above 0.4 on the other terms alone.
+   `index._SCOPE_EXCLUSIVE_TERMS` closes this specifically: those three country
+   names are treated as disqualifying rather than merely additive — a chunk that
+   does not itself name the same country is rejected outright, regardless of its
+   score on everything else. Deliberately excludes the flood's own event name
+   (a neighbouring city, not a country), which is legitimate corpus vocabulary,
+   not a scope boundary.
+   *A documentation note on how this was found: an earlier version of this very
+   entry quoted the disqualifying country name inside a worked example, which put
+   that word into the indexed corpus and made the exact repro question
+   self-answering — a chunk `_SCOPE_EXCLUSIVE_TERMS` would have to be able to
+   contain the disqualifying term for the fix's own rule to let it through. Same
+   class of contamination as the retired swallow control. This paragraph
+   deliberately does not spell the three country names out for that reason.*
 
 ---
 

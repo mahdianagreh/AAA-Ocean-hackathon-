@@ -122,12 +122,20 @@ For the same five physical outlets:
 
 The frontend union currently has to cover all four. Pick one vocabulary.
 
-### 8 · Pulga — `/api/v1/outlets` returns a variable key set
+### 8 · Pulga — `/api/v1/outlets` returns a variable key set ✅ CLOSED (was already fixed, never marked)
 
 `main.py:191` filters with `{k: r[k] for k in keys if k in r}`, so `culvert_verdict`,
 `unmodelled_coastal_culverts`, `nearest_culvert_m` and `upstream_km2` appear only when
 `outlets.geojson` is readable and vanish on the embedded fallback — with no flag in the payload
 except a prose `source` string. Every one of them is optional in TypeScript as a result.
+
+**Traced 2026-08-05:** this was real, in `0b44ed3` (Mahdi, 2026-08-03 09:48) — but
+`3db873e` ("keep the thin API's deployment contract, supersede its surface", same day,
+11:42) already replaced it with `response_model=list[OutletOut]`, a Pydantic model that
+cannot produce a variable key set: every declared field always serializes, missing data
+becomes `None` rather than an absent key. Fixed same day it was filed; just never
+checked off here. Confirmed still true today — every outlet row returns the identical
+key set regardless of data source.
 
 ### 9 · Team — the backend test suite cannot run outside Docker
 

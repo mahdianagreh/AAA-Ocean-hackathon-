@@ -199,15 +199,19 @@ def reef_zones_gdf():
 
 # --------------------------------------------------------------------- outlets
 
-# Outlet position confidence. AQ-O04's caveat is the one that must always travel.
-OUTLET_CONFIDENCE = {
-    "AQ-O01": "good", "AQ-O02": "plausible", "AQ-O03": "plausible",
-    "AQ-O04": "low", "AQ-O05": "plausible",
-}
-
-
 @lru_cache(maxsize=1)
 def outlets() -> list[dict]:
+    """Outlet metadata, position_confidence included, straight from Mahdi's analysis.
+
+    Used to hold a hand-typed `OUTLET_CONFIDENCE = {"AQ-O01": "good", ...}` guess
+    written before `outlets.geojson` carried real per-outlet confidence. That guess
+    diverged from the geometry team's actual DEM/culvert cross-check in three of
+    five rows — AQ-O02 and AQ-O03 (both "CANDIDATE CORRECTION — unmodelled path to
+    the sea" in the source) read back as "plausible" instead of "low", and AQ-O05
+    (a verified natural wadi mouth) read back as merely "plausible" instead of
+    "high". `scripts/06_catchments.py`'s own POSITION_CONFIDENCE table is the
+    source of truth; this now reads it rather than re-guessing it.
+    """
     gdf = _geo(ARTIFACTS["outlets"])
     if gdf is None:
         return []
@@ -223,7 +227,16 @@ def outlets() -> list[dict]:
             "catchment_id": _clean(r.get("catchment_id")),
             "lon": float(pt.x),
             "lat": float(pt.y),
-            "position_confidence": OUTLET_CONFIDENCE.get(oid, "plausible"),
+            # "unchecked" is the fallback POSITION_CONFIDENCE.get() itself uses for
+            # any outlet it has no entry for — never invent "plausible" here either.
+            "position_confidence": _clean(r.get("position_confidence")) or "unchecked",
+            "position_confidence_note": _clean(r.get("imagery_note")),
+            "culvert_verdict": _clean(r.get("culvert_verdict")),
+            "upstream_km2": _clean(r.get("upstream_km2")),
+            "nearest_culvert_m": _clean(r.get("nearest_culvert_m")),
+            "culverts_within_2500m": _clean(r.get("culverts_within_2500m")),
+            "unmodelled_coastal_culverts": _clean(r.get("unmodelled_coastal_culverts")),
+            "source_caveat": _clean(r.get("caveat")),
         })
     return sorted(out, key=lambda x: x["outlet_id"])
 

@@ -76,10 +76,13 @@ export interface Health {
   data_volume_mounted: boolean;
 }
 
-/** Two vocabularies for the same five outlets, so the union covers both.
- *  /api/v1/catchments emits plausible|low|good, /api/v1/outlets emits high|low.
- *  OPEN-ISSUES.md item 7. */
-export type PositionConfidence = 'low' | 'plausible' | 'good' | 'high';
+/** OPEN-ISSUES.md item 7 — CLOSED 2026-08-05. There was never really a
+ *  two-vocabulary problem on the API side: /api/v1/catchments never emitted this
+ *  field at all, and /api/v1/outlets was reading a hand-typed guess
+ *  ({good, plausible, low}) that had silently diverged from the geometry team's
+ *  actual DEM/culvert cross-check on 3 of 5 outlets. /outlets now reads the real
+ *  vocabulary straight from source: high | low | unchecked. */
+export type PositionConfidence = 'high' | 'low' | 'unchecked';
 
 export interface Catchment {
   catchment_id: string;
