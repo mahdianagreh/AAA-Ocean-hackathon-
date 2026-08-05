@@ -9,10 +9,12 @@ bridge. This produces one genuine run using the REAL exposure engine
 reef_zones.gpkg), so the bridge loader has real data to prove itself against
 rather than a hand-built fixture.
 
-The only stand-in is the synthetic concentric-contour generator — but that is
-exactly what `/exposure/calculate` itself uses today (`plume_source:
-SYNTHETIC_STUB`, per backend/src/api/main.py::_synthetic_contours), so this is
-faithful to current production behaviour, not a shortcut around it.
+The only stand-in is a synthetic concentric-contour generator, reproduced
+below rather than the real particle engine `/exposure/calculate` now calls
+(backend/src/api/main.py's `_real_contours`, wired 5 Aug 2026) — that engine
+needs fastapi-free imports this script deliberately avoids (see the note by
+CONTOUR_HOURS below). This is now a stand-in for the bridge loader's shape,
+not a claim about current production behaviour.
 
 Run: cd backend && .venv/bin/python ../scripts/smoke_test_exposure_bridge.py
 """

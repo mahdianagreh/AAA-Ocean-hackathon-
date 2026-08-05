@@ -236,6 +236,15 @@ class CurrentFieldInterpolator:
     def __init__(self, ds: xr.Dataset):
         self._ds = ds
 
+    @property
+    def dataset(self) -> xr.Dataset:
+        """The wrapped u/v grid, read-only. `models.plume_forcing` builds a
+        vectorized interpolator from the same grid + method for the particle
+        engine's per-particle-per-step call volume, where `.interp()`'s
+        per-point overhead (~4 ms, measured against the cached historical
+        HYCOM grid) is too slow to call ~1e5 times."""
+        return self._ds
+
     def __call__(self, lon: float, lat: float, time, depth: float = 0.0):
         ds = self._ds
         # Callers pass whatever datetime flavor they have — np.datetime64 (our own

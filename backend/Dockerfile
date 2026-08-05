@@ -34,8 +34,12 @@ FROM base AS api
 # PROJ, but not the datum grids, and the exposure engine cannot report an area without
 # EPSG:4326 -> EPSG:32636. Same reason the worker target installs it; the api target
 # needs it now that exposure.engine is imported at module scope.
+#
+# libexpat1 for rasterio's bundled GDAL (models/particle_engine.py's BathymetrySampler,
+# imported at module scope by api/main.py since the particle engine landed) — same
+# package the worker target installs for the same reason.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends proj-data \
+ && apt-get install -y --no-install-recommends libexpat1 proj-data \
  && rm -rf /var/lib/apt/lists/*
 
 # Requirements copied alone first, so a code change does not invalidate the

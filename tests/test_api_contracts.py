@@ -158,16 +158,29 @@ def test_stub_endpoints_are_flagged():
         check("real runoff carries a derived provenance entry",
               any(p["kind"] == "derived" for p in j["provenance"]))
 
+    # Wired to the real particle engine (5 Aug 2026, backend/src/api/main.py's
+    # _real_contours) -- AQ-2016-10-28 is the one event with a real release
+    # time (docs/event_dates.md) and calibrated params, so this is no longer
+    # the synthetic-circle stub.
     r = client.post(f"{PREFIX}/plume/simulate",
-                    json={"event_id": "AQ-2016-10-25", "outlet_id": "AQ-O02"})
+                    json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O02"})
     j = r.json()
-    check("plume is flagged is_stub", j["is_stub"] is True)
+    check("plume is no longer flagged is_stub", j["is_stub"] is False)
+    check("plume declares a derived provenance entry",
+          any(p["kind"] == "derived" for p in j["provenance"]))
     check("plume contours are non-empty", len(j["contours"]) > 0)
+
+    # An undocumented event genuinely has no release time -- the engine must
+    # refuse, not guess one (docs/event_dates.md rule 1).
+    r = client.post(f"{PREFIX}/plume/simulate",
+                    json={"event_id": "AQ-9999-01-01", "outlet_id": "AQ-O02"})
+    check("plume simulate 422s for an event with no documented flood_arrival_utc",
+          r.status_code == 422, f"got {r.status_code}: {r.text}")
 
 
 def test_exposure_contract_and_formula_terms():
     r = client.post(f"{PREFIX}/exposure/calculate",
-                    json={"event_id": "AQ-2016-10-25", "outlet_id": "AQ-O02",
+                    json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O02",
                           "horizon_hours": 24})
     check("exposure 200", r.status_code == 200)
     j = r.json()
@@ -189,8 +202,8 @@ def test_exposure_contract_and_formula_terms():
         check(f"formula_terms includes {term}", term in ft)
     check("formula_terms records the measurement CRS as EPSG:32636",
           ft.get("measure_crs") == "EPSG:32636", f"got {ft.get('measure_crs')}")
-    check("formula_terms records that the plume input is a stub",
-          ft.get("plume_source") == "SYNTHETIC_STUB")
+    check("formula_terms records the plume input as the real particle engine",
+          ft.get("plume_source") == "REAL_PARTICLE_ENGINE", f"got {ft.get('plume_source')!r}")
 
     # The audit path: a stored run must reconstruct.
     rid = j["run_id"]
@@ -204,7 +217,7 @@ def test_exposure_contract_and_formula_terms():
 
 def test_unreached_zones_are_explained_not_silently_empty():
     r = client.post(f"{PREFIX}/exposure/calculate",
-                    json={"event_id": "AQ-2016-10-25", "outlet_id": "AQ-O01",
+                    json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O01",
                           "horizon_hours": 24})
     j = r.json()
     if j["results"]:
@@ -251,11 +264,11 @@ def test_explain_and_ask_contracts():
 
 def test_alerts_read_from_stored_runs():
     client.post(f"{PREFIX}/exposure/calculate",
-                json={"event_id": "AQ-2016-10-25", "outlet_id": "AQ-O02"})
+                json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O02"})
     # Scoped to the scenario just requested. Unscoped would read whichever run is
     # newest in the table, which a cached response leaves unchanged.
     r = client.get(f"{PREFIX}/alerts", params={"min_level": "minimal",
-                                              "event_id": "AQ-2016-10-25",
+                                              "event_id": "AQ-2016-10-28",
                                               "outlet_id": "AQ-O02"})
     check("alerts 200", r.status_code == 200)
     check("alerts derive from a stored run", len(r.json()) > 0)
@@ -320,16 +333,18 @@ CAVEAT_MATRIX = [
      "always", lambda: "is_stub" if _runoff_predict()["is_stub"]
                        else "predicted_runoff_m3"),
     ("plume / bathymetry substitution",
+     # "E" won't do any more: the real particle engine needs a real release
+     # time, parsed from docs/event_dates.md, which only AQ-2016-10-28 has.
      lambda: client.post(f"{PREFIX}/plume/simulate",
-                         json={"event_id": "E", "outlet_id": "AQ-O02"}).json()["caveats"],
+                         json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O02"}).json()["caveats"],
      "always", "geometry"),
     ("exposure / risk band thresholds",
      lambda: client.post(f"{PREFIX}/exposure/calculate",
-                         json={"event_id": "E", "outlet_id": "AQ-O02"}).json()["caveats"],
+                         json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O02"}).json()["caveats"],
      "always", "risk_level"),
     ("exposure / AQ-O04 harbour basin",
      lambda: client.post(f"{PREFIX}/exposure/calculate",
-                         json={"event_id": "E", "outlet_id": "AQ-O04"}).json()["caveats"],
+                         json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O04"}).json()["caveats"],
      "outlet is AQ-O04", "outlet_id"),
     ("explain / template disclosure",
      lambda: client.post(f"{PREFIX}/explain",
@@ -368,7 +383,7 @@ def test_obsolete_width_claim_is_gone():
         "reef-zones": client.get(f"{PREFIX}/reef-zones").json(),
         "exposure/calculate": client.post(
             f"{PREFIX}/exposure/calculate",
-            json={"event_id": "E", "outlet_id": "AQ-O02"}).json(),
+            json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O02"}).json(),
         "alerts": client.get(f"{PREFIX}/alerts").json(),
     }
     for name, payload in payloads.items():
@@ -416,7 +431,7 @@ def test_caveat_coverage_table():
 def test_cache_actually_caches():
     da.PLUME_CACHE._store.clear()
     da.PLUME_CACHE.hits = da.PLUME_CACHE.misses = 0
-    body = {"event_id": "AQ-2016-10-25", "outlet_id": "AQ-O03", "horizon_hours": 24}
+    body = {"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O03", "horizon_hours": 24}
     client.post(f"{PREFIX}/plume/simulate", json=body)
     client.post(f"{PREFIX}/plume/simulate", json=body)
     stats = da.PLUME_CACHE.stats()

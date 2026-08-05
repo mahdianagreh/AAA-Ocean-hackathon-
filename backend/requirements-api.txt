@@ -1,16 +1,30 @@
 # API image.
 #
-# It was "serving only - no geospatial stack", and that intent had to give way: the
-# exposure engine intersects plume contours with reef zones and every area it reports
-# is computed in EPSG:32636, with `_assert_measure_crs` refusing anything else. That
-# is the API's central feature, not an optional extra, so `api/main.py` imports
-# `exposure.engine` at module scope and the container could not start without
-# geopandas — `docker compose up` came up unhealthy and the worker never started
-# behind `depends_on: service_healthy` (OPEN-ISSUES #21).
+# It was "serving only - no geospatial stack", and that intent had to give way twice.
 #
-# Only the vector half is here. rasterio, whitebox and the rest of the pipeline stack
-# stay in requirements-worker.txt, so this image is still much smaller than the
-# worker's and still the fast one to rebuild.
+# First: the exposure engine intersects plume contours with reef zones and every area
+# it reports is computed in EPSG:32636, with `_assert_measure_crs` refusing anything
+# else. That is the API's central feature, not an optional extra, so `api/main.py`
+# imports `exposure.engine` at module scope and the container could not start without
+# geopandas — `docker compose up` came up unhealthy and the worker never started behind
+# `depends_on: service_healthy` (OPEN-ISSUES #21).
+#
+# Second (5 Aug 2026): `/plume/simulate` was a synthetic-circle stub until the real
+# particle engine (`models/particle_engine.py`, `models/plume_forcing.py`,
+# `ingestion/ocean_currents.py`) was wired in, at module scope for the same reason as
+# above. The intended home for a minutes-long simulation is the worker
+# (`worker/run.py`'s own docstring: "A particle simulation takes minutes. The API
+# drops a job, this picks it up.") — but that queue is a documented placeholder
+# (`SUPABASE_URL unset — idling. No queue to read yet`), so for now this runs
+# synchronously in the API process like every other model call here (`runoff_predict`,
+# `exposure_calculate`), behind `da.PLUME_CACHE` rather than behind a job. Move it to
+# the worker once Nizar's queue is real; until then this image carries the stack too.
+#
+# rasterio, whitebox and the pipeline-only stack stay in requirements-worker.txt --
+# only what the particle engine needs at import time (rasterio itself, via
+# `BathymetrySampler`) plus xarray/netCDF4/python-dotenv (`ocean_currents.py`) moved
+# here. Same pins as the worker image so the two cannot drift into different
+# geometry/forcing behaviour.
 #
 # Pinned exactly, and resolved by pip against python:3.12-slim rather than
 # written by hand - the first attempt invented pandas==2.3.4, which does not
@@ -36,8 +50,17 @@ pyogrio==0.13.0
 
 # Rendering — backend/src/rendering/plume_map.py draws the prediction onto real
 # satellite imagery. matplotlib for the figure, pillow to read the baked JPEG basemap.
-# Deliberately NOT contextily or rasterio: tiles are baked once offline by
-# scripts/fetch_basemap_raster.py, so the request path never touches the network and the
-# api image never grows a tile stack it uses once.
+# Tiles themselves are baked once offline by scripts/fetch_basemap_raster.py, so the
+# request path never touches the network for imagery — rasterio below is for the
+# particle engine's bathymetry raster, not for tiles, and this image still never grows
+# a tile stack it uses once.
 matplotlib==3.10.8
 pillow==12.1.0
+
+# Particle engine forcing/geometry (models/particle_engine.py, models/plume_forcing.py,
+# ingestion/ocean_currents.py) — see the header note above. rasterio pin matches
+# requirements-worker.txt exactly.
+rasterio==1.5.0
+xarray==2026.7.0
+netCDF4==1.7.4
+python-dotenv==1.2.2
