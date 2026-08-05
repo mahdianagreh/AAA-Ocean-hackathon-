@@ -443,6 +443,65 @@ backup_event:
   source_citation: Katz et al. (2015)
   timing_status: unresolved
   note: February is IST (UTC+2), not IDT
+
+# ---------------------------------------------------------------------------
+# The gold validation set for "did sediment reach the sea".
+#
+# Added 4 August 2026. Kalman et al. (2025) states that 28 October 2016 was
+# "the 13th flood recorded since records began in 1994" - so thirteen such
+# events exist. We hold the COUNT but only ONE date. The remaining twelve are
+# in two papers not on disk; see docs/karam_handoff.md Request 0.
+#
+# scripts/24_gold_event_validation.py parses this block. Its power calculation
+# uses `total_documented`, so the harness reports honestly on a partial list
+# rather than silently scoring against n=1 and calling it validation.
+#
+# Rule 1 still holds: no script hard-codes a date. Add confirmed dates HERE.
+# ---------------------------------------------------------------------------
+sea_reaching_flood_record:
+  total_documented: 13
+  record_begins: 1994
+  record_ends: 2016-10-28
+  source_citation: Kalman et al. (2025), quoting Katz et al. (2015) and Kalman et al. (2020b)
+  source_quote: "The flood was the 13th flood recorded since records began in 1994"
+  measurement_location: Kinnet Canal outlet, Eilat shoreline
+  location_caveat: >-
+    These are floods documented on the ISRAELI side. Our five catchments are
+    Jordanian. A day absent from this list is NOT a confirmed negative - it may
+    be an Aqaba-side flood that nobody recorded. Precision is therefore not
+    computable against this set; recall and rank are.
+  base_rate:
+    floods_per_year_1994_2012: 0.17
+    floods_per_year_2012_2020: 1.7
+    daily_probability_quote: "less than 0.5%"
+    period_label_1994_2012: drought
+  dates_confirmed:
+    - date: 2016-10-28
+      event_id: AQ-2016-10-28
+      ordinal_in_record: 13
+      sediment_mass_t: 24400
+      evidence: mooring time series, Kalman et al. (2025)
+  dates_pending:
+    count: 12
+    blocked_on:
+      - citation: Kalman et al. (2020b)
+        doi: 10.1111/sed.12737
+        journal: Sedimentology 67, 3152-3166
+        holds: the 1994- flood record behind the 0.17/yr and 1.7/yr rates
+      - citation: Katz et al. (2015)
+        holds: the earlier hyperpycnal plume event, approx 20,000 t
+    status: unresolved
+  known_unresolved_candidates:
+    # Mentioned in the literature WITHOUT a usable date. Not usable as labels
+    # until a date is confirmed - listed so nobody re-discovers them.
+    - period: 2006
+      note: "exceptionally large Aqaba flood, extensive damage (Farhan and Anbar 2014)"
+    - period: 2013-02
+      note: same as backup_event above; Katz et al. paywalled, no date
+    - period: 1966-03-11
+      note: "50-year return period storm (Farhan and Anbar 2014); pre-satellite, not usable"
+    - period: 1940
+      note: "'washed away half of modern Aqaba'; historical record only"
 ```
 
 ---

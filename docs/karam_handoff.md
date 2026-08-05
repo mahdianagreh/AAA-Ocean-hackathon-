@@ -51,6 +51,59 @@ but you will hit it if you deaccumulate all three fields on non-event months.
 
 ---
 
+## Request 0 — two papers, and they outrank everything below
+
+**Added 4 August, after the requests below were written.** This one is new, it is
+cheap, and it is worth more than the other three combined.
+
+While trying to fix the sediment side I found that **our label is not the thing we
+named it.** Full write-up in `reports/model/label_problem.md`; the short version:
+
+- `corr(sro, ERA5 rainfall) = +0.985` — the label is a near-deterministic function
+  of ERA5's own precipitation, while `corr(ERA5, IMERG) = +0.573`. A model
+  predicting it is partly learning the ERA5↔IMERG offset, not wadi hydrology.
+- **ERA5 largely missed October 2016.** 0.77 mm and p92.6, against IMERG's 9.58 mm
+  and p99.5. The one storm with a mooring record and a published sediment mass is
+  an ordinary damp day in the product our label comes from.
+- **It is a detection failure, not a scaling one.** On days IMERG calls wet
+  (> 1 mm), ERA5 is essentially dry on **35%** — and on **20% of the heaviest IMERG
+  days in the record.** Where it does see a storm the magnitude is about right
+  (ratio 0.99), which is why any "ratio on days both are wet" comparison looks
+  reassuring and is worthless.
+- **The label inherits the blind spot.** Of the 276 catchment-days where IMERG
+  observed > 1 mm and ERA5 saw nothing, `target` is positive on **exactly one** —
+  against 51.1% on IMERG-wet days generally. Those are real storms labelled as
+  non-events.
+- Our label fires on **3.21% of calendar days**. Kalman et al. (2025) put
+  sea-reaching floods at **0.156%** — 13 events since 1994, *"less than 0.5% of
+  days."* **21× too generous.**
+- And your sweep matters more than I thought: a model given **one column of ERA5's
+  own rainfall** scores AP **0.9785** against our 20-feature 0.7445. Stripping every
+  ERA5-sourced feature drops us to **0.6623**. The whole modelling difficulty was
+  the ERA5↔IMERG mismatch, not hydrology.
+
+The fix needs the dates of those 13 floods, and they are in two papers we do not
+have:
+
+| source | what it holds | identifier |
+|---|---|---|
+| **Kalman et al. 2020b** | the 1994– flood record behind the 0.17/yr and 1.7/yr rates | *Sedimentology* 67, 3152–3166 · `10.1111/sed.12737` |
+| **Katz et al. 2015** | the earlier hyperpycnal event, ≈20,000 t | cited in Kalman 2025 as Katz et al., 2015a/b |
+
+**What I need:** the dated event list — any table, figure or supplementary file
+giving *when* each of the 13 floods reached the sea. A screenshot of the table is
+enough. If the PDFs are paywalled, HTU library access or an author email
+(`akoss.kalman@gmail.com`, listed on the 2025 preprint) both work.
+
+**Why it beats Requests 1–3.** Those three make Component A better at predicting an
+ERA5 quantity. This one tells us whether that quantity is the right target at all.
+Thirteen dated events cannot *train* a classifier across five catchments — but they
+can **validate** one, which is the claim the demo actually needs to make. Right now
+we have exactly one event to check against, and it is the anchor itself, so nothing
+is independent.
+
+---
+
 ## Request 1 — the 120 missing wet-season ERA5 months
 
 **Expected gain: the largest available to me. This is the ask that matters most.**
@@ -193,12 +246,15 @@ rate. Not a tuning problem; the tool is a mismatch. Written up in
 
 | # | Request | Blocked on | Gain |
 |---|---|---|---|
+| **0** | **Dated flood list from Kalman 2020b + Katz 2015** | **nothing — library access** | **decisive** |
 | 1 | 120 wet-season ERA5 months | **CDS key** | large |
-| 2 | `rain_3h_mm` over the record (or the 412 wet days) | your sweep | **largest** |
+| 2 | `rain_3h_mm` over the record (or the 412 wet days) | your sweep | largest of 1–3 |
 | 3 | Lower catalogue threshold to ≥0.5 mm | nothing | moderate |
 
-If only one is possible, **make it Request 2.** Intensity is the physical driver of
-arid runoff and the model is currently blind to it.
+If only one is possible, **make it Request 0.** Requests 1–3 make the model better at
+predicting an ERA5 quantity; Request 0 tells us whether that quantity is the right
+target. Of the remaining three, Request 2 is the strongest — intensity is the physical
+driver of arid runoff and the model is currently blind to it.
 
 What I am doing meanwhile, neither of which needs you: repeated-seed evaluation so we
 stop chasing noise, and a classifier–regressor ensemble aimed at AQ-C01, which is the
