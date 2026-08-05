@@ -48,7 +48,12 @@
     "risk": "Exposure by catchment",
     "worst": "highest",
     "mooring": "Mooring record",
-    "area": "Catchment area"
+    "area": "Catchment area",
+    "exposureTitle": "Exposure score {{score}} of 100 — {{range}} band",
+    "exposureNote": "Sediment intensity term for R-01 (0–1, squashed against the Oct 2016 anchor so it never saturates): {{sediment}}.",
+    "alerts": "Alerts",
+    "alertsEmpty": "No zone is currently above the minimal band — expected while the plume transport model is a placeholder; every score is capped near the bottom of the scale until it lands.",
+    "liveUnreachable": "Not available — the live backend could not be reached. Historical figures on this screen are unaffected; they come from the committed record, not from this connection."
   },
   "time": {
     "label": "Time",
@@ -264,5 +269,17 @@
     "habitat": "Habitat",
     "geomorphic": "Geomorphic zone",
     "source": "Source"
+  },
+  "plumeMap": {
+    "title": "Predicted plume",
+    "unavailable": "No prediction image available — the backend is unreachable or has not produced one for this event.",
+    "stub": "Placeholder plume",
+    "real": "Model plume",
+    "stubNote": "The shape is a placeholder (concentric rings), not a transport simulation. The satellite imagery and reef outlines are real; only the plume's shape is synthetic.",
+    "realNote": "From the particle transport model.",
+    "alt": "Predicted sediment plume at +{{hours}} hours, on real satellite imagery",
+    "stepper": "Prediction timestep",
+    "rendering": "Rendering the next frame…",
+    "caveat": "Real Esri satellite imagery and real Allen Coral Atlas reef outlines. The plume contours are the model's own output — nothing in this image is generated."
   }
 }

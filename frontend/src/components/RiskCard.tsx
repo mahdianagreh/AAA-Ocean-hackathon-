@@ -1,29 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import type { HazardBand } from '../api/types';
-import { HAZARD_RANGES } from '../api/types';
+import { BAND_CLASS, HAZARD_RANGES } from '../api/types';
 import { ValueWithUnit } from './ValueWithUnit';
 import { ConfidenceMeter, type ConfidenceComponents } from './ConfidenceMeter';
 import { DriverBars, type Driver } from './DriverBars';
-
-/** Literal class names, never `bg-risk-${band}`.
- *
- *  Tailwind scans source statically, so an interpolated class is not a string in
- *  the file and the utility is never generated. That bug shipped once already in
- *  the Phase 0 specimen: the strokes rendered because they were inline styles, and
- *  every fill silently fell back to the canvas. It read as a washed-out ramp
- *  rather than a missing one, which is why it survived a passing test suite. */
-const BAND_CLASS: Record<HazardBand, string> = {
-  minimal: 'bg-risk-minimal text-risk-minimal-on border-risk-minimal-stroke',
-  low: 'bg-risk-low text-risk-low-on border-risk-low-stroke',
-  moderate:
-    // Correction #10: no AA-compliant text colour exists for this band in dark
-    // theme (4.04 measured). So dark drops the fill and keeps the hue as a stroke
-    // on --surface, where --ink reaches 14.32. Light theme is unaffected.
-    'bg-risk-moderate text-risk-moderate-on border-risk-moderate-stroke ' +
-    'dark:bg-surface dark:text-ink dark:border-risk-moderate',
-  high: 'bg-risk-high text-risk-high-on border-risk-high-stroke',
-  critical: 'bg-risk-critical text-risk-critical-on border-risk-critical-stroke',
-};
 
 export interface RiskCardData {
   catchment_id: string;
