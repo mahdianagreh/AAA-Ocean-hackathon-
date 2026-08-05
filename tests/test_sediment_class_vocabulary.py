@@ -116,3 +116,42 @@ def test_the_stub_predictor_emits_a_legal_value():
             sediment_class=row["sediment_class"],
             model_version="stub", is_stub=True,
         )
+
+
+def test_driver_attributions_are_absent_not_zero_when_shap_is_unavailable():
+    """A missing explainer must produce no drivers, never drivers of zero.
+
+    This zero-filled on any exception, and the result was not a missing chart but a
+    WRONG one: argsort over an all-zero row returns the first TOP_DRIVERS features in
+    column order at `shap: 0.0`, so the UI drew a flat bar chart reading "the model says
+    none of these matter". Measured on 4 Aug, the same request returned
+    precipitation_mm_day / slope_mean_deg / area_km2 / season_cos at 0.0 without shap,
+    and temp_c / wind_direction_deg / rain_self_percentile / rain_over_p90 at
+    -1.81 / -1.10 / +0.78 / +0.76 with it. `shap` is imported lazily, so this fired
+    whenever the library was absent — which it was in the local venv while present in the
+    api image, meaning local and container disagreed with nothing to say so.
+    """
+    import builtins
+
+    from models.runoff_model import predict_one
+
+    real_import = builtins.__import__
+
+    def blocked(name, *args, **kwargs):
+        if name == "shap":
+            raise ImportError("simulated: shap absent")
+        return real_import(name, *args, **kwargs)
+
+    builtins.__import__ = blocked
+    try:
+        out = predict_one({"catchment_id": "AQ-C01", "rain_3h_mm": 12.0})
+    finally:
+        builtins.__import__ = real_import
+
+    assert out["feature_attributions"] == [], (
+        "drivers must be empty when TreeSHAP cannot run — a list of zeros is a claim "
+        "about the features, and it is a false one"
+    )
+    status = out["feature_attributions_status"]
+    assert status and "unavailable" in status.lower()
+    assert "gap" in status.lower(), "the status must say this is a gap, not zero influence"

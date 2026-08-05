@@ -207,10 +207,30 @@ def predict(
         f"class exists. Anchor the proxy at training time on {SEDIMENT_ANCHOR}."
     )
 
+    # Attributions are either real or ABSENT. Never zero-filled.
+    #
+    # This used to fall back to np.zeros on any exception, and the consequence was not a
+    # missing chart — it was a WRONG one. argsort over an all-zero row returns the first
+    # TOP_DRIVERS features in column order, each with `shap: 0.0`, so the API served four
+    # arbitrary feature names and the UI drew a flat bar chart that reads as "the model
+    # says none of these matter". Measured on 4 Aug: without shap installed the drivers
+    # came back as precipitation_mm_day / slope_mean_deg / area_km2 / season_cos at 0.0;
+    # with it, temp_c / wind_direction_deg / rain_self_percentile / rain_over_p90 at
+    # -1.81 / -1.10 / +0.78 / +0.76. A different answer, silently.
+    #
+    # `shap` is imported lazily inside predictors.py, so this fires whenever the library
+    # is absent — which it was in the local venv while being present in the api image,
+    # meaning local and container disagreed about the drivers with nothing to say so.
+    shap_vals = None
+    shap_unavailable = None
     try:
         shap_vals = np.asarray(gbm.shap_values(X))
-    except Exception:                                    # shap absent or booster odd
-        shap_vals = np.zeros((len(X), len(feats)))
+    except Exception as exc:
+        shap_unavailable = (
+            f"{type(exc).__name__}: {exc}. TreeSHAP could not run, so driver "
+            "attributions are unavailable for this prediction. This is a gap, not a "
+            "statement that the features have zero influence."
+        )
 
     results = []
     for i in range(len(X)):
@@ -218,15 +238,20 @@ def predict(
         if absent:
             terms["features_absent_from_request"] = absent
 
-        order = np.argsort(-np.abs(shap_vals[i]))[:TOP_DRIVERS]
-        drivers = [
-            {
-                "feature": feats[j],
-                "shap": round(float(shap_vals[i][j]), 5),
-                "value": (None if pd.isna(X.iloc[i, j]) else float(X.iloc[i, j])),
-            }
-            for j in order
-        ]
+        if shap_vals is None:
+            # Empty, not fabricated. The UI renders "drivers unavailable" from the
+            # accompanying status rather than a chart of zeros.
+            drivers = []
+        else:
+            order = np.argsort(-np.abs(shap_vals[i]))[:TOP_DRIVERS]
+            drivers = [
+                {
+                    "feature": feats[j],
+                    "shap": round(float(shap_vals[i][j]), 5),
+                    "value": (None if pd.isna(X.iloc[i, j]) else float(X.iloc[i, j])),
+                }
+                for j in order
+            ]
 
         p = float(proba[i])
         results.append({
@@ -240,6 +265,7 @@ def predict(
             "confidence_terms": terms,
             "rule_baseline_index": round(float(base_p[i]), 4),
             "feature_attributions": drivers,
+            "feature_attributions_status": shap_unavailable,
             "sediment_class": str(sed.sediment_class.iloc[i]) if sed is not None else None,
             "sediment_index": round(float(sed_index[i]), 6),
             "sediment_basis": (str(sed.class_basis.iloc[i]) if sed is not None

@@ -35,6 +35,12 @@ MAX_ATTEMPTS="${MAX_ATTEMPTS:-200}"
 BACKOFF="${BACKOFF:-60}"
 STALL_ROUNDS="${STALL_ROUNDS:-5}"
 
+#: Kill a child that has written no granule for this long. Generous enough that a slow
+#: Harmony queue is not mistaken for a hang — a single job can legitimately take a few
+#: minutes — and short enough that a night of sleep costs minutes rather than 18 hours.
+STALL_MINUTES="${STALL_MINUTES:-12}"
+STALL_CHECK_SECONDS="${STALL_CHECK_SECONDS:-60}"
+
 mkdir -p "$(dirname "$LOG")"
 
 granules() { find data/raw/imerg/events -name '*.nc*' 2>/dev/null | wc -l | tr -d ' '; }
@@ -83,7 +89,43 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
     echo "" >> "$LOG"
     echo "=== halfhourly attempt $attempt/$MAX_ATTEMPTS at $(date '+%F %H:%M:%S') ===" >> "$LOG"
 
-    "$PY" scripts/sweep_imerg_halfhourly.py "$@" >> "$LOG" 2>&1
+    # Run the child in the background and watch it for a STALL, not just for exit.
+    #
+    # This is the failure that got through on 4 Aug. The laptop slept, the TCP socket
+    # died under an in-flight Harmony download, and the client blocked on a socket read
+    # with no timeout — forever. The process stayed alive for 18h34m having consumed
+    # 1m17s of CPU, held no sockets, and wrote nothing. The supervisor was waiting on a
+    # child that would never return, so a loop designed to survive network changes sat
+    # out the entire night. ERA5 rode through the same sleep because its client has
+    # timeouts; harmony-py does not.
+    #
+    # So progress is judged by GRANULES ON DISK on a timer. If none appear for
+    # STALL_MINUTES the child is killed, which drops us into the normal retry path and
+    # the whole thing self-heals. Resume is per-granule, so killing mid-download costs
+    # only the granule in flight.
+    "$PY" scripts/sweep_imerg_halfhourly.py "$@" >> "$LOG" 2>&1 &
+    child=$!
+
+    last_seen=$(granules)
+    quiet=0
+    while kill -0 "$child" 2>/dev/null; do
+        sleep "$STALL_CHECK_SECONDS"
+        now_seen=$(granules)
+        if [ "$now_seen" -gt "$last_seen" ]; then
+            last_seen=$now_seen
+            quiet=0
+        else
+            quiet=$((quiet + STALL_CHECK_SECONDS))
+            if [ "$quiet" -ge "$((STALL_MINUTES * 60))" ]; then
+                echo "supervisor: no new granule in ${STALL_MINUTES} min at $now_seen — child $child looks hung on a dead socket, killing it" | tee -a "$LOG"
+                kill "$child" 2>/dev/null
+                sleep 5
+                kill -9 "$child" 2>/dev/null
+                break
+            fi
+        fi
+    done
+    wait "$child" 2>/dev/null
 
     now=$(granules)
     left=$(incomplete | tail -1)
