@@ -39,6 +39,11 @@ ARTIFACTS: dict[str, Path] = {
     "urban": FEATURES / "urban_by_catchment.parquet",
     "event_dates": DOCS / "event_dates.md",
     "data_dictionary": DOCS / "data_dictionary.md",
+    # Frozen by scripts/build_forecast_snapshot.py from forecast_runs/
+    # forecast_catchment_rainfall/forecast_exceedance — the network-free demo path.
+    # Live means "latest cached forecast" (tasks/phase3/00-phase3-plan.md), never a
+    # request-time GFS/GEFS/Postgres call.
+    "forecast_snapshot": DATA / "processed" / "forecasts" / "latest_snapshot.json",
 }
 
 
@@ -445,6 +450,17 @@ PLUME_CACHE = TTLCache(ttl_seconds=1800)
 EXPOSURE_CACHE = TTLCache(ttl_seconds=1800)
 
 
+@lru_cache(maxsize=1)
+def forecast_snapshot() -> dict | None:
+    """The frozen GFS/GEFS snapshot (scripts/build_forecast_snapshot.py), the
+    only forecast data any endpoint may serve. None if the file is absent —
+    missing is missing, never a live GFS/GEFS/Postgres call to fill the gap."""
+    path = ARTIFACTS["forecast_snapshot"]
+    if not path.exists():
+        return None
+    return json.loads(path.read_text())
+
+
 def clear_all_caches() -> None:
     catchments.cache_clear()
     reef_zones.cache_clear()
@@ -452,5 +468,6 @@ def clear_all_caches() -> None:
     events.cache_clear()
     data_sources.cache_clear()
     _feature_table.cache_clear()
+    forecast_snapshot.cache_clear()
     PLUME_CACHE._store.clear()
     EXPOSURE_CACHE._store.clear()

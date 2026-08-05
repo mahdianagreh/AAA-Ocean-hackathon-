@@ -350,6 +350,35 @@ def get_event(event_id: str):
     raise HTTPException(404, f"unknown event {event_id}")
 
 
+# -------------------------------------------------------------------- forecast
+
+@app.get(f"{PREFIX}/forecast/latest", tags=["forecast"])
+def forecast_latest():
+    """The cached GFS/GEFS snapshot — never a live network call.
+
+    "Live" means "latest cached forecast" (tasks/phase3/00-phase3-plan.md): the
+    real GFS/GEFS/Postgres pull happens ahead of time via
+    scripts/build_forecast_snapshot.py, and this endpoint only ever reads that
+    frozen file. The UI shows each model's `issued_at` so "cached, not live" is
+    stated rather than implied.
+    """
+    snap = da.forecast_snapshot()
+    if snap is None:
+        raise HTTPException(
+            503,
+            "No forecast snapshot present. Run scripts/build_forecast_snapshot.py "
+            "to freeze the latest GFS/GEFS run.",
+        )
+    return {
+        "issued_at": {
+            model: run["reference_time"] for model, run in snap["models"].items()
+        },
+        "models": snap["models"],
+        "catchment_rainfall": snap["gfs_catchment_rainfall"],
+        "exceedance": snap["gefs_exceedance"],
+    }
+
+
 # ---------------------------------------------------------------------- runoff
 
 @app.post(f"{PREFIX}/runoff/predict", response_model=RunoffPrediction, tags=["model"])
@@ -651,15 +680,25 @@ def exposure_calculate(req: ExposureRequest):
     if cached is not None:
         return cached
 
-    # Sediment intensity: from the runoff stub when a catchment is named, else the
+    # Sediment intensity: from the runoff model when a catchment is named, else the
     # outlet's own catchment. Reported in formula_terms either way.
     cid = req.catchment_id or outlet.get("catchment_id")
     intensity, intensity_source = 0.5, "default 0.5 (no catchment supplied)"
+    # Per-request model_versions: MODEL_VERSIONS is the static fallback, but when
+    # runoff_predict() actually used the real trained artifact, that real
+    # model_version_id must be what gets persisted — not the stub string. A stored
+    # run whose formula_terms claims "runoff_model: stub-0.1" while a real model
+    # produced the intensity number is exactly the silent stub DoD item 3 forbids.
+    run_model_versions = dict(MODEL_VERSIONS)
     if cid:
         pred = runoff_predict(RunoffRequest(catchment_id=cid, rainfall_mm_3h=30.0,
                                             event_id=req.event_id))
         intensity = pred.relative_sediment_intensity
-        intensity_source = f"runoff stub for {cid} at 30 mm/3h"
+        if pred.is_stub:
+            intensity_source = f"runoff stub for {cid} at 30 mm/3h"
+        else:
+            intensity_source = f"runoff model {pred.model_version} for {cid} at 30 mm/3h"
+            run_model_versions["runoff_model"] = pred.model_version
 
     # Confidence: coarse global currents and a substituted bathymetry product are
     # both real reasons not to claim high confidence.
@@ -688,7 +727,7 @@ def exposure_calculate(req: ExposureRequest):
             "confidence_adjustment_reason":
                 "coarse global current model + GMRT-substituted bathymetry",
             "plume_source": "SYNTHETIC_STUB",
-            "model_versions": MODEL_VERSIONS,
+            "model_versions": run_model_versions,
         })
         # Per-result caveats are ZONE-scoped. Anything that qualifies the whole run
         # — the outlet's harbour warning, the risk-band note — is attached once at
@@ -744,7 +783,7 @@ def exposure_calculate(req: ExposureRequest):
         event_id=req.event_id,
         outlet_id=req.outlet_id,
         results=[r.model_dump() for r in results],
-        model_versions=MODEL_VERSIONS,
+        model_versions=run_model_versions,
         caveats=[c.model_dump() for c in run_caveats],
     )
 
@@ -754,7 +793,7 @@ def exposure_calculate(req: ExposureRequest):
         outlet_id=req.outlet_id,
         created_at=datetime.now(timezone.utc),
         results=results,
-        model_versions=MODEL_VERSIONS,
+        model_versions=run_model_versions,
         caveats=run_caveats,
     )
     da.EXPOSURE_CACHE.set(key, run)

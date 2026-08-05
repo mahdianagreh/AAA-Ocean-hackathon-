@@ -53,6 +53,15 @@ from the concept doc:
   the resolution-limitation claim than "the gulf is narrow" — it is measured disagreement
   on the exact date that matters, not a generic caveat.
 
+**For Abd — the one function you need.** `get_historical_interpolator()` in
+`backend/src/ingestion/ocean_currents.py` returns a ready `current_fn` for the demo
+event window, satisfying `particle_engine.py`'s `current_fn(lon, lat, time, depth) ->
+(u, v)` contract directly. It only opens the already-cached
+`hycom_aoi_AQ-2016-10-28.nc` / `copernicus_marine_aoi_AQ-2016-10-28.nc` files — no
+network call, verified with sockets blocked. Pass it straight into
+`particle_engine.simulate(current_fn=get_historical_interpolator(), ...)` in place
+of `ConstantCurrentField`.
+
 ## What this does and doesn't invalidate
 
 **Does not invalidate:** the forecasting and event-detection pipeline (GFS/GEFS/ECMWF),
