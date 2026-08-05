@@ -181,30 +181,6 @@ class SedimentProxy:
             )
         return self.index(X, runoff_depth_mm) * self._k
 
-    def relative_intensity(self, X: pd.DataFrame, runoff_depth_mm) -> np.ndarray:
-        """The raw index rescaled to [0, 1], for callers that need a bounded weight.
-
-        `index()` is an absolute, unbounded quantity (proportional to runoff
-        volume) - useful for ranking and for `mass_estimate_t()`, wrong for
-        anything that multiplies it against other [0, 1] terms, like the
-        exposure formula's `relative_sediment_intensity`. This divides by the
-        same edge `classify()` uses for the Extreme band
-        (`ANCHOR_BANDS[-1] * anchor_index`), so 1.0 means "at least as severe
-        as the worst class this system recognises" - not an arbitrary rescale.
-        A day at the anchor event's own severity lands at
-        `1 / ANCHOR_BANDS[-1]` (~0.67), consistent with the anchor being
-        classified High rather than Extreme.
-        """
-        if self._k is None:
-            raise RuntimeError(
-                "not anchored. Call calibrate_to_anchor() first - there is no "
-                "absolute scale to rescale against otherwise."
-            )
-        idx = self.index(X, runoff_depth_mm)
-        anchor_index = ANCHOR_MASS_T / self._k
-        extreme_edge = ANCHOR_BANDS[-1] * anchor_index
-        return np.clip(idx / extreme_edge, 0.0, 1.0)
-
     # ── the deliverable ──────────────────────────────────────────────────
     def classify(self, X: pd.DataFrame, runoff_depth_mm,
                  anchor_index: float | None = None) -> pd.DataFrame:

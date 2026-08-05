@@ -138,11 +138,28 @@ test.describe('integrity rules, asserted', () => {
     await ready(page);
     const n = await page.evaluate(() => ({
       withProvenance: document.querySelectorAll('[data-provenance]').length,
-      gaps: document.querySelectorAll('[data-missing="true"]').length,
+      // A gap must never render a number. That is the whole point of the marker:
+      // "missing" and "zero" are different facts, and 09 rule 4 forbids drawing the
+      // second when you have the first.
+      numericGaps: [...document.querySelectorAll('[data-missing="true"]')]
+        .map((el) => el.textContent ?? '')
+        .filter((s) => /\d/.test(s)),
     }));
     expect(n.withProvenance).toBeGreaterThan(20);
-    // And at least one declared gap, because runoff probability has no model.
-    expect(n.gaps).toBeGreaterThan(0);
+    expect(n.numericGaps).toEqual([]);
+
+    // This test used to assert `gaps > 0` on the default view, because
+    // runoff_probability was null on every card while data/models/ was empty. A
+    // registered model now fills it, so zero gaps here is the honest state and the
+    // old assertion was pinning a measured value rather than the rule.
+    //
+    // The rule still needs proving, so it is proven where a gap is still correct:
+    // what-if mode cannot re-run the model against moved sliders, so the fallback
+    // index reports no probability at all — and says so rather than computing one.
+    await page.locator('[data-mode="scenario"]').click();
+    await page.waitForTimeout(700);
+    const gaps = await page.locator('[data-risk-card] [data-missing="true"]').count();
+    expect(gaps, 'what-if mode must declare the probability it cannot compute').toBeGreaterThan(0);
   });
 
   test('nothing claims a plume probability anywhere in the view', async ({ page }) => {

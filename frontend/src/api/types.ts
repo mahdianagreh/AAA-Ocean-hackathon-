@@ -54,6 +54,30 @@ export function bandForScore(score: number): HazardBand {
   return 'critical';
 }
 
+/** Literal class names, never `bg-risk-${band}` — Tailwind scans source
+ *  statically, so an interpolated class is not a string in the file and the
+ *  utility is never generated. That shipped once already in the Phase 0
+ *  specimen: the strokes rendered because they were inline styles, and every
+ *  fill silently fell back to the canvas, reading as a washed-out ramp rather
+ *  than a missing one — which is why it survived a passing test suite.
+ *
+ *  Lives here rather than in RiskCard.tsx, which first defined it: any
+ *  component showing a hazard band (RiskCard, and the reef-zone exposure rows
+ *  in SideRail) needs the SAME AA-fix, and a second component copying it would
+ *  risk silently missing Correction #10 below. */
+export const BAND_CLASS: Record<HazardBand, string> = {
+  minimal: 'bg-risk-minimal text-risk-minimal-on border-risk-minimal-stroke',
+  low: 'bg-risk-low text-risk-low-on border-risk-low-stroke',
+  moderate:
+    // Correction #10: no AA-compliant text colour exists for this band in dark
+    // theme (4.04 measured). So dark drops the fill and keeps the hue as a stroke
+    // on --surface, where --ink reaches 14.32. Light theme is unaffected.
+    'bg-risk-moderate text-risk-moderate-on border-risk-moderate-stroke ' +
+    'dark:bg-surface dark:text-ink dark:border-risk-moderate',
+  high: 'bg-risk-high text-risk-high-on border-risk-high-stroke',
+  critical: 'bg-risk-critical text-risk-critical-on border-risk-critical-stroke',
+};
+
 // ---------------------------------------------------------------------------
 // Live endpoint shapes.
 //
@@ -71,15 +95,19 @@ export interface Health {
   version: string;
   commit: string;
   time_utc: string;
-  /** False today: data/models/ does not exist. */
+  /** True since 3 Aug 2026. Read false while data/models/ was empty, and the
+   *  interface renders both states rather than assuming either. */
   model_available: boolean;
   data_volume_mounted: boolean;
 }
 
-/** Two vocabularies for the same five outlets, so the union covers both.
- *  /api/v1/catchments emits plausible|low|good, /api/v1/outlets emits high|low.
- *  OPEN-ISSUES.md item 7. */
-export type PositionConfidence = 'low' | 'plausible' | 'good' | 'high';
+/** OPEN-ISSUES.md item 7 — CLOSED 2026-08-05. There was never really a
+ *  two-vocabulary problem on the API side: /api/v1/catchments never emitted this
+ *  field at all, and /api/v1/outlets was reading a hand-typed guess
+ *  ({good, plausible, low}) that had silently diverged from the geometry team's
+ *  actual DEM/culvert cross-check on 3 of 5 outlets. /outlets now reads the real
+ *  vocabulary straight from source: high | low | unchecked. */
+export type PositionConfidence = 'high' | 'low' | 'unchecked';
 
 export interface Catchment {
   catchment_id: string;

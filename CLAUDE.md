@@ -181,7 +181,9 @@ failure mode this project keeps hitting.
 
 ```bash
 source .venv/bin/activate
-pytest -q                                   # 405 pass, 4 skip (SoilGrids data absent)
+pytest -q                                   # 453 pass, 47 skip (git-ignored raw data
+                                            #   absent: IMERG granules, baked basemap,
+                                            #   SoilGrids — each skip names its script)
 
 python scripts/check_aoi_coverage.py        # which files are short of their AOI
 

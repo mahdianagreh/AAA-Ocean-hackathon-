@@ -1,15 +1,22 @@
-"""RAG tests — citation coverage and the docs/ali exclusion.
+"""RAG tests — citation coverage and the docs/Ali exclusion.
 
 Run: .venv/bin/python tests/test_ask_citations.py
 
 Two claims under test:
   1. An uncited answer is not shippable. Every question that gets an answer gets
      citations, and every citation's excerpt is verbatim in the file it names.
-  2. docs/ali/* is never in the corpus. It is market and analogue research that
+  2. docs/Ali/* is never in the corpus. It is market and analogue research that
      backs the pitch, not an app surface, and a wildcard would pick it up silently.
 
 The defined question set is the artifact the plan asks for: a table of questions ->
 whether a citation was returned. It is printed on every run.
+
+CASE NOTE. These checks used to probe only lowercase "docs/ali" paths while the
+real tracked directory is "docs/Ali" (capital A). That meant `is_excluded()`'s
+own guard was never actually exercised against a real path — "docs/ali/11-market.md"
+doesn't exist, so proving it gets flagged proved nothing about the repo's real
+files. `corpus.is_excluded()` is now case-insensitive (see corpus.py), and the
+checks below probe both the real casing and the lowercase form.
 """
 
 import sys
@@ -70,30 +77,36 @@ MUST_REFUSE = [
 
 def test_corpus_excludes_ali():
     present, missing = corpus.resolve()
-    offenders = [str(p) for p in present if "docs/ali" in str(p).replace("\\", "/")]
-    check("no docs/ali file is resolved into the corpus", not offenders,
+    offenders = [str(p) for p in present if "docs/ali" in str(p).replace("\\", "/").lower()]
+    check("no docs/Ali file is resolved into the corpus", not offenders,
           f"found {offenders}")
 
     chunks, _, _ = index.build_index()
-    chunk_offenders = {c.source_file for c in chunks if "docs/ali" in c.source_file}
-    check("no indexed chunk comes from docs/ali", not chunk_offenders,
+    chunk_offenders = {c.source_file for c in chunks if "docs/ali" in c.source_file.lower()}
+    check("no indexed chunk comes from docs/Ali", not chunk_offenders,
           f"found {chunk_offenders}")
 
     check("docs/ali/ is declared in EXCLUDED_DIRS",
           any("docs/ali" in d for d in corpus.EXCLUDED_DIRS))
 
-    # And the guard actually fires if someone adds one by hand.
-    check("is_excluded flags a docs/ali path",
+    # The guard must fire on the REAL on-disk path, capital A — probing only the
+    # lowercase form is exactly what let this guard go unexercised. Both are
+    # checked: the real path is the regression test, the lowercase form pins the
+    # literal EXCLUDED_DIRS entry.
+    check("is_excluded flags the real docs/Ali path",
+          corpus.is_excluded("docs/Ali/research/11-market.md"))
+    check("is_excluded flags a lowercase docs/ali path",
           corpus.is_excluded("docs/ali/11-market.md"))
     check("is_excluded does not flag a legitimate doc",
           not corpus.is_excluded("docs/data_dictionary.md"))
 
 
 def test_ali_files_actually_exist_so_the_test_is_meaningful():
-    """If docs/ali/ were empty the exclusion test would pass trivially."""
-    ali = list((ROOT / "docs" / "ali").glob("*.md")) if (ROOT / "docs" / "ali").exists() else []
-    check(f"docs/ali/ exists with {len(ali)} files, so exclusion is a real constraint",
-          len(ali) > 0, "docs/ali/ is empty — exclusion test proves nothing")
+    """If docs/Ali/ were empty the exclusion test would pass trivially."""
+    ali_dir = ROOT / "docs" / "Ali"
+    ali = list(ali_dir.rglob("*.md")) if ali_dir.exists() else []
+    check(f"docs/Ali/ exists with {len(ali)} files, so exclusion is a real constraint",
+          len(ali) > 0, "docs/Ali/ is empty or absent — exclusion test proves nothing")
 
 
 def test_missing_corpus_entries_are_reported_not_hidden():
@@ -195,4 +208,4 @@ if __name__ == "__main__":
     if FAILURES:
         print(f"{len(FAILURES)} FAILED: {FAILURES}")
         sys.exit(1)
-    print("citation coverage 100% on the defined set; docs/ali confirmed excluded")
+    print("citation coverage 100% on the defined set; docs/Ali confirmed excluded")

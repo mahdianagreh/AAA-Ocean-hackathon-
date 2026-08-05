@@ -232,6 +232,15 @@ def build_index() -> tuple[list[Chunk], dict[str, float], float]:
 
 MIN_TERM_COVERAGE = 0.4
 
+# This corpus's OWN documented scope boundary (caveats.reef_scope_is_jordan:
+# "Egyptian, Saudi and Israeli water... deliberately discarded"), not an invented
+# geography heuristic. A question naming one of these must be answered from a
+# chunk that itself mentions that country, or refused — see retrieve()'s
+# docstring for the failure this closes. "eilat" is deliberately NOT here: it is
+# legitimate corpus vocabulary (the documented event is the "Aqaba-Eilat flood"),
+# not a scope exclusion.
+_SCOPE_EXCLUSIVE_TERMS = {"egypt", "egyptian", "israel", "israeli", "saudi"}
+
 
 def retrieve(
     question: str,
@@ -254,12 +263,29 @@ def retrieve(
 
     Returning [] makes /ask say it has no documented answer, which is the correct
     response to a question this corpus cannot address.
+
+    `min_term_coverage` catches a term that is simply ABSENT from the retrieved
+    chunk. It does not catch a term that DISQUALIFIES the chunk while several
+    other terms in the same question genuinely match it — found 2026-08-05:
+    "reef sensitivity weight for the EGYPTIAN side" matches reef/sensitivity/weight
+    against real content scoped to Jordan's 8 zones, clears 0.4 coverage on those
+    three alone, and answers as if "Egyptian" had been satisfied rather than
+    contradicted. `_SCOPE_EXCLUSIVE_TERMS` closes exactly that gap: it is not an
+    invented heuristic, it is this corpus's OWN documented boundary
+    (`reef_scope_is_jordan()` in caveats.py states outright that Egyptian, Saudi
+    and Israeli water is "deliberately discarded"). If a question names one of
+    these countries, a chunk that does not itself mention that same country is
+    rejected outright, regardless of how well it scores on everything else.
+    Deliberately excludes "Eilat": that is legitimate corpus vocabulary (the
+    documented event is the "Aqaba-Eilat flood"), not an exclusion boundary, and
+    blocking it would refuse an answerable question.
     """
     chunks, idf, avg_len = build_index()
     if not chunks:
         return []
 
     base_tokens = tokenize(question)
+    scope_terms_in_question = set(base_tokens) & _SCOPE_EXCLUSIVE_TERMS
     q_tokens = expand_query(base_tokens, raw_text=question)
     if not q_tokens:
         return []
@@ -294,6 +320,20 @@ def retrieve(
         covered = sum(1 for group in coverage_groups if group & tf.keys())
         if covered / n_groups < min_term_coverage:
             continue
+        # A scope-exclusive term the question names must appear in the EXCERPT that
+        # will actually be quoted (c.text[:600], matching answer.py's citation
+        # slice) — not merely somewhere in the whole chunk's token bag. A chunk can
+        # be a whole markdown table where one row mentions a country and a
+        # completely different row is what gets shown; checking tf.keys() (the
+        # full-chunk vocabulary) let exactly that row slip through with an
+        # unrelated excerpt. Checking the shown text is the correct standard: if
+        # the excerpt itself doesn't name the country, presenting it as an answer
+        # to a country-scoped question is misleading regardless of what else
+        # happens to sit in the same chunk.
+        if scope_terms_in_question:
+            excerpt_tokens = set(tokenize(c.text[:600]))
+            if not (scope_terms_in_question & excerpt_tokens):
+                continue
         scored.append((score, c))
 
     scored.sort(key=lambda x: -x[0])

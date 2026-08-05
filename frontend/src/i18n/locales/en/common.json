@@ -26,7 +26,8 @@
     "live": "Live API",
     "snapshot": "Offline snapshot",
     "offline": "No connection",
-    "noModel": "no trained model registered"
+    "noModel": "no trained model registered",
+    "model": "model registered"
   },
   "map": {
     "label": "Map of the Gulf of Aqaba: catchments, coastal outlets and reef zones",
@@ -46,7 +47,13 @@
     "coverageNote": "The dashed boundary is where the OpenStreetMap extract ends, at 35.0°E. Catchment AQ-C01 continues past it — Wadi Yutum drains from 90 km inland — so the absence of detail out there is a gap in the basemap, not empty desert.",
     "risk": "Exposure by catchment",
     "worst": "highest",
-    "mooring": "Mooring record"
+    "mooring": "Mooring record",
+    "area": "Catchment area",
+    "exposureTitle": "Exposure score {{score}} of 100 — {{range}} band",
+    "exposureNote": "Sediment intensity term for R-01 (0–1, squashed against the Oct 2016 anchor so it never saturates): {{sediment}}.",
+    "alerts": "Alerts",
+    "alertsEmpty": "No zone is currently above the minimal band — expected while the plume transport model is a placeholder; every score is capped near the bottom of the scale until it lands.",
+    "liveUnreachable": "Not available — the live backend could not be reached. Historical figures on this screen are unaffected; they come from the committed record, not from this connection."
   },
   "time": {
     "label": "Time",
@@ -114,13 +121,35 @@
     "confidenceLabel": "Confidence",
     "confidence": "{{n}} of {{total}} days exceed {{threshold}}",
     "thresholdWetDay": "this catchment's wet-day 99th percentile",
-    "provisional": "Provisional index, not model output — no trained model is registered."
+    "provisional": "Stand-in index, not model output — what-if mode cannot re-run the model in the browser.",
+    "modelledBy": "Model",
+    "thresholdModel": "the model's leave-one-catchment-out mean average precision"
   },
   "driver": {
     "rain_today": "Rainfall this day",
     "antecedent_rain_48h": "Antecedent rain, 48 h",
     "catchment_area": "Catchment area",
-    "transmission_loss": "Transmission loss"
+    "transmission_loss": "Transmission loss",
+    "precipitation_mm_day": "Rainfall this day",
+    "precip_prior_1d_mm": "Rainfall, previous day",
+    "precip_prior_3d_mm": "Rainfall, previous 3 days",
+    "precip_prior_7d_mm": "Rainfall, previous 7 days",
+    "rain_over_p50": "Rainfall vs median wet day",
+    "rain_over_p90": "Rainfall vs 90th percentile",
+    "rain_over_p99": "Rainfall vs 99th percentile",
+    "rain_self_percentile": "Rainfall percentile for this catchment",
+    "soil_moisture_lag1d": "Soil moisture, 1 day before",
+    "soil_moisture_lag3d": "Soil moisture, 3 days before",
+    "dry_days_before": "Dry days beforehand",
+    "wind_speed_ms": "Wind speed",
+    "wind_direction_deg": "Wind direction",
+    "temp_c": "Air temperature",
+    "season_sin": "Season (annual cycle)",
+    "season_cos": "Season (annual cycle, offset)",
+    "area_km2": "Catchment area",
+    "slope_mean_deg": "Mean slope",
+    "drainage_density_km_km2": "Drainage density",
+    "elongation_ratio": "Catchment elongation"
   },
   "legend": {
     "hazard": "Exposure",
@@ -240,5 +269,17 @@
     "habitat": "Habitat",
     "geomorphic": "Geomorphic zone",
     "source": "Source"
+  },
+  "plumeMap": {
+    "title": "Predicted plume",
+    "unavailable": "No prediction image available — the backend is unreachable or has not produced one for this event.",
+    "stub": "Placeholder plume",
+    "real": "Model plume",
+    "stubNote": "The shape is a placeholder (concentric rings), not a transport simulation. The satellite imagery and reef outlines are real; only the plume's shape is synthetic.",
+    "realNote": "From the particle transport model.",
+    "alt": "Predicted sediment plume at +{{hours}} hours, on real satellite imagery",
+    "stepper": "Prediction timestep",
+    "rendering": "Rendering the next frame…",
+    "caveat": "Real Esri satellite imagery and real Allen Coral Atlas reef outlines. The plume contours are the model's own output — nothing in this image is generated."
   }
 }

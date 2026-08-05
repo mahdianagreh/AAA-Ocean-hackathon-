@@ -50,6 +50,50 @@ class Provenance(BaseModel):
     detail: str
 
 
+# The frontend's OWN vocabulary for this, transcribed from
+# frontend/src/api/types.ts:16 exactly — NOT this file's `Provenance{kind,detail}`
+# class above, which is a different, pre-existing concept (a list of source notes
+# on catchments/runoff/etc.) already used elsewhere and out of scope to touch here.
+# Data-quality classification, distinct from source-vs-derived.
+ValueProvenance = Literal["measured", "reported", "converted", "modelled"]
+
+
+class Value(BaseModel):
+    """A number, its unit, and where it came from — travelling together.
+
+    Issue #14: units must never be baked into a formatted string like "2.18 g/L",
+    because RTL reorders it into "g/L 2.18" and because a client that wants the
+    number has to regex it back out. `unit` and `provenance` are both required
+    (not `| None`), which is the point — OPEN-ISSUES.md #6 frames it as "a Value
+    without provenance fails type-check, so an unlabelled number cannot reach the
+    screen." `value` alone is optional: a gap (e.g. Component A's
+    predicted_runoff_m3) still has a definite unit and a definite reason it is
+    absent, so the unit and provenance survive even when the number does not.
+
+    THIS SHAPE IS NOT INVENTED HERE. `frontend/src/api/types.ts` already declares
+    `interface Value { value: number; unit: string; provenance: Provenance; ... }`
+    with `Provenance = 'measured'|'reported'|'converted'|'modelled'`, and
+    `frontend/src/components/ValueWithUnit.tsx` already renders it (`ValueField`).
+    An earlier version of this class used `provenance: Provenance` (this file's
+    `{kind, detail}` class) — a plausible-looking but WRONG shape that would have
+    silently failed to render (`FORM[provenance]` indexing a lookup table with an
+    object, not a string) the moment any endpoint actually returned one. Caught
+    before push by reading the frontend code this was supposed to satisfy, not
+    assumed compatible.
+
+    New fields should use this from the start. Existing bare-float fields already
+    consumed by the frontend (area_km2, lon/lat, risk_score, ...) are deliberately
+    NOT retrofitted here — that would be an unannounced breaking change to an
+    already-built, feature-complete UI, which is exactly the kind of contract
+    drift this file's own header warns against. Retrofitting those is a separate,
+    coordinated pass.
+    """
+
+    value: float | None
+    unit: str
+    provenance: ValueProvenance
+
+
 # --------------------------------------------------------------------- health
 
 class HealthOut(BaseModel):
@@ -120,7 +164,30 @@ class OutletOut(BaseModel):
     catchment_id: str | None = None
     lon: float
     lat: float
-    position_confidence: Literal["low", "plausible", "good"]
+    # The canonical vocabulary, pinned by tests/test_position_confidence_vocabulary.py.
+    # "unchecked" is a real, distinct state — not a synonym for "low" — for any
+    # outlet the geometry cross-check has not yet covered.
+    position_confidence: Literal["high", "low", "unchecked"]
+    position_confidence_note: str | None = Field(
+        default=None,
+        description="Why position_confidence is what it is, e.g. 'routes through "
+                    "the container terminal and reclaimed land'.",
+    )
+    culvert_verdict: str | None = Field(
+        default=None,
+        description="Outcome of the DEM-vs-OSM culvert cross-check for this outlet.",
+    )
+    # Bare floats, NOT Value — frontend/src/api/types.ts:99-110 already declares
+    # `Outlet.upstream_km2?: number` and `nearest_culvert_m?: number`, and
+    # SideRail.tsx:147 already reads `o.upstream_km2` as a number today. Ali's type
+    # predates this pass and anticipated these exact field names; matching it is
+    # the contract, not a choice. An earlier version of this file wrapped these two
+    # in Value, which would have broken that render the moment live mode (rather
+    # than fixtures) actually populated them — caught before push.
+    upstream_km2: float | None = None
+    nearest_culvert_m: float | None = None
+    culverts_within_2500m: int | None = None
+    unmodelled_coastal_culverts: int | None = None
     caveat: str | None = None
 
 

@@ -32,8 +32,9 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
 import sqlite3
-import uuid
+import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -87,10 +88,43 @@ def _conn():
         con.close()
 
 
+# Crockford base32: excludes I, L, O, U to avoid transcription confusion.
+_CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+
+
+def _new_ulid() -> str:
+    """A real ULID: 48-bit millisecond timestamp + 80-bit randomness, 26 chars.
+
+    No dependency added for this — it is ~10 lines of bit-shifting, and the run-id
+    format is stable enough (tasks/00-contracts.md: `sim_{ULID}`) that pulling in a
+    library for it is not worth the extra surface on the api image, which is kept
+    deliberately minimal (see main.py's "no geospatial stack" note for the same
+    reasoning applied elsewhere).
+
+    Lexicographic sort order matches creation order at millisecond granularity,
+    because the timestamp occupies the leading characters — the property
+    `new_run_id()`'s old docstring called "sortable-ish" without it actually being
+    guaranteed. Two runs in the same millisecond are not ordered relative to each
+    other (their random suffix decides), which matches the standard ULID spec and
+    is fine here: nothing orders runs at sub-millisecond precision.
+    """
+    ts_ms = int(time.time() * 1000) & ((1 << 48) - 1)
+    value = (ts_ms << 80) | secrets.randbits(80)  # 128 significant bits
+    # 26 chars * 5 bits = 130 bits; the top 2 bits are always 0 since value has
+    # only 128 significant bits — Python's arbitrary-width ints yield 0 for shifts
+    # past the top, so no explicit padding is needed.
+    return "".join(_CROCKFORD[(value >> (5 * (25 - i))) & 0x1F] for i in range(26))
+
+
 def new_run_id() -> str:
-    """Sortable-ish, unique, and obviously a run id in a log line."""
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
-    return f"sim_{stamp}_{uuid.uuid4().hex[:8]}"
+    """`sim_{ULID}`, per tasks/00-contracts.md's ID contract.
+
+    Previously `sim_{YYYYMMDDTHHMMSS}_{uuid8}` — plausible-looking, and it worked,
+    but it was not the format the contract specifies, and nothing enforced the two
+    staying in sync. Fixed here rather than in the contract doc: this generator is
+    the one non-conformant party, not the published spec.
+    """
+    return f"sim_{_new_ulid()}"
 
 
 def save_run(

@@ -116,11 +116,22 @@ app = FastAPI(
 # Origins come from the environment so the container can be locked down without a
 # code change. Carried over from origin/main's API, which Docker Compose already
 # configures this way; defaulting to the Vite dev port keeps local work unchanged.
+#
+# PLUS a regex fallback for any localhost/127.0.0.1 port. Found by actually running
+# the frontend against this API rather than assuming the fixed list was enough:
+# API_PORT=8100 and a non-default frontend port (needed on this project's own dev
+# machine, repeatedly, because 8000/5173 are often already taken by something else)
+# made every live call fail with a CORS error that has nothing to do with the API
+# itself. That is exactly the failure mode this project keeps naming — a correct
+# backend that LOOKS broken — except inverted: here the frontend looks broken while
+# the backend is fine. Safe to widen this way because the API never leaves
+# localhost; it is a wifi-off local demo tool, not a public deployment.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o for o in os.environ.get(
         "REEFSHIELD_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173",
     ).split(",") if o],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -279,10 +290,29 @@ def get_catchment(catchment_id: str):
 
 @app.get(f"{PREFIX}/outlets", response_model=list[OutletOut], tags=["geometry"])
 def list_outlets():
+    """`caveat` prefers the geometry team's own per-outlet text over the harbour-only
+    fallback, so AQ-O02/AQ-O03's "unmodelled path to the sea" candidate corrections
+    and AQ-O01/AQ-O05's positive verifications reach the screen too — not only
+    AQ-O04's. `cav.harbour_outlet()` still backstops AQ-O04 specifically, so a
+    missing or edited source caveat can never silently drop that one warning.
+
+    `upstream_km2`/`nearest_culvert_m` are passed through as plain floats, matching
+    `frontend/src/api/types.ts`'s `Outlet` interface exactly (it already declares
+    both as `number`, predating this pass) — NOT wrapped in `Value`, which would
+    have broken `SideRail.tsx:147`'s existing `o.upstream_km2` read the moment live
+    mode replaced fixtures.
+
+    Each row is copied before mutation regardless: `da.outlets()` is `@lru_cache`d,
+    so writing into its dicts in place is unsafe for any future field that does
+    need transforming here.
+    """
     out = []
-    for o in da.outlets():
+    for raw in da.outlets():
+        o = dict(raw)
+        source_caveat = o.pop("source_caveat", None)
         harbour = cav.harbour_outlet(o["outlet_id"])
-        out.append(OutletOut(**o, caveat=harbour[0].message if harbour else None))
+        caveat = source_caveat or (harbour[0].message if harbour else None)
+        out.append(OutletOut(**o, caveat=caveat))
     return out
 
 
@@ -350,6 +380,35 @@ def get_event(event_id: str):
     raise HTTPException(404, f"unknown event {event_id}")
 
 
+# -------------------------------------------------------------------- forecast
+
+@app.get(f"{PREFIX}/forecast/latest", tags=["forecast"])
+def forecast_latest():
+    """The cached GFS/GEFS snapshot — never a live network call.
+
+    "Live" means "latest cached forecast" (tasks/phase3/00-phase3-plan.md): the
+    real GFS/GEFS/Postgres pull happens ahead of time via
+    scripts/build_forecast_snapshot.py, and this endpoint only ever reads that
+    frozen file. The UI shows each model's `issued_at` so "cached, not live" is
+    stated rather than implied.
+    """
+    snap = da.forecast_snapshot()
+    if snap is None:
+        raise HTTPException(
+            503,
+            "No forecast snapshot present. Run scripts/build_forecast_snapshot.py "
+            "to freeze the latest GFS/GEFS run.",
+        )
+    return {
+        "issued_at": {
+            model: run["reference_time"] for model, run in snap["models"].items()
+        },
+        "models": snap["models"],
+        "catchment_rainfall": snap["gfs_catchment_rainfall"],
+        "exceedance": snap["gefs_exceedance"],
+    }
+
+
 # ---------------------------------------------------------------------- runoff
 
 @app.post(f"{PREFIX}/runoff/predict", response_model=RunoffPrediction, tags=["model"])
@@ -397,15 +456,14 @@ def runoff_predict(req: RunoffRequest):
         #
         # Component A is a runoff CLASSIFIER, not a volume regressor: there is no m3 to
         # report, so the field is None and reads as a gap. `sediment_index` is the
-        # sediment measure's raw, unbounded scale (right for ranking and mass_estimate_t,
-        # wrong for this field); `sediment_intensity_0_1` is the same measure rescaled
-        # against the Extreme-class threshold, which is what this [0, 1] field needs.
-        sed01 = real.get("sediment_intensity_0_1")
+        # sediment measure and is unanchored — comparable between requests, no absolute
+        # meaning — which `sediment_basis` states and which travels as a caveat.
+        sediment_index = real.get("sediment_index")
         return RunoffPrediction(
             catchment_id=req.catchment_id,
             predicted_runoff_m3=None,
             relative_sediment_intensity=(
-                float(sed01) if sed01 is not None
+                float(sediment_index) if sediment_index is not None
                 else float(real.get("runoff_probability", 0.0))),
             runoff_probability=real.get("runoff_probability"),
             severity=real.get("severity"),
@@ -652,40 +710,79 @@ def exposure_calculate(req: ExposureRequest):
     if cached is not None:
         return cached
 
-    # Sediment intensity: the REAL model on the REAL feature row for this
-    # (event, catchment) when one exists — not a fixed "30 mm/3h" scenario
-    # standing in for whichever event was actually asked for. Falls back to
-    # the scenario endpoint only when no historical row exists (an event this
-    # system has no feature data for), and says so honestly rather than
-    # presenting the fallback as a replay.
+    # Sediment intensity, from the REAL feature row for this event and catchment.
+    #
+    # This asked the model for a synthetic `30 mm/3h` and nothing else, and the result
+    # was always 0.0 — so every reef zone read `minimal` no matter what the plume did,
+    # because exposure is a product of five terms. The model needs 20 features, and the
+    # sediment magnitude is a curve-number depth driven by `precipitation_mm_day`; with
+    # that column absent the depth is 0, the index is 0, and the whole product collapses.
+    # A synthetic request is right for shaping a response and wrong for computing one.
+    #
+    # Falls back to the previous behaviour when the event is not in the training set,
+    # and SAYS which happened in formula_terms — a stored run whose sediment term came
+    # from a placeholder must be distinguishable later from one that did not.
     cid = req.catchment_id or outlet.get("catchment_id")
     intensity, intensity_source = 0.5, "default 0.5 (no catchment supplied)"
-    real_model_version: str | None = None
+    # Per-request model_versions: MODEL_VERSIONS is the static fallback, but when
+    # a real trained artifact actually produced the intensity number — whether via
+    # the training-row path below or the runoff_predict() fallback — that real
+    # model_version_id must be what gets persisted, not the stub string. A stored
+    # run whose formula_terms claims "runoff_model: stub-0.1" while a real model
+    # produced the intensity number is exactly the silent stub DoD item 3 forbids.
+    run_model_versions = dict(MODEL_VERSIONS)
     if cid:
-        row = da.historical_features(req.event_id, cid)
+        row = da.training_row(req.event_id, cid)
         if row is not None:
-            from models.runoff_model import predict_one
+            try:
+                from models.runoff_model import predict_one
 
-            real = predict_one(row)
-            sed01 = real.get("sediment_intensity_0_1")
-            intensity = (float(sed01) if sed01 is not None
-                        else float(real.get("runoff_probability", 0.0)))
-            intensity_source = (f"real feature row for {cid} on {row['date']} "
-                               f"({req.event_id}), model {real.get('model_version_id')}")
-            real_model_version = real.get("model_version_id")
+                real = predict_one(row)
+                if real.get("model_version_id"):
+                    run_model_versions["runoff_model"] = real["model_version_id"]
+                index = real.get("sediment_index")
+                anchor_index = real.get("anchor_index_for_normalisation")
+                if index is not None and anchor_index:
+                    # The index is unbounded and the formula needs 0-1, so it is squashed
+                    # by ratio / (1 + ratio) against the anchor event.
+                    #
+                    # NOT a linear ratio clamped at 1.0, which was the first attempt and
+                    # was worse than the zero it replaced: October 2016 is only 12th of
+                    # 2,362 days by this magnitude, so every storm at or above it pinned
+                    # to exactly 1.000 and the term stopped discriminating at all. Three
+                    # different events came back with an identical sediment intensity.
+                    #
+                    # This map is monotonic, never saturates, and puts the one documented
+                    # major flood at 0.5. That is also the more honest shape: with a
+                    # SINGLE calibration point there is nothing justifying a linear
+                    # extrapolation far above it, so the scale deliberately compresses
+                    # where the evidence runs out.
+                    from models.sediment_proxy import ANCHOR_EVENT
+
+                    ratio = max(0.0, float(index) / float(anchor_index))
+                    intensity = ratio / (1.0 + ratio)
+                    intensity_source = (
+                        f"sediment_index {float(index):,.0f} = {ratio:.2f}x "
+                        f"{ANCHOR_EVENT}, squashed by r/(1+r) to {intensity:.3f} "
+                        f"(class {real.get('sediment_class')}); anchor maps to 0.500"
+                    )
+            except (FileNotFoundError, ImportError, ModuleNotFoundError, KeyError) as exc:
+                intensity_source = (
+                    f"default 0.5 — real model unavailable ({type(exc).__name__})")
         else:
             pred = runoff_predict(RunoffRequest(catchment_id=cid, rainfall_mm_3h=30.0,
-                                                event_id=req.event_id))
+                                               event_id=req.event_id))
             intensity = pred.relative_sediment_intensity
-            intensity_source = (
-                f"no historical feature row for {cid}/{req.event_id} — scenario "
-                f"fallback at 30 mm/3h via /runoff/predict"
-                + ("" if pred.is_stub else f", model {pred.model_version}"))
-            real_model_version = None if pred.is_stub else pred.model_version
-
-    model_versions = dict(MODEL_VERSIONS)
-    if real_model_version:
-        model_versions["runoff_model"] = real_model_version
+            if pred.is_stub:
+                intensity_source = (
+                    f"PLACEHOLDER: {req.event_id} has no feature row, so this is the "
+                    f"stub at 30 mm/3h for {cid}, not a measurement")
+            else:
+                intensity_source = (
+                    f"PLACEHOLDER fallback: {req.event_id} has no feature row for the "
+                    f"sediment anchor, but runoff model {pred.model_version} at "
+                    f"30 mm/3h for {cid} was used for intensity")
+                run_model_versions["runoff_model"] = pred.model_version
 
     # Confidence: coarse global currents and a substituted bathymetry product are
     # both real reasons not to claim high confidence.
@@ -695,7 +792,11 @@ def exposure_calculate(req: ExposureRequest):
     contours = _synthetic_contours(outlet["lon"], outlet["lat"], req.horizon_hours)
     overlay = engine.intersect_plume_with_zones(contours, zones_gdf)
 
-    zone_meta = {z["reef_zone_id"]: z for z in da.reef_zones(include_geometry=False)[0]}
+    # Keep the provisional flag rather than discarding it with [0]: it selects which
+    # geometry caveat is TRUE, and a caveat nobody re-reads after a data swap is how
+    # the obsolete 250 m width claim survived here after /reef-zones had dropped it.
+    meta_zones, zones_are_provisional = da.reef_zones(include_geometry=False)
+    zone_meta = {z["reef_zone_id"]: z for z in meta_zones}
 
     results: list[ExposureResult] = []
     for zid in sorted(zones_gdf["reef_zone_id"].unique()):
@@ -714,7 +815,7 @@ def exposure_calculate(req: ExposureRequest):
             "confidence_adjustment_reason":
                 "coarse global current model + GMRT-substituted bathymetry",
             "plume_source": "SYNTHETIC_STUB",
-            "model_versions": model_versions,
+            "model_versions": run_model_versions,
         })
         # Per-result caveats are ZONE-scoped. Anything that qualifies the whole run
         # — the outlet's harbour warning, the risk-band note — is attached once at
@@ -722,7 +823,8 @@ def exposure_calculate(req: ExposureRequest):
         # render the same critical warning N times on one panel, which trains a
         # reader to skim past exactly the text that matters most.
         zone_caveats = [
-            c for c in cav.build_exposure_caveats(req.outlet_id, zone_meta.get(zid))
+            c for c in cav.build_exposure_caveats(
+                req.outlet_id, zone_meta.get(zid), provisional=zones_are_provisional)
             if c.field not in ("outlet_id", "risk_level")
         ] + cav.stub_model("The plume input to this exposure run")
 
@@ -770,7 +872,7 @@ def exposure_calculate(req: ExposureRequest):
         event_id=req.event_id,
         outlet_id=req.outlet_id,
         results=[r.model_dump() for r in results],
-        model_versions=MODEL_VERSIONS,
+        model_versions=run_model_versions,
         caveats=[c.model_dump() for c in run_caveats],
     )
 
@@ -780,7 +882,7 @@ def exposure_calculate(req: ExposureRequest):
         outlet_id=req.outlet_id,
         created_at=datetime.now(timezone.utc),
         results=results,
-        model_versions=MODEL_VERSIONS,
+        model_versions=run_model_versions,
         caveats=run_caveats,
     )
     da.EXPOSURE_CACHE.set(key, run)

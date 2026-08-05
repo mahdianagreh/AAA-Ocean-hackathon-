@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import os
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Iterable
 
 import numpy as np
@@ -115,10 +116,92 @@ def _frame(features: dict | pd.Series | pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame([features])
 
 
+#: Written by scripts/27_anchor_sediment_proxy.py. A sidecar rather than a field in the
+#: .joblib, because `k` is a calibration constant and not a learned parameter — storing
+#: it in the artefact would mean rewriting a trained file to hold one float and
+#: invalidating its git_commit provenance for a change unrelated to training.
+SEDIMENT_ANCHOR_FILE = Path(__file__).resolve().parents[3] / "data" / "models" / "sediment_anchor.json"
+
+
+def _apply_sediment_anchor(bundle: dict[str, Any]) -> dict[str, Any]:
+    """Anchor the proxy from the sidecar, and REFUSE if the calibration has drifted.
+
+    Without this the proxy has `_k = None`, `classify()` is skipped, every response
+    carries `sediment_class: null` — and the exposure formula, being a product of five
+    terms, collapses to 0.0 so every reef zone reads `minimal` no matter what the plume
+    does. The magnitude input was already correct: `predict` feeds
+    `baseline.runoff_depth(X)`, the IMERG-driven curve-number depth that scripts/26
+    showed ranks the anchor event 12th of 2,362 days, against 176th and 193rd for the
+    two ERA5-derived alternatives. Only the SCALE was missing.
+
+    The drift check is the point. `k = mass / index_at_anchor`, so it is valid only for
+    the formula and feature set that produced that index. Change a term in
+    `SedimentProxy.index()` and the stored `k` becomes a wrong tonnes-per-index scale
+    that still multiplies cleanly — confident wrong masses, no error, nothing to notice.
+    So the index is recomputed here and a mismatch leaves the proxy UNANCHORED with the
+    reason attached, which degrades to relative classes rather than lying about tonnes.
+    """
+    if not SEDIMENT_ANCHOR_FILE.exists():
+        return bundle
+
+    import json
+
+    anchor = json.loads(SEDIMENT_ANCHOR_FILE.read_text())
+    stored = float(anchor["index_at_anchor"])
+    tolerance = float(anchor.get("drift_tolerance", 1e-6))
+
+    training_set = SEDIMENT_ANCHOR_FILE.parents[1] / "processed" / "features" / "training_set_full.parquet"
+    if not training_set.exists():
+        # Cannot verify, so do not anchor. An unverifiable calibration is exactly the
+        # kind of thing that is right until the day it is not.
+        bundle["sediment_anchor_status"] = (
+            f"NOT APPLIED: {training_set.name} absent, so index_at_anchor could not be "
+            "re-verified. Relative classes only."
+        )
+        return bundle
+
+    frame = pd.read_parquet(training_set)
+    day = pd.to_datetime(anchor["anchor_event"].removeprefix("AQ-")).date()
+    frame = frame[(pd.to_datetime(frame["date"]).dt.date == day)
+                  & (frame["catchment_id"] == anchor["anchor_catchment"])]
+    if frame.empty:
+        bundle["sediment_anchor_status"] = (
+            f"NOT APPLIED: anchor row {anchor['anchor_event']}/"
+            f"{anchor['anchor_catchment']} absent from the training set."
+        )
+        return bundle
+
+    X = frame.reindex(columns=bundle["row"]["features"])
+    recomputed = float(bundle["sediment"].index(X, bundle["baseline"].runoff_depth(X))[0])
+    drift = abs(recomputed - stored) / stored if stored else 1.0
+
+    if drift > tolerance:
+        bundle["sediment_anchor_status"] = (
+            f"NOT APPLIED: index_at_anchor drifted {drift:.3e} (stored {stored:,.4f}, "
+            f"recomputed {recomputed:,.4f}). The formula or feature set changed since "
+            "the anchor was written, so `k` is no longer a valid tonnes-per-index "
+            "scale. Re-run scripts/27_anchor_sediment_proxy.py. Relative classes only "
+            "until then."
+        )
+        return bundle
+
+    bundle["sediment"].calibrate_to_anchor(recomputed, float(anchor["mass_t"]))
+    # Kept on the bundle so `predict` can expose it without importing sediment_proxy —
+    # this module avoids that import on purpose, see SEDIMENT_ANCHOR above.
+    bundle["sediment_anchor_index"] = recomputed
+    bundle["sediment_anchor_status"] = (
+        f"applied: {anchor['anchor_event']}/{anchor['anchor_catchment']} at "
+        f"{anchor['mass_t']:,.0f} t, k={anchor['k_tonnes_per_index']:.6f} t/index. "
+        "ONE measurement fixes the scale, never the shape — a mass for any other event "
+        "is an extrapolation along an unverified curve."
+    )
+    return bundle
+
+
 @lru_cache(maxsize=4)
 def _bundle(version_id: str | None = None) -> dict[str, Any]:
-    """Loaded once per process, not per request."""
-    return artifacts.load(version_id)
+    """Loaded once per process, not per request. Anchored on the way through."""
+    return _apply_sediment_anchor(artifacts.load(version_id))
 
 
 def _stub_response(df: pd.DataFrame) -> list[dict[str, Any]]:
@@ -150,7 +233,6 @@ def _stub_response(df: pd.DataFrame) -> list[dict[str, Any]]:
             # rejected by both.
             "sediment_class": "medium",
             "sediment_index": None,
-            "sediment_intensity_0_1": None,
             "transmission_loss": None,
         })
     return out
@@ -203,11 +285,6 @@ def predict(
     sed_index = sediment.index(X, depth)
     anchored = bool(getattr(sediment, "is_anchored", False))
     sed = sediment.classify(X, depth) if anchored else None
-    # `sed_index` is unbounded (proportional to runoff volume) - right for
-    # ranking and for mass_estimate_t(), wrong for anything that multiplies it
-    # against other [0, 1] terms. `relative_sediment_intensity_0_1` is the
-    # rescaled, bounded counterpart the exposure formula actually needs.
-    sed_intensity01 = sediment.relative_intensity(X, depth) if anchored else None
     unanchored_note = (
         "UNANCHORED - index is comparable between requests, but no absolute "
         f"class exists. Anchor the proxy at training time on {SEDIMENT_ANCHOR}."
@@ -274,8 +351,13 @@ def predict(
             "feature_attributions_status": shap_unavailable,
             "sediment_class": str(sed.sediment_class.iloc[i]) if sed is not None else None,
             "sediment_index": round(float(sed_index[i]), 6),
-            "sediment_intensity_0_1": (round(float(sed_intensity01[i]), 6)
-                                      if sed_intensity01 is not None else None),
+            # The index is unbounded, and the exposure formula needs 0-1. Exposing the
+            # anchor's own index lets a caller normalise against a DOCUMENTED reference
+            # — 1.0 meaning "as intense as October 2016, ~24,400 t" — instead of picking
+            # an arbitrary ceiling. None when unanchored, so a caller cannot silently
+            # divide by a number that does not exist.
+            "anchor_index_for_normalisation": (
+                bundle.get("sediment_anchor_index") if anchored else None),
             "sediment_basis": (str(sed.class_basis.iloc[i]) if sed is not None
                                else unanchored_note),
             "transmission_loss": float(sediment.params.transmission_loss),

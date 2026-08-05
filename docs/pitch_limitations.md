@@ -91,7 +91,15 @@ an interpolation artefact, not a real slope. So:
   though that would have looked more rigorous. Deriving a reef edge from an
   interpolation artefact would have dressed up a guess as a measurement.
 
-Our reef zone widths are an explicit, documented 250 m assumption.
+**Updated 2026-08-03.** We no longer need a width assumption at all. Reef zone
+outlines are now Allen Coral Atlas v2.0's own 5 m benthic polygons — 1.235 km² across
+the 8 zones, against the 5.69 km² our earlier hand-drawn 250 m strips claimed. The
+reasoning above is why we refused to fake the boundary from bathymetry while we
+waited; the fix was to get real geometry, not a cleverer guess.
+
+The honest residual limitation is different in kind: the Atlas maps **optically
+shallow** reef, so reef below the depth its imagery penetrates is not in our zones.
+Bathymetry remains too coarse to say how much that omits.
 
 ---
 
@@ -142,7 +150,9 @@ states this in its own header so it cannot be misread downstream.
 1. Field-sample soil at the main wadi outlets — turns limitation 2 from a caveat into
    a calibration.
 2. Get high-resolution nearshore bathymetry — this single fix unlocks reef-scale
-   plume behaviour and would let us replace the 250 m assumption in limitation 4.
+   plume behaviour, and would tell us how much reef sits below the depth the Atlas's
+   imagery penetrates, which is the residual in limitation 4 now that the 250 m width
+   assumption is gone.
 3. Sit down with an Aqaba marine scientist for one hour and replace limitation 5's
    placeholder weights with real ones.
 

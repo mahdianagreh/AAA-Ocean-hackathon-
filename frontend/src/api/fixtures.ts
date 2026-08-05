@@ -4,7 +4,7 @@ import type { Catchment, Health, Outlet, ReefZone } from './types';
 /** Fixtures built from real repo artefacts, never invented — 07 §5.
  *
  *  Geometry and attributes come from the committed basemap GeoJSON, which
- *  scripts/13_frontend_basemap.py derived from data/processed/vectors/*.gpkg. So
+ *  scripts/frontend_basemap.py derived from data/processed/vectors/*.gpkg. So
  *  the fixture client reads the same numbers the API will eventually serve, and
  *  the swap is a change of transport rather than a change of content.
  *
@@ -27,14 +27,16 @@ export function fixtureClient(): ApiClient {
 
     async health() {
       // Shaped like the real /health so the panel does not branch on client kind.
-      // model_available is false because data/models/ genuinely does not exist —
-      // a fixture that claimed otherwise would hide the state we want shown.
+      // model_available is true because a registered artefact genuinely exists now
+      // — runoff_weighted_gbm_2194b48_20260803T214757Z, whose output is committed to
+      // fixtures/predictions.json. It read false while data/models/ was empty, and
+      // a fixture that lies in either direction hides the state we want shown.
       return {
         status: 'ok',
         version: '0.1.0',
         commit: 'fixtures',
         time_utc: new Date().toISOString(),
-        model_available: false,
+        model_available: true,
         data_volume_mounted: true,
       } satisfies Health;
     },

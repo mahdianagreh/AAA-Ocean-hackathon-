@@ -281,6 +281,41 @@ def build_interpolator(prefer: str = "copernicus_marine") -> CurrentFieldInterpo
     return CurrentFieldInterpolator(ds)
 
 
+def get_historical_interpolator(prefer: str = "copernicus_marine") -> CurrentFieldInterpolator:
+    """The Abd handoff: a ready `current_fn` for the demo event window
+    (DEMO_EVENT_WINDOW, 26-31 Oct 2016), satisfying particle_engine.py's
+    `current_fn: Callable[[lon, lat, time, depth], (u, v)]` contract directly.
+
+    Unlike build_interpolator(), this NEVER touches the network — it only opens
+    the already-cached historical files (hycom_aoi_AQ-2016-10-28.nc,
+    copernicus_marine_aoi_AQ-2016-10-28.nc). If neither is cached yet, run
+    cache_hycom_historical() / cache_copernicus_marine_historical() once first
+    (those do fetch live, and only those do).
+
+    Same prefer/fallback logic as build_interpolator(): Copernicus Marine first
+    if its cache file exists, else HYCOM. Note the resolution finding that
+    travels with this handoff — docs/forcing_limitations.md: both models mask
+    the provisional outlet as land, and for this exact event window they
+    disagree by 65.8 degrees on current direction at the nearest point either
+    resolves. Render a probability field with stated confidence, never a
+    single trajectory line.
+    """
+    cm_path = RAW_DIR / "copernicus_marine_aoi_AQ-2016-10-28.nc"
+    hycom_path = RAW_DIR / "hycom_aoi_AQ-2016-10-28.nc"
+
+    if prefer == "copernicus_marine" and cm_path.exists():
+        ds = xr.open_dataset(cm_path)
+    elif hycom_path.exists():
+        ds = xr.open_dataset(hycom_path)
+    else:
+        raise FileNotFoundError(
+            f"No cached historical currents at {cm_path} or {hycom_path}. Run "
+            "cache_hycom_historical() and/or cache_copernicus_marine_historical() "
+            "once (network required) before calling this function."
+        )
+    return CurrentFieldInterpolator(ds)
+
+
 # ---------------------------------------------------------------------------
 # HYCOM vs Copernicus Marine direction comparison — an honest measure of forcing
 # uncertainty rather than presenting one model's current direction as ground truth.

@@ -2,22 +2,27 @@ import type { EventSeries } from './event';
 import type { Scenario } from '../app/uiStore';
 import type { Catchment } from './types';
 import { bandForScore } from './types';
+import { bandForSeverity, type Predictions } from './predictions';
 import type { RiskCardData } from '../components/RiskCard';
 
-/** Risk cards, derived from the real rainfall series — not invented numbers.
+/** Risk cards, from the registered model — with a labelled index as the fallback.
  *
- *  The model endpoints answer 503 because `data/models/` does not exist, so there
- *  is no trained artefact to call. Rather than invent a probability, this derives a
- *  transparent index from measured rainfall and states plainly that it is a
- *  stand-in: `runoff_probability` stays **null**, which renders as a gap, and every
- *  card is flagged provisional.
+ *  Two builders, and which one runs is stated on every card.
  *
- *  That distinction matters more than it looks. A fabricated 0.72 on a risk card is
- *  indistinguishable from a model output, and the whole project's credibility rests
- *  on not doing that. What is shown instead is: the rainfall that actually fell, a
- *  normalised index built only from it, and an explicit "no trained model" state.
- *  When Mahdi's artefact lands, the shape does not change — the nulls fill in.
- *  See OPEN-ISSUES.md item 15.
+ *  `riskFromPredictions` is the normal path. A trained artefact now exists
+ *  (`runoff_weighted_gbm_2194b48_20260803T214757Z`, leave-one-catchment-out mean AP
+ *  0.7474 against a 0.2004 baseline), so the cards show its probabilities and its
+ *  own SHAP attributions, tagged with the version id.
+ *
+ *  `riskFromSeries` is the stand-in index, kept for the one case the model cannot
+ *  serve: what-if mode. The predictions are model output at fixed inputs, and
+ *  re-deriving them for an arbitrary transmission-loss slider would mean inventing a
+ *  prediction the model never made. So the index answers instead, with
+ *  `runoff_probability` **null** — a gap rather than a fabricated 0.72, which on a
+ *  risk card is indistinguishable from model output.
+ *
+ *  This was written the other way round: until 3 Aug 2026 `data/models/` was empty
+ *  and the index was the only path. OPEN-ISSUES.md item 15, now closed.
  */
 
 /** Wet-day 99th percentile, from events.summary.json (14.31–15.59 mm across the
@@ -51,6 +56,83 @@ function concentration(areaKm2: number): number {
   const hi = Math.log10(AREA_MAX_KM2);
   const t = (Math.log10(Math.max(AREA_MIN_KM2, areaKm2)) - lo) / (hi - lo);
   return 0.42 + 0.58 * t;
+}
+
+/** Real model output, when a registered artefact exists.
+ *
+ *  Preferred over the stand-in index below in every case — a measured prediction
+ *  with its own SHAP attributions is strictly better evidence than a proxy. The
+ *  proxy's only justification was that `data/models/` was empty, and it is not.
+ *
+ *  The scenario controls deliberately do NOT alter these numbers. They are model
+ *  output at fixed inputs; re-deriving them for an arbitrary transmission-loss
+ *  slider would mean inventing a prediction the model never made. So moving a
+ *  control falls back to the index, and the card says which it is showing —
+ *  09 rule 8, never claim exactness.
+ */
+export function riskFromPredictions(
+  preds: Predictions,
+  catchments: Catchment[],
+  cursor: number,
+): RiskCardData[] {
+  return catchments.map((c) => {
+    const rows = preds.by_catchment[c.catchment_id] ?? [];
+    const p = rows[cursor];
+
+    if (!p) {
+      // No prediction at this step for this catchment. A gap, not a zero.
+      return {
+        catchment_id: c.catchment_id,
+        name: c.name,
+        area_km2: c.area_km2,
+        band: 'minimal' as const,
+        score: 0,
+        runoff_probability: null,
+        provisional: true,
+        caveat: c.caveat,
+        drivers: [],
+        confidence: {
+          members_exceeding: 0,
+          members_total: rows.length,
+          threshold_key: 'risk.thresholdModel',
+          threshold_value: { value: 0, unit: '', provenance: 'modelled' as const },
+        },
+      };
+    }
+
+    return {
+      catchment_id: c.catchment_id,
+      name: c.name,
+      area_km2: c.area_km2,
+      band: bandForSeverity(p.severity),
+      score: Math.round(p.runoff_probability * 100),
+      runoff_probability: p.runoff_probability,
+      // The model is real, so the card is no longer a stand-in. A stub prediction
+      // would still be flagged, which is why is_stub travels through the fixture.
+      provisional: p.is_stub,
+      modelVersion: preds.model.version_id,
+      caveat: c.caveat,
+      drivers: p.drivers.slice(0, 4).map((d) => ({
+        key: d.key,
+        contribution: d.contribution,
+        value: { value: d.value, unit: '', provenance: 'modelled' as const },
+      })),
+      confidence: {
+        // The model reports a single confidence figure rather than ensemble
+        // components, so the meter shows it against 1.0 and the label says what it
+        // is. Composing "22 of 30 members" would be inventing an ensemble — Day-1
+        // ask #6 is still owed.
+        members_exceeding: Math.round(p.confidence * 100),
+        members_total: 100,
+        threshold_key: 'risk.thresholdModel',
+        threshold_value: {
+          value: preds.model.mean_AP ?? 0,
+          unit: 'AP',
+          provenance: 'modelled' as const,
+        },
+      },
+    };
+  });
 }
 
 export function riskFromSeries(
@@ -90,10 +172,12 @@ export function riskFromSeries(
     return {
       catchment_id: c.catchment_id,
       name: c.name,
+      area_km2: c.area_km2,
       band: bandForScore(score),
       score,
-      // Deliberately null. There is no trained model, and a number here would be
-      // a claim we cannot support.
+      // Deliberately null. A trained model exists, but it cannot be re-run in the
+      // browser against moved sliders — so on this path there is no probability to
+      // report, and a number here would be a claim nothing computed.
       runoff_probability: null,
       provisional: true,
       caveat: c.caveat,

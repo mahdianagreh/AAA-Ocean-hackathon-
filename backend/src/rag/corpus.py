@@ -2,17 +2,27 @@
 
 WHY AN ALLOWLIST AND NOT `docs/**/*.md`
 ---------------------------------------
-`docs/ali/*` is the MENA and global analogue scan. It is research and pitch
+`docs/Ali/*` is the MENA and global analogue scan. It is research and pitch
 material: it backs the market slide and the "is this only for Aqaba?" answer in
 Q&A. It is NOT an app surface, and an answer to a technical question citing a
 market-sizing document would be actively misleading.
 
 A recursive glob picks it up silently. So the corpus is a literal list, and
 `EXCLUDED_DIRS` is enforced in `resolve()` as a second, independent guard — if
-someone adds a path under docs/ali/ to the list by hand, resolution refuses it
+someone adds a path under docs/Ali/ to the list by hand, resolution refuses it
 rather than trusting that the list was curated correctly.
 
-`tests/test_ask_citations.py` asserts both: that nothing under docs/ali/ is ever
+CASE, DELIBERATELY. This guard was written and tested as `docs/ali/` (lowercase)
+while the real tracked directory is `docs/Ali/` (capital A, 35 files) — so for
+every real path in this repo, `is_excluded()` silently returned False, and the
+"second, independent guard" the paragraph above describes was not actually
+guarding anything. It went unnoticed because CORPUS_FILES never listed a
+docs/Ali path either, so nothing wrong was ever indexed — the safety net was
+just never tested against a live round. `is_excluded()` now compares
+case-insensitively so a future rename (either direction) cannot silently reopen
+the same gap.
+
+`tests/test_ask_citations.py` asserts both: that nothing under docs/Ali/ is ever
 resolved, and that every corpus entry that exists on disk is actually indexed.
 """
 
@@ -42,7 +52,10 @@ CORPUS_FILES: list[str] = [
     "docs/README_pulga.md",
 ]
 
-# Hard exclusions, enforced independently of the list above.
+# Hard exclusions, enforced independently of the list above. Lowercase — matched
+# case-insensitively in is_excluded(), so this list does not need to track the
+# real on-disk casing (currently docs/Ali/) and cannot silently stop matching if
+# that casing changes again.
 EXCLUDED_DIRS: tuple[str, ...] = (
     "docs/ali/",       # market / analogue research — pitch only, not an app surface
     "docs/schema_proposals/",  # proposals, not decisions
@@ -54,7 +67,10 @@ class ExcludedFromCorpus(RuntimeError):
 
 
 def is_excluded(rel_path: str) -> bool:
-    norm = str(rel_path).replace("\\", "/").lstrip("./")
+    # Case-insensitive on purpose: this guard was written against "docs/ali/" while
+    # the tracked directory is "docs/Ali/", so a case-sensitive match let every real
+    # path in the repo through silently. See the module docstring.
+    norm = str(rel_path).replace("\\", "/").lstrip("./").lower()
     return any(norm.startswith(d) or f"/{d}" in f"/{norm}" for d in EXCLUDED_DIRS)
 
 

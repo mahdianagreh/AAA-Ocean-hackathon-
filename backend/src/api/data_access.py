@@ -39,7 +39,11 @@ ARTIFACTS: dict[str, Path] = {
     "urban": FEATURES / "urban_by_catchment.parquet",
     "event_dates": DOCS / "event_dates.md",
     "data_dictionary": DOCS / "data_dictionary.md",
-    "training_set": FEATURES / "training_set_full.parquet",
+    # Frozen by scripts/build_forecast_snapshot.py from forecast_runs/
+    # forecast_catchment_rainfall/forecast_exceedance — the network-free demo path.
+    # Live means "latest cached forecast" (tasks/phase3/00-phase3-plan.md), never a
+    # request-time GFS/GEFS/Postgres call.
+    "forecast_snapshot": DATA / "processed" / "forecasts" / "latest_snapshot.json",
 }
 
 
@@ -135,6 +139,44 @@ def _feature_table(name: str) -> dict[str, dict]:
     }
 
 
+def training_row(event_id: str, catchment_id: str) -> dict | None:
+    """The real feature row for one (event, catchment), or None.
+
+    Exists because the exposure endpoint was asking the runoff model for a synthetic
+    `30 mm/3h` with no other features. The model needs 20, and the sediment magnitude is
+    a curve-number depth driven by `precipitation_mm_day` — absent, that depth is 0, the
+    sediment index is 0, and since exposure is a PRODUCT of five terms every reef zone
+    came back `minimal` regardless of the plume. A synthetic request is fine for shaping
+    a response and useless for computing one.
+
+    Returns None rather than a default row when the event is not in the training set:
+    an invented feature vector produces a confident number about a storm we never
+    measured, which is the failure this project keeps having to undo.
+    """
+    import pandas as pd
+
+    path = FEATURES / "training_set_full.parquet"
+    if not path.exists():
+        return None
+
+    frame = pd.read_parquet(path)
+    if "date" not in frame.columns or "catchment_id" not in frame.columns:
+        return None
+
+    # Event ids are AQ-YYYY-MM-DD; the training set is keyed by date, so the id is
+    # parsed rather than matched as a string — the contract owns the format.
+    try:
+        day = pd.to_datetime(event_id.removeprefix("AQ-")).date()
+    except (ValueError, TypeError):
+        return None
+
+    hit = frame[(pd.to_datetime(frame["date"]).dt.date == day)
+                & (frame["catchment_id"] == catchment_id)]
+    if hit.empty:
+        return None
+    return {k: _clean(v) for k, v in hit.iloc[0].items()}
+
+
 def landcover_for(cid: str) -> dict | None:
     return _feature_table("landcover").get(cid)
 
@@ -200,15 +242,19 @@ def reef_zones_gdf():
 
 # --------------------------------------------------------------------- outlets
 
-# Outlet position confidence. AQ-O04's caveat is the one that must always travel.
-OUTLET_CONFIDENCE = {
-    "AQ-O01": "good", "AQ-O02": "plausible", "AQ-O03": "plausible",
-    "AQ-O04": "low", "AQ-O05": "plausible",
-}
-
-
 @lru_cache(maxsize=1)
 def outlets() -> list[dict]:
+    """Outlet metadata, position_confidence included, straight from Mahdi's analysis.
+
+    Used to hold a hand-typed `OUTLET_CONFIDENCE = {"AQ-O01": "good", ...}` guess
+    written before `outlets.geojson` carried real per-outlet confidence. That guess
+    diverged from the geometry team's actual DEM/culvert cross-check in three of
+    five rows — AQ-O02 and AQ-O03 (both "CANDIDATE CORRECTION — unmodelled path to
+    the sea" in the source) read back as "plausible" instead of "low", and AQ-O05
+    (a verified natural wadi mouth) read back as merely "plausible" instead of
+    "high". `scripts/06_catchments.py`'s own POSITION_CONFIDENCE table is the
+    source of truth; this now reads it rather than re-guessing it.
+    """
     gdf = _geo(ARTIFACTS["outlets"])
     if gdf is None:
         return []
@@ -224,7 +270,16 @@ def outlets() -> list[dict]:
             "catchment_id": _clean(r.get("catchment_id")),
             "lon": float(pt.x),
             "lat": float(pt.y),
-            "position_confidence": OUTLET_CONFIDENCE.get(oid, "plausible"),
+            # "unchecked" is the fallback POSITION_CONFIDENCE.get() itself uses for
+            # any outlet it has no entry for — never invent "plausible" here either.
+            "position_confidence": _clean(r.get("position_confidence")) or "unchecked",
+            "position_confidence_note": _clean(r.get("imagery_note")),
+            "culvert_verdict": _clean(r.get("culvert_verdict")),
+            "upstream_km2": _clean(r.get("upstream_km2")),
+            "nearest_culvert_m": _clean(r.get("nearest_culvert_m")),
+            "culverts_within_2500m": _clean(r.get("culverts_within_2500m")),
+            "unmodelled_coastal_culverts": _clean(r.get("unmodelled_coastal_culverts")),
+            "source_caveat": _clean(r.get("caveat")),
         })
     return sorted(out, key=lambda x: x["outlet_id"])
 
@@ -262,56 +317,6 @@ def events() -> list[dict]:
             "source": "docs/event_dates.md",
         }
     return sorted(seen.values(), key=lambda x: x["event_id"])
-
-
-# ------------------------------------------------------------ runoff features
-
-@lru_cache(maxsize=1)
-def _training_set():
-    """The real feature table Component A trains on. None if absent.
-
-    Missing is missing (standing law #1): callers that need a real historical
-    feature row must handle None rather than receiving a fabricated one.
-    """
-    path = ARTIFACTS["training_set"]
-    if not path.exists():
-        return None
-    import pandas as pd
-    return pd.read_parquet(path)
-
-
-def historical_features(event_id: str | None, catchment_id: str) -> dict | None:
-    """The real feature row for one (event, catchment) - never a placeholder.
-
-    The event id IS the date, by the ID contract (`AQ-YYYY-MM-DD`), so no
-    separate lookup is needed to know which day to pull. Returns None when the
-    training table is absent or this (date, catchment) pair was never
-    observed - the caller reports that as a gap, not a scenario dressed up as
-    a replay.
-    """
-    import re
-
-    if not event_id:
-        return None
-    m = re.fullmatch(r"AQ-(\d{4}-\d{2}-\d{2})", event_id)
-    if not m:
-        return None
-    date = m.group(1)
-
-    df = _training_set()
-    if df is None:
-        return None
-
-    from models import features as FX
-
-    row = df[(df["date"].dt.strftime("%Y-%m-%d") == date)
-            & (df["catchment_id"] == catchment_id)]
-    if row.empty:
-        return None
-
-    r = row.iloc[0]
-    return {"catchment_id": catchment_id, "date": date,
-            **{f: _clean(r[f]) for f in FX.FEATURES}}
 
 
 # ---------------------------------------------------------------- data sources
@@ -496,6 +501,17 @@ PLUME_CACHE = TTLCache(ttl_seconds=1800)
 EXPOSURE_CACHE = TTLCache(ttl_seconds=1800)
 
 
+@lru_cache(maxsize=1)
+def forecast_snapshot() -> dict | None:
+    """The frozen GFS/GEFS snapshot (scripts/build_forecast_snapshot.py), the
+    only forecast data any endpoint may serve. None if the file is absent —
+    missing is missing, never a live GFS/GEFS/Postgres call to fill the gap."""
+    path = ARTIFACTS["forecast_snapshot"]
+    if not path.exists():
+        return None
+    return json.loads(path.read_text())
+
+
 def clear_all_caches() -> None:
     catchments.cache_clear()
     reef_zones.cache_clear()
@@ -503,5 +519,6 @@ def clear_all_caches() -> None:
     events.cache_clear()
     data_sources.cache_clear()
     _feature_table.cache_clear()
+    forecast_snapshot.cache_clear()
     PLUME_CACHE._store.clear()
     EXPOSURE_CACHE._store.clear()
