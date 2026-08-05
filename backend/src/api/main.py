@@ -116,11 +116,22 @@ app = FastAPI(
 # Origins come from the environment so the container can be locked down without a
 # code change. Carried over from origin/main's API, which Docker Compose already
 # configures this way; defaulting to the Vite dev port keeps local work unchanged.
+#
+# PLUS a regex fallback for any localhost/127.0.0.1 port. Found by actually running
+# the frontend against this API rather than assuming the fixed list was enough:
+# API_PORT=8100 and a non-default frontend port (needed on this project's own dev
+# machine, repeatedly, because 8000/5173 are often already taken by something else)
+# made every live call fail with a CORS error that has nothing to do with the API
+# itself. That is exactly the failure mode this project keeps naming — a correct
+# backend that LOOKS broken — except inverted: here the frontend looks broken while
+# the backend is fine. Safe to widen this way because the API never leaves
+# localhost; it is a wifi-off local demo tool, not a public deployment.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o for o in os.environ.get(
         "REEFSHIELD_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173",
     ).split(",") if o],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
