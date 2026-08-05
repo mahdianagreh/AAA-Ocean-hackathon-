@@ -2,6 +2,25 @@
 
 Read [`00-phase3-plan.md`](00-phase3-plan.md) first.
 
+> **Update, 5 Aug — done for you, while you were away from this repo:** items 3
+> (plume-prediction image) and half of 4/§5 (exposure + alerts on screen) below.
+> Two commits on `main`: `66e39d1` (a CORS fix you'd have hit the moment you tried
+> this yourself — the fixed `allow_origins` list didn't cover a non-5173 dev port)
+> and `2eb7a47` (the actual wiring). **Pull before you touch `SideRail.tsx`,
+> `RiskCard.tsx` or `api/types.ts`** — all three changed.
+>
+> What landed: `src/api/live.ts` + `useLiveExposure` (a hook separate from
+> `useEventData` on purpose — no fixture fallback exists for these three, so a
+> slow/down API must not block the rest of the page), the reef-zone rows in
+> `SideRail` now show the real exposure band, a new Alerts section, and
+> `PlumeMapPanel.tsx` rendering `GET /api/v1/plume/map` with a frame stepper and
+> the `plume_source` badge. `fixtures` → `http` for
+> `catchments`/`outlets`/`reefZones` in `client.ts`/`http.ts` is **still
+> untouched** — I stayed out of that one deliberately, since it's the thing you'd
+> most plausibly be mid-edit on. Verified live (API up and down, both languages,
+> both themes) before pushing, not just typechecked — see the commit messages for
+> what that caught.
+
 **You are much further along than the plan assumed.** I installed and ran your app on
 4 Aug: typecheck clean, build in 522 ms, 14 tests passing, serves 200. Every feature on the
 Phase 2 list exists — map, time slider, mode switch, layer toggles, legend, risk cards,
