@@ -85,6 +85,73 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)-7s %(m
 logger = logging.getLogger("matrix")
 
 
+#: Columns that exist for joining, sorting or provenance and must NOT be trained on.
+#:
+#: `rank` is the important one and the least obvious. It is the storm's position in our
+#: own catalogue by rainfall, so it correlates strongly with runoff and looks like a
+#: brilliant predictor — but a live forecast has no rank. You cannot know where tomorrow's
+#: storm places among 27 years of history until the history is complete. A model trained
+#: on it scores well offline and cannot be deployed at all, which is worse than a model
+#: that scores badly.
+NON_FEATURE_COLUMNS = (
+    "event_id", "catchment_id", "date", "event_date", "timestamp_utc",
+    "rank", "selection_reason", "candidate_generation_scope",
+    "search_scope_start_utc", "search_scope_end_utc", "is_exhaustive",
+    "storm_start", "storm_end", "storm_days", "merged_event_ids",
+    "wettest_catchment", "quality_flag", "source_geometry_status",
+)
+
+
+def feature_roles(matrix) -> dict:
+    """Classify every column so the modeller can choose columns instead of guessing.
+
+    The reason this exists: 115 of the 130 numeric columns are **constant within a
+    catchment**. Across the whole table they take only five distinct values, one per
+    catchment, so a tree that splits on `soil_clay_0_5cm` is not learning about soil —
+    it is learning "this is AQ-C03". With ~390 labelled rows and five catchments that is
+    the dominant overfitting risk, and no amount of extra rows fixes it: the cure is
+    choosing which columns to hand the model, which is what this block enables.
+    """
+    static, varying, non_feature, non_numeric = [], [], [], []
+    for column in matrix.columns:
+        if column in NON_FEATURE_COLUMNS:
+            non_feature.append(column)
+        elif column.lower().startswith(LABEL_ONLY_PREFIXES):
+            continue                      # labels are asserted out entirely
+        elif matrix[column].dtype.kind not in "ifb":
+            non_numeric.append(column)
+        elif matrix.groupby("catchment_id")[column].nunique(dropna=False).max() <= 1:
+            static.append(column)
+        else:
+            varying.append(column)
+
+    return {
+        "event_varying": sorted(varying),
+        "static_per_catchment": sorted(static),
+        "non_feature": sorted(non_feature),
+        "non_numeric": sorted(non_numeric),
+        "counts": {
+            "event_varying": len(varying),
+            "static_per_catchment": len(static),
+            "non_feature": len(non_feature),
+        },
+        "guidance": (
+            f"{len(static)} columns are constant within a catchment and therefore carry "
+            f"only five distinct values in the whole table; {len(varying)} vary by event. "
+            "Handing a tree all of them lets it identify the catchment instead of "
+            "learning the process, which random CV will reward and leave-one-catchment-out "
+            "will expose. Start from event_varying, add static features deliberately and "
+            "few at a time, and compare random CV against LOCO — the gap between them is "
+            "the leakage, measured."
+        ),
+        "never_train_on": (
+            "`rank` is the trap in non_feature: it is this catalogue's rainfall ranking, "
+            "so it predicts runoff well and does not exist for a live forecast. A model "
+            "using it cannot be deployed."
+        ),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--require-complete", action="store_true",
@@ -234,6 +301,7 @@ def main() -> int:
         "sources_present": present,
         "sources_missing": missing,
         "complete": not missing,
+        "feature_roles": feature_roles(matrix),
         "label_rule": (
             "ERA5-Land surface/sub-surface runoff are labels only and are "
             "asserted out of this table."

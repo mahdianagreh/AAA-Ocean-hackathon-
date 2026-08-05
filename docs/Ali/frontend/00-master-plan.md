@@ -62,7 +62,7 @@ Seven contract details, listed in full with rationale in
 
 1. Plume as contoured GeoJSON, **not** GeoTIFF — the current file is 4.2 MB → **Abd**
 2. Pre-downsampled hyetograph — the table is ~2.3 M rows → **Pulga / Nizar**
-3. Figure delivery and thumbnails — 27 MB of PNGs → **Pulga**
+3. Figure delivery and thumbnails — 48 MB of PNGs → **Pulga**
 4. `/ask` citations as a structured array → **Pulga**
 5. SHAP drivers as objects with stable keys → **Mahdi**
 6. Confidence as components, not a sentence → **Nizar / Mahdi**
@@ -84,7 +84,7 @@ Plus the one item with no engineering fallback:
 | **Abd** | Plume layers per timestep | Day 6 | No — stub with a static polygon |
 | **Mahdi** | Risk fields + driver list | Day 5 | No — stub |
 | **Mahdi** | Compose slot for the frontend container † | Day 2 | No — Dockerfile can land first |
-| **Pulga (QA)** | 34 figures + captions | Day 4 | No — already in the repo |
+| **Pulga (QA)** | 43 figures + captions | Day 4 | No — already in the repo |
 
 † Not in the task file's table — added here because DoD item 9 requires the frontend to run in Compose.
 
@@ -118,7 +118,7 @@ Phase 4 is a schedule alarm, not a Day 12 surprise.**
 | Risk | Mitigation |
 |---|---|
 | **MapLibre's RTL text plugin is registered by URL and the documented examples use a CDN.** Arabic map labels break with wifi off — silently, and only in Arabic. | Self-host, register eagerly at boot, verify in Phase 1 with the network disabled. Highest-value catch in this plan. |
-| 27 MB of QA figures | WebP thumbnails at build time, lazy-load, full-res only in the lightbox |
+| 48 MB of QA figures | WebP thumbnails at build time, lazy-load, full-res only in the lightbox |
 | Plume delivered as raster | Day 1 ask #1. Fallback: contour client-side and accept the cost |
 | Arabic subsetting is harder than Latin — shaping limits `unicode-range` splitting | Subset over the glyphs actually used; measure before Phase 5 |
 | Radix under `dir="rtl"` — popovers, sliders, menus need per-primitive checks | Every primitive lands on the specimen route in RTL the day it is added |
@@ -149,7 +149,7 @@ From [`06-ali.md`](../../../tasks/phase2/06-ali.md), unchanged:
 2. Scenario controls including transmission loss.
 3. Risk cards with SHAP drivers and a derived confidence figure.
 4. Validation panel: modelled vs measured, plus the satellite null result.
-5. Provenance panel: 34 figures + the data-sources table.
+5. Provenance panel: 43 figures + the data-sources table.
 6. In-app limitations page.
 7. Assistant with visible citations.
 8. Bilingual AR/EN with working RTL.

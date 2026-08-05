@@ -123,13 +123,40 @@ def test_reef_zones_shape():
 
 
 def test_stub_endpoints_are_flagged():
+    """Whichever branch answers, the endpoint must declare which one it was.
+
+    This used to assert "runoff is_stub is True". That was true when it was written
+    and stopped being true the moment a trained artifact was registered, so a correct
+    upgrade turned the test red. What holds in BOTH modes is the invariant worth
+    testing: the response says where its numbers came from, and never renders an
+    absent number as a zero.
+    """
     r = client.post(f"{PREFIX}/runoff/predict",
                     json={"catchment_id": "AQ-C01", "rainfall_mm_3h": 41.2})
     j = r.json()
-    check("runoff is flagged is_stub", j["is_stub"] is True)
-    check("runoff carries a critical stub caveat",
-          any(c["severity"] == "critical" and c["field"] == "is_stub"
-              for c in j["caveats"]))
+    check("runoff declares is_stub as a bool", isinstance(j["is_stub"], bool))
+
+    if j["is_stub"]:
+        check("stubbed runoff carries a critical is_stub caveat",
+              any(c["severity"] == "critical" and c["field"] == "is_stub"
+                  for c in j["caveats"]))
+        check("stubbed runoff names itself a stub in provenance",
+              any(p["kind"] == "stub" for p in j["provenance"]))
+    else:
+        # Component A is a runoff CLASSIFIER, not a volume regressor, so there is no
+        # m3 to report. A 0.0 here would be a fabricated model output presented as a
+        # prediction — the failure febc24a fixed. It must read as a gap.
+        check("real runoff reports no fabricated volume",
+              j["predicted_runoff_m3"] is None,
+              f"got {j['predicted_runoff_m3']!r}")
+        check("real runoff explains the absent volume as a gap",
+              any(c["severity"] == "critical" and c["field"] == "predicted_runoff_m3"
+                  for c in j["caveats"]))
+        check("real runoff names the model artefact it used",
+              j["model_version"] not in (None, "", "unregistered"),
+              f"got {j['model_version']!r}")
+        check("real runoff carries a derived provenance entry",
+              any(p["kind"] == "derived" for p in j["provenance"]))
 
     r = client.post(f"{PREFIX}/plume/simulate",
                     json={"event_id": "AQ-2016-10-25", "outlet_id": "AQ-O02"})
@@ -248,6 +275,12 @@ def test_alerts_read_from_stored_runs():
 
 # ------------------------------------------------------- caveat coverage table
 
+
+def _runoff_predict():
+    return client.post(f"{PREFIX}/runoff/predict",
+                       json={"catchment_id": "AQ-C01", "rainfall_mm_3h": 10}).json()
+
+
 CAVEAT_MATRIX = [
     # (label, callable returning a response json, condition, expected field)
     ("reef-zones / placeholder weight",
@@ -276,11 +309,16 @@ CAVEAT_MATRIX = [
     ("catchments / soil is modelled",
      lambda: client.get(f"{PREFIX}/catchments/AQ-C01").json()["caveats"],
      "soil present", "soil"),
-    ("runoff / stub flagged",
-     lambda: client.post(f"{PREFIX}/runoff/predict",
-                         json={"catchment_id": "AQ-C01",
-                               "rainfall_mm_3h": 10}).json()["caveats"],
-     "always while stubbed", "is_stub"),
+    # The field depends on which branch serves, so it is resolved at run time rather
+    # than frozen into the row. Registering a trained artifact flipped the endpoint
+    # from stub to real and this row went red on a correct upgrade; the caveat that
+    # must always be present is the one declaring the mode, not the stub one.
+    #   stub -> `is_stub`, critical, "not a prediction"
+    #   real -> `predicted_runoff_m3`, critical, "a gap, not a zero"
+    ("runoff / serving mode declared",
+     lambda: _runoff_predict()["caveats"],
+     "always", lambda: "is_stub" if _runoff_predict()["is_stub"]
+                       else "predicted_runoff_m3"),
     ("plume / bathymetry substitution",
      lambda: client.post(f"{PREFIX}/plume/simulate",
                          json={"event_id": "E", "outlet_id": "AQ-O02"}).json()["caveats"],
@@ -356,13 +394,19 @@ def test_caveat_coverage_table():
     print("\n  caveat coverage — which condition fires which caveat, verified")
     print(f"  {'fires?':7s} {'field':18s} {'condition':26s} where")
     for label, getter, condition, field in CAVEAT_MATRIX:
+        # `field` may be a callable when which caveat is required depends on how the
+        # endpoint is currently serving. Resolved here so the row states the rule,
+        # not a snapshot of today's deployment.
+        want = field
         try:
+            want = field() if callable(field) else field
             caveats = getter()
-            fired = any(c.get("field") == field and c.get("message")
+            fired = any(c.get("field") == want and c.get("message")
                         for c in caveats)
         except Exception as e:
             fired, condition = False, f"ERROR {type(e).__name__}"
-        print(f"  {'YES' if fired else 'NO ':7s} {field:18s} {condition:26s} {label}")
+            want = want if isinstance(want, str) else "?"
+        print(f"  {'YES' if fired else 'NO ':7s} {want:18s} {condition:26s} {label}")
         if not fired:
             FAILURES.append(f"caveat not reached: {label}")
     check("every enumerated caveat actually reaches a payload",

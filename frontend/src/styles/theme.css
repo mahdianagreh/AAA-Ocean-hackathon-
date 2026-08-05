@@ -1,0 +1,198 @@
+/* The Tailwind v4 bridge. Hand-written, and it should almost never change.
+ *
+ * Why this file exists as a separate layer from tokens.generated.css:
+ * `@theme` must be a top-level at-rule. It cannot be nested inside
+ * `@media (prefers-color-scheme: dark)` or under `:root[data-theme="dark"]`, so
+ * 02-design-tokens.md §6's triple redefinition and Tailwind's theme mechanism
+ * cannot be the same construct. tokens.generated.css owns the values in all
+ * four scopes as plain custom properties; this file only teaches Tailwind their
+ * names.
+ */
+
+/* Clear the namespaces we reject before declaring ours.
+ *
+ * This is not tidiness. 01-design-language.md §3 lists the defaults that must
+ * be caught in review — `rounded-xl` cards, a green→red risk ramp, navy-plus-neon.
+ * Clearing the namespace turns `bg-red-500` and `rounded-xl` into utilities that
+ * do not exist, so those become build failures instead of review notes. */
+@theme {
+  --color-*: initial;
+  --font-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  /* Cleared because blur is how the rejected glassmorphic look gets built. */
+  --blur-*: initial;
+
+  /* --container-* is deliberately NOT cleared. Container widths are not part of
+     01 §3's rejected defaults — that list is about colour, radius, shadow and
+     typeface. Clearing it only removed max-w-md and friends, which silently made
+     a constrained chart render full-bleed. Over-clearing is its own bug. */
+
+  /* Type — 01 §5. One superfamily, so Arabic and Latin share weight, rhythm
+     and vertical proportion instead of being two typefaces bolted together. */
+  --font-sans: "IBM Plex Sans", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-arabic: "IBM Plex Sans Arabic", "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Numeric behaviour is set by the `num` utility below, not here.
+     Checked in the committed face: IBM Plex Mono exposes `zero` but has NO
+     `tnum` feature at all — a monospace font is already tabular, so there is
+     nothing to switch on. Requesting "tnum" 1 here did nothing, and setting
+     font-feature-settings alongside Tailwind's `tabular-nums`
+     (font-variant-numeric) put two properties in charge of the same feature
+     set, which is why the slashed zero did not appear. */
+
+  /* Minor third (1.2). A dense instrument, not an editorial page — a dramatic
+     scale would waste the vertical space the map needs. Weight carries
+     hierarchy more than size does. */
+  --text-2xs: 0.694rem;
+  --text-2xs--line-height: 1.3;
+  --text-xs: 0.833rem;
+  --text-xs--line-height: 1.35;
+  --text-sm: 1rem;
+  --text-sm--line-height: 1.5;
+  --text-md: 1.2rem;
+  --text-md--line-height: 1.4;
+  --text-lg: 1.44rem;
+  --text-lg--line-height: 1.3;
+  --text-xl: 1.728rem;
+  --text-xl--line-height: 1.2;
+
+  /* 4px base. NOTE the mapping, because it is a real trap: 02 §5 names
+     --space-1..8 as 4/8/12/16/24/32/48/64, but Tailwind derives utilities by
+     multiplying --spacing. So --space-5 (24px) is `p-6`, NOT `p-5`.
+       --space-1 4px  = p-1      --space-5 24px = p-6
+       --space-2 8px  = p-2      --space-6 32px = p-8
+       --space-3 12px = p-3      --space-7 48px = p-12
+       --space-4 16px = p-4      --space-8 64px = p-16 */
+  --spacing: 4px;
+
+  /* Radii stay small — a chart is drawn with a pen, not moulded in plastic. */
+  --radius-sm: 2px;
+  --radius-md: 3px;
+
+  /* Elevation is a ground change, not a shadow. This exists only for genuinely
+     floating layers: popover, dialog, map tooltip. Never an inline panel. */
+  --shadow-float: 0 2px 8px oklch(0.18 0.024 215 / 0.16);
+}
+
+/* THE LOAD-BEARING BLOCK.
+ *
+ * `inline` makes Tailwind substitute the *value* into each utility instead of
+ * emitting --color-canvas on :root and referencing that. So `bg-canvas`
+ * compiles to `background-color: var(--canvas)`, which resolves on the element
+ * — meaning the @media and [data-theme] overrides in tokens.generated.css win,
+ * and so does any nested scope.
+ *
+ * Without `inline`, --color-canvas would be computed once against :root, and a
+ * nested [data-theme="dark"] region would inherit the already-substituted LIGHT
+ * value. That bug is invisible until the first inverse panel or the specimen
+ * route — which is exactly where we would have found it the expensive way. */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-hairline: var(--hairline);
+  --color-hairline-2: var(--hairline-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-inverse: var(--ink-inverse);
+  --color-accent: var(--accent);
+
+  --color-risk-minimal: var(--risk-minimal);
+  --color-risk-low: var(--risk-low);
+  --color-risk-moderate: var(--risk-moderate);
+  --color-risk-high: var(--risk-high);
+  --color-risk-critical: var(--risk-critical);
+
+  --color-risk-minimal-stroke: var(--risk-minimal-stroke);
+  --color-risk-low-stroke: var(--risk-low-stroke);
+  --color-risk-moderate-stroke: var(--risk-moderate-stroke);
+  --color-risk-high-stroke: var(--risk-high-stroke);
+  --color-risk-critical-stroke: var(--risk-critical-stroke);
+
+  --color-risk-minimal-on: var(--risk-minimal-on);
+  --color-risk-low-on: var(--risk-low-on);
+  --color-risk-moderate-on: var(--risk-moderate-on);
+  --color-risk-high-on: var(--risk-high-on);
+  --color-risk-critical-on: var(--risk-critical-on);
+
+  --color-data-measured: var(--data-measured);
+  --color-data-modelled: var(--data-modelled);
+  --color-data-envelope: var(--data-envelope);
+}
+
+/* Variants.
+ *
+ * `dark:` should almost never appear in a diff. Components style through
+ * tokens, and the tokens already know the theme — so a `dark:` variant is
+ * usually the signal 02 §6 warns about: a component referenced a raw value. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant rtl (&:where([dir="rtl"], [dir="rtl"] *));
+@custom-variant ltr (&:where([dir="ltr"], [dir="ltr"] *));
+
+/* The transform escape hatch from 06-bilingual-rtl.md §2. Logical properties
+   cover layout; transforms have no logical equivalent, so a direction-aware
+   translate multiplies by this instead of hard-coding a sign. */
+:root {
+  --dir: 1;
+}
+
+:root[dir="rtl"] {
+  --dir: -1;
+}
+
+/* Motion — 05-motion-system.md. Three orchestrated moments; everything else is
+   <=150ms, opacity and transform only.
+
+   Three tokens, not a scale, because 01 §7 budgets exactly three moments and a
+   larger scale would invite motion that has not earned its place.
+   --ease-spring settles rather than overshooting hard: the time-scrub has to be
+   interruptible mid-flight, and a bouncy curve fights the next input. */
+@theme {
+  --dur-instant: 90ms;
+  --dur-fast: 150ms;
+  --dur-base: 260ms;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.26, 0.64, 1);
+}
+
+/* Every number on screen gets this, via ValueWithUnit. One property, so nothing
+   competes for the same OpenType features — setting font-feature-settings here
+   as well would put two properties in charge of the same feature set.
+
+   `slashed-zero` earns its place at small sizes. IBM Plex Mono's default zero is
+   *dotted*, which is already distinct from a letter O when you can see it — but
+   the dot is a couple of pixels and it does not survive antialiasing at the
+   11–13px this UI uses for identifiers and axis ticks. The ID contract puts
+   letters and digits in one token (AQ-O01 is outlet one, AQ-C01 is catchment
+   one), and a slash reads at every size the dot does not. Verified by rendering
+   both at 44px against `font-variant-numeric: normal`. */
+@utility num {
+  font-variant-numeric: slashed-zero tabular-nums;
+}
+
+/* Hairlines are the container model, not cards — 02 §5. A border is a 1px
+   --hairline, and elevation is expressed by ground change, not by shadow. */
+@utility rule {
+  border: 1px solid var(--hairline);
+}
+
+@utility rule-strong {
+  border: 1px solid var(--hairline-2);
+}
+
+/* The provenance forms from 01 §4. Measured vs modelled is encoded in FORM,
+   not hue, because form survives colour-blindness, greyscale, projector gamma
+   and a photograph of the screen. Hue does not. */
+@utility stroke-measured {
+  stroke: var(--data-measured);
+  stroke-dasharray: none;
+}
+
+@utility stroke-modelled {
+  stroke: var(--data-modelled);
+  stroke-dasharray: 4 3;
+}

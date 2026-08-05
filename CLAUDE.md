@@ -11,8 +11,14 @@ rainfall forecast → wadi runoff → sediment source & coastal outlet
 → probabilistic marine plume → coral/seagrass exposure → alerts
 ```
 
-Read `tasks/phase2/00-phase2-plan.md` first, then your own task file in
-`tasks/phase2/`. `reefshield_aqaba_concept.md` is the full concept.
+Read `tasks/phase3/00-phase3-plan.md` first, then your own task file in
+`tasks/phase3/`. `tasks/phase2/` is the previous phase, kept for context.
+`reefshield_aqaba_concept.md` is the full concept.
+
+**Phase 3 in one line:** the pieces work individually; make the chain true end to
+end and no term in the exposure formula a stub. One task gates five — the sediment
+proxy is unanchored and returns `0.0`, and exposure is a product, so every reef zone
+reads `minimal` until it is anchored.
 
 ---
 
@@ -122,7 +128,8 @@ failure mode this project keeps hitting.
 | **ERA5 accumulations reset daily at 00 UTC** | The 00 UTC value is the **previous** day's 24-h total. Never sum raw `tp`/`sro`/`ssro`. |
 | **ERA5/IMERG grids are not index-aligned** | Both 0.1°, centres offset half a cell. Combine only by area-weighted overlap. |
 | **ERA5-Land is land-only** | Sea cells are permanently NaN. They contribute to neither numerator nor denominator — never averaged in as zero. |
-| **Two modules named `config`** | `scripts/config.py` and `backend/src/config/`. A plain `from config import X` resolves to whichever is first on `sys.path`. Load by file path with `importlib`. |
+| **`config` import root** | `scripts/config.py` was deleted (OPEN-ISSUES #23) and `backend/src/config/` is a package, so `from config.spatial import X` needs `backend/src` on `sys.path` — `tests/conftest.py` does it once. Adding `scripts/` to the path makes any flat `config.py` shadow the package and breaks five test files at collection. |
+| **Tests can pass while the product is dead** | The suite was 482-green while `docker compose up` started nothing: tests imported `backend.src.api.main`, the container runs `--app-dir /app/backend/src`, and `from ..exposure import` resolves under the first and not the second. `tests/test_api_startup.py` now imports the app the way the container does. A green suite is not evidence the stack runs. |
 | **Storms cross midnight** | One storm is two days in a daily record. Merge consecutive wet days *before* ranking, or the same storm lands in both train and test. Literature IDs win the naming. |
 | **Supabase direct host is IPv6-only** | `db.<ref>.supabase.co` has an AAAA record only. Use the **pooler** (IPv4), username `postgres.<project_ref>`. |
 | **`pytest \| tail` masks failures** | The pipeline's exit status is `tail`'s. Never gate a push on `pytest ... \| tail && git push`. |
@@ -133,7 +140,9 @@ failure mode this project keeps hitting.
 
 ```bash
 source .venv/bin/activate
-pytest -q                                   # 405 pass, 4 skip (SoilGrids data absent)
+pytest -q                                   # 453 pass, 47 skip (git-ignored raw data
+                                            #   absent: IMERG granules, baked basemap,
+                                            #   SoilGrids — each skip names its script)
 
 python scripts/check_aoi_coverage.py        # which files are short of their AOI
 
@@ -167,7 +176,10 @@ backend/src/processing/             catchment_rainfall, antecedent_features, eve
 backend/src/models/                 plume_segmentation, runoff model
 scripts/                            61 CLI entry points; 00-10_* are Mahdi's hydrology chain
 tasks/00-contracts.md               Phase 1 contract (IDs, paths, CRS)
-tasks/phase2/                       Phase 2 plan + per-person task files
+tasks/phase3/                       CURRENT — Phase 3 plan + per-person task files
+tasks/phase2/                       previous phase, kept for context
+backend/src/rendering/              plume drawn on real satellite imagery, never generated
+docs/plume_imagery_decision.md      what we generate and what we never generate
 docs/event_dates.md                 event timing, machine-readable
 docs/data_dictionary.md             provenance ledger
 docs/ali/                           market/prior-art research — NOT an app surface, NOT in RAG

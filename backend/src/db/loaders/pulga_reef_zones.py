@@ -18,6 +18,7 @@ that computation belongs to Pulga's stream, not this loader.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 import geopandas as gpd
@@ -29,7 +30,11 @@ REPO_ROOT = Path(__file__).resolve().parents[4]
 _VECTORS = REPO_ROOT / "data" / "processed" / "vectors"
 
 PROVISIONAL_SOURCE_ID = "reef_zones_provisional_derivation"
-ACA_SOURCE_ID = "reef_zones_allen_coral_atlas_v2_0"
+# Must match an existing `data_sources.id` — it is a foreign key, and the only Atlas row
+# seed_data_sources.py registers is `allen_coral_atlas` (line ~220). The longer, more
+# descriptive-looking `reef_zones_allen_coral_atlas_v2_0` is not registered anywhere and
+# fails the constraint at load time. Verified against the live table on 3 Aug 2026.
+ACA_SOURCE_ID = "allen_coral_atlas"
 
 
 def resolve_reef_zones() -> tuple[Path, str, bool]:
@@ -87,6 +92,7 @@ def load_reef_zones() -> int:
     n = 0
     with session_scope() as session:
         for _, row in zones.iterrows():
+            depth = row["depth_median_m"]
             session.execute(
                 UPSERT_SQL,
                 dict(
@@ -95,7 +101,10 @@ def load_reef_zones() -> int:
                     geom_wkt=row["geometry"].wkt,
                     area_km2=float(row["area_km2"]),
                     habitat_class=row["habitat_class"],
-                    mean_depth_m=float(row["depth_median_m"]),
+                    # NULL, not NaN and never 0. R-02 has no water cell in the 50 m
+                    # bathymetry under a 5 m reef strip, so its depth is unmeasurable
+                    # rather than shallow — and a 0 there would read as sea level.
+                    mean_depth_m=None if depth is None or math.isnan(depth) else float(depth),
                     sensitivity_weight=float(row["sensitivity_weight"]),
                     sensitivity_basis=row["sensitivity_weight_status"],
                     source_id=source_id,

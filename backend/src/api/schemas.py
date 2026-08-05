@@ -144,11 +144,52 @@ class RunoffRequest(BaseModel):
 
 class RunoffPrediction(BaseModel):
     catchment_id: str
-    predicted_runoff_m3: float
+
+    # `None`, not 0.0. Component A is a runoff CLASSIFIER — it predicts whether runoff
+    # occurs, not how many cubic metres. There is no volume to report, and a 0.0 here
+    # renders on a risk card as "0 m3 of runoff", which is a fabricated number wearing
+    # the authority of a model output. The field stays so the shape does not change if a
+    # volume regressor is trained later.
+    predicted_runoff_m3: float | None = Field(
+        default=None,
+        description="None while Component A is occurrence-only. A gap, never a zero.",
+    )
     relative_sediment_intensity: float = Field(
         ge=0, le=1, description="Normalised 0-1; feeds the exposure formula"
     )
-    sediment_class: Literal["low", "moderate", "high", "extreme"]
+
+    # What the classifier actually produces. Carried explicitly rather than squeezed
+    # into relative_sediment_intensity, which is a sediment quantity and was silently
+    # being served the runoff probability instead.
+    runoff_probability: float | None = Field(
+        default=None, ge=0, le=1,
+        description="Probability that runoff occurs. None when no model is registered.",
+    )
+    severity: str | None = Field(
+        default=None, description="Model's own severity band for the probability."
+    )
+    confidence: float | None = Field(
+        default=None, ge=0, le=1,
+        description="Derived, with its components in the model's confidence_terms.",
+    )
+    # Vocabulary is `low|medium|high|extreme`, lowercase, and `None` when the sediment
+    # proxy has not run for this row.
+    #
+    # This field was `low|moderate|high|extreme`, which three modules disagreed about:
+    # sediment_proxy.CLASSES emits ("Low","Medium","High","Extreme"),
+    # particle_engine.SEDIMENT_CLASS_PARTICLE_SCALE keys on lowercase "medium", and this
+    # schema mandated "moderate". So the only value the schema allowed in that slot
+    # raised ValueError in the particle engine, and the value the proxy actually produces
+    # failed validation here. `medium` is the spelling that works end to end.
+    #
+    # `None` is permitted rather than defaulted, because runoff_model.py returns None for
+    # sediment_class when the proxy has not run, and `sediment_basis` carries the reason.
+    # Substituting a class there would invent a sediment severity nobody computed — the
+    # rule is that a gap is reported, never filled in.
+    sediment_class: Literal["low", "medium", "high", "extreme"] | None = Field(
+        default=None,
+        description="None when the sediment proxy has not run; read sediment_basis for why.",
+    )
     model_version: str
     is_stub: bool = Field(
         description="True while wired to a stub. Never ingest stub output into the "

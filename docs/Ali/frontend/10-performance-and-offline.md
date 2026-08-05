@@ -17,7 +17,7 @@ DoD item 9: **runs in Docker Compose, and works with wifi off** against the offl
 
 | Asset | Size | Plan |
 |---|---|---|
-| QA figures | **27 MB**, 11 files over 1 MB, `overview_01` alone 5.4 MB | WebP thumbnails at build time, lazy-load, full-res only in the lightbox |
+| QA figures | **47.7 MB**, 16 files over 1 MB, `overview_01` alone 8.8 MB | WebP thumbnails at build time, lazy-load, full-res only in the lightbox |
 | Plume raster | **4.2 MB** for one timestep | Ask #1 — contoured GeoJSON instead |
 | Arabic font | shaping limits `unicode-range` splitting | Subset over glyphs actually used; measure, do not assume it behaves like the Latin face |
 | Basemap tiles | to be measured | Sized and packed in Phase 5 |

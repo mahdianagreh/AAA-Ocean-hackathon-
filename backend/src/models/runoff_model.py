@@ -145,7 +145,10 @@ def _stub_response(df: pd.DataFrame) -> list[dict[str, Any]]:
             "feature_attributions": [
                 {"feature": "rain_3h_mm", "shap": round(p, 4), "value": r3},
             ],
-            "sediment_class": "Medium",
+            # Lowercase: the canonical vocabulary is low|medium|high|extreme, which is what
+            # particle_engine keys on and what the API schema validates. "Medium" here was
+            # rejected by both.
+            "sediment_class": "medium",
             "sediment_index": None,
             "transmission_loss": None,
         })

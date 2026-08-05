@@ -1,0 +1,88 @@
+/* The single stylesheet entry. Import order matters:
+ *   tailwindcss        — the engine and its base layer
+ *   fonts              — @font-face before anything renders text
+ *   tokens.generated   — the values, in all four theme scopes
+ *   theme              — teaches Tailwind those token names
+ * theme.css must come after tokens.generated.css, because its `@theme inline`
+ * block references the custom properties that file declares.
+ */
+@import "tailwindcss";
+@import "./fonts.css";
+@import "./tokens.generated.css";
+@import "./theme.css";
+
+/* Base. Deliberately thin — this is a token layer, not a component library. */
+@layer base {
+  html {
+    background: var(--canvas);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    /* Arabic sets in the Arabic face; the two share metrics, so a language
+       switch changes shape without reflowing the layout. */
+    text-size-adjust: 100%;
+  }
+
+  html[lang="ar"] {
+    font-family: var(--font-arabic);
+  }
+
+  body {
+    margin: 0;
+    min-block-size: 100vh;
+    font-size: var(--text-sm);
+  }
+
+  /* One focus treatment everywhere, drawn in the signature hairline language
+     rather than a browser default — 09-accessibility-and-integrity.md. */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--state-focus);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* The three orchestrated moments — 05-motion-system.md.
+   *
+   *  1. Time-scrub choreography: the hazard fills, the chart cursor and the risk
+   *     bands settle together under the slider. Colour and transform only, so it
+   *     stays on the compositor; animating a width would not.
+   *  2. Plume bloom: contours expanding through the timesteps (Phase 3 data).
+   *  3. Mode transition: a re-layout, not a cross-fade.
+   *
+   *  Everything animated here is interruptible by construction, because these are
+   *  transitions on state rather than keyframed animations with a lifetime. A
+   *  time-scrub that finished its animation before accepting the next input would
+   *  feel broken regardless of how smooth each step was. */
+  [data-risk-card] [data-band],
+  [data-legend-band] {
+    transition:
+      background-color var(--dur-base) var(--ease-out),
+      border-color var(--dur-base) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
+  }
+
+  [data-time-handle='true'] {
+    transition: inset-inline-start var(--dur-fast) var(--ease-spring);
+  }
+
+  /* 01 §7 / 05: nothing moves without being asked, and reduced motion must still
+     communicate the state change rather than removing it. The plume still steps
+     through its timesteps — it cuts instead of tweening. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Kill orphans in prose. Headings balance, body avoids a single trailing word. */
+  :where(h1, h2, h3, h4) {
+    text-wrap: balance;
+  }
+
+  :where(p, figcaption, small) {
+    text-wrap: pretty;
+  }
+}

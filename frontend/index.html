@@ -1,0 +1,53 @@
+<!doctype html>
+<!--
+  lang and dir are set here and rewritten on <html> by useDocumentChrome().
+  Not on a wrapper div: form controls, scrollbars and text selection read the
+  document direction, and a wrapper leaves all three behind (06 §1).
+-->
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReefShield Aqaba</title>
+    <meta
+      name="description"
+      content="Wadi-to-reef sediment impact forecasting for the Gulf of Aqaba."
+    />
+
+    <!--
+      Both language faces preload, per 06 §7: a language switch must not flash
+      unstyled text, which on a demo screen reads as a bug. The SemiBolds are
+      not on the first-paint path, so they are left to fetch normally.
+
+      `crossorigin` is required even same-origin. Fonts are fetched in CORS
+      mode, and without the attribute the preload is discarded and the file is
+      requested a second time — a preload that costs rather than saves.
+    -->
+    <link
+      rel="preload"
+      href="/fonts/IBMPlexSans-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/IBMPlexSansArabic-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/IBMPlexMono-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

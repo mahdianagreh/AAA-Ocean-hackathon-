@@ -1,5 +1,16 @@
-# API image. Serving only - no geospatial stack, which keeps this image small
-# and fast to rebuild. It is the layer that gets iterated on most.
+# API image.
+#
+# It was "serving only - no geospatial stack", and that intent had to give way: the
+# exposure engine intersects plume contours with reef zones and every area it reports
+# is computed in EPSG:32636, with `_assert_measure_crs` refusing anything else. That
+# is the API's central feature, not an optional extra, so `api/main.py` imports
+# `exposure.engine` at module scope and the container could not start without
+# geopandas — `docker compose up` came up unhealthy and the worker never started
+# behind `depends_on: service_healthy` (OPEN-ISSUES #21).
+#
+# Only the vector half is here. rasterio, whitebox and the rest of the pipeline stack
+# stay in requirements-worker.txt, so this image is still much smaller than the
+# worker's and still the fast one to rebuild.
 #
 # Pinned exactly, and resolved by pip against python:3.12-slim rather than
 # written by hand - the first attempt invented pandas==2.3.4, which does not
@@ -15,3 +26,18 @@ scikit-learn==1.9.0
 scipy==1.18.0
 xgboost==3.3.0
 shap==0.52.0
+
+# Vector geospatial — required by exposure/engine.py, not optional. Same pins as the
+# worker image so the two cannot drift into different geometry behaviour.
+geopandas==1.1.4
+shapely==2.1.2
+pyproj==3.7.2
+pyogrio==0.13.0
+
+# Rendering — backend/src/rendering/plume_map.py draws the prediction onto real
+# satellite imagery. matplotlib for the figure, pillow to read the baked JPEG basemap.
+# Deliberately NOT contextily or rasterio: tiles are baked once offline by
+# scripts/fetch_basemap_raster.py, so the request path never touches the network and the
+# api image never grows a tile stack it uses once.
+matplotlib==3.10.8
+pillow==12.1.0

@@ -48,11 +48,11 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from ..exposure import engine, store
-from ..rag import answer as rag_answer
-from ..rag import corpus as rag_corpus
-from ..rag import explain as rag_explain
-from ..rag import index as rag_index
+from exposure import engine, store
+from rag import answer as rag_answer
+from rag import corpus as rag_corpus
+from rag import explain as rag_explain
+from rag import index as rag_index
 from . import caveats as cav
 from . import data_access as da
 from .schemas import (
@@ -152,7 +152,7 @@ def ops_health():
     `/api/v1/health` is the richer, artifact-aware version for the dashboard.
     """
     try:
-        from ..models import artifacts
+        from models import artifacts
         model_available = artifacts.latest_version() is not None
     except Exception:
         model_available = False
@@ -176,7 +176,7 @@ def models():
     absence for a healthy default.
     """
     try:
-        from ..models.runoff_model import available_versions, model_info
+        from models.runoff_model import available_versions, model_info
     except Exception as exc:
         raise HTTPException(503, {
             "error": "model layer unavailable",
@@ -369,7 +369,7 @@ def runoff_predict(req: RunoffRequest):
         raise HTTPException(404, f"unknown catchment {req.catchment_id}")
 
     try:
-        from ..models.runoff_model import predict_one
+        from models.runoff_model import predict_one
 
         real = predict_one(req.model_dump(exclude_none=True))
     except (FileNotFoundError, ImportError, ModuleNotFoundError):
@@ -379,18 +379,59 @@ def runoff_predict(req: RunoffRequest):
 
     if real is not None:
         # Trust the model's own numbers; do not re-derive or rescale them here.
+        #
+        # Read the keys the model ACTUALLY returns. Three of the four this block used to
+        # ask for do not exist in `predict_one`'s output, and every one failed softly:
+        #
+        #   predicted_runoff_m3  absent -> defaulted to 0.0, so a real prediction was
+        #                        rendered as "0 m3 of runoff". A fabricated zero
+        #                        presented as a model output is the one thing this
+        #                        project must never ship.
+        #   model_version        absent -> fell back to "runoff-real" and the provenance
+        #                        line read "Mahdi's runoff model None", so which artefact
+        #                        produced a stored number was unrecoverable. The key is
+        #                        `model_version_id`.
+        #   relative_sediment_intensity  absent -> the chained fallback quietly served
+        #                        `runoff_probability` under a sediment label. It returned
+        #                        a real number, which is why nothing looked wrong.
+        #
+        # Component A is a runoff CLASSIFIER, not a volume regressor: there is no m3 to
+        # report, so the field is None and reads as a gap. `sediment_index` is the
+        # sediment measure and is unanchored — comparable between requests, no absolute
+        # meaning — which `sediment_basis` states and which travels as a caveat.
+        sediment_index = real.get("sediment_index")
         return RunoffPrediction(
             catchment_id=req.catchment_id,
-            predicted_runoff_m3=float(real.get("predicted_runoff_m3", 0.0)),
-            relative_sediment_intensity=float(
-                real.get("relative_sediment_intensity",
-                         real.get("runoff_probability", 0.0))),
-            sediment_class=real.get("sediment_class", "moderate"),
-            model_version=str(real.get("model_version", "runoff-real")),
+            predicted_runoff_m3=None,
+            relative_sediment_intensity=(
+                float(sediment_index) if sediment_index is not None
+                else float(real.get("runoff_probability", 0.0))),
+            runoff_probability=real.get("runoff_probability"),
+            severity=real.get("severity"),
+            confidence=real.get("confidence"),
+            # Lowercased, and None is preserved rather than replaced. The proxy emits
+            # "Medium" (capitalised) and returns None when it has not run; `.get(k, default)`
+            # does not help with the second case because the key IS present and holds None.
+            sediment_class=(str(real["sediment_class"]).lower()
+                            if real.get("sediment_class") is not None else None),
+            model_version=str(real.get("model_version_id", "unregistered")),
             is_stub=False,
-            provenance=[Provenance(kind="derived",
-                                   detail=f"Mahdi's runoff model {real.get('model_version')}")],
-            caveats=cav.landcover_epoch() + cav.soil_is_modelled(),
+            provenance=[
+                Provenance(kind="derived",
+                           detail=f"Mahdi's runoff model {real.get('model_version_id')}"),
+                Provenance(kind="source", detail=str(real.get("basis", "unknown"))),
+            ],
+            caveats=(cav.landcover_epoch() + cav.soil_is_modelled()
+                     + [Caveat(field="predicted_runoff_m3",
+                               message="Component A predicts runoff OCCURRENCE, not "
+                                       "volume. No m3 figure exists; this is a gap, "
+                                       "not a zero.",
+                               severity="critical",
+                               source="backend/src/models/runoff_model.py"),
+                        Caveat(field="relative_sediment_intensity",
+                               message=str(real.get("sediment_basis", "unanchored")),
+                               severity="warning",
+                               source="backend/src/models/sediment_proxy.py")]),
         )
 
     lc = da.landcover_for(req.catchment_id) or {}
@@ -405,7 +446,7 @@ def runoff_predict(req: RunoffRequest):
     runoff_m3 = req.rainfall_mm_3h * 1e-3 * area * 1e6 * 0.35
 
     cls = ("extreme" if intensity > 0.75 else "high" if intensity > 0.5
-           else "moderate" if intensity > 0.25 else "low")
+           else "medium" if intensity > 0.25 else "low")
 
     return RunoffPrediction(
         catchment_id=req.catchment_id,
@@ -486,6 +527,100 @@ def plume_simulate(req: PlumeRequest):
     )
     da.PLUME_CACHE.set(key, result)
     return result
+
+
+@app.get(f"{PREFIX}/plume/map", tags=["model"],
+         responses={200: {"content": {"image/png": {}}}})
+def plume_map(
+    event_id: str,
+    outlet_id: str,
+    horizon_hours: int = Query(24, ge=1, le=120),
+    upto_hours: float | None = Query(
+        None, description="Draw only contours at or before this time — one animation frame"),
+    with_exposure: bool = Query(
+        True, description="Colour reef zones by their exposure risk level"),
+    clip_to_sea: bool = Query(
+        True, description="False shows the unclipped output, which is how the stub's "
+                          "circles-over-the-city fault becomes visible"),
+):
+    """The prediction as a picture: real satellite imagery, real plume, real reef.
+
+    Answers "the model says a flood is coming — where does the mud go?" without
+    generating anything. A diffusion model has never seen Aqaba: it would draw a
+    confident wrong coastline with an invented plume, and because the result would look
+    like satellite imagery it would read as an OBSERVATION. That is unusable here, where
+    the validation story is "the satellite could not see the plume, so we said so".
+
+    Every pixel has a provenance, listed in the footer burned into the image, so the
+    picture stays self-describing if someone screenshots it into a slide.
+
+    Returns image/png. The extent is fixed by the baked basemap, so successive
+    `upto_hours` values register against each other as animation frames.
+    """
+    from fastapi.responses import Response
+
+    from rendering import plume_map as renderer
+
+    plume = plume_simulate(PlumeRequest(event_id=event_id, outlet_id=outlet_id,
+                                        horizon_hours=horizon_hours))
+    contours = [c.model_dump() for c in plume.contours]
+
+    # Exposure is best-effort: a picture of where the plume goes is useful even when the
+    # scoring cannot run, so a failure here downgrades the reef colouring rather than
+    # failing the whole request.
+    by_zone: dict[str, dict] = {}
+    if with_exposure:
+        try:
+            run = exposure_calculate(ExposureRequest(
+                event_id=event_id, outlet_id=outlet_id, horizon_hours=horizon_hours))
+            by_zone = {r.reef_zone_id: {"risk_level": r.risk_level,
+                                        "risk_score": r.risk_score}
+                       for r in run.results}
+        except HTTPException:
+            by_zone = {}
+
+    png = renderer.render(
+        contours,
+        event_id=event_id, outlet_id=outlet_id, horizon_hours=horizon_hours,
+        exposure_by_zone=by_zone, upto_hours=upto_hours, clip_to_sea=clip_to_sea,
+    )
+    return Response(
+        content=png, media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=3600",
+            # Machine-readable provenance beside the burned-in footer, so a client can
+            # label the image without parsing pixels.
+            "X-ReefShield-Plume-Source": "stub" if plume.is_stub else "particle-engine",
+            "X-ReefShield-Basemap": ("esri-worldimagery-baked"
+                                     if renderer.load_basemap() else "absent"),
+            "X-ReefShield-Generated-Imagery": "none",
+        },
+    )
+
+
+@app.get(f"{PREFIX}/plume/map/frames", tags=["model"])
+def plume_map_frames(event_id: str, outlet_id: str,
+                     horizon_hours: int = Query(24, ge=1, le=120)):
+    """The timesteps available to animate, and the URL for each frame.
+
+    Returned rather than assumed so the client never guesses a `upto_hours` the
+    simulation did not produce.
+    """
+    from rendering import plume_map as renderer
+
+    plume = plume_simulate(PlumeRequest(event_id=event_id, outlet_id=outlet_id,
+                                        horizon_hours=horizon_hours))
+    times = renderer.frame_times(c.model_dump() for c in plume.contours)
+    base = (f"{PREFIX}/plume/map?event_id={event_id}&outlet_id={outlet_id}"
+            f"&horizon_hours={horizon_hours}")
+    return {
+        "event_id": event_id,
+        "outlet_id": outlet_id,
+        "frame_count": len(times),
+        "frames": [{"t_hours": t, "url": f"{base}&upto_hours={t:g}"} for t in times],
+        "basemap_present": renderer.load_basemap() is not None,
+        "plume_source": "stub" if plume.is_stub else "particle-engine",
+    }
 
 
 # -------------------------------------------------------------------- exposure
