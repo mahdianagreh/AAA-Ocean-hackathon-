@@ -1,0 +1,18 @@
+{
+  "anchor_event": "AQ-2016-10-28",
+  "anchor_catchment": "AQ-C01",
+  "mass_t": 24400.0,
+  "mass_source": "Kalman et al. (2025), 10.5194/nhess-25-3201-2025",
+  "index_at_anchor": 145434.91864874988,
+  "cn_runoff_depth_mm": 0.09120321012581563,
+  "k_tonnes_per_index": 0.16777263828180192,
+  "magnitude_input": "RuleBaseline.runoff_depth, curve-number, IMERG-driven",
+  "magnitude_input_rationale": "scripts/26: the two ERA5-derived magnitude inputs rank the anchor event 176th and 193rd of 2,362 days (FAIL) because they inherit ERA5's underestimate of it; this one ranks it 12th (PASS) and is never fit to ERA5 sro.",
+  "model_version_id": "runoff_weighted_gbm_2194b48_20260803T214757Z",
+  "feature_count": 20,
+  "drift_tolerance": 1e-06,
+  "verify_at_load": "runoff_model recomputes index_at_anchor and refuses to anchor if it has moved by more than drift_tolerance. k is only valid for the formula and feature set that produced this index; a stale k yields confident wrong tonnages rather than an error.",
+  "one_point_caveat": "ONE measurement fixes the SCALE, never the SHAPE. The formula has six terms and a single point constrains one degree of freedom, so any mass for a different event is an extrapolation along an unverified curve. Relative classes remain the honest output.",
+  "written_utc": "2026-08-05T08:03:25Z",
+  "written_by": "scripts/27_anchor_sediment_proxy.py"
+}

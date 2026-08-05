@@ -76,9 +76,22 @@ from HydroBASINS `UP_AREA`.
 hard-code an event date in a script* — parse it from that file's machine-
 readable YAML block. A test greps for violations, ignoring comments.
 
-Demo event `AQ-2016-10-28` (Oct 2016 Aqaba–Eilat flood, ~24,400 t sediment).
-February 2013 is **dead**: Katz et al. is paywalled, so no date; no Sentinel-2
-(pre-launch), no Landsat 8 (pre-commissioning). One event only.
+Demo event `AQ-2016-10-28` (Oct 2016 Aqaba–Eilat flood, ~24,400 t sediment). It is
+the **best-instrumented** documented flood, **not the biggest** — Kalman et al.
+(2025) records February 2006 at ~10 kg/m² seafloor deposition against Oct 2016's
+6 kg/m². Do not call it the largest.
+
+February 2013 is **no longer dead**, corrected 5 Aug 2026. Still **no exact day**,
+so satellite matching remains impossible — and it predates usable Sentinel-2 and
+Landsat 8 anyway — but its **mass is confirmed at 21,000 t** (Katz et al. 2015b,
+quoted in the open-access Kalman 2025), which is 86 % of the demo event. Usable for
+**sediment-mass validation**, not for imagery. Two IMERG candidates are narrowed in
+`docs/event_dates.md`.
+
+**Thirteen sea-reaching floods exist since 1994** and we hold one date. The other
+twelve are in two paywalled papers — `docs/karam_handoff.md` Request 0. Any harness
+must report honestly against a partial list rather than score against n=1 and call
+it validation.
 
 Always convert local time with `ZoneInfo("Asia/Jerusalem")`, never a fixed
 offset — Oct 2016 falls inside IDT (UTC+3), not IST.
@@ -109,6 +122,34 @@ These are why the Phase 1 work is trustworthy. They do not lapse.
 is also an input produces a model that scores ~0.99 and predicts nothing.
 `scripts/build_feature_matrix.py` raises if a runoff column reaches the feature
 set; the antecedent output prefixes them `label_`.
+
+**The rule was not enough, and this is the most important correction in this file**
+(Mahdi, 4 Aug; `reports/model/label_problem.md`). Excluding the runoff columns does
+not remove the leak, because the label is **near-deterministic in ERA5's own
+rainfall** — `corr(sro, ERA5 rain) = +0.985` while `corr(ERA5, IMERG) = +0.573`. So
+*any* ERA5-sourced feature (`swvl1`, `u10`, `v10`, `t2m`) leaks the same atmosphere
+the target came from. Measured by source product, LOCO AP:
+
+| features | AP |
+|---|---|
+| IMERG + neutral only, **no ERA5 at all** | **0.662** ← the defensible number |
+| shipped CD− set (20 cols) | 0.744 |
+| **one column** of ERA5's own rainfall | 0.978 |
+
+**Quote 0.662, not 0.741**, for "predicts runoff from independent inputs".
+
+Two consequences that must not be lost:
+
+1. **The label is not "reached the sea".** It is ERA5-Land runoff *generation*. Ours
+   fires on 3.21 % of calendar days against the literature's 0.156 % — **21× too
+   generous**, and that 21× is a floor: it assumes every unsampled day is a
+   non-event. On days we actually sampled it is **78×**.
+2. **The label is blind where ERA5 is blind.** ERA5 is essentially dry on 35 % of
+   IMERG-wet days, and on 20 % of the heaviest IMERG days in the record. Of 276
+   catchment-days where IMERG saw >1 mm and ERA5 saw nothing, `target` is positive on
+   **one**. October 2016 is among the misses — 0.77 mm and p92.6 in ERA5 against
+   9.58 mm and p99.5 in IMERG. A **detection** failure, not a scaling one, so no
+   threshold tuning fixes it.
 
 ---
 

@@ -680,25 +680,79 @@ def exposure_calculate(req: ExposureRequest):
     if cached is not None:
         return cached
 
-    # Sediment intensity: from the runoff model when a catchment is named, else the
-    # outlet's own catchment. Reported in formula_terms either way.
+    # Sediment intensity, from the REAL feature row for this event and catchment.
+    #
+    # This asked the model for a synthetic `30 mm/3h` and nothing else, and the result
+    # was always 0.0 — so every reef zone read `minimal` no matter what the plume did,
+    # because exposure is a product of five terms. The model needs 20 features, and the
+    # sediment magnitude is a curve-number depth driven by `precipitation_mm_day`; with
+    # that column absent the depth is 0, the index is 0, and the whole product collapses.
+    # A synthetic request is right for shaping a response and wrong for computing one.
+    #
+    # Falls back to the previous behaviour when the event is not in the training set,
+    # and SAYS which happened in formula_terms — a stored run whose sediment term came
+    # from a placeholder must be distinguishable later from one that did not.
     cid = req.catchment_id or outlet.get("catchment_id")
     intensity, intensity_source = 0.5, "default 0.5 (no catchment supplied)"
     # Per-request model_versions: MODEL_VERSIONS is the static fallback, but when
-    # runoff_predict() actually used the real trained artifact, that real
-    # model_version_id must be what gets persisted — not the stub string. A stored
+    # a real trained artifact actually produced the intensity number — whether via
+    # the training-row path below or the runoff_predict() fallback — that real
+    # model_version_id must be what gets persisted, not the stub string. A stored
     # run whose formula_terms claims "runoff_model: stub-0.1" while a real model
     # produced the intensity number is exactly the silent stub DoD item 3 forbids.
     run_model_versions = dict(MODEL_VERSIONS)
     if cid:
-        pred = runoff_predict(RunoffRequest(catchment_id=cid, rainfall_mm_3h=30.0,
-                                            event_id=req.event_id))
-        intensity = pred.relative_sediment_intensity
-        if pred.is_stub:
-            intensity_source = f"runoff stub for {cid} at 30 mm/3h"
+        row = da.training_row(req.event_id, cid)
+        if row is not None:
+            try:
+                from models.runoff_model import predict_one
+
+                real = predict_one(row)
+                if real.get("model_version_id"):
+                    run_model_versions["runoff_model"] = real["model_version_id"]
+                index = real.get("sediment_index")
+                anchor_index = real.get("anchor_index_for_normalisation")
+                if index is not None and anchor_index:
+                    # The index is unbounded and the formula needs 0-1, so it is squashed
+                    # by ratio / (1 + ratio) against the anchor event.
+                    #
+                    # NOT a linear ratio clamped at 1.0, which was the first attempt and
+                    # was worse than the zero it replaced: October 2016 is only 12th of
+                    # 2,362 days by this magnitude, so every storm at or above it pinned
+                    # to exactly 1.000 and the term stopped discriminating at all. Three
+                    # different events came back with an identical sediment intensity.
+                    #
+                    # This map is monotonic, never saturates, and puts the one documented
+                    # major flood at 0.5. That is also the more honest shape: with a
+                    # SINGLE calibration point there is nothing justifying a linear
+                    # extrapolation far above it, so the scale deliberately compresses
+                    # where the evidence runs out.
+                    from models.sediment_proxy import ANCHOR_EVENT
+
+                    ratio = max(0.0, float(index) / float(anchor_index))
+                    intensity = ratio / (1.0 + ratio)
+                    intensity_source = (
+                        f"sediment_index {float(index):,.0f} = {ratio:.2f}x "
+                        f"{ANCHOR_EVENT}, squashed by r/(1+r) to {intensity:.3f} "
+                        f"(class {real.get('sediment_class')}); anchor maps to 0.500"
+                    )
+            except (FileNotFoundError, ImportError, ModuleNotFoundError, KeyError) as exc:
+                intensity_source = (
+                    f"default 0.5 — real model unavailable ({type(exc).__name__})")
         else:
-            intensity_source = f"runoff model {pred.model_version} for {cid} at 30 mm/3h"
-            run_model_versions["runoff_model"] = pred.model_version
+            pred = runoff_predict(RunoffRequest(catchment_id=cid, rainfall_mm_3h=30.0,
+                                               event_id=req.event_id))
+            intensity = pred.relative_sediment_intensity
+            if pred.is_stub:
+                intensity_source = (
+                    f"PLACEHOLDER: {req.event_id} has no feature row, so this is the "
+                    f"stub at 30 mm/3h for {cid}, not a measurement")
+            else:
+                intensity_source = (
+                    f"PLACEHOLDER fallback: {req.event_id} has no feature row for the "
+                    f"sediment anchor, but runoff model {pred.model_version} at "
+                    f"30 mm/3h for {cid} was used for intensity")
+                run_model_versions["runoff_model"] = pred.model_version
 
     # Confidence: coarse global currents and a substituted bathymetry product are
     # both real reasons not to claim high confidence.
