@@ -87,3 +87,49 @@ def test_health_is_at_the_unversioned_path_the_healthcheck_uses():
     from api.main import app
     paths = {r.path for r in app.routes if hasattr(r, "methods")}
     assert "/health" in paths, "the HEALTHCHECK target is gone"
+
+
+def test_cors_allows_any_local_dev_port():
+    """A live frontend on a non-default port must not look broken.
+
+    Found by actually running the frontend against a live container rather than
+    assuming the fixed allow_origins list was enough: API_PORT=8100 plus a
+    non-5173 frontend port made every fetch fail with a CORS error, with the
+    console showing "blocked by CORS policy" and nothing about the API itself
+    being wrong. On this project's own dev machine 8000/5173 are frequently
+    already taken by something else, so this is not a hypothetical — it is the
+    exact port-collision problem the sweep supervisors and API_PORT override
+    already exist to survive, hitting a layer that had no equivalent fix.
+
+    Safe to allow broadly: this API never leaves localhost, being a wifi-off
+    local demo tool rather than a public deployment.
+    """
+    from starlette.testclient import TestClient
+
+    from api.main import app
+
+    client = TestClient(app)
+    for origin in ("http://localhost:5173", "http://localhost:8100",
+                   "http://127.0.0.1:34521", "http://localhost:59999"):
+        r = client.options(
+            "/api/v1/catchments",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert r.headers.get("access-control-allow-origin") == origin, (
+            f"{origin} was not allowed — a live frontend on this port would fail "
+            "with a CORS error that looks like a broken API"
+        )
+
+    # A non-local origin must still be refused — this widens allowed PORTS,
+    # not allowed HOSTS.
+    r = client.options(
+        "/api/v1/catchments",
+        headers={
+            "Origin": "http://example.com",
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+    assert r.headers.get("access-control-allow-origin") != "http://example.com"

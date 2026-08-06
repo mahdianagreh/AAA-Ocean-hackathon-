@@ -48,7 +48,7 @@ per row, in EPSG:4326.
 `data/processed/vectors/` the way `outlets.geojson` already is, or the api image gains
 `pyogrio`. The first is cheaper and matches what already works.
 
-**Frontend workaround, in place now:** [`scripts/13_frontend_basemap.py`](../scripts/13_frontend_basemap.py)
+**Frontend workaround, in place now:** [`scripts/frontend_basemap.py`](../scripts/frontend_basemap.py)
 derives all of it from the `.gpkg` files into committed GeoJSON. That is needed anyway for the
 wifi-off requirement, so it is not wasted — but it means the map is showing geometry the API
 does not know about, and those two must not drift.
@@ -72,15 +72,27 @@ peak-normalises before contouring, so a `0.50` band means *half the peak density
 not a 50% chance of impact. Its own docstring says so. Mislabelling it is the first thing a judge
 would press on.
 
-### 3 · Mahdi — SHAP drivers as objects with stable keys
+### 3 · Mahdi — SHAP drivers as objects with stable keys ✅ CLOSED 2026-08-03 — by the frontend
 
 Day-1 ask #5. `runoff_model.py:219-226` returns `{feature, shap, value}` where `feature` is a raw
 parquet column name. The frontend needs `{key, contribution, value}` where `key` is a stable i18n
 key — a pre-rendered English label cannot become Arabic at render time, and DoD item 8 is
 bilingual with working RTL.
 
-The raw column names are usable as i18n keys by convention, so this may be a rename plus a
-`Value` wrapper rather than real work.
+**It was the rename this item guessed it might be, so the frontend did it** rather than ask
+Mahdi to change a shape that is fine on its own side. `riskFromPredictions` maps
+`feature → key`, `shap → contribution`, and wraps `value` in a `Value` with its provenance.
+
+The half that was *not* free: raw column names are only usable as i18n keys **if the keys
+exist**. They did not, so the first render of real model output put `driver.season_cos` on
+screen in both languages. All 20 model features now have EN and AR labels — not just the 9 that
+happened to reach the top-4 SHAP ranking on these rows, because any of the 20 can surface on
+another event. `season_cos` reads *"Season (annual cycle, offset)"* / *"الموسم (الدورة السنوية،
+بإزاحة)"*.
+
+**Standing requirement on Mahdi:** a new feature in a retrained model needs a translation pair
+added here, or it renders as its own key. There is no automatic fallback that could be honest —
+a raw parquet column name is not a label in either language.
 
 ### 4 · Nizar / Mahdi — confidence as its components, not a sentence
 
@@ -152,6 +164,32 @@ records. There is no root dependency manifest — only `backend/requirements-api
 **Done looks like:** a `requirements-dev.txt` (or the worker image running pytest in CI) and a
 number in the docs that came from an actual run.
 
+#### Updated 2026-08-03 — the suite has now actually been run, and here is how
+
+The worker image cannot run it either: **no `pytest`, `xarray`, `httpx`, `earthaccess` or
+`cdsapi`**, and the worker mounts only `./data`, `./backend/src` and `./scripts` — so `tests/`,
+`configs/` and `docs/` are not even reachable inside the container. Nine of the thirteen initial
+failures were that, not code: `ConfigError: Config file not found: /app/configs/…`.
+
+With the deps installed and the three directories mounted, the real result is:
+
+```bash
+docker compose run --rm --no-deps --entrypoint "" \
+  -v "$PWD/tests:/app/tests:ro" -v "$PWD/configs:/app/configs:ro" -v "$PWD/docs:/app/docs:ro" \
+  -e PYTHONPATH=/app/backend/src worker \
+  sh -c "pip install -q pytest xarray httpx earthaccess cdsapi >/dev/null 2>&1; \
+         python -m pytest /app/tests -q -p no:cacheprovider"
+
+# 4 failed, 421 passed, 49 skipped
+```
+
+**So the honest figure is 421 passing, not 433.** The 433 was `grep -c 'def test_'`, and it counts
+49 skips and 4 failures as passes. This item predicted that exact mistake and I still had the grep
+number in a doc; it is now corrected to the measured one.
+
+The four failures are real and are **item 24**. Also note **49 skipped** — a quarter as many again
+as the frontend's entire suite, and nobody has looked at why.
+
 ### 10 · Mahdi — the worker cannot write to `frontend/`
 
 `docker-compose.yml` mounts `./data`, `./backend/src` and `./scripts` into the worker, so there is
@@ -160,7 +198,7 @@ no `/app/frontend` in the container. The basemap derivation therefore needs an a
 ```bash
 docker compose run --rm --entrypoint "" \
   -v "$PWD/frontend/public/basemap:/out" \
-  worker python /app/scripts/13_frontend_basemap.py --out /out
+  worker python /app/scripts/frontend_basemap.py --out /out
 ```
 
 That works and needs no compose change, so this is a nicety rather than a blocker. Three
@@ -202,27 +240,43 @@ The corpus is technical and operational docs only. **`docs/Ali/research/*` is no
 Day-1 ask #7. RTL reorders `2.18 g/L` into `g/L 2.18` if it arrives as one string. Send
 `{value, unit}`; the UI owns formatting because the UI knows the language.
 
-### 15 · Mahdi — `data/models/` does not exist, so two endpoints 503
+### 15 · Mahdi — `data/models/` does not exist, so two endpoints 503 ✅ CLOSED 2026-08-03
 
-`GET /api/v1/models` and `POST /api/v1/runoff/predict` return 503 today, because
-`artifacts.py:27-28` looks for `data/models/model_versions.jsonl` and the directory is absent.
+**Mahdi registered a real artefact.** `git pull` brought `data/models/model_versions.jsonl` with:
 
-The 503 body names `data/processed/features/event_catchment_features.parquet` as the blocker.
-That file **does** exist (500 × 35) but is missing two of five columns `schema.REQUIRED` wants —
-it has `timestamp_utc` instead of `event_time_utc`, and **no `runoff_label` at all** — so
-training would raise `SchemaError` at `schema.py:83`. `feature_matrix_status.json` agrees:
-`"complete": false`, with `landcover`, `soil` and `urban` under `sources_missing`.
+```
+runoff_weighted_gbm_2194b48_20260803T214757Z
+leave-one-catchment-out   mean AP 0.7474   baseline 0.2004
+is_synthetic: false   ·   2,362 training events   ·   20 features
+```
 
-**The frontend does not need this to be fixed** — it renders the 503 as a first-class state
-saying the harness is built and validated but no artefact is registered, which is honest. Flagged
-so nobody assumes the dashboard is broken when it says that.
+So the frontend no longer renders a 503 state on the risk cards. `scripts/frontend_predictions.py`
+runs that artefact over the demo window — 5 catchments × 5 days, 25 predictions, zero failures —
+and commits the output to `frontend/public/fixtures/predictions.json`. The cards now show the
+model's own probabilities and SHAP attributions, tagged with the version id.
 
-### 16 · Pulga — the API has no tests
+What was blocking it turned out to be the wrong table, not a missing one. The 503 body named
+`event_catchment_features.parquet`, which is genuinely short two required columns — but
+`training_set_full.parquet` carries **all 20** model features and covers the demo window. That is
+what the derivation reads.
 
-No `TestClient`, no `api.main` import anywhere under `tests/`. `main.py` has no regression net, and
-[`07-data-contracts.md`](Ali/frontend/07-data-contracts.md) §5's contract tests — *"a fixture that
-stops matching the live response fails CI rather than surfacing as a blank panel during
-rehearsal"* — have nothing to run against on the backend side.
+The stand-in index survives in exactly one place: **what-if mode.** The predictions are model
+output at fixed inputs, and the browser cannot re-run a GBM against a moved transmission-loss
+slider, so moving a control falls back to the labelled index with `runoff_probability` null. Every
+card states which of the two it is showing, and a test asserts it can never be neither or both.
+
+Still owed by this item, and now item 4's problem alone: the model reports a single `confidence`
+float rather than its components, so the meter shows it against 1.0 and says so. Composing
+"22 of 30 members" from one number would be inventing an ensemble.
+
+### 16 · Pulga — the API has no tests ✅ CLOSED 2026-08-03 — Pulga wrote them
+
+`tests/test_api_contracts.py` exists (commit `75b75f2`), uses `TestClient`, and covers stub
+flagging, the exposure formula terms, unreached zones and stored alert runs. Exactly what
+[`07-data-contracts.md`](Ali/frontend/07-data-contracts.md) §5 asked for.
+
+**It is red, and that is item 24 — four of its own assertions fail.** Which is the test suite
+doing its job: it caught a real contract defect that nobody had seen, because nobody had run it.
 
 ### 17 · Pulga — a marine scientist is needed for reef sensitivity
 
@@ -338,7 +392,7 @@ Workaround while it stands: `docker compose run --rm --no-deps worker …`.
 ### 22 · Karam — two parallel GeoJSON exports ✅ CLOSED 2026-08-03
 
 **Resolved by deleting mine.** `scripts/export_web_layers.py` is gone;
-`scripts/13_frontend_basemap.py` is the single derivation.
+`scripts/frontend_basemap.py` is the single derivation.
 
 You had the constraint right and I had written mine before yours existed — it was
 scaffolding to unblock the map, and that need has passed. Yours also turned out to be
@@ -370,12 +424,69 @@ module before it becomes ten.
 
 ---
 
+### 24 · Pulga — **`/api/v1/runoff/predict` 500s on the model's own honest answer.** 🔴
+
+Found by running Pulga's own `test_api_contracts.py` for the first time (item 16). Four of its
+assertions fail, and they are one bug:
+
+```
+pydantic_core.ValidationError: 1 validation error for RunoffPrediction
+sediment_class
+  Input should be 'low', 'moderate', 'high' or 'extreme'
+  [type=literal_error, input_value=None, input_type=NoneType]
+```
+
+[`api/main.py:388`](../backend/src/api/main.py#L388) reads:
+
+```python
+sediment_class=real.get("sediment_class", "moderate"),
+```
+
+**`dict.get(k, default)` only substitutes when the key is *absent*.** `runoff_model.predict_one`
+includes the key with an explicit `None`, so `.get` returns `None`, and `RunoffPrediction`
+declares the field as a required `Literal` with no `None` member. The response cannot serialise.
+
+This is the "missing is not zero" rule, in the backend, breaking a request. And the intended
+fallback is the worse half of the bug: **defaulting an unanchored sediment class to `"moderate"`
+would fabricate a claim.** The model returns `None` precisely because it cannot support a class —
+its own `sediment_basis` says so:
+
+> `UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the
+> proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).`
+
+**How much this matters: all 25 of 25** predictions in the demo window carry
+`sediment_class = null`. So the endpoint would 500 on **100%** of the demo, not on an edge case.
+
+**Done looks like:** `sediment_class: Literal[...] | None` on the response model, and the `.get`
+default dropped rather than changed — a null here is the answer, not a gap to fill.
+
+**Why the frontend is not blocked:** `frontend/src/api/predictions.ts` types it
+`string | null` and renders null as a declared gap, and the predictions are derived offline from
+the artefact directly rather than through the API. That decision was made for item 21 (the API
+does not start) and DoD item 9 (no network, no API) — it happens to route around this too. Which
+is luck, not design: had the API been reachable, every prediction in the demo would have 500'd.
+
+---
+
 ## How to close an item
 
 Edit this file in the same commit that fixes the thing, move the item to the log below, and say
 what changed. An open-issues list nobody prunes stops being read.
 
 ### Closed
+
+**15 · `data/models/` is empty — closed by Mahdi registering a real artefact.**
+`runoff_weighted_gbm_2194b48_20260803T214757Z`, LOCO mean AP **0.7474** against a
+0.2004 baseline, `is_synthetic: false`. 25 predictions derived over the demo window
+and committed. The risk cards show model output tagged with the version id; the
+stand-in index survives only in what-if mode, labelled. This was the single largest
+honesty gap in the interface — the cards previously rendered every probability as a
+declared gap, which was correct but was not a product.
+
+**3 · SHAP drivers as stable keys — closed by the frontend, not by Mahdi.**
+The rename was the trivial half. The real work was the 20 EN/AR label pairs the keys
+needed to exist against; without them the first render of real model output showed
+`driver.season_cos` on screen in both languages.
 
 **17 (partly) · reef geometry — closed by contract swap-in #3.** `reef_zones.gpkg`
 now carries real Allen Coral Atlas habitat (`ACA/reef_habitat/v2_0`) with

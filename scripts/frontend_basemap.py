@@ -19,7 +19,7 @@ and are usually absent locally:
     mkdir -p frontend/public/basemap
     docker compose run --rm --entrypoint "" \\
       -v "$PWD/frontend/public/basemap:/out" \\
-      worker python /app/scripts/13_frontend_basemap.py --out /out
+      worker python /app/scripts/frontend_basemap.py --out /out
 
 The worker mounts ./data, ./backend/src and ./scripts but NOT ./frontend, which
 is why the output path is an ad-hoc mount rather than a path inside the repo.

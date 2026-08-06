@@ -1,5 +1,42 @@
 # Abd — Phase 3
 
+> **Update, 5 Aug — done for you, while you'd pushed nothing:** item 1 below,
+> `SYNTHETIC_STUB` → your real particle engine, is wired into
+> `/plume/simulate`, `/plume/map` and `/plume/map/frames`. Nothing in
+> `particle_engine.py` changed — `simulate()` and `kernel_density_contours()`
+> were already correct and are called exactly as you wrote them.
+>
+> What landed, across four commits on `main`: `backend/src/models/plume_forcing.py`
+> (a `RegularGridInterpolator` rebuild of `ocean_currents.CurrentFieldInterpolator`'s
+> grid, same method, verified byte-identical output, ~40x faster — `simulate()`
+> calls `current_fn` per-particle-per-step, and `.interp()`'s ~4 ms/call would have
+> been ~13 minutes for a 2,000-particle run); `scripts/28_calibrate_plume_engine.py`,
+> which ran your Part 2 grid search for real against the cached HYCOM historical
+> archive and the real mooring target, and wrote the winner to
+> `data/models/plume_calibration.json` (hypopycnal, diffusion 5 m²/s, settling
+> 0.1 mm/s — objective 33.6h; windage came back a tie-break artifact since wind
+> is still `ConstantWindField(0,0)`, not a calibrated value, see the file's own
+> `windage_caveat`); `main.py`'s `_real_contours()`, which resolves the release
+> point, the flood-arrival release time (parsed from `docs/event_dates.md`, never
+> hard-coded), the calibrated params, and real HYCOM currents where a cached
+> archive exists (only `AQ-2016-10-28` — `_current_fn_for_event` falls back to a
+> labelled `ConstantCurrentField(0,0)` placeholder for anything else, never a
+> guess).
+>
+> **A finding worth knowing before you build on this**: `AQ-O01` (96% of
+> discharge) sits on a current-grid cell HYCOM masks as land — `current_fn`
+> returns NaN there, so that release is diffusion-and-settling-only, no
+> current-driven transport, and the modelled plume does not reach any reef zone
+> within 120h. It's now a surfaced caveat (`contours` field, "release point
+> falls on a masked cell"), not a silent gap. `AQ-O02`, `AQ-O03` and `AQ-O05` do
+> reach a nearby zone at `minimal`. Worth deciding whether the demo leads with
+> `AQ-O01` (the honest "we looked and it's not close enough to score" result) or
+> one of the others (a visible, non-trivial exposure score) — that's a framing
+> call, not something I changed the physics to produce.
+>
+> Pull before touching `main.py`'s plume/exposure sections, `caveats.py`, or
+> `ocean_currents.py` (added a `.dataset` property) — all changed.
+
 **Your stub is now visible in a picture, and that changes the priority.** Read
 [`00-phase3-plan.md`](00-phase3-plan.md) first.
 
@@ -28,12 +65,14 @@ directions, which no plume has ever done.
 `kernel_density_contours()` and `load_release_point()`. The API is not calling them; it
 calls `_synthetic_contours()` in `main.py`.
 
-- [ ] Wire `/plume/simulate` to the real engine.
-- [ ] `plume_source` must stop saying `SYNTHETIC_STUB`, and `model_versions.particle_engine`
+- [x] Wire `/plume/simulate` to the real engine. — done 5 Aug, see the update note above.
+- [x] `plume_source` must stop saying `SYNTHETIC_STUB`, and `model_versions.particle_engine`
       must stop saying `stub-0.1`. Both are read by the renderer and both appear in stored
-      exposure runs.
-- [ ] Advect with **Nizar's real currents**, not synthetic drift. He has HYCOM and
-      Copernicus Marine ingestion.
+      exposure runs. — now `REAL_PARTICLE_ENGINE` / `custom_2d-calibrated-AQ-2016-10-28`.
+- [x] Advect with **Nizar's real currents**, not synthetic drift. He has HYCOM and
+      Copernicus Marine ingestion. — HYCOM historical archive, only for `AQ-2016-10-28`
+      (the only event with a cached archive); everything else still gets the labelled
+      `ConstantCurrentField(0,0)` placeholder, not a guess.
 
 The moment that lands, the response header on the map endpoint flips from
 `X-ReefShield-Plume-Source: stub` to `particle-engine` on its own, and the whole picture

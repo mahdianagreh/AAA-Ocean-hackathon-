@@ -105,6 +105,13 @@ def main():
     print(f"  Platt: {gbm.platt_params}")
 
     baseline = RuleBaseline().fit(fit[feats], fit[FX.TARGET].to_numpy())
+    # Left unanchored on purpose. `k` is a calibration constant, not a learned
+    # parameter, and baking it into this artifact would mean rewriting a
+    # trained file to store one float every time the anchor is recalibrated -
+    # invalidating its git_commit provenance for a change unrelated to
+    # training. `scripts/27_anchor_sediment_proxy.py` writes the anchor to a
+    # sidecar (`data/models/sediment_anchor.json`) instead; `runoff_model`
+    # applies and drift-checks it at load time. Run that script after this one.
     sediment = SedimentProxy()
 
     metrics = {

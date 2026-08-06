@@ -319,6 +319,46 @@ def events() -> list[dict]:
     return sorted(seen.values(), key=lambda x: x["event_id"])
 
 
+@lru_cache(maxsize=8)
+def flood_arrival_utc(event_id: str):
+    """The moment sediment reaches the sea, for `event_id` -- the release time
+    a plume simulation starts from. Parsed from `docs/event_dates.md`'s
+    machine-readable YAML block (`converted.flood_arrival_utc`), never
+    hard-coded — that file's rule 1, same contract `scripts/28_calibrate_plume_engine.py`
+    parses for the calibration run.
+
+    Returns a tz-aware `datetime.datetime`, or `None` if the event has no
+    entry there (an unresolved event, e.g. February 2013, or one outside the
+    documented list) — the caller decides whether that is fatal.
+    """
+    import re
+    from datetime import timezone
+
+    import yaml
+
+    path = ARTIFACTS["event_dates"]
+    if not path.exists():
+        return None
+    blocks = re.findall(r"```yaml\n(.*?)```", path.read_text(encoding="utf-8"), re.S)
+    if not blocks:
+        return None
+    parsed = yaml.safe_load(blocks[-1]) or {}
+    for entry in parsed.values():
+        if not isinstance(entry, dict) or entry.get("event_id") != event_id:
+            continue
+        arrival = (entry.get("converted") or {}).get("flood_arrival_utc")
+        if arrival is None:
+            return None
+        # PyYAML's implicit timestamp resolver turns an unquoted ISO string
+        # like `2016-10-28T00:00:00Z` into a native datetime already.
+        if isinstance(arrival, str):
+            from datetime import datetime as _dt
+
+            arrival = _dt.fromisoformat(arrival.replace("Z", "+00:00"))
+        return arrival if arrival.tzinfo else arrival.replace(tzinfo=timezone.utc)
+    return None
+
+
 # ---------------------------------------------------------------- data sources
 
 @lru_cache(maxsize=1)

@@ -1,29 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import type { HazardBand } from '../api/types';
-import { HAZARD_RANGES } from '../api/types';
+import { BAND_CLASS, HAZARD_RANGES } from '../api/types';
 import { ValueWithUnit } from './ValueWithUnit';
 import { ConfidenceMeter, type ConfidenceComponents } from './ConfidenceMeter';
 import { DriverBars, type Driver } from './DriverBars';
-
-/** Literal class names, never `bg-risk-${band}`.
- *
- *  Tailwind scans source statically, so an interpolated class is not a string in
- *  the file and the utility is never generated. That bug shipped once already in
- *  the Phase 0 specimen: the strokes rendered because they were inline styles, and
- *  every fill silently fell back to the canvas. It read as a washed-out ramp
- *  rather than a missing one, which is why it survived a passing test suite. */
-const BAND_CLASS: Record<HazardBand, string> = {
-  minimal: 'bg-risk-minimal text-risk-minimal-on border-risk-minimal-stroke',
-  low: 'bg-risk-low text-risk-low-on border-risk-low-stroke',
-  moderate:
-    // Correction #10: no AA-compliant text colour exists for this band in dark
-    // theme (4.04 measured). So dark drops the fill and keeps the hue as a stroke
-    // on --surface, where --ink reaches 14.32. Light theme is unaffected.
-    'bg-risk-moderate text-risk-moderate-on border-risk-moderate-stroke ' +
-    'dark:bg-surface dark:text-ink dark:border-risk-moderate',
-  high: 'bg-risk-high text-risk-high-on border-risk-high-stroke',
-  critical: 'bg-risk-critical text-risk-critical-on border-risk-critical-stroke',
-};
 
 export interface RiskCardData {
   catchment_id: string;
@@ -31,6 +11,14 @@ export interface RiskCardData {
   band: HazardBand;
   score: number;
   runoff_probability: number | null;
+  /** The catchment's own area, always shown.
+   *
+   *  Not a driver. It reached the screen only as a stand-in driver until a real
+   *  model was registered, and the model's top-4 SHAP attributions do not rank
+   *  `area_km2` on these rows — so the number silently left the rail, and the map
+   *  polygon became the only path to it. 09 rule 7 says the map is never the only
+   *  path to a fact, so this is a field of the card, not an accident of ranking. */
+  area_km2: number;
   drivers: Driver[];
   confidence: ConfidenceComponents;
   /** The caveat travels with the card, not in a footer someone can forget. */
@@ -38,6 +26,10 @@ export interface RiskCardData {
   /** True when the numbers are a stand-in rather than model output. 01 §6.6:
    *  provisional data is labelled in the UI, not only in the repo. */
   provisional?: boolean;
+  /** Set when these numbers came from a registered artefact. Shown on the card,
+   *  because "which model said this" is the first thing anyone asks of a prediction
+   *  — and it is what makes a stored prediction reproducible at all. */
+  modelVersion?: string;
 }
 
 /** The risk card — scenes 3 and 8.
@@ -94,9 +86,18 @@ export function RiskCard({ data }: { data: RiskCardData }) {
         <div className="flex items-baseline justify-between gap-2">
           <dt className="text-ink-2">{t('risk.runoffProbability')}</dt>
           <dd>
-            {/* null renders as a gap, which is the honest state while the model
-                endpoint answers 503. */}
+            {/* A registered model fills this. null renders as a gap, which is the
+                honest state on the one path that has no probability to report:
+                what-if mode cannot re-run the model in the browser. */}
             <ValueWithUnit value={data.runoff_probability} digits={3} provenance="modelled" />
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-2">
+          <dt className="text-ink-2">{t('rail.area')}</dt>
+          <dd>
+            {/* modelled, not measured: this is a DEM watershed delineation, and the
+                same 4,453 km² that carries 96% of the discharge. */}
+            <ValueWithUnit value={data.area_km2} unit="km²" digits={2} provenance="modelled" />
           </dd>
         </div>
       </dl>
@@ -106,6 +107,19 @@ export function RiskCard({ data }: { data: RiskCardData }) {
 
       {data.caveat ? (
         <p className="border-t border-hairline pt-2 text-2xs text-ink-3">{data.caveat}</p>
+      ) : null}
+
+      {data.modelVersion ? (
+        <p className="flex flex-wrap items-baseline gap-1.5 border-t border-hairline pt-2 text-2xs text-ink-3">
+          {t('risk.modelledBy')}
+          <code
+            dir="ltr"
+            style={{ unicodeBidi: 'isolate' }}
+            className="font-mono num text-ink-2"
+          >
+            {data.modelVersion}
+          </code>
+        </p>
       ) : null}
 
       {data.provisional ? (

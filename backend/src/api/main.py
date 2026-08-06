@@ -39,6 +39,7 @@ no artifact is registered, so it upgrades itself when training lands.
 
 from __future__ import annotations
 
+import json
 import math
 import os
 import subprocess
@@ -49,6 +50,8 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from exposure import engine, store
+from ingestion import ocean_currents as oc
+from models import particle_engine, plume_forcing
 from rag import answer as rag_answer
 from rag import corpus as rag_corpus
 from rag import explain as rag_explain
@@ -83,6 +86,29 @@ from .schemas import (
 
 API_VERSION = "0.2.0"
 PREFIX = "/api/v1"
+ROOT = Path(os.environ.get("REEFSHIELD_ROOT", Path(__file__).resolve().parents[3]))
+PLUME_CALIBRATION_PATH = ROOT / "data" / "models" / "plume_calibration.json"
+
+
+def _load_plume_calibration() -> dict | None:
+    """The winning (diffusion, windage, settling, regime) tuple from
+    `scripts/28_calibrate_plume_engine.py`, if that has been run. A sidecar,
+    like `data/models/sediment_anchor.json` -- never baked into the engine
+    module, so a recalibration is a file swap, not a redeploy."""
+    if not PLUME_CALIBRATION_PATH.exists():
+        return None
+    try:
+        return json.loads(PLUME_CALIBRATION_PATH.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def _particle_engine_version() -> str:
+    calibration = _load_plume_calibration()
+    if calibration:
+        return f"custom_2d-calibrated-{calibration['event_id']}"
+    return "custom_2d-uncalibrated"
+
 
 def _reef_zones_version() -> str:
     """Report which reef-zone artifact is actually being served.
@@ -97,7 +123,7 @@ def _reef_zones_version() -> str:
 MODEL_VERSIONS = {
     "exposure_engine": "0.2.0",
     "runoff_model": "stub-0.1",
-    "particle_engine": "stub-0.1",
+    "particle_engine": _particle_engine_version(),
     "reef_zones": _reef_zones_version(),
     "bathymetry": "GMRT-substituted-for-GEBCO",
 }
@@ -116,20 +142,28 @@ app = FastAPI(
 # Origins come from the environment so the container can be locked down without a
 # code change. Carried over from origin/main's API, which Docker Compose already
 # configures this way; defaulting to the Vite dev port keeps local work unchanged.
+#
+# PLUS a regex fallback for any localhost/127.0.0.1 port. Found by actually running
+# the frontend against this API rather than assuming the fixed list was enough:
+# API_PORT=8100 and a non-default frontend port (needed on this project's own dev
+# machine, repeatedly, because 8000/5173 are often already taken by something else)
+# made every live call fail with a CORS error that has nothing to do with the API
+# itself. That is exactly the failure mode this project keeps naming — a correct
+# backend that LOOKS broken — except inverted: here the frontend looks broken while
+# the backend is fine. Safe to widen this way because the API never leaves
+# localhost; it is a wifi-off local demo tool, not a public deployment.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o for o in os.environ.get(
         "REEFSHIELD_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173",
     ).split(",") if o],
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
 # ---------------------------------------------------- ops liveness (Docker)
-
-ROOT = Path(os.environ.get("REEFSHIELD_ROOT", Path(__file__).resolve().parents[3]))
-
 
 def git_sha() -> str:
     try:
@@ -513,34 +547,184 @@ def runoff_predict(req: RunoffRequest):
 
 # ----------------------------------------------------------------------- plume
 
-def _synthetic_contours(outlet_lon: float, outlet_lat: float, horizon: int):
-    """Concentric growing contours around the outlet, for the exposure engine.
+#: Built once per process, keyed by event_id -- constructing the fast current
+#: interpolator costs one xarray load + one RegularGridInterpolator build (a
+#: few hundred ms), not per-request work.
+_CURRENT_FN_CACHE: dict[str, tuple] = {}
 
-    NOT a plume model. It is the synthetic input the exposure engine is developed
-    and tested against before the real particle engine lands, and it is labelled as
-    such in every response that uses it. Buffers are built in UTM 36N so the radii
-    are true metres.
+
+def _current_fn_for_event(event_id: str) -> tuple:
+    """Real historical currents where a cached archive exists, a documented
+    placeholder otherwise. `get_historical_interpolator` only ever resolves
+    `AQ-2016-10-28` (05-abd.md's one demo event; see docs/event_dates.md) --
+    any other event_id genuinely has no current forcing behind it yet.
+
+    Never fetches over the network at request time: DoD item 9 is "works
+    with wifi off", and a live endpoint reaching out mid-demo is exactly the
+    Harmony-preview class of failure this project keeps naming. Run
+    `scripts/28_calibrate_plume_engine.py` once beforehand -- it caches the
+    HYCOM archive as a side effect of calibrating against it.
     """
-    import geopandas as gpd
-    from shapely.geometry import Point
+    if event_id in _CURRENT_FN_CACHE:
+        return _CURRENT_FN_CACHE[event_id]
 
-    pt = gpd.GeoSeries([Point(outlet_lon, outlet_lat)], crs="EPSG:4326").to_crs(
-        engine.CRS_MEASURE
-    ).iloc[0]
+    cache_file = oc.RAW_DIR / f"hycom_aoi_{event_id}.nc"
+    if cache_file.exists():
+        import xarray as xr
 
-    steps = [t for t in (3, 6, 9, 12, 18, 24, 36, 48) if t <= horizon] or [horizon]
+        interpolator = oc.CurrentFieldInterpolator(xr.open_dataset(cache_file))
+        result = (
+            plume_forcing.fast_current_fn(interpolator),
+            f"HYCOM GLBu0.08/expt_91.2 historical archive, cached {cache_file.relative_to(ROOT)}",
+        )
+    else:
+        result = (
+            particle_engine.ConstantCurrentField(0.0, 0.0),
+            f"PLACEHOLDER: ConstantCurrentField(0, 0) -- no cached historical current "
+            f"archive for {event_id} ({cache_file.name} absent). Run "
+            "scripts/28_calibrate_plume_engine.py once to fetch it.",
+        )
+    _CURRENT_FN_CACHE[event_id] = result
+    return result
+
+
+def _sediment_class_for(event_id: str, catchment_id: str | None) -> str | None:
+    """Mahdi's sediment class for this event/catchment, if a feature row
+    exists -- used only to scale release magnitude (particle count), never to
+    change the physics. `None` (no row, or the real model unavailable) keeps
+    the release unscaled rather than guessing a severity."""
+    if not catchment_id:
+        return None
+    row = da.training_row(event_id, catchment_id)
+    if row is None:
+        return None
+    try:
+        from models.runoff_model import predict_one
+
+        cls = predict_one(row).get("sediment_class")
+    except (FileNotFoundError, ImportError, ModuleNotFoundError, KeyError):
+        return None
+    # runoff_predictions.sediment_class values are capitalized ("High"); the
+    # particle engine's SEDIMENT_CLASS_PARTICLE_SCALE keys are lowercase.
+    return cls.lower() if isinstance(cls, str) else None
+
+
+def _real_contours(req: PlumeRequest, outlet: dict):
+    """Run the real particle engine and contour its output.
+
+    Returns `(rows, provenance_detail, caveats)` -- `rows` are plain dicts
+    shaped like `PlumeContour`'s fields (`t_hours`, `probability`, `geometry`
+    as a GeoJSON dict in EPSG:4326), ready for the response and for
+    `engine.intersect_plume_with_zones` after a GeoDataFrame wrap.
+    """
+    try:
+        release = particle_engine.load_release_point(req.outlet_id)
+    except particle_engine.HarbourBasinReleaseError:
+        # Still simulated -- refusing outright would make AQ-O04 the one
+        # outlet with no picture at all. cav.harbour_outlet() carries the
+        # "not representative Gulf exposure" warning on every response either
+        # way, so acknowledging here does not hide anything.
+        release = particle_engine.load_release_point(
+            req.outlet_id, acknowledge_harbour_caveat=True)
+
+    release_time = da.flood_arrival_utc(req.event_id)
+    if release_time is None:
+        raise HTTPException(
+            422,
+            f"{req.event_id} has no converted.flood_arrival_utc in docs/event_dates.md "
+            "-- the particle engine needs a real release time and will not guess one",
+        )
+
+    calibration = _load_plume_calibration()
+    calibrated_here = bool(calibration) and calibration.get("event_id") == req.event_id
+    base_params = calibration["params"] if calibrated_here else {}
+
+    sediment_class = _sediment_class_for(req.event_id, release.catchment_id)
+    particle_count = particle_engine.particle_count_for_sediment_class(
+        req.n_particles, sediment_class)
+    # Capped regardless of the sediment-class multiplier (up to 2x): a cold
+    # run costs ~particle_count x n_steps current_fn calls, and this endpoint
+    # must return in seconds on first call, not minutes. da.PLUME_CACHE makes
+    # every repeat call with the same parameters instant.
+    particle_count = min(particle_count, 3000)
+
+    params = particle_engine.ParticleEngineParams(
+        diffusion_m2_s=(req.diffusion_m2_s if req.diffusion_m2_s is not None
+                         else base_params.get("diffusion_m2_s", 1.0)),
+        windage_fraction=(req.windage if req.windage is not None
+                           else base_params.get("windage_fraction", 0.03)),
+        settling_velocity_mm_s=base_params.get("settling_velocity_mm_s", 0.5),
+        transport_regime=base_params.get("transport_regime", "hypopycnal"),
+        particle_count=particle_count,
+        duration_hours=float(req.horizon_hours),
+    )
+
+    current_fn, current_source = _current_fn_for_event(req.event_id)
+    wind_fn = particle_engine.ConstantWindField(0.0, 0.0)
+
+    # Known, documented gotcha (tasks/nizar.md, 06-ali.md §5): some outlets sit on
+    # a cell the ~9 km current grid masks as land, so `current_fn` returns NaN
+    # there and `simulate()`'s own `nan_to_num(..., nan=0.0)` silently makes the
+    # release point current-free -- transport becomes diffusion/settling only,
+    # not current-driven. That is a real, first-order fact about this specific
+    # run, not a footnote, so it is checked and surfaced here rather than left to
+    # be discovered by noticing the plume never travels far.
+    release_u, release_v = current_fn(release.lon, release.lat, release_time, 0.0)
+    current_masked_at_release = bool(math.isnan(release_u) or math.isnan(release_v))
+
+    sim = particle_engine.simulate(
+        release, release_time, current_fn=current_fn, wind_fn=wind_fn,
+        params=params, seed=0,
+    )
+
+    from shapely.ops import unary_union
+
+    steps = [t for t in (3, 6, 9, 12, 18, 24, 36, 48) if t <= req.horizon_hours] or [req.horizon_hours]
+    dt_hours = params.time_step_minutes / 60.0
+    n_steps = sim.lons.shape[0] - 1
     rows = []
-    for t in steps:
-        radius_m = 600 * math.sqrt(t)          # diffusive spread ~ sqrt(time)
-        probability = max(0.05, min(0.95, 0.9 * math.exp(-t / 30)))
-        rows.append({"t_hours": float(t), "probability": probability,
-                     "geometry": pt.buffer(radius_m)})
-    return gpd.GeoDataFrame(rows, crs=engine.CRS_MEASURE)
+    for t_hours in steps:
+        step_idx = min(round(t_hours / dt_hours), n_steps)
+        contour_levels = particle_engine.kernel_density_contours(
+            sim.lons[step_idx], sim.lats[step_idx])
+        for level, polygons in contour_levels.items():
+            if not polygons:
+                continue  # this density level was never reached at this timestep
+            geom = polygons[0] if len(polygons) == 1 else unary_union(polygons)
+            rows.append({"t_hours": float(t_hours), "probability": float(level),
+                         "geometry": da._geojson(geom)})
+
+    caveats = (cav.particle_engine_forcing(
+                    current_source, forcing_is_placeholder=True, calibrated=calibrated_here)
+               + cav.harbour_outlet(req.outlet_id)
+               + cav.bathymetry_substitution())
+    if release.caveat:
+        caveats.append(Caveat(field="outlet_id", message=release.caveat,
+                               severity="critical", source="05-abd.md"))
+    if current_masked_at_release:
+        caveats.append(Caveat(
+            field="contours",
+            message=(
+                f"{req.outlet_id}'s release point falls on a cell the current grid "
+                "masks as land (NaN u/v, treated as zero current per simulate()'s own "
+                "documented nan_to_num rule). This run's transport is diffusion and "
+                "settling only, not current-driven, until it drifts onto a resolved "
+                "cell -- a real reason a plume can stay tight near the outlet even "
+                "over a long horizon, not evidence that nothing is happening."
+            ),
+            severity="warning",
+            source="tasks/nizar.md",
+        ))
+
+    detail = (f"custom_2d particle engine, {particle_count} particles, "
+              f"{sim.times[-1] - sim.times[0]}, currents: {current_source}")
+    return rows, detail, caveats
 
 
 @app.post(f"{PREFIX}/plume/simulate", response_model=PlumeResult, tags=["model"])
 def plume_simulate(req: PlumeRequest):
-    """STUB contours. Cached on the scenario, so a slider drag does not re-run it."""
+    """Real particle transport. Cached on the scenario, so a slider drag or an
+    animation frame step does not re-run the simulation."""
     outlet = next((o for o in da.outlets() if o["outlet_id"] == req.outlet_id), None)
     if outlet is None:
         raise HTTPException(404, f"unknown outlet {req.outlet_id}")
@@ -551,27 +735,17 @@ def plume_simulate(req: PlumeRequest):
     if cached is not None:
         return cached
 
-    gdf = _synthetic_contours(outlet["lon"], outlet["lat"], req.horizon_hours)
-    wgs = gdf.to_crs("EPSG:4326")
+    rows, detail, caveats = _real_contours(req, outlet)
 
     result = PlumeResult(
         run_id=f"plume_{req.event_id}_{req.outlet_id}_{req.horizon_hours}h",
         event_id=req.event_id,
         outlet_id=req.outlet_id,
-        contours=[
-            PlumeContour(t_hours=r["t_hours"], probability=r["probability"],
-                         geometry=da._geojson(r.geometry))
-            for _, r in wgs.iterrows()
-        ],
+        contours=[PlumeContour(**r) for r in rows],
         model_version=MODEL_VERSIONS["particle_engine"],
-        is_stub=True,
-        provenance=[Provenance(
-            kind="stub",
-            detail="Synthetic sqrt(t) buffers in UTM 36N; not a transport simulation",
-        )],
-        caveats=(cav.stub_model("The particle engine")
-                 + cav.harbour_outlet(req.outlet_id)
-                 + cav.bathymetry_substitution()),
+        is_stub=False,
+        provenance=[Provenance(kind="derived", detail=detail)],
+        caveats=caveats,
     )
     da.PLUME_CACHE.set(key, result)
     return result
@@ -778,7 +952,20 @@ def exposure_calculate(req: ExposureRequest):
     confidence_adjustment = 0.6
     confidence = engine.confidence_label(confidence_adjustment)
 
-    contours = _synthetic_contours(outlet["lon"], outlet["lat"], req.horizon_hours)
+    # Goes through plume_simulate() (and its cache), not a private call of its own
+    # -- the picture in /plume/map and the score here must come from the SAME
+    # particle cloud, not two independently-simulated ones that happen to agree.
+    plume = plume_simulate(PlumeRequest(event_id=req.event_id, outlet_id=req.outlet_id,
+                                        horizon_hours=req.horizon_hours))
+    import geopandas as gpd
+    from shapely.geometry import shape as _shape
+
+    contours = gpd.GeoDataFrame(
+        {"t_hours": [c.t_hours for c in plume.contours],
+         "probability": [c.probability for c in plume.contours]},
+        geometry=[_shape(c.geometry) for c in plume.contours],
+        crs="EPSG:4326",
+    )
     overlay = engine.intersect_plume_with_zones(contours, zones_gdf)
 
     # Keep the provisional flag rather than discarding it with [0]: it selects which
@@ -803,7 +990,7 @@ def exposure_calculate(req: ExposureRequest):
             "relative_sediment_intensity_source": intensity_source,
             "confidence_adjustment_reason":
                 "coarse global current model + GMRT-substituted bathymetry",
-            "plume_source": "SYNTHETIC_STUB",
+            "plume_source": "SYNTHETIC_STUB" if plume.is_stub else "REAL_PARTICLE_ENGINE",
             "model_versions": run_model_versions,
         })
         # Per-result caveats are ZONE-scoped. Anything that qualifies the whole run
@@ -811,11 +998,16 @@ def exposure_calculate(req: ExposureRequest):
         # run level instead of repeated on every zone. Ali's UI would otherwise
         # render the same critical warning N times on one panel, which trains a
         # reader to skim past exactly the text that matters most.
+        #
+        # The plume's own caveats (real-engine forcing limitations, or
+        # stub_model() if it ever falls back) travel with it rather than being
+        # rebuilt here, so this can never drift from what /plume/map is
+        # actually showing for the same run.
         zone_caveats = [
             c for c in cav.build_exposure_caveats(
                 req.outlet_id, zone_meta.get(zid), provisional=zones_are_provisional)
             if c.field not in ("outlet_id", "risk_level")
-        ] + cav.stub_model("The plume input to this exposure run")
+        ] + [c for c in plume.caveats if c.field not in ("outlet_id",)]
 
         results.append(ExposureResult(
             **summary,
@@ -839,7 +1031,12 @@ def exposure_calculate(req: ExposureRequest):
         zutm = zones_gdf.to_crs(engine.CRS_MEASURE)
         d = zutm.geometry.distance(pt)
         nearest_id = zutm.loc[d.idxmin(), "reef_zone_id"]
-        reach_m = max(c.exterior.length / (2 * math.pi) for c in contours.geometry)
+        # Equal-area equivalent radius rather than exterior.length/(2*pi): the
+        # real engine's contours can be MultiPolygon (disjoint KDE lobes), which
+        # has no single .exterior the circle-only formula assumed.
+        contours_utm = contours.to_crs(engine.CRS_MEASURE) if not contours.empty else contours
+        reach_m = (max(math.sqrt(c.area / math.pi) for c in contours_utm.geometry)
+                   if not contours_utm.empty else 0.0)
 
         run_caveats.append(Caveat(
             field="results",

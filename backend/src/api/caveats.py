@@ -206,6 +206,51 @@ def stub_model(component: str) -> list[Caveat]:
     )]
 
 
+def particle_engine_forcing(current_source: str, *, forcing_is_placeholder: bool,
+                             calibrated: bool) -> list[Caveat]:
+    """The real particle engine's own limitations -- distinct from `stub_model()`,
+    which is for the synthetic-circle placeholder this replaced. Real transport
+    physics (advection, diffusion, coastline reflection, settling) still runs on
+    forcing that is not fully real, so the caveat travels with the run rather
+    than only with the fact that it is not a stub.
+    """
+    caveats = [Caveat(
+        field="is_stub",
+        message=(
+            "Real particle transport (advection, diffusion, coastline reflection, "
+            "depth-dependent settling), not the synthetic sqrt(t) circles -- but "
+            f"still bounded by its forcing. Currents: {current_source}. Wind: "
+            "ConstantWindField(0, 0) -- no historical marine wind source exists in "
+            "this repo (GFS/GEFS/ECMWF here are forecast-only, not a 2016 archive)."
+        ),
+        severity="warning" if forcing_is_placeholder else "info",
+        source="backend/src/models/particle_engine.py",
+    ), Caveat(
+        field="contours",
+        message=(
+            "Contour levels are peak-normalized kernel-density thresholds of the "
+            "simulated particle cloud (relative density), not a calibrated arrival "
+            "probability. The best free ocean current model resolves ~9 km cells "
+            "across a gulf 15-25 km wide -- two or three cells span the whole basin."
+        ),
+        severity="warning",
+        source="backend/src/models/particle_engine.py:kernel_density_contours",
+    )]
+    if not calibrated:
+        caveats.append(Caveat(
+            field="model_version",
+            message=(
+                "Uncalibrated: diffusion/windage/settling are the particle engine's "
+                "documented defaults, not fitted against the Kalman et al. (2025) "
+                "mooring. Only AQ-2016-10-28 (via scripts/28_calibrate_plume_engine.py) "
+                "has a calibrated parameter set."
+            ),
+            severity="info",
+            source="scripts/28_calibrate_plume_engine.py",
+        ))
+    return caveats
+
+
 def bathymetry_substitution() -> list[Caveat]:
     return [Caveat(
         field="geometry",

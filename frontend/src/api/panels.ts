@@ -1,4 +1,4 @@
-/** The honest panels' data, derived by scripts/15_frontend_panels.py.
+/** The honest panels' data, derived by scripts/frontend_panels.py.
  *
  *  Phase 3's gate is that every panel renders from real repo artefacts rather than
  *  mockups, so none of these shapes are invented — they mirror what the QA

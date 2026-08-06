@@ -4,6 +4,7 @@ import { SideRail } from '../shell/SideRail';
 import { TimeBar } from '../shell/TimeBar';
 import { MapView } from '../map/MapView';
 import { useEventData, useRiskCards } from '../app/useEventData';
+import { useLiveExposure } from '../app/useLiveExposure';
 import { OverlayHost } from '../panels/OverlayHost';
 
 /** The one screen. 03 §1: eight storyboard scenes on a single view, with the
@@ -24,6 +25,9 @@ export function Home() {
   const { t } = useTranslation();
   const { data, error } = useEventData();
   const risk = useRiskCards(data);
+  // Loaded independently of `data` — see the hook's own docstring for why a
+  // failed live call must not block the historical/offline path from rendering.
+  const live = useLiveExposure(data?.series.event_id);
 
   return (
     <div
@@ -36,7 +40,7 @@ export function Home() {
         <main className="relative min-h-0 border-b border-hairline lg:border-b-0 lg:border-e">
           <MapView risk={risk} />
         </main>
-        <SideRail data={data} risk={risk} error={error} />
+        <SideRail data={data} risk={risk} error={error} live={live} />
       </div>
 
       <TimeBar data={data} />

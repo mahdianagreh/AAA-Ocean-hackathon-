@@ -15,9 +15,10 @@ type State =
  *  a green dot while serving committed GeoJSON would be a lie about where the
  *  numbers came from.
  *
- *  `model_available` is surfaced because it is false today: data/models/ does not
- *  exist, so the two model endpoints return 503. That is the project's real state
- *  and the masthead is the right place to admit it.
+ *  `model_available` is surfaced because it is the fact a viewer most needs and can
+ *  least infer. It read false until 3 Aug 2026, when Mahdi registered
+ *  runoff_weighted_gbm_2194b48_20260803T214757Z; the masthead said so then and says
+ *  so now, which is the only way the two states are distinguishable at a glance.
  */
 export function ConnectionState() {
   const { t } = useTranslation();
@@ -51,7 +52,11 @@ export function ConnectionState() {
       ? [
           `version ${state.health.version}`,
           `commit ${state.health.commit}`,
-          state.health.model_available ? 'model registered' : t('connection.noModel'),
+          // Both branches translated. This one was a bare English literal, which in
+          // Arabic put a Latin phrase in the masthead detail while its sibling
+          // rendered correctly — the kind of gap that only shows once the happy path
+          // starts being taken.
+          state.health.model_available ? t('connection.model') : t('connection.noModel'),
         ].join(' · ')
       : state.kind === 'offline'
         ? state.reason

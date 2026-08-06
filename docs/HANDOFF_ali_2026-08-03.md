@@ -19,7 +19,7 @@ start the shell today.
 
 I had converted nine layers to `data/processed/web/` via `scripts/export_web_layers.py`,
 because MapLibre cannot read a GeoPackage and every vector in the repo was `.gpkg`. By
-then you had already shipped `scripts/13_frontend_basemap.py` → `frontend/public/basemap/`
+then you had already shipped `scripts/frontend_basemap.py` → `frontend/public/basemap/`
 with **twelve** layers, and yours is the one to keep:
 
 - It **must** be committed — the compose build context is `./frontend`, so nothing under
