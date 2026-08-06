@@ -35,8 +35,18 @@ from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
+import geopandas as gpd
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend" / "src"))
+from config import spatial as _spatial  # noqa: E402
+
+BASEMAP_DIR = ROOT / "frontend" / "public" / "basemap"
+FIXTURES_DIR = ROOT / "frontend" / "public" / "fixtures"
+#: 300 m in the real measurement CRS (EPSG:32636, per spatial.py's own contract),
+#: not degrees -- a degree-based tolerance would mean a different real distance
+#: depending on latitude, which this project's own CRS rule exists to prevent.
+RUNOFF_SIMPLIFY_M = 300.0
 
 EVENT_ID = "AQ-2016-10-28"
 #: The one outlet with a cached historical HYCOM archive for this event (05-abd.md
@@ -68,6 +78,74 @@ def _post(base: str, path: str, body: dict) -> dict:
 def _get(base: str, path: str) -> list | dict:
     with urlopen(f"{base}{path}", timeout=30) as resp:
         return json.loads(resp.read())
+
+
+def _real_rainfall(catchment_id: str) -> dict | None:
+    """The real daily rainfall this catchment measured around the event —
+    `frontend/public/fixtures/event.json`, itself derived by
+    scripts/frontend_event_series.py from `catchment_rainfall_daily.parquet`.
+    Reused here, not re-derived, so the 3D scene's "heavy rainfall" phase is
+    driven by the same number the Hyetograph panel already shows, not a second
+    value that could quietly drift from it.
+
+    Only a daily series exists (see event.ts's own docstring: no sub-daily
+    record is in this repo) — so this returns the day of measured peak
+    intensity for the catchment, not an intra-day curve. The 3D scene's rain
+    phase is honest about that: one real measured number, not an invented
+    ramp.
+    """
+    event_path = FIXTURES_DIR / "event.json"
+    if not event_path.exists():
+        return None
+    event = json.loads(event_path.read_text())
+    points = event.get("rainfall_daily", {}).get("by_catchment", {}).get(catchment_id, [])
+    real_points = [p for p in points if p.get("mm") is not None]
+    if not real_points:
+        return None
+    peak = max(real_points, key=lambda p: p["mm"])
+    return {
+        "peak_date_utc": peak["t"],
+        "peak_mm": peak["mm"],
+        "unit": event["rainfall_daily"]["unit"],
+        "source": event["rainfall_daily"]["source"],
+        "note": event["rainfall_daily"]["note"],
+    }
+
+
+def _real_runoff_lines(catchment_id: str) -> list[list[list[float]]]:
+    """Real wadi drainage LineStrings physically inside this catchment's real
+    polygon (spatial join against catchments.geojson/wadis.geojson, both
+    already committed basemap layers) -- not invented flow paths. No
+    catchment_id attribute exists on the wadi features themselves (OSM has no
+    concept of a hydrological catchment), so membership is geometric, not
+    tag-based.
+
+    Simplified further than the basemap copy (300 m, vs. wadis.geojson's own
+    80 m) -- this feeds an animated flow effect meant to read at a glance from
+    the outlet camera distance, not a hydrological reference layer.
+    """
+    catchments_path = BASEMAP_DIR / "catchments.geojson"
+    wadis_path = BASEMAP_DIR / "wadis.geojson"
+    if not catchments_path.exists() or not wadis_path.exists():
+        return []
+    catchments = gpd.read_file(catchments_path)
+    wadis = gpd.read_file(wadis_path)
+    match = catchments[catchments["catchment_id"] == catchment_id]
+    if match.empty:
+        return []
+    poly = match.geometry.iloc[0]
+    within = wadis[wadis.intersects(poly)].copy()
+    if within.empty:
+        return []
+    within = within.set_crs("EPSG:4326") if within.crs is None else within
+    projected = within.to_crs(_spatial.CRS_MEASURE)
+    projected["geometry"] = projected.geometry.simplify(RUNOFF_SIMPLIFY_M, preserve_topology=True)
+    within = projected.to_crs("EPSG:4326")
+    return [
+        [[round(x, 5), round(y, 5)] for x, y in geom.coords]
+        for geom in within.geometry
+        if geom is not None and not geom.is_empty
+    ]
 
 
 def build(api_base: str) -> dict:
@@ -111,6 +189,7 @@ def build(api_base: str) -> dict:
         None,
     )
 
+    catchment_id = outlet["catchment_id"]
     return {
         "event_id": EVENT_ID,
         "outlet_id": OUTLET_ID,
@@ -118,7 +197,7 @@ def build(api_base: str) -> dict:
         "release": {
             "lon": outlet["lon"],
             "lat": outlet["lat"],
-            "catchment_id": outlet["catchment_id"],
+            "catchment_id": catchment_id,
         },
         "is_stub": plume["is_stub"],
         "model_version": plume["model_version"],
@@ -128,9 +207,13 @@ def build(api_base: str) -> dict:
         "frames": frames,
         "reef_exposure": reef_exposure,
         "current_masking_caveat": masking_caveat,
+        "rainfall": _real_rainfall(catchment_id),
+        "runoff_lines": _real_runoff_lines(catchment_id),
         "source": (
             f"POST /api/v1/plume/simulate + /api/v1/exposure/calculate against a "
-            f"live run of backend/src/api/main.py (scripts/frontend_journey.py)"
+            f"live run of backend/src/api/main.py, plus frontend/public/fixtures/event.json "
+            f"(rainfall) and basemap catchments+wadis (runoff paths) "
+            f"(scripts/frontend_journey.py)"
         ),
     }
 
@@ -151,6 +234,12 @@ def main() -> int:
     print(f"  reef zones reached: {[r['reef_zone_id'] for r in data['reef_exposure']]}")
     if data["current_masking_caveat"]:
         print(f"  current-masking caveat present: yes")
+    if data["rainfall"]:
+        print(f"  real rainfall peak: {data['rainfall']['peak_mm']} {data['rainfall']['unit']} "
+              f"on {data['rainfall']['peak_date_utc'][:10]}")
+    else:
+        print("  real rainfall: none found for this catchment")
+    print(f"  real runoff wadi lines within the release catchment: {len(data['runoff_lines'])}")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

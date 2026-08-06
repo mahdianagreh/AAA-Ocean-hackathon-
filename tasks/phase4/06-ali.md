@@ -21,6 +21,18 @@
 > bathymetry half below may now be partially redundant with what's in
 > `frontend/src/journey/journeyStyle.ts` — worth checking before duplicating it,
 > and the visual-design pass this still needs is yours if you want it.
+>
+> **Second update, same day.** The user asked for the full rainfall → flood →
+> sediment → coastal-impact narrative on top of that first pass. Now built: real
+> OSM buildings (`scripts/frontend_basemap.py`'s new `buildings()`, 617 real
+> footprints), a real-rainfall-driven rain phase, real wadi runoff paths, and a
+> six-phase Play/Pause/Reset timeline (`frontend/src/journey/usePhaseTimeline.ts`).
+> Reef zones now stay neutral until the impact phase, then reveal their real
+> exposure colour — worth knowing if you build a 2D equivalent of that reveal
+> elsewhere, so the two don't quietly disagree on when "impact" is shown. Layer
+> code is now one file per concern under `frontend/src/journey/layers/` rather
+> than one growing file, if you're extending any single piece of it. Full detail
+> in `05-abd.md` §1a's "Upgrade" note and `docs/HANDOFF_abd_2026-08-06.md` §5.
 
 Read [`00-phase4-plan.md`](00-phase4-plan.md) first.
 

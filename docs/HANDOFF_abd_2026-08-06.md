@@ -529,6 +529,54 @@ per-particle depth" as two different-sized tasks. The first is presentation work
 data that already exists — done above. The second is new modelling — still open,
 and still a larger piece of work than a visual-polish pass on what exists today.
 
+### Upgrade, same day — the full narrative (rain, buildings, phased playback)
+
+Requested after seeing the first pass render. Full change list and reasoning is in
+`tasks/phase4/05-abd.md` §1a's "Upgrade" note (not duplicated here in full to avoid
+two copies drifting apart); summary of what's new:
+
+| Added | Real source | Where |
+|---|---|---|
+| Buildings | `osm_aqaba.gpkg`'s `buildings` layer, 617 kept (clipped to five small per-outlet buffers, not one box spanning all five) | `scripts/frontend_basemap.py` `buildings()` |
+| Rain intensity | Real daily rainfall, `event.json`'s `by_catchment` series — 9.21 mm, AQ-C02, 2016-10-27 (the storm's real peak day) | `scripts/frontend_journey.py` `_real_rainfall()` |
+| Runoff paths | Real wadi LineStrings spatially joined against the release catchment's real polygon — 54 lines | `scripts/frontend_journey.py` `_real_runoff_lines()` |
+| Six-phase narrative | Normal → rain → flood → transport → accumulation → impact, Play/Pause/Reset, reef stays neutral until the impact reveal | `frontend/src/journey/usePhaseTimeline.ts` |
+| Modular layers | One file per concern instead of one growing file | `frontend/src/journey/layers/*.ts` |
+| Height budget | sqrt-scaled relief (was linear ×6) — compresses -800..+1,800 m to ~53-560 visual metres | `frontend/src/journey/constants.ts` |
+
+**Two real bugs found and fixed by testing exactly the sequence requested**, not
+assumed fixed because the code looked right:
+
+1. **A stuck-timeline bug.** Click every phase manually, then Reset, then Play — the
+   sequence never advanced past "Normal." Root cause: `frameIndexRef` wasn't cleared on
+   returning to `normal`, and the zero-duration phase's advance condition required a
+   strictly-positive elapsed time to exceed a zero target, which is never true. Fixed at
+   the root in `usePhaseTimeline.ts` (removed the guard, simplified `play()` to one
+   resume path for every phase, `normal` included) and re-verified against the identical
+   failing sequence — sampled every second through a full autoplay afterward to confirm
+   real phase timing, not just that it eventually finished.
+2. **A second real WCAG contrast regression**, same class as the one caught in §7's
+   test run (`text-ink-3` on `bg-surface-2`, same fix: `text-ink-2`) — this time in the
+   calibration-fit caveats added earlier the same day, found by the same axe test run
+   against this upgrade, fixed the same way.
+
+Re-verified after the upgrade: `tsc -b --noEmit` clean, lint clean, `vitest run` 14/14,
+full Playwright suite 25/25, and the backend suite unaffected (498/51/1, unchanged — no
+backend Python was touched by this upgrade). Screenshotted every phase individually
+plus two targeted closeups (a denser building cluster with a real named hotel; the
+reef-zone reveal at close zoom, where an outline stroke was added because the "minimal"
+risk colour alone was too close to the surrounding terrain tones to read as a change).
+
+**Still not a finished visual design**, stated plainly rather than left to be
+discovered: the relief bands are markedly smoother than the first pass (sqrt scaling
+instead of linear) but still read as stepped/banded terrain, not a smooth continuous
+surface. True smooth terrain would need MapLibre's native raster-DEM `setTerrain`
+feature, which needs a terrain-RGB tile pyramid this repo does not have — a real,
+separately-scoped undertaking, not attempted here because the upgrade's own
+instructions were explicit about avoiding a large architectural rewrite unless
+genuinely necessary, and the banded-extrusion approach, now re-tuned, meets the bar of
+"real, honest, legible" without it.
+
 ---
 
 ## 6 · Files changed
@@ -552,6 +600,14 @@ and still a larger piece of work than a visual-polish pass on what exists today.
 | `frontend/src/map/style.ts` | One-line fix: a pre-existing `StyleSpecification` cast error, found while verifying the new code, unrelated to this feature otherwise |
 | `tasks/phase4/05-abd.md` §1a | The 3D Journey recorded as built-on-request, outside this file's original assigned scope |
 | `docs/HANDOFF_abd_2026-08-06.md` §5 | Updated from "not built" to what was actually built |
+| `scripts/frontend_basemap.py` `buildings()` | New — real OSM building footprints, real-or-default height; basemap budget raised 1,400→1,550 KB with documented reasoning |
+| `frontend/public/basemap/buildings.geojson` | New — 617 real building footprints, clipped to five small per-outlet buffers |
+| `scripts/frontend_journey.py` `_real_rainfall()`, `_real_runoff_lines()` | Extended — real daily rainfall (from `event.json`) and real wadi drainage lines (spatial join) for the release catchment |
+| `frontend/src/journey/constants.ts` | New — shared height budget (sqrt-scaled) and phase vocabulary |
+| `frontend/src/journey/layers/*.ts` | New — one module per concern (relief, buildings, reef, plume, rain, runoff), replacing the single-file style from the first pass |
+| `frontend/src/journey/usePhaseTimeline.ts` | New — the six-phase state machine (Play/Pause/Reset), including the fix for the stuck-on-Normal bug found during verification |
+| `frontend/src/journey/Journey3D.tsx`, `journeyStyle.ts` | Rewritten to orchestrate the phase timeline against the new modular layers |
+| `frontend/src/i18n/locales/{en,ar}/common.json` | `journey.*` keys replaced with the six-phase vocabulary, both languages |
 
 ---
 
@@ -627,4 +683,6 @@ all three; the full suite is green.
 - [`tasks/phase4/06-ali.md`](../tasks/phase4/06-ali.md) — feature 14's original owner and scope
 - [`frontend/src/journey/Journey3D.tsx`](../frontend/src/journey/Journey3D.tsx), [`journeyStyle.ts`](../frontend/src/journey/journeyStyle.ts) — the 3D Journey scene
 - [`scripts/frontend_journey.py`](../scripts/frontend_journey.py) — derives the scene's plume/exposure fixture
-- [`scripts/frontend_basemap.py`](../scripts/frontend_basemap.py) `relief_bands()` — derives the scene's terrain/bathymetry layer
+- [`scripts/frontend_basemap.py`](../scripts/frontend_basemap.py) `relief_bands()`, `buildings()` — derives the scene's terrain/bathymetry and building layers
+- [`frontend/src/journey/layers/`](../frontend/src/journey/layers/), [`constants.ts`](../frontend/src/journey/constants.ts), [`usePhaseTimeline.ts`](../frontend/src/journey/usePhaseTimeline.ts) — the modular layer/phase architecture from the same-day upgrade
+- [`frontend/src/api/event.ts`](../frontend/src/api/event.ts) — the real rainfall series type/loader the upgrade's rain phase reuses

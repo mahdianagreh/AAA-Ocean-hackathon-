@@ -186,6 +186,70 @@ honest rather than polished. Whoever picks up feature 14's remaining visual-desi
 work (Ali's row) inherits real geometry and a real fixture to refine, not a
 placeholder.
 
+**Upgrade, same day — the full rainfall → flood → sediment → impact narrative,
+requested after seeing the first pass.** Extended rather than rewritten:
+
+- **Real buildings**, for the first time anywhere in this app: `osm_aqaba.gpkg`'s own
+  `buildings` layer (12,570 footprints, never exposed to the frontend before) is now a
+  new `buildings()` function in `scripts/frontend_basemap.py`, clipped to a small buffer
+  around each of the five real outlets (617 kept, not one enclosing box across all
+  five — that pulled in 9,914 and 2.4 MB of empty coastline between them). Height is the
+  real `building:levels` OSM tag × 3 m where present, a documented default (2 storeys)
+  where absent — footprint always real, height real-or-declared-assumed, never blended
+  silently. Named real landmarks confirm it (Hyatt Regency Aqaba Ayla, Aqaba Ferry
+  Terminal, a mosque).
+- **Real rainfall drives the rain phase.** `scripts/frontend_journey.py` now also reads
+  `frontend/public/fixtures/event.json` (the same real daily rainfall series the
+  Hyetograph panel already shows) for the release catchment's real peak day —
+  **9.21 mm, AQ-C02, 2016-10-27** — and states it in the on-screen caption verbatim. No
+  sub-daily series exists in this repo (event.json's own docstring says so), so rain
+  intensity is one real measured number driving an animation, not an invented ramp.
+- **Real runoff paths.** The same script spatially joins `wadis.geojson` against the
+  release catchment's real polygon (`catchments.geojson`) — 54 real drainage LineStrings
+  for AQ-C02 — animated as a directional flow toward the outlet during the flood phase.
+- **A six-phase narrative, not a single static scene**: Normal → Heavy rain → Flood →
+  Sediment transport → Accumulation → Coastal impact
+  (`frontend/src/journey/usePhaseTimeline.ts`), each with Play/Pause/Reset and direct
+  phase navigation. Reef zones stay neutral until the impact phase, then take on their
+  real exposure colour — the before/after the upgrade asked for, built from the one
+  already-real `reef_exposure` field, not a second data source. The plume's final
+  timestep gets a distinct denser/settled paint treatment for "accumulation" — a visual
+  convention over the same real contour shape (the particle engine's own settled/beached
+  tracking isn't exposed via the API yet, see the HANDOFF doc), stated as such rather
+  than implied as a second real signal.
+- **Re-architected into one module per concern** (`layers/relief.ts`, `buildings.ts`,
+  `reef.ts`, `plume.ts`, `rain.ts`, `runoff.ts`, `constants.ts`,
+  `usePhaseTimeline.ts`), not one growing file — each layer owns its own real data
+  source and paint logic.
+- **Height budget redesigned**: sqrt-scaled relief (not linear ×6) compresses the real
+  -800 m to +1,800 m range into ~53-560 visual metres instead of thousands, which is
+  what let buildings/reef/plume sit a small, fixed clearance above the local terrain
+  instead of needing the previous version's much larger (and, at one setting, literally
+  invisible — pushed outside the camera's frustum) float-above offsets.
+- **A real bug found and fixed by testing the exact sequence the upgrade asked to be
+  verified**: clicking through every phase manually, then Reset, then Play left the
+  timeline stuck showing "Normal" — `frameIndexRef` wasn't cleared on returning to
+  `normal`, and the zero-duration phase's advance-guard required a strictly-positive
+  elapsed time to exceed a zero target, which never happens. Fixed at the root (removed
+  the guard, simplified `play()` to one uniform resume path) and re-verified against the
+  identical failing sequence, sampled every second through a full autoplay to confirm
+  real timing (rain 3.2s, flood 3.2s, transport 6 real frames × 1.5s).
+- **A second real accessibility regression found the same way** the first one was —
+  fixed, not just noted.
+
+Re-verified after the upgrade: `tsc -b --noEmit` clean, lint clean, `vitest run` 14/14,
+full Playwright suite 25/25, backend suite unaffected (498/51/1, unchanged — no
+backend code touched), screenshotted at every phase plus two targeted closeups
+(a denser building area, the reef reveal at close zoom) to confirm real rendering,
+not just an assertion.
+
+Still not a finished visual design — the relief bands are markedly smoother than the
+first pass (sqrt scaling) but still read as stepped terrain, not a smooth photoreal
+surface; true continuous terrain would need a raster-DEM tile pipeline, a larger,
+separate undertaking flagged but deliberately not attempted here in the interest of
+not doing the "large architectural rewrite" the upgrade itself said to avoid unless
+necessary.
+
 ---
 
 ## 2 · Real Sensor Proof Overlay (feature 10) — ✅ closed 6 Aug — fields confirmed, fit quality now on screen

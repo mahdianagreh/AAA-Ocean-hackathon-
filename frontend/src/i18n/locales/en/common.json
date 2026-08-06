@@ -204,17 +204,29 @@
     "journey": "3D Journey"
   },
   "journey": {
-    "stage": {
-      "wadi": "Wadi",
-      "outlet": "Outlet",
-      "reef": "Reef"
+    "phaseNav": "Journey phase",
+    "phase": {
+      "normal": "Normal",
+      "rain": "Heavy rain",
+      "flood": "Flood",
+      "transport": "Sediment transport",
+      "accumulation": "Accumulation",
+      "impact": "Coastal impact"
+    },
+    "phaseBody": {
+      "normal": "Aqaba's coastline, terrain and developed waterfront before the storm — no rain, no floodwater, no sediment yet.",
+      "rain": "Heavy rainfall: {{mm}} mm measured for this catchment on {{date}}, the storm's real recorded peak day — not an invented ramp.",
+      "flood": "Runoff moves along the wadi's real drainage lines toward the coastal outlet.",
+      "transport": "The calibrated particle engine's real simulated plume, one real timestep at a time.",
+      "accumulation": "The plume's final timestep, shown as settling sediment rather than a moving cloud — a visual convention over the same real shape, not a second simulated signal.",
+      "impact": "Reef zones take on their real modelled exposure risk for this event."
     },
     "play": "Play",
     "pause": "Pause",
-    "scrubLabel": "Simulation hour",
+    "reset": "Reset",
     "hourLabel": "+{{h}} h",
-    "mapLabel": "3D scene: real terrain, bathymetry, plume and reef exposure",
-    "realismCaveat": "Relief is exaggerated {{exaggeration}}x for legibility at this camera distance; sea depth is drawn as upward relief coloured by depth, not sunk below the surface. The plume's height encodes its real contour probability level, not a physical thickness.",
+    "mapLabel": "3D scene: real terrain, bathymetry, buildings, rainfall, runoff, plume and reef exposure",
+    "realismCaveat": "Relief height is sqrt(real depth or elevation) × 15 for legibility at this camera distance, not a linear scale — sea depth is drawn as upward relief coloured by depth, not sunk below the surface. The plume's height encodes its real contour probability level, not a physical thickness. Rain and runoff are real geography with a stylised animation, not measured particle physics.",
     "source": "Source:"
   },
   "validation": {
