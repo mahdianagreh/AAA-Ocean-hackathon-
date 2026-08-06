@@ -1,5 +1,13 @@
 # Pulga — Phase 4
 
+> **Update, 6 Aug, from Karam — item 5's dive-site join is unblocked.** `places.geojson`
+> had zero stable ID on any POI until today; the source OSM layer's real `osm_id` now
+> survives into the file (115/115 unique, diffed to confirm nothing else changed). **Use
+> `osm_id` as the join key** for the nearest-reef-zone lookup. Also, separately: the
+> plume is not still a stub — `/plume/simulate`/`/exposure/calculate` already return
+> real particle-engine output and non-zero, differentiated scores per outlet, confirmed
+> live. Abd's file is stale on this point.
+
 Read [`00-phase4-plan.md`](00-phase4-plan.md) first.
 
 Everything from Phase 3 held up under live testing on 6 Aug: `/alerts` returns real

@@ -1,5 +1,15 @@
 # Nizar — Phase 4
 
+> **Update, 6 Aug, from Karam — item 2's threshold half is done, needs your sign-off.**
+> `confidence_adjustment` was a literal `0.6`; it's now derived from
+> `da.gefs_exceedance_for(catchment_id)` (your `forecast_exceedance` snapshot data) via
+> `agreement = |exceedance_prob − 0.5| × 2`. **This mapping is a proposal, not settled —
+> confirm or correct it**; you own whether "confidence" should mean ensemble agreement
+> at all. The accessor and call site (`backend/src/api/data_access.py`'s
+> `gefs_exceedance_for`, `main.py`'s `exposure_calculate()`) are both small if it needs
+> to change. Components (`confidence_members_exceeding/_total/_threshold_value_mm`) are
+> now on `formula_terms`, not just a sentence, per your own item 2 ask.
+
 Read [`00-phase4-plan.md`](00-phase4-plan.md) first.
 
 `/api/v1/forecast/latest` is real and live — I called it during the audit: GFS (1 member)

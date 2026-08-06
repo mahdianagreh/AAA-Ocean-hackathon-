@@ -387,17 +387,63 @@ def list_reef_zones(include_geometry: bool = Query(True)):
 
 # ---------------------------------------------------------------------- events
 
+def _merged_events() -> list[dict]:
+    """The real 675-event catalogue, each row optionally carrying its
+    literature label/source on top of the real ranking columns.
+
+    Base is `da.event_catalogue()` (exhaustive, real ranking) rather than
+    `da.events()` (5-event markdown parse) -- Phase 4 found the API was never
+    serving the catalogue at all. A literature-documented event (e.g.
+    AQ-2016-10-28) keeps its human-readable label; every event keeps `rank`.
+    """
+    catalogue = da.event_catalogue()
+    literature = {e["event_id"]: e for e in da.events()}
+    if not catalogue:
+        # No catalogue artifact on disk -- serve the literature list alone
+        # rather than nothing, but say every row is missing its ranking.
+        return list(literature.values())
+
+    merged = []
+    for row in catalogue:
+        # Built field-by-field, not `**row` + overrides: `catalogue` is the
+        # lru_cache'd list itself, and mutating a shared cached dict in place
+        # (e.g. via .pop()) would corrupt it for every later request.
+        lit = literature.get(row["event_id"])
+        merged.append({
+            "event_id": row["event_id"],
+            "start": row["date"],
+            "end": None,
+            "label": lit["label"] if lit else None,
+            "source": lit["source"] if lit else "data/processed/events/events.parquet",
+            "caveats": [],
+            "rank": row["rank"],
+            "max_daily_mm": row["max_daily_mm"],
+            "mean_daily_mm": row["mean_daily_mm"],
+            "max_anomaly_ratio": row["max_anomaly_ratio"],
+            "catchments_exceeding_p99": row["catchments_exceeding_p99"],
+            "wettest_catchment": row["wettest_catchment"],
+            "storm_days": row["storm_days"],
+            "is_exhaustive": row["is_exhaustive"],
+        })
+    # A literature event absent from the catalogue would be a real gap worth
+    # seeing, not a silent drop -- append it with its ranking fields at their
+    # EventOut default of None, never fabricated.
+    catalogued_ids = {r["event_id"] for r in catalogue}
+    merged.extend(lit for eid, lit in literature.items() if eid not in catalogued_ids)
+    return merged
+
+
 @app.get(f"{PREFIX}/events", response_model=list[EventOut], tags=["events"])
 def list_events():
-    evs = da.events()
+    evs = _merged_events()
     if not evs:
-        raise HTTPException(503, "docs/event_dates.md is not present")
+        raise HTTPException(503, "no event catalogue or docs/event_dates.md present")
     return [EventOut(**e) for e in evs]
 
 
 @app.get(f"{PREFIX}/events/{{event_id}}", response_model=EventOut, tags=["events"])
 def get_event(event_id: str):
-    for e in da.events():
+    for e in _merged_events():
         if e["event_id"] == event_id:
             return EventOut(**e)
     raise HTTPException(404, f"unknown event {event_id}")
@@ -947,9 +993,32 @@ def exposure_calculate(req: ExposureRequest):
                     f"30 mm/3h for {cid} was used for intensity")
                 run_model_versions["runoff_model"] = pred.model_version
 
-    # Confidence: coarse global currents and a substituted bathymetry product are
-    # both real reasons not to claim high confidence.
-    confidence_adjustment = 0.6
+    # Confidence: real per-catchment GEFS ensemble agreement (Nizar's forecast
+    # pipeline, via Karam's own p99 climatology as the exceedance threshold) times
+    # a fixed qualitative penalty for the currents/bathymetry substitutions that
+    # apply regardless of forecast skill.
+    #
+    # agreement = 1 at a unanimous ensemble (all 30 members on the same side of the
+    # threshold -- most trustworthy), 0 at an exact 50/50 split (least trustworthy).
+    # This mapping is a proposal, not a settled formula -- confirm with Nizar before
+    # treating it as final; he owns whether "confidence" should mean ensemble
+    # agreement or something else entirely.
+    exceedance = da.gefs_exceedance_for(cid) if cid else None
+    if exceedance is not None:
+        agreement = abs(exceedance["exceedance_prob"] - 0.5) * 2.0
+        confidence_adjustment = agreement * 0.8  # 0.8: currents/bathymetry penalty
+        confidence_adjustment_reason = (
+            f"{exceedance['members_exceeding']}/{exceedance['members_total']} GEFS "
+            f"members exceed the {exceedance['threshold_mm']:.2f} mm/24h threshold "
+            f"({exceedance['threshold_source']}) -> agreement {agreement:.2f}, "
+            "x0.8 for coarse global current model + GMRT-substituted bathymetry"
+        )
+    else:
+        confidence_adjustment = 0.6
+        confidence_adjustment_reason = (
+            "PLACEHOLDER 0.6 -- no GEFS exceedance row for "
+            f"{cid or 'this catchment'} in the cached forecast snapshot"
+        )
     confidence = engine.confidence_label(confidence_adjustment)
 
     # Goes through plume_simulate() (and its cache), not a private call of its own
@@ -988,8 +1057,12 @@ def exposure_calculate(req: ExposureRequest):
 
         summary["formula_terms"].update({
             "relative_sediment_intensity_source": intensity_source,
-            "confidence_adjustment_reason":
-                "coarse global current model + GMRT-substituted bathymetry",
+            "confidence_adjustment_reason": confidence_adjustment_reason,
+            # Components, not just the composed sentence -- a sentence can't be
+            # translated cleanly, components can (docs/OPEN-ISSUES.md #4).
+            "confidence_members_exceeding": exceedance["members_exceeding"] if exceedance else None,
+            "confidence_members_total": exceedance["members_total"] if exceedance else None,
+            "confidence_threshold_value_mm": exceedance["threshold_mm"] if exceedance else None,
             "plume_source": "SYNTHETIC_STUB" if plume.is_stub else "REAL_PARTICLE_ENGINE",
             "model_versions": run_model_versions,
         })
