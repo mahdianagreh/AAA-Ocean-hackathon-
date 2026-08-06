@@ -9,6 +9,30 @@
 > `gefs_exceedance_for`, `main.py`'s `exposure_calculate()`) are both small if it needs
 > to change. Components (`confidence_members_exceeding/_total/_threshold_value_mm`) are
 > now on `formula_terms`, not just a sentence, per your own item 2 ask.
+>
+> **Also ran your item 4 (Supabase re-verification) — got credentials working, here's
+> what's actually there.** `events`/`catchments`/`reef_zones`/`outlets`: zero orphans,
+> zero mismatches, all 675/5/8/5 rows match the on-disk parquet/gpkg exactly (checked
+> row-by-row, not just counts — e.g. the demo event's `rank: 13` in
+> `source_references` matches today's real value). That side is clean.
+>
+> **`model_versions` and `reef_exposures` ARE stale, confirmed, not just suspected.**
+> `model_versions` has exactly one row: `runoff_weighted_gbm_2194b48_...` (trained Aug 3)
+> — the currently-serving model is `runoff_weighted_gbm_482c7f9_...` (Aug 5, after the
+> sediment-anchor merge). Two newer versions never got registered. `reef_exposures` has
+> exactly one row, `confidence: 0.6` — the literal I just replaced — from a run before
+> today's fix. `runoff_predictions` is empty, 0 rows.
+>
+> **The demo does not write to Supabase at all** — confirmed, not inferred: I ran dozens
+> of `/exposure/calculate` calls against the live container throughout this whole phase
+> (verifying the confidence fix, the events catalogue, etc.) and none of them added a row
+> here. `exposure.store` writes local SQLite by design (its own docstring says why). If
+> the demo or a judge-facing view ever reads exposure/model history from Supabase instead
+> of the API/SQLite, it will show Aug 3 numbers next to a live API showing Aug 6 ones —
+> exactly the mismatch your file's item 4 was worried about. Either wire the live path to
+> also register in Supabase, or make sure nothing demo-facing reads from these three
+> tables. (Credentials: pooler URL now in `backend/.env`, gitignored, not committed —
+> the direct `db.<ref>.supabase.co` host is IPv6-only here and just hangs.)
 
 Read [`00-phase4-plan.md`](00-phase4-plan.md) first.
 

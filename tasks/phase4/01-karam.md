@@ -139,12 +139,16 @@ committed.
 Every phase so far has had a seam bug that produced plausible output with no error. Before
 calling any ✅ row in the plan actually done:
 
-- [ ] Re-run your Phase 3 check: events, feature rows and reef zones in whatever the
-      current serving layer is (API or DB) must match the parquet/gpkg exactly. If Nizar's
-      persistence layer picked up new rows this phase, re-verify zero orphans.
-- [ ] Watch specifically for the ranking-column question in item 1 and the
-      exposure-vs-rainfall question in item 3 — both are exactly the kind of "two people
-      building against two different definitions of the same word" seam that's bitten this
+- [x] Re-ran it against the real Supabase DB (got credentials working, `backend/.env`).
+      `events`/`catchments`/`reef_zones`/`outlets`: 675/5/8/5, zero orphans, zero
+      mismatches, checked row-by-row not just counts. **`model_versions` and
+      `reef_exposures` ARE stale** — one row each, predating the current deployed model
+      and today's confidence fix; `runoff_predictions` is empty. The demo confirmed NOT
+      writing to Supabase at all (local SQLite by design) — full finding and the "which
+      store does the demo read" question handed to Nizar (his file, updated).
+- [x] Ranking-column question (item 1) and exposure-vs-rainfall question (item 3) both
+      decided and stated in writing above — exactly the kind of "two people building
+      against two different definitions of the same word" seam that's bitten this
       project three times already (`sediment_class`, `position_confidence`,
       `predicted_runoff_m3`).
 
