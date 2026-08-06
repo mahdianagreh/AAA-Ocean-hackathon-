@@ -1248,3 +1248,67 @@ between zones while looking like a presentation detail.
 
 Bugs 6–9 were found **by writing the test or building the artifact**, not by
 reading the code — the same pattern as Phase 1's bugs 4 and 5.
+
+---
+
+## 9. 3D Journey terrain mesh — Abd (2026-08-07)
+
+Feature 14's 3D scene first shipped with a banded fill-extrusion relief (11
+disjoint elevation/depth bands, sqrt-scaled height — see
+`tasks/phase4/05-abd.md` §1a). The team's 3D Journey implementation plan
+(`mahdi-3D-implementation-plan.md`) called for real, continuous terrain
+instead. This entry is the derived product that replaced it.
+
+| | |
+|---|---|
+| Product | `data/processed/dem/terrain_merged_utm36n.tif` |
+| Built from | `dem_utm36n.tif` (Copernicus DEM GLO-30, this file's own Terrain & hydrology entry) for land, `depth_utm36n.tif` (GMRT bathymetry, §5 Bathymetry) for sea |
+| Seam | `coastline.gpkg`'s `water` layer — a polygon mask, not a value threshold. GLO-30 encodes open sea as noisy near-zero (the same "sea = 0.0" gotcha `03_dem_fetch.py` already warns about), so thresholding on elevation would misclassify real low-lying land as sea and vice versa |
+| Grid | The DEM's own 30 m grid, EPSG:32636 — the larger of the two source extents, needed for the inland wadi corridor the bathymetry alone doesn't cover |
+| Range | -926 m to +1,847 m over 16,313,302 valid cells |
+| Script | `scripts/merge_terrain_bathymetry.py` |
+| **Role** | Terrain source for the 3D Journey's `map.setTerrain()` — the only place in this project that renders elevation as a real continuous mesh rather than contoured bands |
+
+### Terrain-RGB tile pyramid
+
+| | |
+|---|---|
+| Product | `frontend/public/terrain/{z}/{x}/{y}.png`, zoom 7-12, loose PNGs (not `.mbtiles` — that needs a tile-serving process this project's static offline pack does not have) |
+| Encoding | Standard Mapbox Terrain-RGB (`base=-10000.0, interval=0.1`) — `rio_rgbify.encoders.data_to_rgb` reused directly for the encoding math, `mercantile` for the tile grid, both wrapped by a from-scratch tiler since `rio rgbify`'s own CLI only writes `.mbtiles` |
+| Coverage | 350 real tiles written (118 with a small edge-of-data gap filled from nearest real data, 17 skipped as entirely outside the DEM/bathymetry extent), 20,626 KB total |
+| Script | `scripts/tile_terrain_rgb.py` |
+| **Role** | MapLibre `raster-dem` source, consumed by `frontend/src/journey/layers/terrain.ts` |
+
+**Confirmed, not assumed:** MapLibre's terrain mode adds the real terrain
+elevation at a feature's own centroid to both `fill-extrusion-base` and
+`fill-extrusion-height` — read directly out of the installed `maplibre-gl`
+6.1.0 bundle's fill-extrusion vertex shader (`base_terrain3d_offset` /
+`height_terrain3d_offset` in `maplibre-gl-dev.mjs`), not inferred from
+on-screen behaviour. That is why `frontend/src/journey/layers/{buildings,reef,plume}.ts`
+could drop their old stacked, sqrt-scaled height budget (`BUILDINGS_BASE_M`,
+`REEF_BASE_M`, `PLUME_BASE_M`, etc., all removed from `constants.ts`) once
+this terrain shipped — `fill-extrusion-base: 0` is now the real ground or
+seafloor at that feature's position, not an abstract zero.
+
+### Esri World Imagery — a second, browser-facing use
+
+This file's existing "Esri World Imagery" entry (above, under "Terrain &
+hydrology — Mahdi") notes its licence as "verification and internal review
+only, not redistribution," written for `scripts/07_outlet_imagery_check.py`'s
+one-off QA use. The 3D Journey drapes the *same* underlying service
+(`cx.providers.Esri.WorldImagery`, the standard public
+`server.arcgisonline.com` World Imagery REST tile service — confirmed by
+reading `scripts/fetch_basemap_raster.py`'s own provider call, not assumed to
+match) directly onto the terrain mesh as a MapLibre `image` source — a step
+further than `docs/plume_imagery_decision.md`'s already-shipped 2D case,
+which composites the same imagery server-side into a new rendered PNG rather
+than serving the source file to the browser as-is.
+
+Flagged to the project owner before wiring it in, since these two existing
+docs disagree with each other and it isn't a call to make silently.
+**Decision 2026-08-07: proceed, attributed** — the same public,
+attribution-licensed tile service already shipped in the 2D map's production
+output, with the same attribution string (`Esri, Maxar, Earthstar
+Geographics, and the GIS User Community`) carried through in the 3D scene's
+attribution control (`frontend/src/journey/Journey3D.tsx`). Revisit if the
+stricter reading turns out to be the correct one for this service tier.

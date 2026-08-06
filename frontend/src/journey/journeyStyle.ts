@@ -1,6 +1,6 @@
 import type { StyleSpecification } from 'maplibre-gl';
 import { palette, type ThemeName } from '../design/palette.generated';
-import { reliefFragment } from './layers/relief';
+import { terrainSourceFragment } from './layers/terrain';
 import { buildingsFragment } from './layers/buildings';
 import { reefFragment } from './layers/reef';
 import { plumeFragment } from './layers/plume';
@@ -8,17 +8,20 @@ import { rainFragment } from './layers/rain';
 import { runoffFragment } from './layers/runoff';
 
 /** The 3D Journey's own style, composed from one fragment per concern
- *  (`layers/relief.ts`, `buildings.ts`, `reef.ts`, `plume.ts`, `rain.ts`,
+ *  (`layers/terrain.ts`, `buildings.ts`, `reef.ts`, `plume.ts`, `rain.ts`,
  *  `runoff.ts`) rather than one monolithic source/layer list — each fragment
  *  owns its own real data source and paint logic, and this file only decides
  *  draw order.
  *
- *  Every extruded layer is real, already-committed data — no mesh, no
- *  generated imagery, no synthetic terrain tile. See each layer module's own
- *  docstring for its specific source and the honesty constraints that apply
- *  to it (sea depth drawn as upward relief, plume height as a real probability
- *  level times a stated constant, building height real-or-documented-default,
- *  runoff/rain as real geography with a stylised temporal treatment).
+ *  Terrain is real, continuous 3D relief (`layers/terrain.ts`'s baked
+ *  Terrain-RGB mesh — real Copernicus DEM + real bathymetry, merged), applied
+ *  outside the style tree via `map.setTerrain()` once this style has loaded
+ *  (see Journey3D.tsx) — the source is declared here, the terrain *effect* is
+ *  not a style-spec layer. Everything else (buildings, reef, plume) is real
+ *  data draped or extruded relative to that real terrain surface, not a
+ *  second, disjoint relief system — no mesh, no generated imagery, no
+ *  synthetic terrain tile. See each layer module's own docstring for its
+ *  specific source and honesty constraints.
  */
 
 const url = (name: string) => `${import.meta.env.BASE_URL}basemap/${name}.geojson`;
@@ -27,7 +30,7 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
   const c = palette[theme];
   const isDark = theme === 'dark';
 
-  const relief = reliefFragment(c, isDark);
+  const terrain = terrainSourceFragment();
   const buildings = buildingsFragment(c);
   const reef = reefFragment(c);
   const plume = plumeFragment();
@@ -38,9 +41,10 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
     version: 8,
     name: 'ReefShield 3D Journey',
     projection: { type: 'mercator' },
+    sky: { 'sky-color': isDark ? '#020a0d' : '#bfe3ea', 'horizon-color': isDark ? '#0c2327' : c.surface_2 },
     sources: {
       outlets: { type: 'geojson', data: url('outlets') },
-      ...relief.sources,
+      ...terrain.sources,
       ...runoff.sources,
       ...buildings.sources,
       ...reef.sources,
@@ -49,7 +53,20 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
     },
     layers: [
       { id: 'bg', type: 'background', paint: { 'background-color': isDark ? '#020a0d' : c.canvas } },
-      ...relief.layers,
+      {
+        id: 'terrain-hillshade',
+        type: 'hillshade',
+        source: 'terrain',
+        paint: {
+          // Neutral, not land/sea-tinted: the real Esri imagery drape
+          // (added in Journey3D.tsx once its async corners resolve) now
+          // carries true colour, so hillshade's only job left is relief
+          // *shading* — a colour cast here would discolour a real photo.
+          'hillshade-shadow-color': isDark ? '#05070a' : '#14181a',
+          'hillshade-highlight-color': isDark ? '#3d434a' : '#fdfbf3',
+          'hillshade-exaggeration': 0.45,
+        },
+      },
       ...runoff.layers,
       ...buildings.layers,
       ...reef.layers,

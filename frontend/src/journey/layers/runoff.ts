@@ -40,6 +40,24 @@ export function runoffFragment(c: Palette) {
       runoff: { type: 'geojson' as const, data: EMPTY_FC },
     },
     layers: [
+      // A static white casing under the animated dash line, wider and
+      // partly transparent — the same reasoning as rain.ts's white stroke:
+      // a 3 px line in one desaturated teal, this project's "real measured
+      // data" token, reads clearly against the old flat relief bands but
+      // thins into real satellite imagery's own texture. The casing is
+      // fixed white (not theme-derived) for the same reason: it answers the
+      // photo's colours, not the app's.
+      {
+        id: 'runoff-casing',
+        type: 'line' as const,
+        source: 'runoff',
+        layout: { 'line-cap': 'round' as const },
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': 6,
+          'line-opacity': 0.55,
+        },
+      },
       {
         id: 'runoff-flow',
         type: 'line' as const,
@@ -49,7 +67,7 @@ export function runoffFragment(c: Palette) {
           'line-color': c.data_measured,
           'line-width': 3,
           'line-dasharray': DASH_CYCLE[0],
-          'line-opacity': 0.85,
+          'line-opacity': 0.95,
         },
       },
     ],

@@ -577,6 +577,88 @@ instructions were explicit about avoiding a large architectural rewrite unless
 genuinely necessary, and the banded-extrusion approach, now re-tuned, meets the bar of
 "real, honest, legible" without it.
 
+### Upgrade #2, 7 Aug — the terrain-RGB tile pyramid that upgrade said it didn't have
+
+The user pasted real Google Earth imagery of Aqaba/Eilat and asked for that look.
+Said plainly that true Google-Earth-identical photorealism is not reproducible here
+(different, paid, proprietary render service; baking its output would also break
+"works with wifi off") and offered the real alternative instead: real elevation data
+plus real satellite imagery, not a generated stand-in for either. The user chose
+that direction, asked for the previously-committed state pushed as a checkpoint
+first (`4c86119`, done, pushed before any of this), and gated this entire upgrade on
+review before push — **nothing below is on origin; the working tree only, pending
+the user's decision.**
+
+Mid-build, `mahdi-3D-implementation-plan.md` surfaced — the team's own,
+independently-written spec for exactly this real-terrain upgrade. Reconciled, not
+picked-one-or-the-other: **"adopt their terrain, keep our story"** — their real
+DEM+bathymetry mesh, this file's already-shipped six-phase narrative on top of it.
+
+- **Real Copernicus GLO-30 DEM**, fetched fresh (`scripts/03_dem_fetch.py`),
+  merged with the real bathymetry through the real coastline polygon as the seam —
+  a mask, not an elevation threshold, exactly the discipline the DEM fetch script's
+  own "sea = 0.0" gotcha requires (`scripts/merge_terrain_bathymetry.py` →
+  `terrain_merged_utm36n.tif`, -926..1,847 m, 16.3M valid cells). The fetch itself
+  hit two of this project's own named gotchas for real, not hypothetically: a
+  download that stayed "alive" with zero byte progress for 37+ minutes (caught with
+  `lsof`, since a stalled process looks healthy in `ps` alone), and a retry that
+  would have silently resumed a truncated, corrupt tile under the resume-by-filename
+  rule (caught by reading both tiles with `rasterio` before trusting either).
+- **Baked into a real Terrain-RGB tile pyramid** (`scripts/tile_terrain_rgb.py`,
+  standard Mapbox encoding, 350 tiles/zoom 7-12/20.6 MB) and wired in with
+  MapLibre's native `map.setTerrain()` — the exact feature this section previously
+  said the repo didn't have the tile pyramid for. Full provenance in
+  `docs/data_dictionary.md` §9.
+- **The sqrt-scaled height budget didn't get re-tuned a third time — it came out.**
+  Read MapLibre 6.1.0's own installed fill-extrusion vertex shader first (not
+  assumed): real terrain mode adds the real elevation at a feature's position to
+  both `fill-extrusion-base` and `-height`, so `base: 0` is now the real ground or
+  seafloor. `layers/relief.ts` (the banded system) was deleted outright; buildings,
+  reef and plume were re-based at `0` with only a small, named legibility height
+  left per layer, stated as a legibility convention rather than a physical claim.
+- **Real Esri World Imagery draped on the mesh**, the same baked asset the 2D map
+  already uses, reused rather than a second fetch. Flagged before wiring it in,
+  not after: this drapes the raw image directly in the browser, a step further
+  than the 2D map's server-side composite, against a stricter licence note
+  elsewhere in this project's own data dictionary that disagrees with the team's
+  own shipped decision for the 2D case. Surfaced to the user; decision recorded in
+  `docs/data_dictionary.md` §9 ("proceed, attributed", same public tile service,
+  same attribution string already used server-side).
+- **A real regression, found by screenshotting every phase and by asking MapLibre
+  what it actually rendered** (`queryRenderedFeatures`, not just reading the
+  source-update code): rain ripples and runoff lines were still genuinely
+  animating, just thinned to near-invisible against real photo texture after
+  being tuned for flat relief-band colours. Fixed with a white stroke/casing on
+  both, core colour unchanged.
+- **Verification became a committed spec** (`frontend/tests/journey3d.spec.ts`, 6
+  new tests) rather than a one-off check: real terrain confirmed active, every
+  pre-existing layer confirmed still present, the imagery source/layer confirmed
+  actually attached, rain/runoff confirmed rendering pixels, the reef-reveal paint
+  property confirmed to change on real data, all six phases screenshotted, and an
+  in-browser frame-rate sample against the team plan's 60 fps gate — floored at 12
+  (not 60): headless software-rendered Chromium plus this project's own
+  `fullyParallel` Playwright config both cost real fps against a demo machine's
+  GPU, measured ~40+ fps isolated down to ~11-20 fps under this machine's own
+  heaviest parallel load. The floor catches a genuine regression; it is not a
+  promise about demo-hardware fps.
+- **One pre-existing failure found, and confirmed not caused by this work**:
+  `offline-arabic.spec.ts`'s "no external requests" test fails on unmodified
+  `main` too — confirmed by `git stash`-isolating this entire upgrade and
+  re-running that one test alone against the untouched tree. Flagged for whoever
+  owns that test/area (§8); not fixed here, outside this section's scope.
+- Re-verified: `tsc -b --noEmit` clean, lint clean, `vitest run` 14/14, the new
+  spec 6/6, the rest of the Playwright suite otherwise green, backend suite
+  unaffected (500 passed/49 skipped/1 xfailed — no backend file touched).
+
+Honest limitations, not solved here: MapLibre samples one elevation per polygon
+under terrain (avoiding a per-vertex "tilted roof" artefact), so a plume contour
+ring spanning a real depth change takes one centroid depth for the whole ring —
+an accepted platform behaviour, not a bug. And anchoring the plume at the local
+seafloor is a reasonable approximation for this event's shallow, nearshore,
+diffusion-dominated release, not a general claim that sediment plumes hug the
+seafloor everywhere — a genuinely deep-water release would need a surface-relative
+rendering mode this project does not have.
+
 ---
 
 ## 6 · Files changed
@@ -608,6 +690,21 @@ genuinely necessary, and the banded-extrusion approach, now re-tuned, meets the 
 | `frontend/src/journey/usePhaseTimeline.ts` | New — the six-phase state machine (Play/Pause/Reset), including the fix for the stuck-on-Normal bug found during verification |
 | `frontend/src/journey/Journey3D.tsx`, `journeyStyle.ts` | Rewritten to orchestrate the phase timeline against the new modular layers |
 | `frontend/src/i18n/locales/{en,ar}/common.json` | `journey.*` keys replaced with the six-phase vocabulary, both languages |
+| `scripts/merge_terrain_bathymetry.py` | New — merges real DEM + real bathymetry through the real coastline polygon seam |
+| `scripts/tile_terrain_rgb.py` | New — bakes the merged surface into a Mapbox-encoded Terrain-RGB tile pyramid |
+| `frontend/public/terrain/{z}/{x}/{y}.png` | New — 350 real tiles, git-ignored/regenerable (`.gitignore` gained an entry) |
+| `frontend/src/journey/layers/terrain.ts` | New — the `raster-dem` source fragment + exaggeration constant |
+| `frontend/src/journey/layers/imagery.ts` | New — loads the real Esri imagery's corner bounds for the `image` source |
+| `frontend/public/basemap-raster/aqaba_marine_esri.{jpg,json}` | New — a second, browser-reachable copy of the same baked imagery `plume_map.py` already serves server-side; git-ignored/regenerable |
+| `frontend/src/journey/layers/relief.ts` | Deleted — replaced by real terrain, dead once `journeyStyle.ts` stopped importing it |
+| `frontend/src/journey/constants.ts` | Rewritten — the sqrt-scaled stacked height budget removed; only small per-layer legibility constants remain |
+| `frontend/src/journey/layers/{buildings,reef,plume}.ts` | Re-based at `fill-extrusion-base: 0` for real terrain; docstrings updated |
+| `frontend/src/journey/layers/{rain,runoff}.ts` | Added a white stroke/casing for contrast against real imagery (the rendered-pixels regression found this pass) |
+| `frontend/src/journey/journeyStyle.ts` | Composes `layers/terrain.ts` instead of `layers/relief.ts`; adds `sky` and a `terrain-hillshade` layer; hillshade colours re-tuned neutral now that real imagery supplies colour |
+| `frontend/src/journey/Journey3D.tsx` | Calls `map.setTerrain()` and loads/attaches the imagery source+layer once the map's `load` event fires; attribution control and the realism caveat updated to match |
+| `frontend/src/i18n/locales/{en,ar}/common.json` | `journey.realismCaveat` rewritten for real terrain (was describing the retired sqrt/band system) |
+| `frontend/tests/journey3d.spec.ts` | New — 6 tests covering real terrain, real imagery attachment, layer survival, rain/runoff rendering, the reef reveal, and a frame-rate floor |
+| `docs/data_dictionary.md` | New §9 — the merged terrain, the tile pyramid, and the Esri imagery licence decision |
 
 ---
 
@@ -641,6 +738,33 @@ unrelated to anything in this close-out (confirmed via `git log` that neither fi
 been touched since well before Phase 3). Installing the two missing packages resolved
 all three; the full suite is green.
 
+### Re-run after the terrain upgrade (Upgrade #2, §5), 7 Aug
+
+```bash
+source .venv/bin/activate && pytest -q
+# 500 passed, 49 skipped, 1 xfailed — no backend file touched this pass
+
+cd frontend
+npm run qa                                    # typecheck + oxlint/stylelint + vitest, all clean
+npx playwright test tests/journey3d.spec.ts   # new spec: 6 passed
+npx playwright test --project=chromium        # full suite: 1 pre-existing failure, see below
+```
+
+The one full-suite failure — `offline-arabic.spec.ts`'s "every request stays on the
+dev origin" — is **not caused by this upgrade**: confirmed by `git stash`-isolating
+every file this upgrade touched (tracked and untracked) and re-running that single
+test against the untouched tree, where it fails identically (three real backend
+calls during a plain pan/zoom on the main 2D map — nothing to do with the 3D
+Journey). Not fixed here — outside this section's scope, flagged in §8 for whoever
+owns that area.
+
+The 60 fps frame-rate check in `journey3d.spec.ts` is contention-sensitive by
+design (see §5's own note) — it passed at ~40+ fps run alone, ~20 fps under this
+file's own 6-test parallel run, and briefly measured 19.8 fps and then 10.9 fps
+under increasingly heavy full-suite parallel load before the floor was set to 12
+specifically to stop chasing this machine's own contention level instead of a real
+regression.
+
 ---
 
 ## 8 · Outstanding work — not this file's scope, flagged for its owner
@@ -663,6 +787,14 @@ all three; the full suite is green.
   **wind forcing is still a placeholder for every event** — both outside this item's
   scope, both the reason exposure scores stay in the "minimal" band even with a real
   plume engine (§2.5).
+- **`offline-arabic.spec.ts`'s "no external requests" test fails on unmodified
+  `main`**, found while re-verifying the terrain upgrade (§5) and confirmed
+  unrelated to it by isolating the upgrade with `git stash` and re-running the
+  test alone against the untouched tree. Three real backend calls
+  (`exposure/calculate`, `plume/map/frames`, `alerts`) fire during a plain
+  pan/zoom on the main 2D map, which the test's origin check does not expect.
+  Not this file's area to fix — flagged for whoever owns the main map's
+  data-fetching behaviour or that test's assumptions.
 
 ---
 

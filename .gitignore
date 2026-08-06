@@ -98,3 +98,14 @@ frontend/.env.local
 # honest rather than broken.
 data/processed/basemap/
 
+# Terrain-RGB tile pyramid for the 3D Journey (feature 14) -- derived from the real
+# merged DEM+bathymetry surface by scripts/tile_terrain_rgb.py, regenerable, not the
+# kind of small shared artefact this repo commits. Same "absent means degrade honestly,
+# not silently" rule as the basemap raster above.
+frontend/public/terrain/
+
+# Second, browser-reachable copy of the same baked Esri imagery data/processed/basemap/
+# already holds (see layers/imagery.ts) -- a `cp`, not a second fetch. Same reasoning:
+# derived, regenerable by scripts/fetch_basemap_raster.py, not committed.
+frontend/public/basemap-raster/
+

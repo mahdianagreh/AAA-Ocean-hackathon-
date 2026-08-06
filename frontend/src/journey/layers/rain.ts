@@ -17,7 +17,7 @@ import type { Palette } from '../constants';
  */
 
 export const RAIN_POOL_SIZE = 220;
-const RIPPLE_MAX_RADIUS_PX = 5;
+const RIPPLE_MAX_RADIUS_PX = 7;
 const RIPPLE_LIFETIME_MS = 1400;
 
 export interface RainSeed {
@@ -76,11 +76,18 @@ export function rainFragment(c: Palette) {
         source: 'rain',
         paint: {
           'circle-radius': ['get', 'radius'] as unknown as number,
-          'circle-opacity': ['*', ['get', 'opacity'], 0.55] as unknown as number,
+          'circle-opacity': ['*', ['get', 'opacity'], 0.75] as unknown as number,
           'circle-color': c.data_measured,
-          'circle-stroke-color': c.data_measured,
-          'circle-stroke-width': 1,
-          'circle-stroke-opacity': ['get', 'opacity'] as unknown as number,
+          // A white edge, not the fill colour again: real satellite imagery
+          // (layers/imagery.ts) is a busy, high-frequency backdrop compared to
+          // the flat relief bands this was first tuned against, and a same-
+          // colour stroke on a 1-2 px ripple disappeared into it. White is
+          // fixed rather than theme-derived because it is countering real
+          // photo content, not app chrome, so it doesn't shift with the app's
+          // own light/dark toggle.
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 1.5,
+          'circle-stroke-opacity': ['*', ['get', 'opacity'], 0.9] as unknown as number,
           'circle-pitch-alignment': 'map',
         },
       },
