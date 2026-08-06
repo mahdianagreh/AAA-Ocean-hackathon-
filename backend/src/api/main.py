@@ -67,6 +67,8 @@ from .schemas import (
     CatchmentOut,
     Caveat,
     DataSourceOut,
+    DiveSiteOut,
+    DriverOut,
     EventOut,
     ExplainRequest,
     ExplainResponse,
@@ -74,6 +76,8 @@ from .schemas import (
     ExposureResult,
     ExposureRun,
     HealthOut,
+    MooringMarker,
+    MooringOut,
     OutletOut,
     PlumeContour,
     PlumeRequest,
@@ -82,6 +86,7 @@ from .schemas import (
     ReefZoneOut,
     RunoffPrediction,
     RunoffRequest,
+    Value,
 )
 
 API_VERSION = "0.2.0"
@@ -449,6 +454,94 @@ def get_event(event_id: str):
     raise HTTPException(404, f"unknown event {event_id}")
 
 
+@app.get(f"{PREFIX}/events/{{event_id}}/mooring", response_model=MooringOut,
+         tags=["events"])
+def event_mooring(event_id: str):
+    """A thin read-through of the Kalman et al. (2025) mooring record — Phase 4,
+    Real Sensor Proof Overlay. Shape matches frontend/public/fixtures/event.json's
+    already-shipped `mooring` object field-for-field, so flipping fixture -> live
+    needs no frontend change.
+
+    404, not an empty/default object, when this event has no mooring record —
+    today that is every event except AQ-2016-10-28.
+    """
+    raw = da.mooring_for(event_id)
+    if raw is None:
+        raise HTTPException(404, f"no mooring record for {event_id}")
+
+    parsed = raw["_parsed"]
+    m = raw["magnitude"]
+    return MooringOut(
+        event_id=raw["event_id"],
+        source_citation=raw["source_citation"],
+        source_doi=raw["source_doi"],
+        source_file=raw["source_file"],
+        position=raw["position"],
+        markers=[
+            MooringMarker(key="turbidity_onset", t=parsed["onset"], provenance="converted"),
+            MooringMarker(key="turbidity_cleared", t=parsed["clear"], provenance="converted"),
+        ],
+        elevated_duration_hours=Value(
+            value=raw["timing_utc"]["elevated_duration_hours"], unit="h",
+            provenance="converted"),
+        peak_suspended_sediment=Value(
+            value=m["peak_suspended_sediment_g_l"], unit="g/L", provenance="reported"),
+        salinity_minimum=Value(
+            value=m["salinity_minimum_psu"], unit="PSU", provenance="reported"),
+        salinity_anomaly=Value(
+            value=m["salinity_anomaly_delta_psu"], unit="‰", provenance="reported",
+            uncertainty={"sigma": m["salinity_anomaly_sigma"]}),
+        sediment_mass_total=Value(
+            value=m["sediment_mass_total_t"], unit="t", provenance="reported"),
+        series_available=False,
+        caveats=[],
+    )
+
+
+#: Real coastal dive/wreck sites (Gorgon 1, Cedar Pride Shipwreck, King Abdullah
+#: reef, ...) measured 0-997 m from their nearest reef zone. Everything else
+#: tagged `kind: dive` in the source OSM extract is a Wadi Rum desert attraction
+#: (Barrah Canyon, sand dunes, petroglyphs) at 32,500 m or more — a 32x jump with
+#: nothing between the two clusters. 2,000 m is a round number inside that gap,
+#: not a fitted threshold; it exists to flag the mismatch, not to hide it.
+DIVE_SITE_IMPLAUSIBLE_DISTANCE_M = 2000.0
+
+
+@app.get(f"{PREFIX}/dive-sites", response_model=list[DiveSiteOut], tags=["geometry"])
+def list_dive_sites():
+    """Dive-site POIs joined to their nearest reef zone — Phase 4, feature B
+    (Dive Site Safety Status). Karam's 6 Aug handoff: `osm_id` is now a stable
+    join key in `places.geojson` (115/115 unique, confirmed against the source
+    OSM re-extract).
+
+    Returns the geometric join only — nearest_reef_zone_id and distance_m — not
+    a risk score. A "safety status" needs an event/outlet-scoped exposure result,
+    which this endpoint has no parameters for; the caller cross-references
+    nearest_reef_zone_id against whatever `/alerts` or `/exposure/calculate`
+    result it already has for the event it's showing, rather than this endpoint
+    re-deriving that per dive site.
+    """
+    out = []
+    for s in da.dive_sites_with_nearest_zone():
+        caveats = []
+        if s["distance_m"] is not None and s["distance_m"] > DIVE_SITE_IMPLAUSIBLE_DISTANCE_M:
+            caveats.append(Caveat(
+                field="nearest_reef_zone_id",
+                message=(
+                    f"{s['distance_m']:,.0f} m from the nearest reef zone. The "
+                    "source OSM category (\"kind: dive\") also carries Wadi Rum "
+                    "desert attractions alongside real coastal dive sites, and "
+                    "this POI is far enough inland that it is very unlikely to "
+                    "be an actual dive site — treat the join as unreliable for "
+                    "this one, not as a real safety association."
+                ),
+                severity="warning",
+                source="backend/src/api/data_access.py:dive_sites",
+            ))
+        out.append(DiveSiteOut(**s, caveats=caveats))
+    return out
+
+
 # -------------------------------------------------------------------- forecast
 
 @app.get(f"{PREFIX}/forecast/latest", tags=["forecast"])
@@ -585,6 +678,51 @@ def currents_agreement(
 
 # ---------------------------------------------------------------------- runoff
 
+#: Raw rainfall-depth features the `rainfall_multiplier` scenario knob scales.
+#: Deliberately excludes rain_over_p50/p90/p99 and rain_self_percentile — those are
+#: percentile ranks against the historical record, and "150% of the 90th percentile"
+#: is not a meaningful operation. Scaling only the raw-mm terms is a real, defensible
+#: perturbation; recomputing percentiles against a scaled value would be a second,
+#: much larger piece of work (re-deriving the historical distribution per request)
+#: that Phase 4 does not attempt.
+RAINFALL_MM_COLUMNS = ("precipitation_mm_day", "precip_prior_1d_mm",
+                       "precip_prior_3d_mm", "precip_prior_7d_mm")
+
+
+def _apply_rainfall_multiplier(row: dict, multiplier: float) -> dict:
+    if multiplier == 1.0:
+        return row
+    return {**row, **{c: row[c] * multiplier for c in RAINFALL_MM_COLUMNS
+                      if row.get(c) is not None}}
+
+
+def _squash_sediment_index(index, anchor_index, sediment_class) -> tuple[float, str]:
+    """The raw sediment index is unbounded; every caller that needs 0-1 squashes
+    it by ratio / (1 + ratio) against the anchor event — extracted so the two
+    call sites (exposure_calculate, runoff_predict) cannot silently drift onto
+    two different formulas for the same number.
+
+    NOT a linear ratio clamped at 1.0, which was the first attempt and was worse
+    than the zero it replaced: October 2016 is only 12th of 2,362 days by this
+    magnitude, so every storm at or above it pinned to exactly 1.000 and the term
+    stopped discriminating at all — three different events came back with an
+    identical sediment intensity. This map is monotonic, never saturates, and
+    puts the one documented major flood at 0.5 — the honest shape for a single
+    calibration point, which has nothing justifying a linear extrapolation far
+    above it.
+    """
+    from models.sediment_proxy import ANCHOR_EVENT
+
+    ratio = max(0.0, float(index) / float(anchor_index))
+    intensity = ratio / (1.0 + ratio)
+    source = (
+        f"sediment_index {float(index):,.0f} = {ratio:.2f}x {ANCHOR_EVENT}, "
+        f"squashed by r/(1+r) to {intensity:.3f} (class {sediment_class}); "
+        "anchor maps to 0.500"
+    )
+    return intensity, source
+
+
 @app.post(f"{PREFIX}/runoff/predict", response_model=RunoffPrediction, tags=["model"])
 def runoff_predict(req: RunoffRequest):
     """Real model when a trained artifact is registered; stub otherwise.
@@ -601,10 +739,25 @@ def runoff_predict(req: RunoffRequest):
     if not any(c["catchment_id"] == req.catchment_id for c in da.catchments()):
         raise HTTPException(404, f"unknown catchment {req.catchment_id}")
 
+    # Prefer a real feature row (da.training_row) over the request's own fields.
+    #
+    # Mahdi found (docs/HANDOFF_pulga_2026-08-06.md) that predict_one() on the bare
+    # request dict — catchment_id/rainfall_mm_3h/antecedent_index, none of which
+    # match the model's 20 real feature names — still runs cleanly and returns a
+    # CONFIDENT-LOOKING, FIXED result: identical runoff_probability, identical
+    # feature_attributions, regardless of catchment or event. TreeSHAP does not
+    # fail on an all-NaN row, so `feature_attributions_status` stays None in this
+    # case too — the model cannot self-report that this happened. It has to be
+    # caught here, not trusted from predict_one()'s output.
+    training_row = da.training_row(req.event_id, req.catchment_id) if req.event_id else None
+    base_features = training_row if training_row is not None else req.model_dump(exclude_none=True)
+    features = _apply_rainfall_multiplier(base_features, req.rainfall_multiplier)
+
     try:
         from models.runoff_model import predict_one
 
-        real = predict_one(req.model_dump(exclude_none=True))
+        real = predict_one(
+            features, transmission_loss_override=req.transmission_loss_override)
     except (FileNotFoundError, ImportError, ModuleNotFoundError):
         real = None            # nothing registered yet — fall through to the stub
     except KeyError as exc:    # unknown version id explicitly requested
@@ -632,13 +785,61 @@ def runoff_predict(req: RunoffRequest):
         # report, so the field is None and reads as a gap. `sediment_index` is the
         # sediment measure and is unanchored — comparable between requests, no absolute
         # meaning — which `sediment_basis` states and which travels as a caveat.
+        # The raw index is unbounded (e.g. 145,434 for the anchor storm) — this
+        # schema's relative_sediment_intensity is ge=0/le=1, and constructing
+        # RunoffPrediction below with the raw index would raise a
+        # ValidationError. This was unreachable before Phase 4's training_row
+        # preference: every prior caller sent a bare request, which produces a
+        # small, already-in-range sediment_index (see the honesty branch
+        # above) rather than a real anchored one. Squash exactly the way
+        # exposure_calculate does — same formula, one function, so the two
+        # cannot silently drift onto different numbers for the same input.
         sediment_index = real.get("sediment_index")
+        anchor_index = real.get("anchor_index_for_normalisation")
+        if sediment_index is not None and anchor_index:
+            sediment_intensity, sediment_intensity_source = _squash_sediment_index(
+                sediment_index, anchor_index, real.get("sediment_class"))
+        else:
+            sediment_intensity = float(real.get("runoff_probability", 0.0))
+            sediment_intensity_source = str(real.get("sediment_basis", "unanchored"))
+        minimal_request_caveats = []
+        if training_row is not None:
+            # Renamed at this boundary to match frontend/src/api/predictions.ts's
+            # PredictionDriver{key, contribution, value} exactly — the model's own
+            # names (`feature`, `shap`) never reach the response. See schemas.DriverOut.
+            drivers = [
+                DriverOut(key=d["feature"], contribution=d["shap"], value=d["value"])
+                for d in (real.get("feature_attributions") or [])
+            ]
+            feature_attributions_status = real.get("feature_attributions_status")
+        else:
+            # See the comment above `training_row` for why this branch exists:
+            # a bare request produces a fixed, catchment/event-independent result
+            # that predict_one() itself cannot flag. Suppressed here rather than
+            # returned as if real — a plausible-looking chart of drivers that do
+            # not depend on the input is worse than no chart.
+            drivers = []
+            feature_attributions_status = (
+                "not meaningful — no training-set feature row for this request "
+                f"(event_id={req.event_id!r}); only rainfall_mm_3h/antecedent_index "
+                "were supplied, not the 20 features the model reads, so this "
+                "result would be identical across every catchment and event"
+            )
+            minimal_request_caveats = [Caveat(
+                field="runoff_probability",
+                message="No event_id matched a real training-set feature row, so "
+                        "runoff_probability, sediment_index and every other "
+                        "real-path field here were computed from a mostly-absent "
+                        "feature vector — the same fixed result regardless of "
+                        "catchment or event. Supply event_id for a date/catchment "
+                        "in the training set for a meaningful prediction.",
+                severity="critical",
+                source="docs/HANDOFF_pulga_2026-08-06.md",
+            )]
         return RunoffPrediction(
             catchment_id=req.catchment_id,
             predicted_runoff_m3=None,
-            relative_sediment_intensity=(
-                float(sediment_index) if sediment_index is not None
-                else float(real.get("runoff_probability", 0.0))),
+            relative_sediment_intensity=sediment_intensity,
             runoff_probability=real.get("runoff_probability"),
             severity=real.get("severity"),
             confidence=real.get("confidence"),
@@ -649,12 +850,17 @@ def runoff_predict(req: RunoffRequest):
                             if real.get("sediment_class") is not None else None),
             model_version=str(real.get("model_version_id", "unregistered")),
             is_stub=False,
+            drivers=drivers,
+            feature_attributions_status=feature_attributions_status,
+            rainfall_multiplier=req.rainfall_multiplier,
+            transmission_loss=real.get("transmission_loss"),
             provenance=[
                 Provenance(kind="derived",
                            detail=f"Mahdi's runoff model {real.get('model_version_id')}"),
                 Provenance(kind="source", detail=str(real.get("basis", "unknown"))),
             ],
             caveats=(cav.landcover_epoch() + cav.soil_is_modelled()
+                     + minimal_request_caveats
                      + [Caveat(field="predicted_runoff_m3",
                                message="Component A predicts runoff OCCURRENCE, not "
                                        "volume. No m3 figure exists; this is a gap, "
@@ -662,7 +868,7 @@ def runoff_predict(req: RunoffRequest):
                                severity="critical",
                                source="backend/src/models/runoff_model.py"),
                         Caveat(field="relative_sediment_intensity",
-                               message=str(real.get("sediment_basis", "unanchored")),
+                               message=sediment_intensity_source,
                                severity="warning",
                                source="backend/src/models/sediment_proxy.py")]),
         )
@@ -1002,9 +1208,9 @@ def plume_map_frames(event_id: str, outlet_id: str,
 def exposure_calculate(req: ExposureRequest):
     """Component D. Real formula, real EPSG:32636 geometry, real formula_terms.
 
-    The plume input is currently the synthetic stub, and every response says so.
-    The engine itself is not a stub — swapping the contour source does not change
-    a line of it.
+    The plume input is the real particle engine (see `_real_contours`) — the
+    exposure formula itself was written before that landed and never needed a
+    change; swapping the contour source did not touch a line of it.
     """
     outlet = next((o for o in da.outlets() if o["outlet_id"] == req.outlet_id), None)
     if outlet is None:
@@ -1019,7 +1225,8 @@ def exposure_calculate(req: ExposureRequest):
             raise HTTPException(404, f"no such reef zones: {req.reef_zone_ids}")
 
     key = da.TTLCache.key("exposure", req.event_id, req.outlet_id, req.horizon_hours,
-                          tuple(sorted(req.reef_zone_ids or [])), req.catchment_id)
+                          tuple(sorted(req.reef_zone_ids or [])), req.catchment_id,
+                          req.rainfall_multiplier, req.transmission_loss_override)
     cached = da.EXPOSURE_CACHE.get(key)
     if cached is not None:
         return cached
@@ -1051,41 +1258,29 @@ def exposure_calculate(req: ExposureRequest):
             try:
                 from models.runoff_model import predict_one
 
-                real = predict_one(row)
+                real = predict_one(
+                    _apply_rainfall_multiplier(row, req.rainfall_multiplier),
+                    transmission_loss_override=req.transmission_loss_override)
                 if real.get("model_version_id"):
                     run_model_versions["runoff_model"] = real["model_version_id"]
                 index = real.get("sediment_index")
                 anchor_index = real.get("anchor_index_for_normalisation")
                 if index is not None and anchor_index:
-                    # The index is unbounded and the formula needs 0-1, so it is squashed
-                    # by ratio / (1 + ratio) against the anchor event.
-                    #
-                    # NOT a linear ratio clamped at 1.0, which was the first attempt and
-                    # was worse than the zero it replaced: October 2016 is only 12th of
-                    # 2,362 days by this magnitude, so every storm at or above it pinned
-                    # to exactly 1.000 and the term stopped discriminating at all. Three
-                    # different events came back with an identical sediment intensity.
-                    #
-                    # This map is monotonic, never saturates, and puts the one documented
-                    # major flood at 0.5. That is also the more honest shape: with a
-                    # SINGLE calibration point there is nothing justifying a linear
-                    # extrapolation far above it, so the scale deliberately compresses
-                    # where the evidence runs out.
-                    from models.sediment_proxy import ANCHOR_EVENT
-
-                    ratio = max(0.0, float(index) / float(anchor_index))
-                    intensity = ratio / (1.0 + ratio)
-                    intensity_source = (
-                        f"sediment_index {float(index):,.0f} = {ratio:.2f}x "
-                        f"{ANCHOR_EVENT}, squashed by r/(1+r) to {intensity:.3f} "
-                        f"(class {real.get('sediment_class')}); anchor maps to 0.500"
-                    )
+                    intensity, intensity_source = _squash_sediment_index(
+                        index, anchor_index, real.get("sediment_class"))
+                if req.rainfall_multiplier != 1.0:
+                    intensity_source += (
+                        f" [rainfall_multiplier={req.rainfall_multiplier}x applied to "
+                        "raw rainfall depth only; percentile-rank features reflect "
+                        "the original storm, not the scaled one]")
             except (FileNotFoundError, ImportError, ModuleNotFoundError, KeyError) as exc:
                 intensity_source = (
                     f"default 0.5 — real model unavailable ({type(exc).__name__})")
         else:
-            pred = runoff_predict(RunoffRequest(catchment_id=cid, rainfall_mm_3h=30.0,
-                                               event_id=req.event_id))
+            pred = runoff_predict(RunoffRequest(
+                catchment_id=cid, rainfall_mm_3h=30.0, event_id=req.event_id,
+                rainfall_multiplier=req.rainfall_multiplier,
+                transmission_loss_override=req.transmission_loss_override))
             intensity = pred.relative_sediment_intensity
             if pred.is_stub:
                 intensity_source = (
@@ -1363,6 +1558,10 @@ def list_alerts(
                 (zone_meta.get(zid) or {}).get("sensitivity_weight_status", "")
             ),
         ))
+    # Highest risk first — Phase 4. Never sorted before; a client building a
+    # priority list (feature A) or a coastal comparison (feature I) off this
+    # endpoint got whatever order store.latest_results() happened to produce.
+    out.sort(key=lambda a: a.risk_score, reverse=True)
     return out
 
 

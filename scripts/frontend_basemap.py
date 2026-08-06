@@ -98,6 +98,12 @@ SIMPLIFY_M = {
     "landuse": 25.0,
     "wadis": 80.0,
     "isobaths": 60.0,     # 50 m source raster; finer is quantisation noise
+    # Coarser than isobaths deliberately: this feeds a 3D fill-extrusion viewed from
+    # well outside the AOI, not a measurement read up close, and the fragmented
+    # mountainous terrain produces far more tiny polygons per metre of tolerance than
+    # the smoother seafloor isobaths do at the same setting.
+    "relief_bands": 200.0,
+    "buildings": 1.0,      # buildings are metres-scale; any coarser loses the footprint shape
     "catchments": 120.0,
     "coverage": 0.0,      # a bbox
     "_default": 15.0,
@@ -236,6 +242,133 @@ def isobaths(report):
     return gdf
 
 
+# Same raster as isobaths(), banded rather than contoured: filled polygons with a
+# real mid-band metres value, for the 3D Journey's fill-extrusion (feature 14,
+# tasks/phase4/00-phase4-plan.md and tasks/phase4/06-ali.md).
+# One real DEM/bathymetry source covers both land (positive, the coastal fringe the
+# marine AOI raster reaches) and sea (negative) -- no separate terrain source, no
+# invented relief. Edges chosen to match ISOBATHS below sea level and to resolve the
+# coastal mountains (up to ~1,800 m) above it without over-fragmenting the polygon
+# count.
+RELIEF_BAND_EDGES_M = [-800, -400, -200, -100, -50, -25, 0, 50, 150, 400, 800, 2000]
+
+
+def relief_bands(report):
+    """Fill-able elevation/depth bands from the same raster isobaths() contours.
+
+    rasterio.features.shapes over a boolean mask per band, same technique as
+    isobaths() and as models.particle_engine.kernel_density_contours -- one
+    proven approach, reused rather than a third variant invented for this.
+    Unlike isobaths() this keeps the filled polygon (not `.boundary`): a
+    fill-extrusion layer needs an area with a height, a contour line has none.
+    """
+    src_path = cfg.PROCESSED / "bathymetry" / "depth_utm36n.tif"
+    if not src_path.exists():
+        print(f"  relief_bands     SKIPPED — {src_path} not present")
+        return None
+
+    with rasterio.open(src_path) as src:
+        arr = src.read(1, masked=True)
+        transform, crs = src.transform, src.crs
+
+    rows = []
+    edges = RELIEF_BAND_EDGES_M
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        mask = ((arr >= lo) & (arr < hi)).filled(False)
+        if not mask.any():
+            continue
+        polys = [
+            shape(geom)
+            for geom, val in features.shapes(mask.astype(np.uint8), mask=mask, transform=transform)
+            if val == 1
+        ]
+        if not polys:
+            continue
+        merged = unary_union(polys)
+        rows.append({
+            "geometry": merged,
+            "band_min_m": float(lo),
+            "band_max_m": float(hi),
+            "mid_m": float((lo + hi) / 2.0),
+            "realm": "sea" if hi <= 0 else ("land" if lo >= 0 else "shore"),
+        })
+
+    if not rows:
+        print("  relief_bands     SKIPPED — no cell reached any band")
+        return None
+
+    gdf = gpd.GeoDataFrame(rows, geometry="geometry", crs=crs)
+    print(f"    relief bands: {[(r['band_min_m'], r['band_max_m']) for r in rows]}")
+    return gdf
+
+
+#: Real building footprints exist in osm_aqaba.gpkg's own `buildings` layer
+#: (12,570 total across the full TERRAIN_AOI extract) but were never exposed to the
+#: frontend before the 3D Journey (feature 14) needed urban context. Clipped to a
+#: small buffer around each of the five real outlets individually, not one
+#: bounding box spanning all five -- the outlets stretch ~21 km along the coast,
+#: and a single enclosing box pulls in the empty coastline between them (9,914
+#: buildings, 2.4 MB). Five small buffers instead: 570 buildings, one per outlet's
+#: actual immediate urban context, not the desert or empty shore between them.
+BUILDINGS_AOI_BUFFER_DEG = 0.025
+DEFAULT_BUILDING_LEVELS = 2.0     # median residential building height region-wide, not measured per-roof
+LEVEL_HEIGHT_M = 3.0              # standard storey height assumption, documented not measured
+MIN_BUILDING_AREA_M2 = 20.0       # drops shed/noise-scale footprints, same threshold everywhere
+
+
+def buildings(report):
+    """Real OSM building footprints, height-tagged where OSM has the tag.
+
+    `building:levels` lives in the same `other_tags` hstore `bilingual()` already
+    parses for road/wadi names -- reused here via `parse_other_tags`, not a new
+    parser. Only ~16% of buildings in this extract carry it (measured against the
+    outlet-cluster clip); the rest get `DEFAULT_BUILDING_LEVELS`, an explicit,
+    documented assumption -- shown in the 3D scene as real footprint + assumed
+    height, never as a claimed per-building measurement.
+    """
+    src_path = cfg.VECTORS / "osm_aqaba.gpkg"
+    if not src_path.exists():
+        print(f"  buildings        SKIPPED — {src_path} not present")
+        return None
+
+    b = gpd.read_file(src_path, layer="buildings")
+    outlets_path = cfg.VECTORS / "outlets.gpkg"
+    if not outlets_path.exists():
+        print("  buildings        SKIPPED — outlets.gpkg not present, no AOI to clip to")
+        return None
+    outlets_gdf = gpd.read_file(outlets_path)
+    pad = BUILDINGS_AOI_BUFFER_DEG
+    clip_boxes = [box(pt.x - pad, pt.y - pad, pt.x + pad, pt.y + pad)
+                  for pt in outlets_gdf.geometry]
+    clip_union = unary_union(clip_boxes)
+    b = b[b.intersects(clip_union)].copy()
+
+    def levels(raw):
+        tags = parse_other_tags(raw)
+        lv = tags.get("building:levels")
+        try:
+            return float(lv) if lv is not None else None
+        except ValueError:
+            return None
+
+    b["levels"] = b["other_tags"].apply(levels)
+    tagged = int(b["levels"].notna().sum())
+    print(f"    buildings in AOI: {len(b)}  ({tagged} carry a real building:levels tag)")
+
+    # Real footprint area filters noise (sheds, small structures the extrusion
+    # would render as visual clutter at this AOI's zoom) more honestly than a
+    # feature-count cap would -- it drops the same kind of feature everywhere,
+    # not an arbitrary first-N.
+    b["area_m2"] = b.to_crs(cfg.AOI_CRS_PROJECTED).geometry.area
+    b = b[b["area_m2"] >= MIN_BUILDING_AREA_M2]
+    print(f"    buildings kept (>= {MIN_BUILDING_AREA_M2:.0f} m² footprint): {len(b)}")
+
+    b["levels"] = b["levels"].fillna(DEFAULT_BUILDING_LEVELS)
+    b["height_m"] = b["levels"] * LEVEL_HEIGHT_M
+    b["name"] = b["name"].where(b["name"].apply(lambda v: isinstance(v, str)), None)
+    return b
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -252,8 +385,19 @@ def main():
     # same-origin GeoJSON, parsed once, is not that. Cutting the wadis further to fit
     # a number invented in Phase 1 would remove the hazard's own paths, which 01 §2
     # calls part of the signature.
-    ap.add_argument("--budget-kb", type=int, default=1100,
-                    help="fail if the total exceeds this (default 1100)")
+    # 1,400 KB, raised from 1,100 -- same judgement call as the 500->1,100 raise
+    # above, for the same reason: relief_bands.geojson (feature 14, the 3D Journey)
+    # adds ~325 KB of real, fill-extrudable elevation/depth polygons at 200 m
+    # simplification -- coarser than isobaths already is, and the fragmented
+    # mountainous terrain does not compress further without visibly blocky bands.
+    # Still same-origin, still parsed once, still nowhere near a tile pyramid.
+    #
+    # 1,550 KB, raised from 1,400 -- buildings.geojson (real OSM footprints for
+    # urban context, same feature) adds ~155 KB at 617 features, already clipped
+    # to five small per-outlet buffers rather than one enclosing box (which would
+    # have been 2.4 MB). This is the real cost of that real data, not slack.
+    ap.add_argument("--budget-kb", type=int, default=1550,
+                    help="fail if the total exceeds this (default 1550)")
     args = ap.parse_args()
 
     out = Path(args.out)
@@ -277,6 +421,10 @@ def main():
 
     # --- the signature -----------------------------------------------------
     write(out, "isobaths", isobaths(report), keep=("depth_m",), report=report)
+    write(out, "relief_bands", relief_bands(report),
+          keep=("band_min_m", "band_max_m", "mid_m", "realm"), report=report)
+    write(out, "buildings", buildings(report),
+          keep=("osm_id", "name", "levels", "height_m"), report=report)
 
     # --- OSM: roads, wadis, protection, landuse, places --------------------
     roads = gpd.read_file(osm, layer="roads")

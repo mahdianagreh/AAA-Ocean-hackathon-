@@ -92,6 +92,11 @@ class Value(BaseModel):
     value: float | None
     unit: str
     provenance: ValueProvenance
+    # Matches frontend/src/api/types.ts's `uncertainty?: {lower,upper}|{sigma}` exactly
+    # — added for the mooring endpoint's salinity_anomaly (Phase 4), which needs
+    # {"sigma": 19}. Optional and additive: no existing Value-typed field populates
+    # this today, so nothing already shipped changes shape.
+    uncertainty: dict[str, float] | None = None
 
 
 # --------------------------------------------------------------------- health
@@ -220,6 +225,52 @@ class EventOut(BaseModel):
                                    "screened and ranked (build_event_catalogue.py).")
 
 
+class MooringMarker(BaseModel):
+    key: str
+    t: datetime
+    provenance: ValueProvenance
+
+
+class MooringOut(BaseModel):
+    """A thin read-through of data/processed/marine/mooring_target_{event_id}.json —
+    Phase 4, feature 10 (Real Sensor Proof Overlay). Shape matches
+    frontend/public/fixtures/event.json's already-shipped `mooring` object
+    field-for-field, so swapping fixture -> live needs no frontend change."""
+
+    event_id: str
+    source_citation: str
+    source_doi: str
+    source_file: str
+    position: dict
+    markers: list[MooringMarker]
+    elevated_duration_hours: Value
+    peak_suspended_sediment: Value
+    salinity_minimum: Value
+    salinity_anomaly: Value
+    sediment_mass_total: Value
+    series_available: bool = False
+    caveats: list[Caveat] = []
+
+
+class DiveSiteOut(BaseModel):
+    """A dive-site POI joined to its nearest reef zone — Phase 4, feature B
+    (Dive Site Safety Status). `osm_id` is the stable join key (Karam's 6 Aug
+    handoff). `distance_m` is a real EPSG:32636 measurement, always reported —
+    the source OSM category ("kind: dive") also carries Wadi Rum desert
+    attractions tens of km inland, and a large distance here is exactly how a
+    caller tells those apart from an actual coastal dive site, rather than the
+    API silently dropping or silently including them."""
+
+    osm_id: str
+    name_en: str | None = None
+    name_ar: str | None = None
+    lon: float
+    lat: float
+    nearest_reef_zone_id: str | None = None
+    distance_m: float | None = None
+    caveats: list[Caveat] = []
+
+
 # -------------------------------------------------------------------- runoff
 
 class RunoffRequest(BaseModel):
@@ -227,6 +278,37 @@ class RunoffRequest(BaseModel):
     rainfall_mm_3h: float = Field(ge=0)
     antecedent_index: float | None = None
     event_id: str | None = None
+    # What-if scenario controls — Phase 4. Bounds are not invented: they are
+    # ScenarioDrawer.tsx's own existing slider ranges (rainfallScale 50-200%,
+    # unvalidated tau range from SedimentParams.validate()), so the API can only ever
+    # be asked for what the UI can actually produce.
+    rainfall_multiplier: float = Field(
+        default=1.0, ge=0.5, le=2.0,
+        description="Scales raw rainfall-depth features only, never percentile-rank "
+                    "features — see main.py's RAINFALL_MM_COLUMNS.",
+    )
+    transmission_loss_override: float | None = Field(
+        default=None, ge=0.20, le=0.85,
+        description="Substitutes SedimentParams.transmission_loss for this request "
+                    "only, via SedimentProxy.with_transmission_loss(). None leaves the "
+                    "anchored default (0.525) in place. Bounded to TAU_NEGEV "
+                    "(0.20-0.85) — the nearest studied desert analog to Aqaba's "
+                    "wadis — per docs/HANDOFF_transmission_loss_2026-08-06.md, "
+                    "deliberately narrower than SedimentParams.validate()'s "
+                    "technical [0, 1) sanity check, which is not a claim of "
+                    "physical plausibility for this environment.",
+    )
+
+
+class DriverOut(BaseModel):
+    """One SHAP driver, renamed at the API boundary to match the frontend's already-
+    shipped PredictionDriver (frontend/src/api/predictions.ts) — `feature`/`shap` are
+    the model's own names (runoff_model.py), `key`/`contribution` are what
+    DriverBars.tsx already renders."""
+
+    key: str
+    contribution: float
+    value: float | None
 
 
 class RunoffPrediction(BaseModel):
@@ -282,6 +364,29 @@ class RunoffPrediction(BaseModel):
         description="True while wired to a stub. Never ingest stub output into the "
                     "RAG corpus or a slide."
     )
+    # Real SHAP driver attributions — Phase 4. The model has computed these since
+    # Phase 2 (runoff_model.py's TreeSHAP path); this schema never had a field for
+    # them. `key`/`contribution` names match frontend/src/api/predictions.ts's
+    # PredictionDriver exactly, so no further rename is needed downstream —
+    # `feature`/`shap` (the model's own names) are remapped to `key`/`contribution` at
+    # this boundary, in main.py.
+    drivers: list[DriverOut] = []
+    feature_attributions_status: str | None = Field(
+        default=None,
+        description="Non-null only when TreeSHAP failed for this row — an explicit "
+                    "gap, never a silent zero-fill. See runoff_model.py's "
+                    "shap_unavailable.",
+    )
+    # Scenario echo — Phase 4. The caller must be able to see what was actually used,
+    # not just what was requested; RunoffRequest.rainfall_multiplier and
+    # .transmission_loss_override are echoed back here regardless of whether they
+    # were the default.
+    rainfall_multiplier: float = 1.0
+    transmission_loss: float | None = Field(
+        default=None,
+        description="The model's own computed transmission_loss for this row (real "
+                    "path only) — 0.525 unless transmission_loss_override was set.",
+    )
     provenance: list[Provenance] = []
     caveats: list[Caveat] = []
 
@@ -324,6 +429,11 @@ class ExposureRequest(BaseModel):
     reef_zone_ids: list[str] | None = Field(
         default=None, description="Defaults to every zone"
     )
+    # Same two what-if fields as RunoffRequest, same bounds, same rationale — see
+    # RunoffRequest's docstring. Applied to the real feature row before predict_one()
+    # in exposure_calculate's real-row branch (main.py).
+    rainfall_multiplier: float = Field(default=1.0, ge=0.5, le=2.0)
+    transmission_loss_override: float | None = Field(default=None, ge=0.20, le=0.85)
 
 
 class ExposureResult(BaseModel):

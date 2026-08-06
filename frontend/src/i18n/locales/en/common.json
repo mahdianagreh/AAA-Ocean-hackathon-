@@ -200,7 +200,34 @@
     "validation": "Validation",
     "provenance": "Provenance",
     "limitations": "Limitations",
-    "assistant": "Assistant"
+    "assistant": "Assistant",
+    "journey": "3D Journey"
+  },
+  "journey": {
+    "phaseNav": "Journey phase",
+    "phase": {
+      "normal": "Normal",
+      "rain": "Heavy rain",
+      "flood": "Flood",
+      "transport": "Sediment transport",
+      "accumulation": "Accumulation",
+      "impact": "Coastal impact"
+    },
+    "phaseBody": {
+      "normal": "Aqaba's coastline, terrain and developed waterfront before the storm — no rain, no floodwater, no sediment yet.",
+      "rain": "Heavy rainfall: {{mm}} mm measured for this catchment on {{date}}, the storm's real recorded peak day — not an invented ramp.",
+      "flood": "Runoff moves along the wadi's real drainage lines toward the coastal outlet.",
+      "transport": "The calibrated particle engine's real simulated plume, one real timestep at a time.",
+      "accumulation": "The plume's final timestep, shown as settling sediment rather than a moving cloud — a visual convention over the same real shape, not a second simulated signal.",
+      "impact": "Reef zones take on their real modelled exposure risk for this event."
+    },
+    "play": "Play",
+    "pause": "Pause",
+    "reset": "Reset",
+    "hourLabel": "+{{h}} h",
+    "mapLabel": "3D scene: real terrain, bathymetry, buildings, rainfall, runoff, plume and reef exposure",
+    "realismCaveat": "Relief height is sqrt(real depth or elevation) × 15 for legibility at this camera distance, not a linear scale — sea depth is drawn as upward relief coloured by depth, not sunk below the surface. The plume's height encodes its real contour probability level, not a physical thickness. Rain and runoff are real geography with a stylised animation, not measured particle physics.",
+    "source": "Source:"
   },
   "validation": {
     "comparison": "Modelled against measured",
@@ -214,7 +241,13 @@
     "physicalNullBody": "The sediment clears faster than these satellites come around, so no amount of searching fixes it. The mooring record is the validation target instead — and comparing against 5-minute in-situ measurements is a stronger test than a photograph would have been.",
     "target": "The validation target",
     "source": "Source:",
-    "positionNote": "Position is derived, not reported: the paper gives only \"~250 m offshore the Kinnet Canal outlet, 13 m depth\". Do not read it to finer precision than the {{radius}} m uncertainty radius allows."
+    "positionNote": "Position is derived, not reported: the paper gives only \"~250 m offshore the Kinnet Canal outlet, 13 m depth\". Do not read it to finer precision than the {{radius}} m uncertainty radius allows.",
+    "calibrationTitle": "Transport-timing fit (calibration)",
+    "calibrationIntro": "The particle engine models transport timing, not sediment concentration or salinity — it cannot fill the rows above. This is the comparison it can make: onset, duration and peak timing at the mooring, from a {{n}}-trial grid search over diffusion, windage and settling velocity.",
+    "arrivalError": "Arrival time error",
+    "durationError": "Duration error",
+    "peakTimingError": "Peak timing error",
+    "regimeVerdict": "Selected regime"
   },
   "provenancePanel": {
     "figures": "QA figures",

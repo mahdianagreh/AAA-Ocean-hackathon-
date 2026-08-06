@@ -54,6 +54,11 @@ services:
       - ./docs:/app/docs:ro
       # Live reload in development. Drop this line for a production image.
       - ./backend/src:/app/backend/src:ro
+      # /api/v1/dive-sites joins against Karam's places.geojson (the same file Ali's
+      # map layer already reads) — mount only that one artifact, read-only, rather
+      # than the whole frontend/ tree or a second copy of the data (see OPEN-ISSUES #22:
+      # keep ONE copy of this GeoJSON).
+      - ./frontend/public/basemap:/app/frontend/public/basemap:ro
       # The one writable path. Named, so it survives `down` but not `down -v`.
       - exposure_runs:/app/var
     restart: unless-stopped

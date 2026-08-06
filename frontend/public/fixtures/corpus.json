@@ -88,7 +88,7 @@
   {
    "file": "docs/pitch_limitations.md",
    "section": "4. Our bathymetry cannot see the reef shelf",
-   "text": "This is the most important limitation on this page.\n\nThe effective resolution of our depth data is about **450 metres**. The Gulf of Aqaba\nhas one of the steepest coastal drop-offs in the world — the reef shelf is often only\ntens of metres wide before the seabed plunges past 200 m.\n\n**Consequence:** our depth grid claims −372 m only 100 m offshore in places. That is\nan interpolation artefact, not a real slope. So:\n\n- Our plume model is credible at **basin scale** and as a \"particles stop at the\n  shore\" boundary.\n- It is **not** credible for reef-scale depth, small channels, or harbour structures.\n- We therefore did **not** derive our reef zone boundaries from depth contours, even\n  though that would have looked more rigorous. Deriving a reef edge from an\n  interpolation artefact would have dressed up a guess as a measurement.\n\nOur reef zone widths are an explicit, documented 250 m assumption.\n\n---"
+   "text": "This is the most important limitation on this page.\n\nThe effective resolution of our depth data is about **450 metres**. The Gulf of Aqaba\nhas one of the steepest coastal drop-offs in the world — the reef shelf is often only\ntens of metres wide before the seabed plunges past 200 m.\n\n**Consequence:** our depth grid claims −372 m only 100 m offshore in places. That is\nan interpolation artefact, not a real slope. So:\n\n- Our plume model is credible at **basin scale** and as a \"particles stop at the\n  shore\" boundary.\n- It is **not** credible for reef-scale depth, small channels, or harbour structures.\n- We therefore did **not** derive our reef zone boundaries from depth contours, even\n  though that would have looked more rigorous. Deriving a reef edge from an\n  interpolation artefact would have dressed up a guess as a measurement.\n\n**Updated 2026-08-03.** We no longer need a width assumption at all. Reef zone\noutlines are now Allen Coral Atlas v2.0's own 5 m benthic polygons — 1.235 km² across\nthe 8 zones, against the 5.69 km² our earlier hand-drawn 250 m strips claimed. The\nreasoning above is why we refused to fake the boundary from bathymetry while we\nwaited; the fix was to get real "
   },
   {
    "file": "docs/pitch_limitations.md",
@@ -108,7 +108,7 @@
   {
    "file": "docs/pitch_limitations.md",
    "section": "8. What we would fix first, given another week",
-   "text": "1. Field-sample soil at the main wadi outlets — turns limitation 2 from a caveat into\n   a calibration.\n2. Get high-resolution nearshore bathymetry — this single fix unlocks reef-scale\n   plume behaviour and would let us replace the 250 m assumption in limitation 4.\n3. Sit down with an Aqaba marine scientist for one hour and replace limitation 5's\n   placeholder weights with real ones.\n\n---"
+   "text": "1. Field-sample soil at the main wadi outlets — turns limitation 2 from a caveat into\n   a calibration.\n2. Get high-resolution nearshore bathymetry — this single fix unlocks reef-scale\n   plume behaviour, and would tell us how much reef sits below the depth the Atlas's\n   imagery penetrates, which is the residual in limitation 4 now that the 250 m width\n   assumption is gone.\n3. Sit down with an Aqaba marine scientist for one hour and replace limitation 5's\n   placeholder weights with real ones.\n\n---"
   },
   {
    "file": "docs/pitch_limitations.md",
