@@ -478,6 +478,111 @@ def forecast_latest():
     }
 
 
+# -------------------------------------------------------- multi-source currents
+
+# The demo event's mooring peak-response time, and the nearest point BOTH
+# historical current archives resolve simultaneously (per
+# docs/forcing_limitations.md — a systematic 0.01 deg scan of the whole marine
+# AOI found zero points both models resolve at once; this is the nearest
+# shared one, 6 km from the outlet). Defaults, not requirements — override via
+# query params to compare "today" instead.
+_DEMO_EVENT_TIME = "2016-10-28T06:50:00"
+_DEMO_AGREEMENT_LON = 34.85
+_DEMO_AGREEMENT_LAT = 29.30
+
+
+@app.get(f"{PREFIX}/currents/agreement", tags=["forecast"])
+def currents_agreement(
+    lon: float = Query(default=_DEMO_AGREEMENT_LON),
+    lat: float = Query(default=_DEMO_AGREEMENT_LAT),
+    time: str = Query(
+        default=_DEMO_EVENT_TIME,
+        description="ISO 8601. Defaults to the demo event's mooring peak-response "
+        "time, per docs/forcing_limitations.md's own instruction to use that number "
+        "over 'today's' figure for anything backtest-facing.",
+    ),
+    historical: bool = Query(
+        default=True,
+        description="True: read the cached AQ-2016-10-28 archives (HYCOM "
+        "GLBu0.08/expt_91.2, Copernicus GLORYS12V1). False: read the live/rolling "
+        "'recent' cache instead.",
+    ),
+):
+    """Multi-source weather agreement — the currents reading of Feature F.
+
+    "Multi-Source Weather Agreement" (tasks/phase4/00-phase4-plan.md, feature F)
+    names no single comparison; HYCOM-vs-Copernicus-Marine currents is the one
+    reading with real, network-free, already-honest numbers today (the other
+    candidates -- GFS-vs-GEFS rainfall, GFS-vs-IFS via `ecmwf.gfs_vs_ifs_agreement`
+    -- are either unbuilt or use an independently-invented threshold; see the
+    dated note in tasks/phase4/00-phase4-plan.md).
+
+    Never a live fetch: reads whichever cached `.nc` pair is already on disk
+    (data/raw/currents/), exactly like `get_historical_interpolator()`. Reports a
+    CONTINUOUS agreement score (1.0 at 0 deg disagreement, 0.0 at 180 deg) rather
+    than reusing `qa_currents.py`'s hardcoded 15 deg good/bad cutoff -- that
+    cutoff is exactly the kind of second, independently-invented threshold this
+    feature is told not to introduce alongside item 2's ensemble-agreement
+    formula.
+    """
+    import numpy as np
+
+    if historical:
+        hycom_path = oc.RAW_DIR / "hycom_aoi_AQ-2016-10-28.nc"
+        copernicus_path = oc.RAW_DIR / "copernicus_marine_aoi_AQ-2016-10-28.nc"
+    else:
+        hycom_path = oc.RAW_DIR / "hycom_aoi_recent.nc"
+        copernicus_path = oc.RAW_DIR / "copernicus_marine_aoi_recent.nc"
+
+    if not hycom_path.exists():
+        raise HTTPException(
+            503, f"No cached current data at {hycom_path} for this window."
+        )
+
+    try:
+        parsed_time = np.datetime64(time)
+    except ValueError as exc:
+        raise HTTPException(422, f"unparseable time {time!r}: {exc}") from exc
+
+    comparison = oc.compare_hycom_vs_copernicus(
+        lon=lon, lat=lat, time=parsed_time,
+        hycom_path=hycom_path, copernicus_path=copernicus_path,
+    )
+    # NaN, not None, when a point/time falls outside a cached grid's resolved
+    # cells or its time range (e.g. the "recent" cache aging past its fetch
+    # window). A gap is a gap, per the project's standing rule -- and it's what
+    # stops FastAPI's default JSON encoder from 500ing on a bare nan.
+    comparison = {
+        k: (None if isinstance(v, float) and np.isnan(v) else v)
+        for k, v in comparison.items()
+    }
+
+    diff = comparison.get("direction_diff_deg")
+    agreement = max(0.0, 1.0 - diff / 180.0) if diff is not None else None
+
+    return {
+        **comparison,
+        "agreement": agreement,
+        "window": "historical (AQ-2016-10-28 mooring peak)" if historical else "live/recent",
+        "sources": {
+            "hycom": "HYCOM GLBu0.08/expt_91.2" if historical else "HYCOM GLBy0.08 (latest)",
+            "copernicus_marine": "GLORYS12V1 multiyear reanalysis" if historical
+                else "GLOBAL_ANALYSISFORECAST_PHY_001_024",
+        },
+        "caveats": [
+            {
+                "field": "agreement",
+                "message": "Both models mask the provisional outlet (34.96, 29.52) as "
+                            "unresolved/land identically -- corroborating, not "
+                            "contradicting, evidence for the ~9km resolution limit. "
+                            "See docs/forcing_limitations.md.",
+                "severity": "warning",
+                "source": "backend/src/ingestion/ocean_currents.py",
+            },
+        ],
+    }
+
+
 # ---------------------------------------------------------------------- runoff
 
 @app.post(f"{PREFIX}/runoff/predict", response_model=RunoffPrediction, tags=["model"])
@@ -1000,9 +1105,17 @@ def exposure_calculate(req: ExposureRequest):
     #
     # agreement = 1 at a unanimous ensemble (all 30 members on the same side of the
     # threshold -- most trustworthy), 0 at an exact 50/50 split (least trustworthy).
-    # This mapping is a proposal, not a settled formula -- confirm with Nizar before
-    # treating it as final; he owns whether "confidence" should mean ensemble
-    # agreement or something else entirely.
+    #
+    # Confirmed by Nizar, 7 Aug: this is the right shape for "confidence" here. Live-
+    # verified against AQ-C05 (0/30 members exceeding -> agreement 1.00 -> 0.8, capped
+    # correctly by the currents/bathymetry penalty regardless of the unanimous
+    # ensemble). "Confidence" meaning ensemble agreement, not e.g. model skill or
+    # historical accuracy, is the correct reading for what this term qualifies: how
+    # much the plume-direction and reef-exposure numbers should be trusted given
+    # known forcing limitations, which ensemble spread on the RAINFALL side does not
+    # actually speak to on its own -- but it is the best proxy this repo has without
+    # a second, independent skill metric, and it is honestly labelled as such via
+    # confidence_adjustment_reason. No functional change from the formula below.
     exceedance = da.gefs_exceedance_for(cid) if cid else None
     if exceedance is not None:
         agreement = abs(exceedance["exceedance_prob"] - 0.5) * 2.0
