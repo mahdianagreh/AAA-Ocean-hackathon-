@@ -19,7 +19,7 @@ model.**
 | **E · Explanation** | risk state → grounded bilingual paragraph | Pulga | **implemented, tested** |
 | **E · Retrieval (`/ask`)** | technical corpus → cited answers | Pulga | **implemented, tested** |
 | **A · Runoff classifier** | rainfall + catchment features → runoff probability | Mahdi | **implemented, LOCO-validated** |
-| **C · Plume transport** | outlet discharge → probability contours | Abd | real engine exists; API wiring stubbed |
+| **C · Plume transport** | outlet discharge → probability contours | Abd | **implemented, wired live** |
 
 The section for C is deliberately short — that owner should fill it in, and writing
 confident text about someone else's model would be exactly the kind of unearned
@@ -65,7 +65,7 @@ for intuition, and **operational thresholds require marine-scientist input.**
 | Term | Range | Source | Kind |
 |---|---|---|---|
 | `plume_probability` | 0–1 | Abd's contoured particle field | derived |
-| `relative_sediment_intensity` | 0–1 | Mahdi's sediment class, normalised | derived (stub today) |
+| `relative_sediment_intensity` | 0–1 | Mahdi's anchored sediment index, normalised | derived (real for AQ-2016-10-28/AQ-C01, the only event/catchment with a training-set feature row today; placeholder 0.5 otherwise) |
 | `exposure_duration_weight` | 0–1 | span of contour timestamps ÷ horizon | derived |
 | `habitat_sensitivity_weight` | 1.0 | **team placeholder** | **assumed** |
 | `confidence_adjustment` | 0–1 | GEFS ensemble spread | derived (stub today) |
@@ -488,9 +488,13 @@ This is independent confirmation of the M2−M1 finding, not a new one.
 
 ## C · Plume transport (particle engine) — Abd
 
-Real engine at `backend/src/models/particle_engine.py` with its own tests. The API
-route `POST /api/v1/plume/simulate` is **stubbed pending wiring**, flagged the same
-way. Consumes `depth_utm36n.tif` and `coastline.gpkg`.
+Real engine at `backend/src/models/particle_engine.py` with its own tests. **Wired
+live** — `POST /api/v1/plume/simulate` calls the real engine unconditionally and
+always returns `is_stub: false`; the stub this line used to describe was replaced in
+`0de8c26`. Consumes `depth_utm36n.tif` and `coastline.gpkg`. Advection currents are
+real when a cached field exists for the event and a placeholder
+(`ConstantCurrentField(0, 0)`) otherwise — `caveats.particle_engine_forcing()` states
+which on every response.
 
 Note: `docs/pitch_limitations.md` §9 records that satellite validation of the 2016
 plume found nothing, for a documented physical reason — the in-situ mooring shows the

@@ -177,6 +177,26 @@ def training_row(event_id: str, catchment_id: str) -> dict | None:
     return {k: _clean(v) for k, v in hit.iloc[0].items()}
 
 
+# One file today. Keyed by event_id rather than a glob, same reasoning as
+# training_row()'s explicit date-parse — a per-event file is either the one that
+# exists or it doesn't, and there is no pattern to infer one from the other yet.
+MOORING_FILES: dict[str, Path] = {
+    "AQ-2016-10-28": DATA / "processed" / "marine" / "mooring_target_AQ-2016-10-28.json",
+}
+
+
+def mooring_for(event_id: str) -> dict | None:
+    """The parsed mooring record for one event, or None — same contract as
+    training_row(): no file for this event is not an error, it is a gap the
+    caller must be able to see rather than a synthesized default."""
+    path = MOORING_FILES.get(event_id)
+    if path is None or not path.exists():
+        return None
+    from models.calibration import load_mooring_target
+
+    return load_mooring_target(path)
+
+
 def landcover_for(cid: str) -> dict | None:
     return _feature_table("landcover").get(cid)
 

@@ -243,10 +243,20 @@ def predict(
     *,
     version_id: str | None = None,
     source: str | None = None,
+    transmission_loss_override: float | None = None,
 ) -> list[dict[str, Any]]:
     """Features in, one response dict per row out.
 
     Keys match `runoff_predictions` so the caller can insert the result as-is.
+
+    `transmission_loss_override` (Phase 4, the what-if slider): substitutes a
+    different `SedimentParams.transmission_loss` for this call only, via
+    `SedimentProxy.with_transmission_loss()` — a new instance, the anchored bundle's
+    own proxy is never mutated. This does not invalidate the anchor: `k` (tonnes per
+    index unit) stays the one fitted at tau=0.525, and since `index ∝ (1 − tau)`
+    linearly, a different tau just rescales the index the anchor's ratio is computed
+    against — physically, "what if less/more of the sediment made it to the sea,"
+    which is exactly what the slider claims to answer.
     """
     source = (source or os.environ.get("REEFSHIELD_MODEL_SOURCE") or "artifact").lower()
     df = _frame(features)
@@ -272,6 +282,8 @@ def predict(
     gbm = bundle["gbm"]
     baseline = bundle["baseline"]
     sediment = bundle["sediment"]
+    if transmission_loss_override is not None:
+        sediment = sediment.with_transmission_loss(transmission_loss_override)
 
     proba = gbm.predict_proba(X)
     base_p = baseline.predict_proba(X)
