@@ -35,9 +35,15 @@ from models import artifacts                              # noqa: E402
 from models import features as FX                         # noqa: E402
 from models.imbalance import build_fold, stratified_negative_sample  # noqa: E402
 from models.predictors import RuleBaseline, WeightedGBM    # noqa: E402
-from models.sediment_proxy import SedimentProxy            # noqa: E402
+from models.sediment_proxy import (ANCHOR_CATCHMENT, ANCHOR_EVENT,  # noqa: E402
+                                   SedimentProxy)
 
 DATA = ROOT / "data/processed/features/training_set_full.parquet"
+
+# Same cutoff as backend/src/models/validation.py's (unused, mismatched-schema)
+# temporal_holdout(): train on everything strictly before this year, test on
+# everything at or after it.
+TEMPORAL_CUTOFF_YEAR = 2015
 
 
 def measure(df, feats):
@@ -73,6 +79,63 @@ def measure(df, feats):
     }
 
 
+def temporal_holdout(df, feats):
+    """Train on data strictly before TEMPORAL_CUTOFF_YEAR, test on everything after.
+
+    A DIFFERENT claim from LOCO, and from the calibration slice above. The
+    calibration slice only says the CALIBRATOR has not seen the test rows -
+    the classifier trained on all of it. This is the split that lets the
+    pitch say "the model never saw October 2016 during training" and mean
+    it: 2016 rows are in the test side, not the fit side, full stop.
+
+    `Component D · Runoff Risk Model` calls for exactly this ("train <=2014,
+    test >=2015") in tasks/phase2/00-phase2-plan.md - measured here for the
+    first time against the shipped CD- configuration. Phase 4 task 2 found
+    it existed nowhere: not in reports/, not in model_versions.jsonl. The
+    module `backend/src/models/validation.py` has a same-named function, but
+    it targets column names (`runoff_label`, `event_time_utc`) this table
+    does not have, so it has never actually run against this data - this is
+    a fresh implementation on this table's real columns, not a call to it.
+    """
+    yr = df["date"].dt.year
+    tr_raw, te = df[yr < TEMPORAL_CUTOFF_YEAR], df[yr >= TEMPORAL_CUTOFF_YEAR]
+
+    f = build_fold(tr_raw, te, feats)
+    m = WeightedGBM(scale_pos_weight=f.scale_pos_weight, **FX.PARAMS)
+    m.fit(f.fit_X, f.fit_y).calibrate(f.cal_X, f.cal_y)
+    p = m.predict_proba(f.test_X)
+    b = RuleBaseline().fit(f.fit_X, f.fit_y).predict_proba(f.test_X)
+
+    te = te.reset_index(drop=True)
+    te["p"] = p
+
+    # The headline claim, made checkable: where does the anchor storm rank
+    # among AQ-C01's OWN held-out days - not mixed with the other four
+    # catchments, which is a different and easier question.
+    c1 = te[te[FX.GROUP] == ANCHOR_CATCHMENT].copy()
+    c1["rank"] = c1["p"].rank(ascending=False, method="min").astype(int)
+    day = ANCHOR_EVENT.removeprefix("AQ-")
+    anchor_row = c1[c1["date"].dt.strftime("%Y-%m-%d") == day]
+
+    result = {
+        "cutoff_year": TEMPORAL_CUTOFF_YEAR,
+        "train_rows": int(len(tr_raw)), "test_rows": int(len(te)),
+        "train_pos_rate": round(float(tr_raw[FX.TARGET].mean()), 4),
+        "test_pos_rate": round(float(te[FX.TARGET].mean()), 4),
+        "AP": float(average_precision_score(f.test_y, p)),
+        "baseline_AP": float(average_precision_score(f.test_y, b)),
+        "ROC_AUC": float(roc_auc_score(f.test_y, p)),
+        "Brier": float(brier_score_loss(f.test_y, p)),
+    }
+    if not anchor_row.empty:
+        r, n = int(anchor_row["rank"].iloc[0]), len(c1)
+        result["anchor_catchment"] = ANCHOR_CATCHMENT
+        result["anchor_rank_among_catchment_only"] = r
+        result["anchor_n_days_in_catchment_test_set"] = n
+        result["anchor_percentile"] = round(100 * (1 - r / n), 2)
+    return result
+
+
 def main():
     df = pd.read_parquet(DATA).reset_index(drop=True)
     feats = FX.check(df)
@@ -87,6 +150,18 @@ def main():
           f"delta {mean_ap - per.baseline_AP.mean():+.4f}")
     print(f"F1 {pooled['f1']:.4f} @ threshold {pooled['threshold']:.4f}   "
           f"P {pooled['precision']:.3f}  R {pooled['recall']:.3f}")
+
+    print(f"\nTEMPORAL HOLDOUT — train <{TEMPORAL_CUTOFF_YEAR}, test >={TEMPORAL_CUTOFF_YEAR}:")
+    th = temporal_holdout(df, feats)
+    print(f"  train {th['train_rows']:,} rows ({th['train_pos_rate']:.1%} pos)   "
+          f"test {th['test_rows']:,} rows ({th['test_pos_rate']:.1%} pos)")
+    print(f"  AP {th['AP']:.4f}   baseline {th['baseline_AP']:.4f}   "
+          f"ROC_AUC {th['ROC_AUC']:.4f}   Brier {th['Brier']:.4f}")
+    if "anchor_rank_among_catchment_only" in th:
+        print(f"  {ANCHOR_EVENT}/{ANCHOR_CATCHMENT} ranks "
+              f"{th['anchor_rank_among_catchment_only']} of "
+              f"{th['anchor_n_days_in_catchment_test_set']} unseen "
+              f"{ANCHOR_CATCHMENT} days ({th['anchor_percentile']}th percentile)")
 
     print("\nSHIPPED — fitted on all five catchments:")
     # Calibration slice is the latest 25% by date at natural prevalence, held
@@ -116,6 +191,20 @@ def main():
 
     metrics = {
         "cv_scheme": "leave_one_catchment_out",
+        "temporal_holdout_AP": round(th["AP"], 4),
+        "temporal_holdout_baseline_AP": round(th["baseline_AP"], 4),
+        "temporal_holdout_ROC_AUC": round(th["ROC_AUC"], 4),
+        "temporal_holdout_Brier": round(th["Brier"], 4),
+        "temporal_holdout_split": {
+            "cutoff_year": th["cutoff_year"], "train_rows": th["train_rows"],
+            "test_rows": th["test_rows"], "train_pos_rate": th["train_pos_rate"],
+            "test_pos_rate": th["test_pos_rate"],
+        },
+        "temporal_holdout_anchor_check": (
+            {k: th[k] for k in ("anchor_catchment", "anchor_rank_among_catchment_only",
+                                "anchor_n_days_in_catchment_test_set", "anchor_percentile")}
+            if "anchor_rank_among_catchment_only" in th else None
+        ),
         "mean_AP": round(float(mean_ap), 4),
         "mean_ROC_AUC": round(float(per.ROC_AUC.mean()), 4),
         "mean_Brier": round(float(per.Brier.mean()), 4),
@@ -128,9 +217,16 @@ def main():
         "base_rate": round(float(df[FX.TARGET].mean()), 4),
         "lift_over_chance": round(float(mean_ap / df[FX.TARGET].mean()), 2),
         "run_to_run_AP_variance": 0.017,
-        "_note": ("Metrics are LOCO, not the shipped model on its own rows. "
-                  "The shipped model is fitted on all five catchments and "
-                  "cannot be scored against its own training data."),
+        "_note": ("mean_AP/pooled_AP/etc. are LOCO - a DIFFERENT split from "
+                  "temporal_holdout_AP, and neither is the shipped model's "
+                  "own-rows score (not computed, would be meaningless). LOCO "
+                  "tests transfer to an unseen CATCHMENT; temporal_holdout "
+                  "tests transfer to an unseen TIME PERIOD - specifically, "
+                  "that the classifier's training data ends before "
+                  f"{TEMPORAL_CUTOFF_YEAR}, which is what licenses any claim "
+                  "of the form 'the model never saw this storm during "
+                  "training'. Do not quote temporal_holdout_AP as LOCO or "
+                  "vice versa."),
     }
 
     row = artifacts.save(
