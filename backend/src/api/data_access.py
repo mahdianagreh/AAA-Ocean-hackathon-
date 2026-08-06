@@ -201,6 +201,81 @@ def mooring_for(event_id: str) -> dict | None:
     return load_mooring_target(path)
 
 
+# Karam's basemap export (scripts/frontend_basemap.py), not a `data/processed/`
+# contract path — it's committed for the frontend's offline map layer, and this
+# reads the same file rather than a second derivation of the same POIs.
+PLACES_PATH = ROOT / "frontend" / "public" / "basemap" / "places.geojson"
+
+
+@lru_cache(maxsize=1)
+def dive_sites() -> list[dict]:
+    """Dive-site POIs, `kind == "dive"` in Karam's basemap export. `osm_id` is the
+    stable join key — his 6 Aug handoff confirmed 115/115 unique, survives the OSM
+    re-extract, where the file previously had no stable ID on any POI at all.
+
+    Named "kind: dive" in the source, but that OSM category is broader than
+    underwater dive sites — it also carries Wadi Rum desert attractions (Siq al
+    Khazali, Barrah Canyon, sand dunes), tens of km inland from Aqaba. Returned
+    as-is here, unfiltered further; `dive_sites_with_nearest_zone()` reports the
+    real distance to the nearest reef zone so a caller can see which of these are
+    actually coastal rather than trust the category name.
+    """
+    if not PLACES_PATH.exists():
+        return []
+    data = json.loads(PLACES_PATH.read_text())
+    out = []
+    for f in data.get("features", []):
+        if f.get("properties", {}).get("kind") != "dive":
+            continue
+        # Geometry is MultiPoint, not Point, even for a single-location POI —
+        # take the first point as the representative location.
+        lon, lat = f["geometry"]["coordinates"][0]
+        out.append({
+            "osm_id": f["properties"]["osm_id"],
+            "name_en": f["properties"].get("name_en"),
+            "name_ar": f["properties"].get("name_ar"),
+            "lon": lon,
+            "lat": lat,
+        })
+    return out
+
+
+def dive_sites_with_nearest_zone() -> list[dict]:
+    """Each dive site joined to its nearest reef zone by real EPSG:32636 distance
+    — never a lookup by proximity in degrees, which distorts distance differently
+    north-south vs east-west (the same rule `exposure/engine.py` enforces via
+    `_assert_measure_crs`). Distance is always reported, however large — a POI
+    tens of km inland (see `dive_sites()`'s docstring) is not silently dropped,
+    its distance just says so; the caller decides what counts as "too far to be
+    a real dive-site safety concern," this function only measures.
+    """
+    sites = dive_sites()
+    if not sites:
+        return []
+    zones = reef_zones_gdf()
+    if zones is None or zones.empty:
+        return [{**s, "nearest_reef_zone_id": None, "distance_m": None} for s in sites]
+
+    import geopandas as gpd
+    from shapely.geometry import Point
+
+    from exposure.engine import CRS_MEASURE
+
+    zones_utm = zones.to_crs(CRS_MEASURE)
+    out = []
+    for s in sites:
+        pt = (gpd.GeoSeries([Point(s["lon"], s["lat"])], crs="EPSG:4326")
+              .to_crs(CRS_MEASURE).iloc[0])
+        d = zones_utm.geometry.distance(pt)
+        idx = d.idxmin()
+        out.append({
+            **s,
+            "nearest_reef_zone_id": zones_utm.loc[idx, "reef_zone_id"],
+            "distance_m": float(d.loc[idx]),
+        })
+    return out
+
+
 def landcover_for(cid: str) -> dict | None:
     return _feature_table("landcover").get(cid)
 

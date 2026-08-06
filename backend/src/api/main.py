@@ -67,6 +67,7 @@ from .schemas import (
     CatchmentOut,
     Caveat,
     DataSourceOut,
+    DiveSiteOut,
     DriverOut,
     EventOut,
     ExplainRequest,
@@ -495,6 +496,50 @@ def event_mooring(event_id: str):
         series_available=False,
         caveats=[],
     )
+
+
+#: Real coastal dive/wreck sites (Gorgon 1, Cedar Pride Shipwreck, King Abdullah
+#: reef, ...) measured 0-997 m from their nearest reef zone. Everything else
+#: tagged `kind: dive` in the source OSM extract is a Wadi Rum desert attraction
+#: (Barrah Canyon, sand dunes, petroglyphs) at 32,500 m or more — a 32x jump with
+#: nothing between the two clusters. 2,000 m is a round number inside that gap,
+#: not a fitted threshold; it exists to flag the mismatch, not to hide it.
+DIVE_SITE_IMPLAUSIBLE_DISTANCE_M = 2000.0
+
+
+@app.get(f"{PREFIX}/dive-sites", response_model=list[DiveSiteOut], tags=["geometry"])
+def list_dive_sites():
+    """Dive-site POIs joined to their nearest reef zone — Phase 4, feature B
+    (Dive Site Safety Status). Karam's 6 Aug handoff: `osm_id` is now a stable
+    join key in `places.geojson` (115/115 unique, confirmed against the source
+    OSM re-extract).
+
+    Returns the geometric join only — nearest_reef_zone_id and distance_m — not
+    a risk score. A "safety status" needs an event/outlet-scoped exposure result,
+    which this endpoint has no parameters for; the caller cross-references
+    nearest_reef_zone_id against whatever `/alerts` or `/exposure/calculate`
+    result it already has for the event it's showing, rather than this endpoint
+    re-deriving that per dive site.
+    """
+    out = []
+    for s in da.dive_sites_with_nearest_zone():
+        caveats = []
+        if s["distance_m"] is not None and s["distance_m"] > DIVE_SITE_IMPLAUSIBLE_DISTANCE_M:
+            caveats.append(Caveat(
+                field="nearest_reef_zone_id",
+                message=(
+                    f"{s['distance_m']:,.0f} m from the nearest reef zone. The "
+                    "source OSM category (\"kind: dive\") also carries Wadi Rum "
+                    "desert attractions alongside real coastal dive sites, and "
+                    "this POI is far enough inland that it is very unlikely to "
+                    "be an actual dive site — treat the join as unreliable for "
+                    "this one, not as a real safety association."
+                ),
+                severity="warning",
+                source="backend/src/api/data_access.py:dive_sites",
+            ))
+        out.append(DiveSiteOut(**s, caveats=caveats))
+    return out
 
 
 # -------------------------------------------------------------------- forecast

@@ -252,6 +252,25 @@ class MooringOut(BaseModel):
     caveats: list[Caveat] = []
 
 
+class DiveSiteOut(BaseModel):
+    """A dive-site POI joined to its nearest reef zone — Phase 4, feature B
+    (Dive Site Safety Status). `osm_id` is the stable join key (Karam's 6 Aug
+    handoff). `distance_m` is a real EPSG:32636 measurement, always reported —
+    the source OSM category ("kind: dive") also carries Wadi Rum desert
+    attractions tens of km inland, and a large distance here is exactly how a
+    caller tells those apart from an actual coastal dive site, rather than the
+    API silently dropping or silently including them."""
+
+    osm_id: str
+    name_en: str | None = None
+    name_ar: str | None = None
+    lon: float
+    lat: float
+    nearest_reef_zone_id: str | None = None
+    distance_m: float | None = None
+    caveats: list[Caveat] = []
+
+
 # -------------------------------------------------------------------- runoff
 
 class RunoffRequest(BaseModel):
