@@ -98,6 +98,11 @@ SIMPLIFY_M = {
     "landuse": 25.0,
     "wadis": 80.0,
     "isobaths": 60.0,     # 50 m source raster; finer is quantisation noise
+    # Coarser than isobaths deliberately: this feeds a 3D fill-extrusion viewed from
+    # well outside the AOI, not a measurement read up close, and the fragmented
+    # mountainous terrain produces far more tiny polygons per metre of tolerance than
+    # the smoother seafloor isobaths do at the same setting.
+    "relief_bands": 200.0,
     "catchments": 120.0,
     "coverage": 0.0,      # a bbox
     "_default": 15.0,
@@ -109,7 +114,11 @@ LATIN = re.compile(r"[A-Za-z]")
 
 def parse_other_tags(raw):
     """OSM `other_tags` is an hstore string: "name:ar"=>"...","name:en"=>"..."."""
-    if not raw:
+    # `not raw` looked like it covered "missing", but a missing `other_tags`
+    # cell is a NaN float (truthy, so `not raw` is False) once the column has
+    # any real string values elsewhere -- same pandas object-dtype gap as
+    # bilingual()'s own `name` column, just one call further in.
+    if not isinstance(raw, str):
         return {}
     return dict(re.findall(r'"([^"]+)"=>"([^"]*)"', raw))
 
@@ -130,7 +139,12 @@ def bilingual(row):
     rather than mislabelled as English.
     """
     tags = parse_other_tags(row.get("other_tags"))
-    name = (row.get("name") or "").strip()
+    # `row.get("name")` is a NaN float, not None, when the column has any real
+    # string values elsewhere -- pandas gives the column object dtype with
+    # float("nan") filling the gaps, and `nan or ""` evaluates to nan (NaN is
+    # truthy), so `.strip()` used to crash on the first no-name feature reached.
+    raw_name = row.get("name")
+    name = (raw_name if isinstance(raw_name, str) else "").strip()
 
     ar = tags.get("name:ar") or (name if ARABIC.search(name) else None)
     en = tags.get("name:en") or (name if LATIN.search(name) and not ARABIC.search(name) else None)
@@ -227,6 +241,66 @@ def isobaths(report):
     return gdf
 
 
+# Same raster as isobaths(), banded rather than contoured: filled polygons with a
+# real mid-band metres value, for the 3D Journey's fill-extrusion (feature 14,
+# tasks/phase4/00-phase4-plan.md and tasks/phase4/06-ali.md).
+# One real DEM/bathymetry source covers both land (positive, the coastal fringe the
+# marine AOI raster reaches) and sea (negative) -- no separate terrain source, no
+# invented relief. Edges chosen to match ISOBATHS below sea level and to resolve the
+# coastal mountains (up to ~1,800 m) above it without over-fragmenting the polygon
+# count.
+RELIEF_BAND_EDGES_M = [-800, -400, -200, -100, -50, -25, 0, 50, 150, 400, 800, 2000]
+
+
+def relief_bands(report):
+    """Fill-able elevation/depth bands from the same raster isobaths() contours.
+
+    rasterio.features.shapes over a boolean mask per band, same technique as
+    isobaths() and as models.particle_engine.kernel_density_contours -- one
+    proven approach, reused rather than a third variant invented for this.
+    Unlike isobaths() this keeps the filled polygon (not `.boundary`): a
+    fill-extrusion layer needs an area with a height, a contour line has none.
+    """
+    src_path = cfg.PROCESSED / "bathymetry" / "depth_utm36n.tif"
+    if not src_path.exists():
+        print(f"  relief_bands     SKIPPED — {src_path} not present")
+        return None
+
+    with rasterio.open(src_path) as src:
+        arr = src.read(1, masked=True)
+        transform, crs = src.transform, src.crs
+
+    rows = []
+    edges = RELIEF_BAND_EDGES_M
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        mask = ((arr >= lo) & (arr < hi)).filled(False)
+        if not mask.any():
+            continue
+        polys = [
+            shape(geom)
+            for geom, val in features.shapes(mask.astype(np.uint8), mask=mask, transform=transform)
+            if val == 1
+        ]
+        if not polys:
+            continue
+        merged = unary_union(polys)
+        rows.append({
+            "geometry": merged,
+            "band_min_m": float(lo),
+            "band_max_m": float(hi),
+            "mid_m": float((lo + hi) / 2.0),
+            "realm": "sea" if hi <= 0 else ("land" if lo >= 0 else "shore"),
+        })
+
+    if not rows:
+        print("  relief_bands     SKIPPED — no cell reached any band")
+        return None
+
+    gdf = gpd.GeoDataFrame(rows, geometry="geometry", crs=crs)
+    print(f"    relief bands: {[(r['band_min_m'], r['band_max_m']) for r in rows]}")
+    return gdf
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -243,8 +317,14 @@ def main():
     # same-origin GeoJSON, parsed once, is not that. Cutting the wadis further to fit
     # a number invented in Phase 1 would remove the hazard's own paths, which 01 §2
     # calls part of the signature.
-    ap.add_argument("--budget-kb", type=int, default=1100,
-                    help="fail if the total exceeds this (default 1100)")
+    # 1,400 KB, raised from 1,100 -- same judgement call as the 500->1,100 raise
+    # above, for the same reason: relief_bands.geojson (feature 14, the 3D Journey)
+    # adds ~325 KB of real, fill-extrudable elevation/depth polygons at 200 m
+    # simplification -- coarser than isobaths already is, and the fragmented
+    # mountainous terrain does not compress further without visibly blocky bands.
+    # Still same-origin, still parsed once, still nowhere near a tile pyramid.
+    ap.add_argument("--budget-kb", type=int, default=1400,
+                    help="fail if the total exceeds this (default 1400)")
     args = ap.parse_args()
 
     out = Path(args.out)
@@ -268,6 +348,8 @@ def main():
 
     # --- the signature -----------------------------------------------------
     write(out, "isobaths", isobaths(report), keep=("depth_m",), report=report)
+    write(out, "relief_bands", relief_bands(report),
+          keep=("band_min_m", "band_max_m", "mid_m", "realm"), report=report)
 
     # --- OSM: roads, wadis, protection, landuse, places --------------------
     roads = gpd.read_file(osm, layer="roads")
@@ -352,7 +434,10 @@ def main():
     print(f"    place kinds: {dict(poi['kind'].value_counts())}")
 
     name_coverage(poi, "places")
-    write(out, "places", poi, keep=("name_ar", "name_en", "kind"), report=report)
+    # osm_id survives every filter above untouched -- it's a real, stable ID
+    # from the source data (not synthesized), and Phase 4 needs one to join a
+    # dive site to its nearest reef zone. It was dropped here until now.
+    write(out, "places", poi, keep=("osm_id", "name_ar", "name_en", "kind"), report=report)
 
     # --- the project's own geometry ----------------------------------------
     # These exist because /api/v1/catchments returns attributes plus a single

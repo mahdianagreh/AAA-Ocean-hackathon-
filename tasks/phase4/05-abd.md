@@ -1,16 +1,24 @@
 # Abd — Phase 4
 
 > **All three items below closed 6 Aug 2026 — read this box before the audit that
-> follows it.** The `is_stub: true` finding right below was real for the branch it was
-> checked against (`b987e9d`), but that branch and the commit that actually wires the
-> real engine (`0de8c26`) were siblings on divergent branches at the time — they only
-> merged afterward, into what is now `main` (`6de325c`). Re-verified live against
-> current `main` on 6 Aug: `is_stub: false`, a real HYCOM archive genuinely consulted,
-> real calibrated params, 71 tests passed. See item 1 for the full evidence — including
-> a correction added after an independent adversarial audit: the flagship evidence
-> outlet's *simulated output* is diffusion-dominated, not visibly current-driven, for a
-> real and disclosed physics reason (item 1's third checkbox has the measurement).
-> Items 2 and 3 are also closed — see their sections below for what was actually done.
+> follows it, and before re-deriving anything as still open.** The `is_stub: true`
+> finding right below was real for the branch it was checked against (`b987e9d`), but
+> that branch and the commit that actually wires the real engine (`0de8c26`) were
+> siblings on divergent branches at the time — they only merged afterward, into what
+> is now `main` (`6de325c`). **Confirmed independently by two people, not just one:**
+> Karam live-checked the running container first (`is_stub: false`,
+> `model_version: custom_2d-calibrated-AQ-2016-10-28`, real HYCOM currents in
+> provenance, differentiated non-zero exposure scores per outlet —
+> `AQ-O02`/`AQ-O03`/`AQ-O05` reach a nearby reef zone at `minimal`, `AQ-O01` reaches
+> none within 120h). Abd then re-verified the same and went one step further: the
+> `AQ-O01` non-result and the flagship `AQ-O02` evidence outlet share the *same*
+> cause — both release points sit on a current-grid cell masked as land — and
+> `AQ-O02`'s *simulated output* is measurably diffusion-dominated, not visibly
+> current-driven, a real and disclosed physics limitation, not a wiring gap (item 1's
+> third checkbox has the measurement). Item 1's checklist below is obsolete; items 2
+> and 3 are also closed — see their sections for what was actually done. **6 Aug,
+> update:** the 3D Journey (feature 14, §"What this closes") is now underway on top
+> of this — see the new section below.
 
 **This is a carry-over, and it's now blocking more than it was in Phase 3.** Read
 [`00-phase4-plan.md`](00-phase4-plan.md) first.

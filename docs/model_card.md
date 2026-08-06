@@ -19,7 +19,7 @@ model.**
 | **E · Explanation** | risk state → grounded bilingual paragraph | Pulga | **implemented, tested** |
 | **E · Retrieval (`/ask`)** | technical corpus → cited answers | Pulga | **implemented, tested** |
 | **A · Runoff classifier** | rainfall + catchment features → runoff probability | Mahdi | **implemented, LOCO-validated** |
-| **C · Plume transport** | outlet discharge → probability contours | Abd | **wired and calibrated** — real for the currents input; near-shore current-grid masking limits it, see below |
+| **C · Plume transport** | outlet discharge → probability contours | Abd | **implemented, wired live** — near-shore current-grid masking limits realism at the demo outlets, see below |
 
 The section for C is deliberately short — that owner should fill it in, and writing
 confident text about someone else's model would be exactly the kind of unearned
@@ -65,7 +65,7 @@ for intuition, and **operational thresholds require marine-scientist input.**
 | Term | Range | Source | Kind |
 |---|---|---|---|
 | `plume_probability` | 0–1 | Abd's contoured particle field | derived |
-| `relative_sediment_intensity` | 0–1 | Mahdi's sediment class, normalised | derived (stub today) |
+| `relative_sediment_intensity` | 0–1 | Mahdi's anchored sediment index, normalised | derived (real for AQ-2016-10-28/AQ-C01, the only event/catchment with a training-set feature row today; placeholder 0.5 otherwise) |
 | `exposure_duration_weight` | 0–1 | span of contour timestamps ÷ horizon | derived |
 | `habitat_sensitivity_weight` | 1.0 | **team placeholder** | **assumed** |
 | `confidence_adjustment` | 0–1 | GEFS ensemble spread | derived (stub today) |
@@ -392,7 +392,15 @@ genuinely unseen catchment, and this gap is exactly why. Which static
 feature(s) drive it has not been isolated — that is follow-up work, not
 something this card's numbers already account for.
 
-### Temporal holdout — train ≤2014, test ≥2015 (measured 5 Aug 2026)
+### Temporal holdout — train ≤2014, test ≥2015 (measured 6 Aug 2026, `scripts/19`)
+
+Now computed by `scripts/19_train_production_model.py` and recorded in
+`model_versions.jsonl["metrics"]` as `temporal_holdout_AP` and
+`temporal_holdout_anchor_check` — not just narrative in this card. This is a
+different claim from the calibration slice above: that slice only shows the
+*calibrator* hasn't seen the test rows; this shows the *classifier's* training
+data ends before 2015, full stop — which is what licenses a claim of the form
+"the model never saw this storm during training."
 
 | | rows | positive rate |
 |---|---:|---:|
@@ -403,8 +411,13 @@ something this card's numbers already account for.
 
 **The headline claim, measured rather than assumed:** trained only on data
 through 2014 — October 2016 genuinely unseen — the model's predicted
-probability for AQ-C01 on 2016-10-27 ranks **57th of 1,102** held-out AQ-C01
-catchment-days from 2015–2022 (**94.83rd percentile**). This is not "the
+probability for AQ-C01 on the canonical anchor date, **`AQ-2016-10-28`**,
+ranks **76th of 1,102** held-out AQ-C01 catchment-days from 2015–2022
+(**93.1st percentile**). (An earlier check against 2016-10-27 — the day
+IMERG recorded the storm's peak rainfall, one day before the ID's date —
+found 57th/94.83rd; this version deliberately checks the *documented* event
+ID rather than whichever nearby day ranks best, which is the more defensible
+number to quote even though it is very slightly lower.) This is not "the
 highest in 26 years" — that framing overstated what a temporal holdout of
 2015–2022 can show — but it is a genuine, falsifiable result: the storm that
 produced the one documented major sediment event lands in the top 5% of
@@ -455,6 +468,25 @@ calibration *method*, not as this model's own numbers.
 leakage decomposition above — rank 2nd and 3rd, immediately behind rainfall.
 This is independent confirmation of the M2−M1 finding, not a new one.
 
+### Per-prediction attributions (`feature_attributions`) — confirmed 6 Aug 2026
+
+`predict_one()` returns real TreeSHAP values per request, e.g. for the anchor storm:
+`rain_self_percentile +0.996`, `rain_over_p90 +0.774`, `precip_prior_1d_mm +0.602`,
+`precip_prior_3d_mm -0.513` — a coherent story for that day. `feature_attributions_status`
+is `None` on success and an error string when TreeSHAP itself fails (`shap` not
+installed); the caller renders "drivers unavailable" from the status, never a chart of
+zeros, since a zero-SHAP bar reads as "the model says none of these matter."
+
+**`status: None` does not mean the attributions are meaningful.** A request built from
+a couple of scenario fields (e.g. `rainfall_mm_3h`) rather than a full row from
+`da.training_row()` never actually reaches the model's 20 real features — every one is
+NaN — and TreeSHAP runs cleanly on that anyway, returning a fixed set of "drivers"
+identical across every catchment tested. `feature_attributions_status` cannot
+distinguish this from a real explanation, because SHAP did not fail. Full write-up:
+`docs/HANDOFF_pulga_2026-08-06.md`. **Only wire a driver chart to `feature_attributions`
+when the request came from `da.training_row()`** — never from a hand-built scenario
+request.
+
 ### What this model cannot do
 
 - **It predicts modelled runoff generation in a reanalysis, not a flood
@@ -486,15 +518,83 @@ This is independent confirmation of the M2−M1 finding, not a new one.
 
 ---
 
+## B · Sediment-load proxy — Mahdi
+
+**A formula, not a model.** Nothing in `backend/src/models/sediment_proxy.py` is
+fitted; every term is either a physical quantity or an explicit, documented
+assumption.
+
+```text
+sediment_index = bare_fraction × slope_term(θ) × erodibility(clay, sand, silt, soc)
+                × Q × drainage_density × (1 − transmission_loss)
+```
+
+`Q` (runoff volume) comes from `RuleBaseline.runoff_depth()` — a curve-number
+formula driven directly by IMERG rainfall, never fit to any label. `scripts/26`
+found this is the only runoff input that ranks the one documented sediment
+event (Oct 2016, ≈24,400 t) near the top of 27 years (12th of 2,362 days); both
+ERA5-derived alternatives fail (176th, 193rd) because they inherit ERA5's
+underestimate of that storm.
+
+Anchored on that one measurement via a sidecar file
+(`data/models/sediment_anchor.json`, written by
+`scripts/27_anchor_sediment_proxy.py`) rather than baked into the trained
+artifact — `k` is a calibration constant, not a learned parameter, and the
+sidecar is re-verified against a drift check every time the model loads.
+Confirmed live against the running API 6 Aug: `relative_sediment_intensity:
+0.084`, `sediment_class: High` for the anchor event, non-zero for the first
+time in the project.
+
+### Transmission loss — the biggest un-measured assumption, and its bounds
+
+`transmission_loss` (τ) is the fraction of a flood's water — and the sediment
+it carries — that soaks into the dry wadi streambed before ever reaching the
+coast. Nobody has measured this for Aqaba's wadis directly, so it is an
+explicit, exposed parameter rather than a silent zero (the pipeline's
+implicit assumption before this module existed, which is the most optimistic
+value available and certainly wrong).
+
+| range | value | use |
+|---|---|---|
+| `TAU_LITERATURE` | 13.2%–98% | full range across arid catchments generally — includes environments nothing like Aqaba |
+| **`TAU_NEGEV`** | **20%–85%** | **the closest studied desert analog — bound any UI slider to this** |
+| `TAU_DEFAULT` | 52.5% | the Negev midpoint; nearest documented setting, not a local measurement |
+
+**Not yet wired as a request parameter.** `SedimentProxy.with_transmission_loss(tau)`
+already exists and returns a new proxy at a different τ with nothing mutated —
+exactly what a scenario slider needs — but no API endpoint currently accepts τ
+as input; every response reports the fixed default. Full write-up:
+`docs/HANDOFF_transmission_loss_2026-08-06.md`.
+
+### What this formula cannot do
+
+- **One measurement anchors the scale, not the shape.** The formula has six
+  terms and a single documented mass constrains one degree of freedom, so any
+  tonnage for a different event is an extrapolation along an unverified
+  curve. Relative classes (`Low`/`Medium`/`High`/`Extreme`) are the honest
+  output; a tonnage figure should only ever be shown for the anchor event
+  itself (Phase 4 task 5).
+- **Two of six terms are currently inert.** `training_set_full.parquet` has
+  no `bare_fraction`/soil-texture columns, so the bare-fraction and
+  erodibility terms fall back to the same default for every catchment — the
+  formula does not yet differentiate catchments by surface type, only by
+  slope, drainage density, area, and `Q`.
+- **τ is a literature analog, not a local measurement**, and is reported with
+  its range attached for exactly that reason.
+
+---
+
 ## C · Plume transport (particle engine) — Abd
 
 **Wired and live as of 6 Aug 2026** (`0de8c26`; confirmed live against `main` `6de325c`
 during the Phase 4 audit closeout — the API previously stubbed this route, and that is
-no longer true). `POST /api/v1/plume/simulate` and `POST /api/v1/exposure/calculate`
-both run the real engine at `backend/src/models/particle_engine.py`;
-`is_stub: false`, `plume_source: REAL_PARTICLE_ENGINE`, and
-`model_versions.particle_engine` names the calibrated build
-(`custom_2d-calibrated-AQ-2016-10-28`), not `stub-0.1`.
+no longer true, independently confirmed by both Abd and Karam). `POST
+/api/v1/plume/simulate` calls the real engine at
+`backend/src/models/particle_engine.py` unconditionally and always returns
+`is_stub: false`; `POST /api/v1/exposure/calculate` reuses the same run.
+`plume_source: REAL_PARTICLE_ENGINE`, and `model_versions.particle_engine` names the
+calibrated build (`custom_2d-calibrated-AQ-2016-10-28`), not `stub-0.1`. Consumes
+`depth_utm36n.tif` and `coastline.gpkg`.
 
 **Physics.** A 2D probabilistic particle cloud (deliberately not a hydrodynamic
 model — concept doc §25 names "team overbuilds full physics" as a risk to avoid).
@@ -519,8 +619,8 @@ explicitly not a calibrated arrival probability.
 **Currents.** `AQ-2016-10-28` consults a real, offline-cached HYCOM `GLBu0.08/expt_91.2`
 historical archive (`_current_fn_for_event` in `main.py`) — not a synthetic stand-in.
 Any other `event_id` with no cached archive falls back honestly to
-`ConstantCurrentField(0, 0)` with an explicit caveat in the response; it does not
-silently fabricate a current field.
+`ConstantCurrentField(0, 0)`; `caveats.particle_engine_forcing()` states which of the
+two was used on every single response, so a caller never has to guess.
 
 **Say this precisely, not more than this:** "consults a real archive" is not the same
 claim as "visibly advects on it," and for this project's own outlets it usually is not

@@ -1,5 +1,15 @@
 # Ali — Phase 4
 
+> **Update, 6 Aug, from Karam — three things you need before building against them:**
+> `/api/v1/events` now serves the real 675-event catalogue (was 5 events, no ranking
+> columns, until today). **Use `rank`/`max_daily_mm` for "the" intensity ranking, not
+> `max_anomaly_ratio`** — they rank storms differently. The Seasonal Risk Calendar is
+> **rainfall intensity, not exposure** (exposure's anchored to one October event, would
+> read flat elsewhere). Dive-site POIs in `places.geojson` now carry a real `osm_id` —
+> full detail in `01-karam.md`'s update note. Also: the plume is not still a stub
+> (Abd's file is stale on this) — `/plume/simulate` already returns real particle-engine
+> output, confirmed live.
+
 Read [`00-phase4-plan.md`](00-phase4-plan.md) first.
 
 You're on almost every row in the plan's ownership table, and that's not a sign you're
