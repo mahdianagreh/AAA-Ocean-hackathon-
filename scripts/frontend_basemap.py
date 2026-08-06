@@ -109,7 +109,11 @@ LATIN = re.compile(r"[A-Za-z]")
 
 def parse_other_tags(raw):
     """OSM `other_tags` is an hstore string: "name:ar"=>"...","name:en"=>"..."."""
-    if not raw:
+    # `not raw` looked like it covered "missing", but a missing `other_tags`
+    # cell is a NaN float (truthy, so `not raw` is False) once the column has
+    # any real string values elsewhere -- same pandas object-dtype gap as
+    # bilingual()'s own `name` column, just one call further in.
+    if not isinstance(raw, str):
         return {}
     return dict(re.findall(r'"([^"]+)"=>"([^"]*)"', raw))
 
@@ -130,7 +134,12 @@ def bilingual(row):
     rather than mislabelled as English.
     """
     tags = parse_other_tags(row.get("other_tags"))
-    name = (row.get("name") or "").strip()
+    # `row.get("name")` is a NaN float, not None, when the column has any real
+    # string values elsewhere -- pandas gives the column object dtype with
+    # float("nan") filling the gaps, and `nan or ""` evaluates to nan (NaN is
+    # truthy), so `.strip()` used to crash on the first no-name feature reached.
+    raw_name = row.get("name")
+    name = (raw_name if isinstance(raw_name, str) else "").strip()
 
     ar = tags.get("name:ar") or (name if ARABIC.search(name) else None)
     en = tags.get("name:en") or (name if LATIN.search(name) and not ARABIC.search(name) else None)
@@ -352,7 +361,10 @@ def main():
     print(f"    place kinds: {dict(poi['kind'].value_counts())}")
 
     name_coverage(poi, "places")
-    write(out, "places", poi, keep=("name_ar", "name_en", "kind"), report=report)
+    # osm_id survives every filter above untouched -- it's a real, stable ID
+    # from the source data (not synthesized), and Phase 4 needs one to join a
+    # dive site to its nearest reef zone. It was dropped here until now.
+    write(out, "places", poi, keep=("osm_id", "name_ar", "name_en", "kind"), report=report)
 
     # --- the project's own geometry ----------------------------------------
     # These exist because /api/v1/catchments returns attributes plus a single

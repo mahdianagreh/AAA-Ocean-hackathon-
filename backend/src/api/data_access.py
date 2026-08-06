@@ -44,6 +44,10 @@ ARTIFACTS: dict[str, Path] = {
     # Live means "latest cached forecast" (tasks/phase3/00-phase3-plan.md), never a
     # request-time GFS/GEFS/Postgres call.
     "forecast_snapshot": DATA / "processed" / "forecasts" / "latest_snapshot.json",
+    # The real 675-event rainfall-detected catalogue (scripts/build_event_catalogue.py).
+    # Distinct from "event_dates" above: that file is the small, literature-cited
+    # subset with paper provenance; this is the exhaustive daily-screening result.
+    "event_catalogue": DATA / "processed" / "events" / "events.parquet",
 }
 
 
@@ -339,6 +343,35 @@ def events() -> list[dict]:
     return sorted(seen.values(), key=lambda x: x["event_id"])
 
 
+@lru_cache(maxsize=1)
+def event_catalogue() -> list[dict]:
+    """The real, exhaustive 675-event rainfall catalogue
+    (scripts/build_event_catalogue.py), sorted by `rank` (1 = highest
+    `max_daily_mm`). THE canonical ranking for "which storm was worst" — `rank`
+    /`max_daily_mm`, not `max_anomaly_ratio`, which ranks storms differently and
+    is exposed for reference only (Phase 4 §01-karam.md item 1).
+
+    Deliberately separate from `events()`: that function's docstring calls
+    docs/event_dates.md "the source of truth" for the small literature-cited
+    list, and nothing else in this codebase depends on that contract — this is
+    the exhaustive daily-screening result, source of the ranking/search data
+    Phase 4 actually needs. Empty list if the artifact is absent — missing is
+    missing, no fallback to the 5-event markdown list pretending to be 675.
+    """
+    import pandas as pd
+
+    path = ARTIFACTS["event_catalogue"]
+    if not path.exists():
+        return []
+    df = pd.read_parquet(path, columns=[
+        "event_id", "date", "rank", "max_daily_mm", "mean_daily_mm",
+        "max_anomaly_ratio", "catchments_exceeding_p99", "wettest_catchment",
+        "storm_days", "is_exhaustive",
+    ]).sort_values("rank")
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+    return df.to_dict("records")
+
+
 @lru_cache(maxsize=8)
 def flood_arrival_utc(event_id: str):
     """The moment sediment reaches the sea, for `event_id` -- the release time
@@ -572,11 +605,27 @@ def forecast_snapshot() -> dict | None:
     return json.loads(path.read_text())
 
 
+def gefs_exceedance_for(catchment_id: str) -> dict | None:
+    """This catchment's row from the cached snapshot's `gefs_exceedance` array --
+    `exceedance_prob`/`members_exceeding`/`members_total` against Karam's real p99
+    climatology (`catchment_rainfall_climatology`, `forecast_pipeline.py`). `None`
+    when the snapshot is absent or has no row for this catchment -- the caller
+    must treat that as a real gap, not fall back to a silent fabricated number."""
+    snapshot = forecast_snapshot()
+    if not snapshot:
+        return None
+    for row in snapshot.get("gefs_exceedance", []):
+        if row.get("catchment_id") == catchment_id:
+            return row
+    return None
+
+
 def clear_all_caches() -> None:
     catchments.cache_clear()
     reef_zones.cache_clear()
     outlets.cache_clear()
     events.cache_clear()
+    event_catalogue.cache_clear()
     data_sources.cache_clear()
     _feature_table.cache_clear()
     forecast_snapshot.cache_clear()

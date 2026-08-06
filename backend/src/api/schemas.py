@@ -204,6 +204,26 @@ class EventOut(BaseModel):
     source: str | None = None
     caveats: list[Caveat] = []
 
+    # From the real 675-event catalogue (data/processed/events/events.parquet),
+    # via data_access.event_catalogue() -- None for an event that exists only in
+    # docs/event_dates.md's literature list and not in the rainfall-detected
+    # catalogue (should not happen for a real event, but never assumed).
+    rank: int | None = Field(
+        default=None, description="1 = highest max_daily_mm of all 675 candidate "
+                                   "events. THE canonical ranking -- see max_daily_mm.")
+    max_daily_mm: float | None = None
+    mean_daily_mm: float | None = None
+    max_anomaly_ratio: float | None = Field(
+        default=None, description="Not the ranking column -- max_daily_mm/rank is. "
+                                   "This ranks storms differently; exposed for reference, "
+                                   "not as an alternate ranking to pick between.")
+    catchments_exceeding_p99: int | None = None
+    wettest_catchment: str | None = None
+    storm_days: int | None = None
+    is_exhaustive: bool | None = Field(
+        default=None, description="True once the full ~28-year daily record has been "
+                                   "screened and ranked (build_event_catalogue.py).")
+
 
 class MooringMarker(BaseModel):
     key: str

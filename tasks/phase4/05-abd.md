@@ -1,5 +1,18 @@
 # Abd — Phase 4
 
+> **Correction, 6 Aug, from Karam — item 1 below is stale, already closed.** This
+> audit ran against a branch that hadn't merged `0de8c26` (the real particle-engine
+> wiring into `/plume/simulate`) yet — it landed on `main` afterward, and the merge
+> that brought this very file in (`6de325c`) happened right after. Live-checked just
+> now against the running container: `is_stub: false`,
+> `model_version: custom_2d-calibrated-AQ-2016-10-28`, real HYCOM currents in
+> provenance, differentiated non-zero exposure scores per outlet
+> (`AQ-O02`/`AQ-O03`/`AQ-O05` reach a nearby reef zone at `minimal`; `AQ-O01` doesn't
+> reach any zone within 120h — its release point sits on a current-grid cell masked as
+> land, now a surfaced caveat, not a mystery). **Don't re-derive this or re-plan around
+> it as still open** — item 1's checklist below is obsolete. Items 2/3 (mooring
+> overlay scope, Swap #4 status) still stand.
+
 **This is a carry-over, and it's now blocking more than it was in Phase 3.** Read
 [`00-phase4-plan.md`](00-phase4-plan.md) first.
 

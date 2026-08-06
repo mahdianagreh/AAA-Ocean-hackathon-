@@ -122,6 +122,34 @@ def test_reef_zones_shape():
               for z in zones))
 
 
+def test_event_catalogue_is_real_and_ranked():
+    """Phase 4, 01-karam.md item 1/2: /api/v1/events used to serve only the 5
+    events mentioned in docs/event_dates.md's prose, with no ranking columns at
+    all. It must now serve the real 675-event catalogue, ranked by `rank`
+    (max_daily_mm) -- the canonical ranking, not `max_anomaly_ratio`."""
+    r = client.get(f"{PREFIX}/events")
+    check("events 200", r.status_code == 200)
+    evs = r.json()
+    check(f"real catalogue, not the 5-event markdown list ({len(evs)})", len(evs) >= 675)
+    check("every catalogued event carries rank",
+          sum(1 for e in evs if e["rank"] is not None) >= 675)
+    ranked = [e for e in evs if e["rank"] is not None]
+    check("sorted by rank ascending",
+          [e["rank"] for e in ranked] == sorted(e["rank"] for e in ranked))
+    check("rank 1 has the highest max_daily_mm",
+          ranked[0]["max_daily_mm"] == max(e["max_daily_mm"] for e in ranked))
+
+    r2 = client.get(f"{PREFIX}/events/AQ-2016-10-28")
+    check("demo event 200", r2.status_code == 200)
+    demo = r2.json()
+    check("demo event carries its real rank", demo["rank"] is not None)
+    check("demo event keeps its literature label",
+          demo["label"] == "AQ-2016-10-28" and demo["source"] == "docs/event_dates.md")
+
+    check("unknown event 404s",
+          client.get(f"{PREFIX}/events/AQ-9999-01-01").status_code == 404)
+
+
 def test_stub_endpoints_are_flagged():
     """Whichever branch answers, the endpoint must declare which one it was.
 
@@ -204,6 +232,19 @@ def test_exposure_contract_and_formula_terms():
           ft.get("measure_crs") == "EPSG:32636", f"got {ft.get('measure_crs')}")
     check("formula_terms records the plume input as the real particle engine",
           ft.get("plume_source") == "REAL_PARTICLE_ENGINE", f"got {ft.get('plume_source')!r}")
+
+    # Phase 4, 01-karam.md item 4: confidence_adjustment used to be a literal
+    # 0.6 regardless of input. It must now be derived from the real cached
+    # GEFS exceedance snapshot -- the reason string is the tell, since AQ-C02's
+    # exceedance_prob happens to be 0.0 today too (agreement 1.0 either way).
+    check("confidence_adjustment_reason is computed from real GEFS members, "
+          "not the old fixed sentence",
+          "GEFS members" in ft.get("confidence_adjustment_reason", "")
+          and "agreement" in ft.get("confidence_adjustment_reason", ""),
+          f"got {ft.get('confidence_adjustment_reason')!r}")
+    for field in ("confidence_members_exceeding", "confidence_members_total",
+                  "confidence_threshold_value_mm"):
+        check(f"formula_terms includes {field}", field in ft)
 
     # The audit path: a stored run must reconstruct.
     rid = j["run_id"]

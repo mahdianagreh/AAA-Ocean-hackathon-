@@ -1,5 +1,16 @@
 # Phase 4 — the feature list, against what actually runs
 
+> **Correction, 6 Aug, from Karam: the "one fact" below is stale, not current.** The
+> audit that produced it ran against a branch that hadn't merged the real
+> particle-engine wiring (`0de8c26`) yet — that commit landed on `main` before this
+> plan's own merge commit (`6de325c`). Live-checked just now: `/plume/simulate` returns
+> `is_stub: false`, real HYCOM currents, and `/exposure/calculate` produces
+> differentiated non-zero scores per outlet (not a uniform 9.05/100 ceiling). See
+> `05-abd.md`'s correction note for the full live check. This changes which rows below
+> are genuinely still 🟡/🔴 for the *plume* reason specifically — most of row
+> 1/2/4/5/14's "muted because of the plume stub" framing no longer applies; re-check
+> each one's actual live state before treating this table as current.
+
 Source: the demo feature audit run live against the stack on 6 Aug 2026 (containers
 rebuilt, every claim checked against the filesystem or a running endpoint, not recalled).
 Full findings: the audit report in this conversation's history. This plan turns that
