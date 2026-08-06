@@ -17,8 +17,9 @@
 > current-driven, a real and disclosed physics limitation, not a wiring gap (item 1's
 > third checkbox has the measurement). Item 1's checklist below is obsolete; items 2
 > and 3 are also closed — see their sections for what was actually done. **6 Aug,
-> update:** the 3D Journey (feature 14, §"What this closes") is now underway on top
-> of this — see the new section below.
+> update:** the 3D Journey (feature 14) has now been built on top of this — see §1a
+> below. Not this file's assigned scope (it's Ali's row), built on explicit request;
+> flagged as such there so ownership stays traceable.
 
 **This is a carry-over, and it's now blocking more than it was in Phase 3.** Read
 [`00-phase4-plan.md`](00-phase4-plan.md) first.
@@ -138,6 +139,52 @@ Two findings worth flagging to Pulga/Mahdi, outside this item's scope:
 - **Live Forecast Mode (2) and the driver/confidence features (4, 5)** all inherit this
   same ceiling — they'll look muted for a reason that has nothing to do with Nizar's or
   Karam's or Mahdi's work on them.
+
+---
+
+## 1a · The 3D Journey (feature 14) — ✅ built, 6 Aug, on top of item 1
+
+**Not this file's assigned scope** (feature 14 is Ali's row in `00-phase4-plan.md`,
+with Abd's slice explicitly marked deferred) **— built anyway, on request.** Recorded
+here so ownership stays traceable and Ali's file isn't contradicted by a silent
+change elsewhere.
+
+A real, data-driven 3D scene, reachable from the masthead (`journey` overlay),
+covering the concept doc's own chain — wadi, outlet, plume, reef — in one flown-through
+view:
+
+- **Terrain/bathymetry**: `scripts/frontend_basemap.py`'s new `relief_bands()` vectorizes
+  `depth_utm36n.tif` — the same raster `isobaths` already contours — into 11 real,
+  fill-extrudable elevation/depth bands (`frontend/public/basemap/relief_bands.geojson`),
+  covering both the coastal mountains (up to ~1,800 m) and the seafloor down to -800 m.
+  No separate terrain source, no DEM tile pipeline, no invented relief.
+- **The plume**: `scripts/frontend_journey.py` derives `frontend/public/fixtures/journey3d.json`
+  from a live run of the real particle engine (`POST /plume/simulate` +
+  `/exposure/calculate` for `AQ-2016-10-28`/`AQ-O02`, all 6 real timesteps) — the exact
+  same calibrated engine item 1 wires in, not a second implementation.
+- **Reef zones**: real Allen Coral Atlas geometry, coloured by the real exposure result
+  for this run (`R-03`, `minimal`) — zones the plume never reached carry no colour, not
+  a fabricated zero-risk tint.
+- **Honesty carried through, not left behind**: the scene surfaces the *same*
+  current-grid-masking caveat verbatim (§ above) rather than rendering a more dramatic,
+  current-driven plume than the real run shows. The on-screen caption states the
+  vertical exaggeration (6×) and that sea depth is drawn as upward relief, not sunk
+  below a surface plane — so nothing here implies more precision or more drama than
+  the underlying data supports.
+
+Verified: `tsc -b --noEmit` clean, `oxlint`/`stylelint` clean, `vitest run` 14/14,
+full Playwright suite 25/25 including the axe accessibility pass (one real
+contrast regression this work introduced — `text-ink-3` on `bg-surface-2` in the new
+calibration-fit caveats — found by that same suite and fixed to `text-ink-2`,
+matching the pattern already used elsewhere in the same panel) and the two-language
+`scene-walk` walkthrough. Screenshotted directly, not just asserted green.
+
+Not perfected — a first real pass, not a final visual design: extrusion heights
+needed two rounds of tuning to keep reef/plume layers from being visually swallowed
+inside taller relief blocks at the same footprint, and the result is functional and
+honest rather than polished. Whoever picks up feature 14's remaining visual-design
+work (Ali's row) inherits real geometry and a real fixture to refine, not a
+placeholder.
 
 ---
 

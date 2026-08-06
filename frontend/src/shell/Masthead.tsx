@@ -40,7 +40,7 @@ export function Masthead({ steps }: { steps: string[] }) {
             from the masthead because DoD items 4-7 are things a judge will ask to
             see rather than things buried in a menu. */}
         <nav aria-label={t('overlay.label')} className="flex items-center gap-1">
-          {(['validation', 'provenance', 'limitations', 'assistant'] as const).map((o) => (
+          {(['journey', 'validation', 'provenance', 'limitations', 'assistant'] as const).map((o) => (
             <button
               key={o}
               type="button"

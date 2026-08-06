@@ -9,6 +9,18 @@
 > full detail in `01-karam.md`'s update note. Also: the plume is not still a stub
 > (Abd's file is stale on this) — `/plume/simulate` already returns real particle-engine
 > output, confirmed live.
+>
+> **Update, 6 Aug, from Abd — this file's own "3D Journey (14)" row below, one thing
+> changed under it.** On explicit request, outside this file's original ownership
+> split, I built a first pass of the 3D Journey's plume-cloud portion — real terrain/
+> bathymetry relief (`scripts/frontend_basemap.py`'s new `relief_bands()`), the real
+> calibrated particle engine's contours extruded per real timestep
+> (`scripts/frontend_journey.py`, `frontend/src/journey/`), reef zones coloured by
+> real exposure. It is functional and honest, not a finished visual design — full
+> writeup in `05-abd.md` §1a and `docs/HANDOFF_abd_2026-08-06.md` §5. Your terrain/
+> bathymetry half below may now be partially redundant with what's in
+> `frontend/src/journey/journeyStyle.ts` — worth checking before duplicating it,
+> and the visual-design pass this still needs is yours if you want it.
 
 Read [`00-phase4-plan.md`](00-phase4-plan.md) first.
 
@@ -106,6 +118,12 @@ Abd's route wiring lands** — a 3D-rendered synthetic buffer will look more con
 the 2D version currently does, which makes it a worse thing to demo by mistake, not a
 better one.
 
+**Superseded, 6 Aug — see the update note at the top of this file.** Abd's route
+wiring landed, and a first pass of the plume-cloud portion got built along with it
+(`frontend/src/journey/`, real terrain relief + real extruded plume + real reef
+exposure). Functional, not a finished visual design — treat this row as "refine,"
+not "build from zero."
+
 **What-If Scenario Presets (7) / Judge-Controlled Slider (15).** `ScenarioDrawer.tsx`
 exists but its own copy says "not a calibrated model" — accurate today, since it's not
 wired to a real recompute. Pulga's adding a bounded rainfall-multiplier endpoint this
@@ -181,7 +199,7 @@ before it ships, not after a judge asks where it came from.
 
 | From | What | Blocked? |
 |---|---|---|
-| **Abd** | real plume in `/plume/simulate` | Yes for Storm Replay's full realism and the 3D cloud — build everything else first |
+| **Abd** | real plume in `/plume/simulate` | Landed — a first pass of the 3D cloud shipped with it too (see top-of-file update note); Storm Replay's remaining realism work is unblocked, not built |
 | **Pulga** | multiplier endpoint, mooring endpoint, reef-zone summary shape | Partial — ask him which shape now, build UI after |
 | **Mahdi** | SHAP confirmation, temporal-holdout number, transmission-loss range, damage-estimate copy | Partial — DriverBars already renders, just needs real data |
 | **Nizar** | live-forecast chain confirmed clean, confidence-meter ensemble half | Yes for items 2 and 5's final polish |

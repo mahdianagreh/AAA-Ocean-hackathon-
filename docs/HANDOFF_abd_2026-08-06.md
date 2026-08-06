@@ -2,10 +2,11 @@
 
 **Scope:** all three items in [`tasks/phase4/05-abd.md`](../tasks/phase4/05-abd.md) —
 (1) wire the real particle engine into `/plume/simulate`, (2) the Real Sensor Proof
-Overlay's field scope and fit-quality report, (3) swap #4's status. All three are
-**closed**, live-verified, and documented below alongside the technical detail behind
-them: the particle-transport simulation itself, its calibration, the mooring validation
-target, and the current status of the 3D Journey feature that depends on this work.
+Overlay's field scope and fit-quality report, (3) swap #4's status — plus, added to
+scope on explicit request after these three closed, feature 14's 3D Journey, which
+this same work unblocked. All four are documented below alongside the technical
+detail behind them: the particle-transport simulation itself, its calibration, the
+mooring validation target, and the real 3D scene built on top of all three.
 
 **Everything in this document was checked against a running process, not read off the
 source and assumed** — the same discipline `tasks/phase4/05-abd.md`'s own audit used,
@@ -31,7 +32,7 @@ about items 2 or 3 was affected.
 2. [Item 1 — the particle-transport simulation](#2--item-1--the-particle-transport-simulation)
 3. [Item 2 — Real Sensor Proof Overlay](#3--item-2--real-sensor-proof-overlay)
 4. [Item 3 — swap #4, the satellite validation NO-GO](#4--item-3--swap-4-the-satellite-validation-no-go)
-5. [The 3D Journey (feature 14) — status](#5--the-3d-journey-feature-14--status)
+5. [The 3D Journey (feature 14) — built](#5--the-3d-journey-feature-14--built)
 6. [Files changed](#6--files-changed)
 7. [Test results](#7--test-results)
 8. [Outstanding work — not this file's scope, flagged for its owner](#8--outstanding-work--not-this-files-scope-flagged-for-its-owner)
@@ -46,6 +47,7 @@ about items 2 or 3 was affected.
 | 1 | Replace `SYNTHETIC_STUB` with the real particle engine | ✅ Closed | Live `curl`, §2.5 |
 | 2 | Confirm mooring overlay fields; report fit quality honestly | ✅ Closed | `ValidationPanel.tsx`, §3 |
 | 3 | State swap #4's status explicitly | ✅ Closed (NO-GO) | `tasks/00-contracts.md` §5, §4 |
+| 14 | The 3D Journey (added scope, not originally this file's) | ✅ Built | `Journey3D.tsx`, §5 |
 
 One correction made along the way: the task file's own opening claim — that
 `POST /plume/simulate` still returns `is_stub: true` — was accurate for the branch it
@@ -435,27 +437,76 @@ luck with clouds and not a processing failure. Full methodology in
 
 ---
 
-## 5 · The 3D Journey (feature 14) — status
+## 5 · The 3D Journey (feature 14) — built
 
-**Not built this phase, and that's correct, not a gap.** `tasks/phase4/00-phase4-plan.md`
-assigns feature 14 to Ali (terrain/bathymetry rendering) with Abd's slice — the
-plume-cloud portion — explicitly marked **deferred**. Nothing below is a new
-commitment; it's the honest technical picture for whoever picks that slice up next.
+**Built on explicit request, updating this section's original verdict.** It first
+said "not built this phase, and that's correct, not a gap" — accurate when written:
+feature 14 is Ali's row in `tasks/phase4/00-phase4-plan.md`, Abd's plume-cloud slice
+explicitly marked deferred, and nothing in items 1-3 required building it. The user
+then asked for it directly, outside this file's original scope; built and recorded
+here rather than silently, so `tasks/phase4/06-ali.md` isn't contradicted by an
+undocumented change elsewhere. See `tasks/phase4/05-abd.md` §1a for the
+task-tracking side of this same update.
 
-**What was true before this phase, and is now not:** the plan's own reasoning was "the
-cloud itself needs real shape, not a synthetic buffer rendered in 3D" — i.e. the
-plume-cloud portion was blocked on item 1. It no longer is. Real particle trajectories
-exist for `AQ-2016-10-28` (§2), which is the shape a future 3D renderer would need.
+### What was actually built
 
-**What exists today that a 3D consumer could use:**
+A real MapLibre GL 3D scene (`frontend/src/journey/Journey3D.tsx` +
+`journeyStyle.ts`), reachable via a new `journey` overlay from the masthead, flying
+through the concept doc's own chain — wadi catchment, coastal outlet, plume, reef —
+with three controllable stages and a 6-timestep scrubber/autoplay:
+
+- **Terrain + bathymetry**: `scripts/frontend_basemap.py` gained `relief_bands()` —
+  the *exact same* `rasterio.features.shapes` technique `isobaths()` already used on
+  `depth_utm36n.tif`, kept as filled polygons instead of just the boundary, so they
+  are fill-extrudable. 11 real bands, land (up to ~1,800 m) and sea (to -800 m), one
+  committed GeoJSON (`frontend/public/basemap/relief_bands.geojson`, ~325 KB after
+  raising the basemap's own documented size budget 1,100→1,400 KB with the same
+  reasoning the file already uses for its previous raise).
+- **The plume**: a new script, `scripts/frontend_journey.py`, derives
+  `frontend/public/fixtures/journey3d.json` from a **live run of the real API** —
+  `POST /plume/simulate` + `/exposure/calculate` for `AQ-2016-10-28`/`AQ-O02`,
+  all 6 real timesteps, the calibrated engine from §2, not a second implementation.
+  This answers §"What a genuine volumetric plume cloud would need" below with the
+  smaller of the two named tasks: it flattens the real, already-existing 2D KDE
+  contours into an extruded 3D surface (height ∝ real probability level). It does
+  **not** do the larger one — see below, still true.
+- **Reef zones**: real Allen Coral Atlas geometry, coloured by the real exposure
+  result this exact run produces (`R-03`, `minimal`); zones never reached carry no
+  colour rather than a fabricated zero.
+- **The honesty carried through, not smoothed over**: the scene's on-screen caption
+  states its 6× vertical exaggeration and that sea depth is drawn as upward relief
+  (not sunk below a surface plane) — and surfaces the *identical*
+  current-grid-masking caveat from §2.5 verbatim, so the 3D view doesn't imply a more
+  dramatic, current-driven plume than the real run actually shows.
+
+Verified, not just built: `tsc -b --noEmit` clean, lint clean, `vitest run` 14/14,
+the full Playwright suite 25/25 (including the axe accessibility pass — which caught
+a real contrast regression this same work introduced, `text-ink-3` on `bg-surface-2`
+in the calibration-fit caveats added earlier in this document, fixed to `text-ink-2`
+to match the passing pattern already used elsewhere in the same panel), and both
+language variants of `scene-walk`. Screenshotted directly at multiple stages/frames,
+not inferred from a green test run.
+
+**Not a finished visual design.** Getting reef/plume extrusions to render above
+rather than swallowed inside the relief layer at the same footprint took two rounds
+of height tuning (an initial 1,000 m+ offset pushed them outside the camera's
+frustum entirely at this pitch — visible in testing, corrected to a few hundred
+metres). What ships is functional and honest, not polished; whoever refines feature
+14's visual design next inherits real geometry and a real, regenerable fixture, not
+a placeholder.
+
+### What exists today that a 3D consumer could use — and what `Journey3D.tsx` actually used
 
 - `GET /api/v1/plume/map/frames` returns the animatable timestep list — `t_hours` and a
   render URL per frame — already time-indexed, already real.
 - `PlumeResult.contours` (from `/plume/simulate`) is a set of 2D KDE contour polygons
   per timestep, in EPSG:4326 — a flattened, probability-banded surface, not a raw
-  particle cloud.
+  particle cloud. **This is what the new scene extrudes** (via
+  `scripts/frontend_journey.py`'s fixture) — confirming the prediction two paragraphs
+  down: it was the smaller, presentation-only task.
 
-**What a genuine volumetric 3D plume cloud would need that isn't exposed yet:**
+**What a genuine volumetric 3D plume cloud would still need — unaddressed by this
+build, not solved by it:**
 
 - `SimulationResult.lons` / `.lats` (shape `(n_steps+1, n_particles)`) and the
   `active`/`settled`/`beached` boolean arrays already exist **in memory** inside
@@ -472,10 +523,11 @@ exist for `AQ-2016-10-28` (§2), which is the shape a future 3D renderer would n
 - The `settled`/`beached` distinction is already tracked and could drive a 3D consumer's
   visual state (a particle stops moving and changes appearance) without any new physics.
 
-**Recommendation, not an instruction:** when this slice is picked up, treat "flatten
-existing contours into a 3D-rendered surface" and "expose real per-particle depth" as
-two different-sized tasks. The first is presentation work on data that already exists.
-The second is new modelling.
+**Recommendation, made when this section was written, followed when it was built:**
+treat "flatten existing contours into a 3D-rendered surface" and "expose real
+per-particle depth" as two different-sized tasks. The first is presentation work on
+data that already exists — done above. The second is new modelling — still open,
+and still a larger piece of work than a visual-polish pass on what exists today.
 
 ---
 
@@ -491,24 +543,39 @@ The second is new modelling.
 | `frontend/src/panels/ValidationPanel.tsx` | New "Transport-timing fit (calibration)" section; docstring updated |
 | `frontend/src/i18n/locales/en/common.json`, `.../ar/common.json` | New `validation.*` keys for the calibration-fit section, both languages |
 | `frontend/public/fixtures/{validation,corpus,limitations}.json` | Regenerated — `validation.json` gains the calibration data; the other two picked up unrelated upstream doc updates that hadn't been regenerated yet |
-| `docs/HANDOFF_abd_2026-08-06.md` | This document |
+| `scripts/frontend_basemap.py` | New `relief_bands()` — real fill-extrudable elevation/depth bands from `depth_utm36n.tif`; basemap size budget raised 1,100→1,400 KB with documented reasoning |
+| `frontend/public/basemap/relief_bands.geojson` | New — 11 real relief bands, land and sea |
+| `scripts/frontend_journey.py` | New — derives `journey3d.json` from a live run of the real particle engine + exposure endpoints |
+| `frontend/public/fixtures/journey3d.json` | New — real plume frames (6 timesteps), real reef exposure, for `AQ-2016-10-28`/`AQ-O02` |
+| `frontend/src/journey/Journey3D.tsx`, `journeyStyle.ts` | New — the 3D Journey scene |
+| `frontend/src/app/uiStore.ts`, `panels/OverlayHost.tsx`, `shell/Masthead.tsx` | Wired the new `journey` overlay in alongside the existing four |
+| `frontend/src/map/style.ts` | One-line fix: a pre-existing `StyleSpecification` cast error, found while verifying the new code, unrelated to this feature otherwise |
+| `tasks/phase4/05-abd.md` §1a | The 3D Journey recorded as built-on-request, outside this file's original assigned scope |
+| `docs/HANDOFF_abd_2026-08-06.md` §5 | Updated from "not built" to what was actually built |
 
 ---
 
 ## 7 · Test results
 
 ```bash
-# Backend — full suite, all optional ingestion deps installed
+# Backend — full suite, all optional ingestion deps installed, after merging in
+# eight teammate commits (main.py alone gained 358 lines)
 source .venv/bin/activate && python -m pytest -q
-# 475 passed, 51 skipped, 1 xfailed
+# 498 passed, 51 skipped, 1 xfailed
 
-# Frontend
+# Frontend, including the new 3D Journey code
 cd frontend
-npm run typecheck   # clean
+npm run typecheck   # clean (one pre-existing StyleSpecification cast error found and fixed)
 npm run lint        # clean (1 pre-existing, unrelated warning)
 npm run test        # 14 passed (vitest)
-npx playwright test tests/scene-walk.spec.ts   # 2 passed (en + ar)
+npx playwright test tests/scene-walk.spec.ts tests/hardening.spec.ts   # 25 passed
 ```
+
+The Playwright run initially returned 1 failure — the automated axe pass flagged
+insufficient colour contrast (`text-ink-3` on `bg-surface-2`, 4.38:1 against a 4.5:1
+requirement) on three lines in the calibration-fit section added earlier in this
+document. Real regression, not a flake: fixed to `text-ink-2`, matching the passing
+pattern already used elsewhere in the same panel, then re-ran green.
 
 No regressions found anywhere in the suite. The two backend test files that initially
 failed to collect (`test_event_pipeline_config.py`, `test_imerg_ingestion.py`, missing
@@ -557,3 +624,7 @@ all three; the full suite is green.
 - [`backend/src/models/backtest_metrics.py`](../backend/src/models/backtest_metrics.py) — timing-error metrics and the spatial-metrics refusal
 - `data/models/plume_calibration.json`, `data/models/plume_calibration_trials.json` — calibration results, all 72 trials
 - `data/processed/marine/mooring_target_AQ-2016-10-28.json` — the validation target
+- [`tasks/phase4/06-ali.md`](../tasks/phase4/06-ali.md) — feature 14's original owner and scope
+- [`frontend/src/journey/Journey3D.tsx`](../frontend/src/journey/Journey3D.tsx), [`journeyStyle.ts`](../frontend/src/journey/journeyStyle.ts) — the 3D Journey scene
+- [`scripts/frontend_journey.py`](../scripts/frontend_journey.py) — derives the scene's plume/exposure fixture
+- [`scripts/frontend_basemap.py`](../scripts/frontend_basemap.py) `relief_bands()` — derives the scene's terrain/bathymetry layer

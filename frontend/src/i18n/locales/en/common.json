@@ -200,7 +200,22 @@
     "validation": "Validation",
     "provenance": "Provenance",
     "limitations": "Limitations",
-    "assistant": "Assistant"
+    "assistant": "Assistant",
+    "journey": "3D Journey"
+  },
+  "journey": {
+    "stage": {
+      "wadi": "Wadi",
+      "outlet": "Outlet",
+      "reef": "Reef"
+    },
+    "play": "Play",
+    "pause": "Pause",
+    "scrubLabel": "Simulation hour",
+    "hourLabel": "+{{h}} h",
+    "mapLabel": "3D scene: real terrain, bathymetry, plume and reef exposure",
+    "realismCaveat": "Relief is exaggerated {{exaggeration}}x for legibility at this camera distance; sea depth is drawn as upward relief coloured by depth, not sunk below the surface. The plume's height encodes its real contour probability level, not a physical thickness.",
+    "source": "Source:"
   },
   "validation": {
     "comparison": "Modelled against measured",

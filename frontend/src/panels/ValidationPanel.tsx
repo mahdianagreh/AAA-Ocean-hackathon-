@@ -171,14 +171,14 @@ export function ValidationPanel() {
           {/* Caveats rendered verbatim from the calibration record, same treatment
               as the citation/excerpt fields below — sourced prose, not UI chrome,
               so it is not run through i18n. */}
-          <p className="text-2xs text-ink-3">{v.calibration_fit.peak_timing_caveat}</p>
-          <p className="text-2xs text-ink-3">{v.calibration_fit.windage_caveat}</p>
+          <p className="text-2xs text-ink-2">{v.calibration_fit.peak_timing_caveat}</p>
+          <p className="text-2xs text-ink-2">{v.calibration_fit.windage_caveat}</p>
           {v.calibration_fit.forcing_is_placeholder ? (
             <p className="text-2xs text-risk-high-on">
               {v.calibration_fit.forcing_placeholder_reason}
             </p>
           ) : null}
-          <p className="text-2xs text-ink-3">
+          <p className="text-2xs text-ink-2">
             {t('validation.source')}{' '}
             <code className="font-mono num">{v.calibration_fit.source}</code>
           </p>
