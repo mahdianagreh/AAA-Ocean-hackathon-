@@ -183,6 +183,31 @@ def validation() -> dict:
         (ROOT / "data/processed/marine/mooring_target_AQ-2016-10-28.json").read_text()
     )
 
+    # The particle engine's calibration grid search (scripts/28_calibrate_plume_engine.py)
+    # against this same mooring record -- a genuinely different comparison than the
+    # magnitude rows above. It fits TIMING (onset, duration, peak) via a concentration
+    # proxy, never sediment g/L or salinity PSU, which the engine does not model at all.
+    # Reported as errors (simulated - observed), exactly as calibration.py computed them --
+    # no back-derived "modelled value" is invented for a number that was never stored.
+    calibration_path = ROOT / "data/models/plume_calibration.json"
+    calibration_fit = None
+    if calibration_path.exists():
+        cal = json.loads(calibration_path.read_text())
+        calibration_fit = {
+            "event_id": cal["event_id"],
+            "selected_regime_verdict": cal["selected_regime_verdict"],
+            "params": cal["params"],
+            "arrival_time_error_hours": cal["arrival_time_error_hours"],
+            "duration_error_hours": cal["duration_error_hours"],
+            "peak_timing_error_hours": cal["peak_timing_error_hours"],
+            "n_trials": cal["n_trials"],
+            "forcing_is_placeholder": cal["forcing_is_placeholder"],
+            "forcing_placeholder_reason": cal["forcing_placeholder_reason"],
+            "windage_caveat": cal["windage_caveat"],
+            "peak_timing_caveat": cal["peak_timing_caveat"],
+            "source": "data/models/plume_calibration.json (scripts/28_calibrate_plume_engine.py)",
+        }
+
     return {
         "satellite": {
             "verdict": "NO-GO",
@@ -205,6 +230,7 @@ def validation() -> dict:
         # target and an explicit "not yet computed" rather than a fabricated match.
         "modelled": None,
         "modelled_blocked_on": "no registered simulation run (data/outputs/<run_id>/ has never been created)",
+        "calibration_fit": calibration_fit,
     }
 
 
@@ -324,6 +350,15 @@ def main():
     print(f"    satellite verdict {val['satellite']['verdict']}"
           f" (physical null: {val['satellite']['is_physical_null']})")
     print(f"    modelled arrival: {val['modelled'] or 'not computed — ' + val['modelled_blocked_on']}")
+    if val["calibration_fit"]:
+        cf = val["calibration_fit"]
+        print(f"    calibration fit: {cf['selected_regime_verdict']}"
+              f" | arrival {cf['arrival_time_error_hours']:+.2f}h"
+              f" | duration {cf['duration_error_hours']:+.2f}h"
+              f" | peak {cf['peak_timing_error_hours']:+.2f}h"
+              f" ({cf['n_trials']} trials)")
+    else:
+        print("    calibration fit: not computed — no data/models/plume_calibration.json")
 
     print("  sources")
     src = sources()

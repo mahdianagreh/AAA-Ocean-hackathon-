@@ -214,7 +214,13 @@
     "physicalNullBody": "The sediment clears faster than these satellites come around, so no amount of searching fixes it. The mooring record is the validation target instead — and comparing against 5-minute in-situ measurements is a stronger test than a photograph would have been.",
     "target": "The validation target",
     "source": "Source:",
-    "positionNote": "Position is derived, not reported: the paper gives only \"~250 m offshore the Kinnet Canal outlet, 13 m depth\". Do not read it to finer precision than the {{radius}} m uncertainty radius allows."
+    "positionNote": "Position is derived, not reported: the paper gives only \"~250 m offshore the Kinnet Canal outlet, 13 m depth\". Do not read it to finer precision than the {{radius}} m uncertainty radius allows.",
+    "calibrationTitle": "Transport-timing fit (calibration)",
+    "calibrationIntro": "The particle engine models transport timing, not sediment concentration or salinity — it cannot fill the rows above. This is the comparison it can make: onset, duration and peak timing at the mooring, from a {{n}}-trial grid search over diffusion, windage and settling velocity.",
+    "arrivalError": "Arrival time error",
+    "durationError": "Duration error",
+    "peakTimingError": "Peak timing error",
+    "regimeVerdict": "Selected regime"
   },
   "provenancePanel": {
     "figures": "QA figures",
