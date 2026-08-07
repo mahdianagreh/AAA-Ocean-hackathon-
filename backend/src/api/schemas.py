@@ -454,7 +454,28 @@ class ExposureResult(BaseModel):
                     "you cannot reconstruct six hours later is a number nobody can "
                     "defend."
     )
+    # Phase 5, B7 — additive, never a change to risk_score itself.
+    # exposure/engine.py's own docstring warns against folding a new term into
+    # the formula ("would change the ranking... while looking like a
+    # presentation detail"), so this is a separate field that DEFAULTS to
+    # risk_score exactly when a zone has no real sampling feedback yet.
+    adjusted_priority: float = Field(
+        description="Equals risk_score exactly until "
+                    "sampling_feedback.MIN_FEEDBACK_FOR_ADJUSTMENT real outcomes "
+                    "exist for this zone — the fallback is the literal default, "
+                    "not a special case."
+    )
+    adjusted_priority_status: Literal["NO_FEEDBACK_YET", "FEEDBACK_APPLIED"]
     caveats: list[Caveat] = []
+
+
+class SamplingFeedbackRequest(BaseModel):
+    """Phase 5, B7 — did a real sample confirm the exposure run's prediction
+    for this zone? `run_id` must be a real, already-stored exposure run — this
+    is logged feedback on an actual prediction, not a free-floating opinion."""
+
+    run_id: str
+    outcome: Literal["confirmed", "not_confirmed"]
 
 
 class ExposureRun(BaseModel):
@@ -553,3 +574,133 @@ class AskResponse(BaseModel):
     )
     language: Language
     corpus_files_searched: int
+
+
+# ------------------------------------------------------- site scoring (Phase 5, B4)
+
+class SiteScoreRequest(BaseModel):
+    bbox: tuple[float, float, float, float] = Field(
+        description="(west, south, east, north) — EPSG:4326, same ordering as "
+                    "config.spatial.BBox.wsen. Not restricted to the Aqaba AOI; "
+                    "criteria outside this project's real data coverage report "
+                    "status='insufficient_data' rather than a fabricated score."
+    )
+    site_name: str | None = None
+
+
+class CriterionScore(BaseModel):
+    criterion: Literal["C1", "C2", "C3", "C4", "C5", "C6"]
+    score: float | None = Field(
+        default=None, ge=0, le=2,
+        description="None, not 0.0, when evidence is absent — a gap is a gap.",
+    )
+    status: Literal["scored", "insufficient_data"]
+    evidence: list[Citation] = Field(
+        description="Reuses the /ask citation shape verbatim — never a second "
+                    "citation format. Non-empty even when status is "
+                    "insufficient_data: the absence itself is cited."
+    )
+
+
+class SiteScoreResponse(BaseModel):
+    site_id: str = Field(description='"site_{ULID}" — never a squatted AQ-* id')
+    site_name: str | None
+    bbox: tuple[float, float, float, float]
+    criteria: list[CriterionScore]
+    narrative: str = Field(
+        description="Deterministic template over the real per-criterion evidence "
+                    "above — no generative model call anywhere in this path."
+    )
+    caveats: list[Caveat] = Field(
+        description="Always carries the 'validated on exactly one site' caveat, "
+                    "regardless of which box was scored."
+    )
+
+
+# -------------------------------------------------- forensic reports (Phase 5, B5)
+
+class ReportClaim(BaseModel):
+    text: str
+    source: str | None = Field(
+        default=None,
+        description="A real formula_terms/citation key, or None when the "
+                    "underlying data genuinely doesn't exist — never fabricated.",
+    )
+
+
+class ReportSection(BaseModel):
+    title: str
+    claims: list[ReportClaim]
+
+
+class GenerateReportRequest(BaseModel):
+    event_id: str
+
+
+class ReviewReportRequest(BaseModel):
+    reviewed_by: str = Field(min_length=1, description="Required, not optional — "
+                             "a report cannot silently review itself.")
+
+
+class ReportOut(BaseModel):
+    report_id: str = Field(description='"report_{ULID}"')
+    event_id: str
+    status: Literal["ai_drafted", "human_reviewed"]
+    generated_at: datetime
+    reviewed_at: datetime | None = None
+    reviewed_by: str | None = None
+    sections: list[ReportSection]
+
+
+# --------------------------------------------------- coral health vision (Phase 5, B8)
+
+class ReefZonePhotoOut(BaseModel):
+    photo_id: str = Field(description='"photo_{ULID}"')
+    reef_zone_id: str
+    uploaded_at: datetime
+    predicted_class: Literal["healthy", "stressed", "bleached"]
+    confidence: float = Field(ge=0, le=1)
+    model_basis: Literal["heuristic_rule_v1", "trained_classifier"] = Field(
+        description="'heuristic_rule_v1' is the honest default with zero real "
+                    "training data — travels on every classification, never "
+                    "presented as a validated model result."
+    )
+    model_version: str | None = None
+
+
+class ProposedSensitivityWeightOut(BaseModel):
+    reef_zone_id: str
+    proposed_value: float | None = Field(
+        default=None,
+        description="None until MIN_PHOTOS_FOR_PROPOSAL real classifications "
+                    "exist for this zone — never computed from too little "
+                    "evidence to mean anything.",
+    )
+    status: Literal["INSUFFICIENT_PHOTOS", "PROPOSED_PENDING_REVIEW"]
+    n_photos: int
+    live_sensitivity_weight: float = Field(
+        description="The value the exposure engine actually reads right now, "
+                    "for comparison — this endpoint never changes it.",
+    )
+    live_sensitivity_weight_status: SensitivityStatus
+
+
+class ApproveSensitivityWeightRequest(BaseModel):
+    """The one and only way `sensitivity_weight` can move — Standing Law rule
+    13. `reviewer`/`reasoning` are required, not optional: a report cannot
+    review itself, and this field cannot approve itself either."""
+
+    reviewer: str = Field(min_length=1)
+    reasoning: str = Field(min_length=1)
+    approved_value: float = Field(
+        ge=0, description="The value a human is choosing to apply — may differ "
+                          "from the proposed value; this is a decision, not a rubber stamp."
+    )
+
+
+class ApproveSensitivityWeightResponse(BaseModel):
+    reef_zone_id: str
+    approval_id: str
+    approved_value: float
+    approved_at: datetime
+    reviewer: str

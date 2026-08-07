@@ -43,6 +43,16 @@ services:
       # returned a bare 500. Pointing it at a named volume keeps data/ read-only rather
       # than relaxing that rule to make a write succeed.
       REEFSHIELD_EXPOSURE_DB: /app/var/exposure_runs.sqlite
+      # Phase 5's four new SQLite stores hit the exact same read-only-data/ wall the
+      # first time they were tried against the running container — same fix, same
+      # reasoning, applied four more times rather than relaxing the ./data:ro mount.
+      REEFSHIELD_CANDIDATE_SITES_DB: /app/var/candidate_sites.sqlite
+      REEFSHIELD_REPORTS_DB: /app/var/generated_reports.sqlite
+      REEFSHIELD_SAMPLING_FEEDBACK_DB: /app/var/sampling_feedback.sqlite
+      REEFSHIELD_REEF_PHOTOS_DB: /app/var/reef_zone_photos.sqlite
+      # Uploaded photo bytes are also a write, for the same reason — never into
+      # ./data, which is read-only on purpose.
+      REEFSHIELD_REEF_PHOTOS_DIR: /app/var/reef_photos
     volumes:
       # Read-only: the API reads geometry and model artifacts, and must never
       # be the thing that writes to data/.
