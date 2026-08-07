@@ -572,8 +572,10 @@ as input; every response reports the fixed default. Full write-up:
   terms and a single documented mass constrains one degree of freedom, so any
   tonnage for a different event is an extrapolation along an unverified
   curve. Relative classes (`Low`/`Medium`/`High`/`Extreme`) are the honest
-  output; a tonnage figure should only ever be shown for the anchor event
-  itself (Phase 4 task 5).
+  output. **Verified 6 Aug (Phase 4 task 5):** no API path emits a tonnage
+  figure for any event, anchor or otherwise — only `sediment_index`
+  (unbounded, unitless) and `sediment_class`. UI copy for Ali:
+  `docs/HANDOFF_ali_2026-08-06_tonnage.md`.
 - **Two of six terms are currently inert.** `training_set_full.parquet` has
   no `bare_fraction`/soil-texture columns, so the bare-fraction and
   erodibility terms fall back to the same default for every catchment — the
