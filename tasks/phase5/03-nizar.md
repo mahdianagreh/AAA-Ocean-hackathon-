@@ -1,7 +1,6 @@
 # Nizar — Supabase, Forecasts, Currents, and Live Anomaly Detection
 
 **Phase 5 · Workstream 3**
-**Feeds:** Ali (B6 dashboard), Mahdi (baseline confirmation)
 Read [`00-phase5-plan.md`](00-phase5-plan.md) first.
 
 ---
@@ -30,12 +29,11 @@ infrastructure, not a polished demo piece — build it honestly as exactly that.
       — this is genuinely done work, not a stub. **What's actually missing right
       now:** the `.nc` cache files it needs (`hycom_aoi_*.nc`,
       `copernicus_marine_aoi_*.nc`) are absent from `data/raw/currents/` on disk and
-      inside the running container. Re-fetch them (this is also what B1's plume
-      engine needs to stop running on placeholder zero-current forcing — see Abd's
-      file) and confirm the comparison is re-runnable, not just documented from a
-      past run. If re-fetching isn't feasible this phase, say explicitly in
-      `docs/data_dictionary.md` that this is a static exhibit from 3 Aug, not a live
-      capability — the current phrasing risks implying otherwise.
+      inside the running container. Re-fetch them and confirm the comparison is
+      re-runnable, not just documented from a past run. If re-fetching isn't feasible
+      this phase, say explicitly in `docs/data_dictionary.md` that this is a static
+      exhibit from 3 Aug, not a live capability — the current phrasing risks implying
+      otherwise.
 - [x] **A4.3 — frozen "today" offline snapshot seeded.** Confirmed:
       `scripts/build_forecast_snapshot.py` → `data/processed/forecasts/latest_snapshot.json`,
       real GEFS/GFS metadata, confirmed live via `GET /api/v1/forecast/latest`. No
@@ -43,7 +41,7 @@ infrastructure, not a polished demo piece — build it honestly as exactly that.
 
 ---
 
-## 1 · B6 — Live Anomaly Detection on Forecast Streams (with Mahdi)
+## 1 · B6 — Live Anomaly Detection on Forecast Streams
 
 **Model & data**
 
@@ -51,10 +49,9 @@ infrastructure, not a polished demo piece — build it honestly as exactly that.
       z-score against catchment climatology (start with the z-score; it's
       explainable in one sentence to a judge, which an isolation forest score is
       not). Running on the live GFS/GEFS/ERA5-Land ingestion stream.
-- [ ] Confirm with Mahdi which climatology artifact is the correct "what's normal"
-      baseline (his file, §5) before wiring anything — an anomaly detector is only
-      as honest as the baseline it's measured against, and this project already has
-      one real climatology artifact; don't build a second, silently different one.
+- [ ] Read `catchment_rainfall_climatology.parquet` directly as the "what's normal"
+      baseline — it's the one real climatology artifact this project already has;
+      don't compute a second, independently-derived one just for this feature.
 
 **Backend & storage**
 
@@ -62,15 +59,15 @@ infrastructure, not a polished demo piece — build it honestly as exactly that.
       This is a new artifact — confirm the name doesn't collide with anything in
       `tasks/00-contracts.md` (it doesn't; it's new).
 
-**Dashboard sub-features (Ali builds — full spec also in [`06-ali.md`](06-ali.md))**
+**Dashboard sub-features (for Ali to build)**
 
 - A distinct-colored "unusual pattern detected" banner, visually separate from the
   formal risk bands, above the normal risk card.
 - A rolling sparkline of the live forecast stream with anomalous points marked.
-- Feeds into the Confidence Meter's framing: **"early signal, formal threshold not
-  yet crossed" is a different statement from "72% of ensemble members agree," and the
-  UI must never conflate the two** — say this to Ali directly, since it's the one
-  design rule in this feature that's easy to get wrong by accident.
+- The one design rule worth writing down here, since it's easy to get wrong by
+  accident: **"early signal, formal threshold not yet crossed" is a different
+  statement from "72% of ensemble members agree," and the UI must never conflate the
+  two** — put this directly in this feature's own copy/spec, not just in conversation.
 
 **Limitation to state on the same screen this ships on:** a z-score/isolation-forest
 flag against ~27 years of climatology is a statistical outlier signal, not a
@@ -85,22 +82,5 @@ than it is if left unqualified.
 1. A4.2 — either the comparison is confirmed re-runnable with fresh `.nc` files, or
    `docs/data_dictionary.md` is corrected to call it a static 3 Aug exhibit.
 2. B6 — `forecast_anomalies` populated on a real scheduled run, banner/sparkline
-   wired, and the confidence-meter framing rule stated in writing where Ali can see
-   it, not just said once in conversation.
-
----
-
-## Handoffs
-
-| Teammate | What they get | When |
-|---|---|---|
-| **Ali** | `forecast_anomalies` schema + the confidence-meter framing rule | Day 3 |
-| **Mahdi** | Confirmation of whether the HYCOM cache re-fetch (A4.2) also unblocks his B1 plume-forcing placeholder | Day 2 |
-
-## What you depend on
-
-| From | What | Blocked? |
-|---|---|---|
-| **Karam** | Confirmed climatology artifact (A1.3) as B6's baseline | No — proceed with the existing summary table, it's real and usable today (Day 2) |
-| **Mahdi** | Confirmation of which climatology artifact is B6's correct baseline | No — his own §5 confirms the same artifact Karam names; proceed once he acknowledges it (Day 2) |
-| **Abd** | Confirmation of whether one currents/wind re-fetch effort serves both A4.2 and A5.1 | No — proceed with A4.2 as its own task either way (Day 1) |
+   wired, and the confidence-meter framing rule stated in the feature's own written
+   spec.
