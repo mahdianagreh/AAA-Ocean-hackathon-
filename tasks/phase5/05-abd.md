@@ -23,12 +23,17 @@ honest runtime caveat that's already self-reported by the API.
       `PLACEHOLDER: ConstantCurrentField(0, 0)` and `ConstantWindField(0, 0)` because
       `hycom_aoi_AQ-2016-10-28.nc` is absent from the container. The engine is real;
       the forcing feeding it right now is not.
-      - [ ] Attempt to re-fetch the missing `.nc` current-cache files yourself. If a
-            real historical wind source genuinely doesn't exist anywhere available
-            (GFS/GEFS/ECMWF here are forecast-only, not a 2016 archive), say so
-            explicitly and permanently in `docs/forcing_limitations.md`, rather than
-            leaving the constant-zero placeholder unexplained anywhere outside the
-            API's own caveat string.
+      - [x] **Currents — closed by Nizar, 2026-08-07.** The `.nc` files were never
+            actually missing on this machine; live-checked `POST /api/v1/plume/simulate`
+            and it already reports real HYCOM forcing
+            (`currents: HYCOM GLBu0.08/expt_91.2 historical archive`), not
+            `ConstantCurrentField(0, 0)`. Nothing to re-fetch.
+      - [x] **Wind — permanently documented, 2026-08-07.** No historical marine wind
+            source exists anywhere in this repo: GFS/GEFS/ECMWF are forecast-only, and
+            ERA5-Land (which does ingest `u10`/`v10`) is land-only, so it wouldn't cover
+            marine cells even if cached. Written up permanently in
+            `docs/forcing_limitations.md`'s new "Wind forcing" section — `ConstantWindField(0, 0)`
+            stays as a documented placeholder, not a silent zero.
 - [x] **A5.2 — calibration grid search with a recorded winning trial.** Confirmed:
       72 real trials in `plume_calibration_trials.json`, exactly one
       `is_selected: true` (`diffusion_m2_s: 5.0, windage_fraction: 0.0,

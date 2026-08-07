@@ -29,6 +29,7 @@ from src.ingestion.gefs import FORECAST_HOURS as GEFS_HOURS  # noqa: E402
 from src.ingestion.gefs import fetch_gefs_members  # noqa: E402
 from src.ingestion.gfs import FORECAST_HOURS as GFS_HOURS  # noqa: E402
 from src.ingestion.gfs import fetch_gfs_run  # noqa: E402
+from src.processing.anomaly_detection import compute_anomaly  # noqa: E402
 
 ACCUMULATION_WINDOW_HOURS = 24
 CLIMATOLOGY_SOURCE_ID = "imerg_v07_final"
@@ -82,7 +83,17 @@ def _sample_gfs_at_centroids(objs, centroids: list[dict]) -> list[dict]:
 
 
 def _sample_gefs_at_centroids(members: dict[int, list], centroids: list[dict]) -> list[dict]:
-    """Returns rows: {catchment_id, member, lead_hours, rain_mm}."""
+    """Returns rows: {catchment_id, member, lead_hours, rain_mm}.
+
+    A byte-range "subset" GRIB2 download occasionally comes back truncated
+    (AWS-side, not this project's bug -- confirmed by re-downloading the exact
+    same file and getting a clean parse). One bad file used to abort the whole
+    30-member fetch. Skipped and reported instead, per this project's "missing
+    is never zero" rule -- that lead-hour/member contributes no row rather than
+    crashing the run; deleted so a later run re-fetches it clean rather than
+    reusing the same truncated bytes (fetch tools resume by filename, not
+    content validity).
+    """
     rows = []
     for member, objs in members.items():
         for H in objs:
@@ -91,7 +102,12 @@ def _sample_gefs_at_centroids(members: dict[int, list], centroids: list[dict]) -
             for p in paths:
                 if not Path(p).exists():
                     continue
-                ds = xr.open_dataset(p, engine="cfgrib", backend_kwargs={"indexpath": ""})
+                try:
+                    ds = xr.open_dataset(p, engine="cfgrib", backend_kwargs={"indexpath": ""})
+                except Exception as exc:  # noqa: BLE001 -- cfgrib/eccodes raise several distinct types for a corrupt file
+                    print(f"SKIP corrupted GEFS file member={member} fxx={H.fxx}: {p} ({exc})")
+                    Path(p).unlink(missing_ok=True)
+                    continue
                 for c in centroids:
                     rain_mm = _sample_point(ds, "tp", c["lon"], c["lat"])
                     rows.append(
@@ -151,6 +167,29 @@ UPSERT_EXCEEDANCE_SQL = text(
     """
 )
 
+UPSERT_ANOMALY_SQL = text(
+    """
+    INSERT INTO forecast_anomalies (
+        forecast_run_id, catchment_id, window_hours, rain_mm,
+        climatology_p50, climatology_p99, climatology_p99_9,
+        percentile_band, anomaly_score, is_anomalous
+    ) VALUES (
+        :forecast_run_id, :catchment_id, :window_hours, :rain_mm,
+        :climatology_p50, :climatology_p99, :climatology_p99_9,
+        :percentile_band, :anomaly_score, :is_anomalous
+    )
+    ON CONFLICT (forecast_run_id, catchment_id, window_hours) DO UPDATE SET
+        rain_mm = EXCLUDED.rain_mm,
+        climatology_p50 = EXCLUDED.climatology_p50,
+        climatology_p99 = EXCLUDED.climatology_p99,
+        climatology_p99_9 = EXCLUDED.climatology_p99_9,
+        percentile_band = EXCLUDED.percentile_band,
+        anomaly_score = EXCLUDED.anomaly_score,
+        is_anomalous = EXCLUDED.is_anomalous,
+        computed_at = now()
+    """
+)
+
 
 def run() -> None:
     with session_scope() as session:
@@ -207,14 +246,15 @@ def run() -> None:
     print(f"Wrote forecast_runs[{gefs_run_id}] + {len(gefs_rows)} forecast_catchment_rainfall rows (GEFS).")
 
     # --- Exceedance: 24h rolling accumulation per member per catchment, vs real p99 ---
-    print("Computing exceedance against Karam's real p99 climatology...")
+    # --- Anomaly (B6): same accumulation, scored against the full percentile row ---
+    print("Computing exceedance + anomaly score against Karam's real climatology...")
     with session_scope() as session:
         climatology = {
-            r["catchment_id"]: r["p99"]
+            r["catchment_id"]: dict(r)
             for r in session.execute(
                 text(
-                    "SELECT catchment_id, p99 FROM catchment_rainfall_climatology "
-                    "WHERE window_hours = :w AND source_id = :s"
+                    "SELECT catchment_id, p50, p90, p95, p99, p99_9, n_windows "
+                    "FROM catchment_rainfall_climatology WHERE window_hours = :w AND source_id = :s"
                 ),
                 dict(w=ACCUMULATION_WINDOW_HOURS, s=CLIMATOLOGY_SOURCE_ID),
             ).mappings().all()
@@ -222,19 +262,20 @@ def run() -> None:
 
         for c in centroids:
             catchment_id = c["id"]
-            threshold = climatology.get(catchment_id)
-            if threshold is None:
-                print(f"SKIP exceedance for {catchment_id}: no climatology row.")
+            row = climatology.get(catchment_id)
+            if row is None:
+                print(f"SKIP exceedance/anomaly for {catchment_id}: no climatology row.")
                 continue
+            threshold = row["p99"]
 
             member_totals = {}
-            for row in gefs_rows:
-                if row["catchment_id"] != catchment_id or row["lead_hours"] > ACCUMULATION_WINDOW_HOURS:
+            for gr in gefs_rows:
+                if gr["catchment_id"] != catchment_id or gr["lead_hours"] > ACCUMULATION_WINDOW_HOURS:
                     continue
-                if row["rain_mm"] is None:
+                if gr["rain_mm"] is None:
                     continue
-                member_totals.setdefault(row["member"], 0.0)
-                member_totals[row["member"]] += row["rain_mm"]
+                member_totals.setdefault(gr["member"], 0.0)
+                member_totals[gr["member"]] += gr["rain_mm"]
 
             members_total = len(member_totals)
             members_exceeding = sum(1 for v in member_totals.values() if v > threshold)
@@ -256,6 +297,32 @@ def run() -> None:
             print(
                 f"  {catchment_id}: {members_exceeding}/{members_total} members exceed "
                 f"{threshold:.2f}mm (p99, 24h) -> exceedance_prob={exceedance_prob:.2f}"
+            )
+
+            if not member_totals:
+                print(f"SKIP anomaly for {catchment_id}: no member totals.")
+                continue
+            ensemble_mean_rain_mm = sum(member_totals.values()) / len(member_totals)
+            anomaly = compute_anomaly(ensemble_mean_rain_mm, row)
+            session.execute(
+                UPSERT_ANOMALY_SQL,
+                dict(
+                    forecast_run_id=gefs_run_id,
+                    catchment_id=catchment_id,
+                    window_hours=ACCUMULATION_WINDOW_HOURS,
+                    rain_mm=anomaly["rain_mm"],
+                    climatology_p50=anomaly["climatology_p50"],
+                    climatology_p99=anomaly["climatology_p99"],
+                    climatology_p99_9=anomaly["climatology_p99_9"],
+                    percentile_band=anomaly["percentile_band"],
+                    anomaly_score=anomaly["anomaly_score"],
+                    is_anomalous=anomaly["is_anomalous"],
+                ),
+            )
+            print(
+                f"  {catchment_id}: ensemble-mean 24h rain {ensemble_mean_rain_mm:.2f}mm -> "
+                f"{anomaly['percentile_band']}, anomaly_score={anomaly['anomaly_score']:.2f}, "
+                f"is_anomalous={anomaly['is_anomalous']}"
             )
 
 

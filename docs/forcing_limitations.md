@@ -95,6 +95,30 @@ Never present a single trajectory line on the dashboard. Always show:
    "today" figure, since it's the uncertainty that actually applies to the backtest.
    See `docs/data_dictionary.md` §8 Phase 2 update, 2026-08-03.
 
+## Wind forcing — permanently absent, not a fetch-it-later gap
+
+**Confirmed 2026-08-07.** The particle engine's `wind_fn(lon, lat, time) -> (u10, v10)`
+contract (`particle_engine.py`) is currently satisfied by `ConstantWindField(0, 0)` for
+the demo event, and this is not a caching gap like the currents files were — **no
+historical marine wind source exists anywhere in this repo's ingestion layer:**
+
+- GFS, GEFS and ECMWF (`ecmwf.py`) here are forecast-only products with no 2016 archive
+  — the same reason `get_historical_interpolator()` had to reach for HYCOM/Copernicus
+  Marine's *reanalysis* products instead of their rolling "latest" ones for currents.
+- ERA5-Land does ingest `u10`/`v10` (`era5_land.py`), but **ERA5-Land is land-only —
+  sea cells are permanently `NaN`** (see the main project rules). Even a fully cached
+  ERA5-Land pull for October 2016 would not cover the marine wind field the particle
+  engine needs; this is not a "re-fetch it" gap, it is a wrong-product gap. Plain ERA5
+  (non-Land, which does cover sea) is not ingested anywhere in this project.
+- No raw ERA5-Land cache exists on this machine at all
+  (`data/raw/era5_land/events/`, expected by `scripts/sweep_era5_land_events.py`, is
+  absent) — moot given the point above, but checked to be thorough.
+
+**This is now a permanent, named limitation, not a silent zero.** State it alongside
+the currents-resolution caveat: wind stress on surface transport is currently
+unmodelled for the historical backtest; the `ConstantWindField(0, 0)` is a documented
+placeholder, not a claim that October 2016 was windless.
+
 ## Judge-ready answer
 
 > "The Gulf is narrower than three grid cells of the best free global ocean model, so we

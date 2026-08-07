@@ -544,6 +544,15 @@ def list_dive_sites():
 
 # -------------------------------------------------------------------- forecast
 
+_ANOMALY_CAVEAT = (
+    "Statistical outlier signal vs. climatology, not a validated early-warning "
+    "system -- never checked against a real flood event's lead time. This is a "
+    "different statement from the exceedance/confidence numbers above (\"N% of "
+    "ensemble members agree\") and must render as a visually distinct UI element, "
+    "never merged into the formal confidence meter."
+)
+
+
 @app.get(f"{PREFIX}/forecast/latest", tags=["forecast"])
 def forecast_latest():
     """The cached GFS/GEFS snapshot — never a live network call.
@@ -553,6 +562,13 @@ def forecast_latest():
     scripts/build_forecast_snapshot.py, and this endpoint only ever reads that
     frozen file. The UI shows each model's `issued_at` so "cached, not live" is
     stated rather than implied.
+
+    `anomalies` (B6) is a percentile-relative outlier score against Karam's real
+    climatology, distinct from `exceedance` (the formal ensemble-agreement
+    confidence number) -- see `_ANOMALY_CAVEAT` and
+    `backend/src/processing/anomaly_detection.py`. Frontend: the "unusual
+    pattern detected" banner is early/exploratory signal; the confidence meter
+    is the formal number. Never conflate the two in copy or color.
     """
     snap = da.forecast_snapshot()
     if snap is None:
@@ -568,6 +584,8 @@ def forecast_latest():
         "models": snap["models"],
         "catchment_rainfall": snap["gfs_catchment_rainfall"],
         "exceedance": snap["gefs_exceedance"],
+        "anomalies": snap.get("gefs_anomalies", []),
+        "anomaly_caveat": _ANOMALY_CAVEAT,
     }
 
 

@@ -981,6 +981,18 @@ excluded before any commit touches this repo).
   `TERRAIN_AOI`/`MARINE_AOI` from the shared `config.spatial` module instead of a hardcoded
   bbox — done as part of the team's Day-0 merge, not by this workstream, but confirmed
   working post-merge.
+- **Phase 5, B6 — `forecast_anomalies` added (2026-08-07).** A new derived table, not an
+  external product — no new source row needed, but noted here for the same reason
+  `forecast_exceedance` is: every number on the dashboard traces to a file. Scores each
+  GEFS run's ensemble-mean 24h rainfall against `catchment_rainfall_climatology`'s real
+  percentiles (`p50`/`p99`/`p99_9`) — a **percentile-relative score, not a z-score**,
+  because the climatology artifact only has percentiles, not a mean/std or the daily
+  series. See `backend/src/processing/anomaly_detection.py` for the formula and
+  `supabase/migrations/20260807120000_forecast_anomalies.sql` for the schema. Exposed via
+  `GET /api/v1/forecast/latest`'s `anomalies` + `anomaly_caveat` fields. Explicit
+  limitation, stated here and in every API response: this is a statistical outlier signal
+  against ~27 years of climatology, never validated against a real flood event's lead
+  time — not a working early-warning system.
 
 
 ---

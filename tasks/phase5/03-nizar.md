@@ -23,17 +23,32 @@ infrastructure, not a polished demo piece — build it honestly as exactly that.
       `data/processed/forecasts/latest_snapshot.json` shows three different real
       threshold values (`AQ-C01: 2.9613`, `AQ-C02: 2.3467`, `AQ-C03: 2.3243`) — not
       the old flat 15mm placeholder. No action needed.
-- [ ] **A4.2 — Copernicus Marine vs. HYCOM comparison.** `compare_hycom_vs_copernicus()`
-      is real and already produced real output (65.8° current-direction disagreement
-      at the mooring's peak-response time, `docs/qa_screenshots/currents_01_hycom_vs_copernicus.png`)
-      — this is genuinely done work, not a stub. **What's actually missing right
-      now:** the `.nc` cache files it needs (`hycom_aoi_*.nc`,
-      `copernicus_marine_aoi_*.nc`) are absent from `data/raw/currents/` on disk and
-      inside the running container. Re-fetch them and confirm the comparison is
-      re-runnable, not just documented from a past run. If re-fetching isn't feasible
-      this phase, say explicitly in `docs/data_dictionary.md` that this is a static
-      exhibit from 3 Aug, not a live capability — the current phrasing risks implying
-      otherwise.
+- [x] **A4.2 — Copernicus Marine vs. HYCOM comparison.** **Closed, 2026-08-07 — the
+      "missing `.nc` files" premise above was stale, not current.** Live-verified
+      against `docker compose up --build api`: all four cache files
+      (`hycom_aoi_recent.nc`, `copernicus_marine_aoi_recent.nc`,
+      `hycom_aoi_AQ-2016-10-28.nc`, `copernicus_marine_aoi_AQ-2016-10-28.nc`) are
+      present in `data/raw/currents/`, dated 3 Aug, and the container sees them via
+      `docker-compose.yml`'s bind mount. `GET /api/v1/currents/agreement` returns the
+      real, matching **65.82° disagreement** with defaults, no re-fetch needed.
+      Proved genuine cache-dependence (not a silent network fallback) by moving the
+      `.nc` files aside and re-hitting the endpoint — it failed cleanly with "No
+      cached current data," then succeeded again once restored. No re-fetch was
+      needed; no `docs/data_dictionary.md` correction needed either — it already
+      distinguishes the "today" vs. historical/backtest numbers correctly (§8, Phase 2
+      update, 2026-08-03).
+      - **Bonus finding for Abd (his `05-abd.md` A5.1):** his file's premise that
+        `hycom_aoi_AQ-2016-10-28.nc` is "absent from the container" was the same stale
+        claim — live-checked `POST /api/v1/plume/simulate` and it already reports real
+        HYCOM forcing (`currents: HYCOM GLBu0.08/expt_91.2 historical archive, cached
+        data/raw/currents/hycom_aoi_AQ-2016-10-28.nc`), not the zero-current
+        placeholder. The currents half of his open checkbox is already resolved.
+      - **Wind is a separate, genuinely permanent gap**, not a caching issue: no
+        historical marine wind source exists in this repo at all (GFS/GEFS/ECMWF are
+        forecast-only; ERA5-Land ingests `u10`/`v10` but is land-only, so it wouldn't
+        cover marine cells even if cached, and no ERA5-Land raw cache exists on this
+        machine anyway). Documented permanently in `docs/forcing_limitations.md`'s new
+        "Wind forcing" section rather than left as an API-only caveat string.
 - [x] **A4.3 — frozen "today" offline snapshot seeded.** Confirmed:
       `scripts/build_forecast_snapshot.py` → `data/processed/forecasts/latest_snapshot.json`,
       real GEFS/GFS metadata, confirmed live via `GET /api/v1/forecast/latest`. No
@@ -45,19 +60,34 @@ infrastructure, not a polished demo piece — build it honestly as exactly that.
 
 **Model & data**
 
-- [ ] Lightweight anomaly detector — isolation forest, or a simple statistical
-      z-score against catchment climatology (start with the z-score; it's
-      explainable in one sentence to a judge, which an isolation forest score is
-      not). Running on the live GFS/GEFS/ERA5-Land ingestion stream.
-- [ ] Read `catchment_rainfall_climatology.parquet` directly as the "what's normal"
-      baseline — it's the one real climatology artifact this project already has;
-      don't compute a second, independently-derived one just for this feature.
+- [x] **Closed, 2026-08-07.** Built a **percentile-relative anomaly score**, not a
+      textbook z-score: `catchment_rainfall_climatology` only delivers percentiles
+      (p50/p90/p95/p99/p99_9), not a mean/std or the raw daily series, and
+      fabricating one would violate "nothing is interpolated." `is_anomalous =
+      rain_mm > p99`, `anomaly_score` is a continuous position past p50 (same
+      continuous-not-cutoff shape as the confidence/currents-agreement formulas) —
+      explainable in one sentence: "today's forecast exceeds the 99th percentile of
+      N years of historical rainfall for this catchment." Pure function:
+      `backend/src/processing/anomaly_detection.py`, 5 unit tests
+      (`tests/test_anomaly_detection.py`), all passing.
+- [x] Reads `catchment_rainfall_climatology` directly (via the Postgres table, same
+      one Karam's loader populates) as the "what's normal" baseline — no second,
+      independently-derived climatology built.
 
 **Backend & storage**
 
-- [ ] New `forecast_anomalies` table, populated on every scheduled ingestion run.
-      This is a new artifact — confirm the name doesn't collide with anything in
-      `tasks/00-contracts.md` (it doesn't; it's new).
+- [x] **Closed, 2026-08-07.** New `forecast_anomalies` table
+      (`supabase/migrations/20260807120000_forecast_anomalies.sql`), zero collisions
+      confirmed against `tasks/00-contracts.md`. Wired into
+      `backend/src/db/loaders/forecast_pipeline.py` right after the existing
+      exceedance block — same manual-run cadence as everything else in this repo (no
+      scheduler exists anywhere; "populated on every scheduled ingestion run" means
+      "populated whenever this script runs," consistent with `forecast_exceedance`).
+      Live-verified: ran the pipeline end to end, confirmed real rows via `psql`
+      (§ below). Exposed via `GET /api/v1/forecast/latest`'s new `anomalies` +
+      `anomaly_caveat` fields (`scripts/build_forecast_snapshot.py` now also freezes
+      this into the offline snapshot, same "wifi off" discipline as everything else
+      the endpoint serves).
 
 **Dashboard sub-features (for Ali to build)**
 

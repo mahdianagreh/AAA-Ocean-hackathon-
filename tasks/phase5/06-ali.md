@@ -101,9 +101,20 @@ the API contracts already committed in the repo.
 
 ## B6 — Live Anomaly Detection, dashboard slice
 
+**Backend contract, live as of 2026-08-07 (Nizar):** `GET /api/v1/forecast/latest`
+now returns an `anomalies` array (one row per catchment: `catchment_id`,
+`rain_mm`, `climatology_p50/p99/p99_9`, `percentile_band`, `anomaly_score`
+(continuous, ≥0), `is_anomalous` (bool)) plus a top-level `anomaly_caveat` string —
+render that caveat text verbatim next to the banner, don't paraphrase it. This is a
+**percentile-relative score, not a z-score** (the real climatology artifact only has
+percentiles, not a mean/std) — if you need one sentence for a judge: "today's
+forecast exceeds the 99th percentile of N years of historical rainfall for this
+catchment."
+
 - [ ] A distinct-colored "unusual pattern detected" banner, visually separate from
-      the formal risk bands.
-- [ ] A rolling sparkline of the live forecast stream with anomalous points marked.
+      the formal risk bands, driven by `is_anomalous`.
+- [ ] A rolling sparkline of the live forecast stream with anomalous points marked
+      (`anomaly_score` for marker intensity).
 - [ ] **The one design rule that's easy to get wrong here, stated plainly:**
       "early signal, formal threshold not yet crossed" is a different statement from
       "72% of ensemble members agree" — the Confidence Meter and this banner must
