@@ -76,18 +76,35 @@ infrastructure, not a polished demo piece — build it honestly as exactly that.
 
 **Backend & storage**
 
-- [x] **Closed, 2026-08-07.** New `forecast_anomalies` table
-      (`supabase/migrations/20260807120000_forecast_anomalies.sql`), zero collisions
-      confirmed against `tasks/00-contracts.md`. Wired into
-      `backend/src/db/loaders/forecast_pipeline.py` right after the existing
+- [x] New `forecast_anomalies` table
+      (`supabase/migrations/20260807120000_forecast_anomalies.sql`, applied to
+      Supabase), zero collisions confirmed against `tasks/00-contracts.md`. Wired
+      into `backend/src/db/loaders/forecast_pipeline.py` right after the existing
       exceedance block — same manual-run cadence as everything else in this repo (no
       scheduler exists anywhere; "populated on every scheduled ingestion run" means
       "populated whenever this script runs," consistent with `forecast_exceedance`).
-      Live-verified: ran the pipeline end to end, confirmed real rows via `psql`
-      (§ below). Exposed via `GET /api/v1/forecast/latest`'s new `anomalies` +
-      `anomaly_caveat` fields (`scripts/build_forecast_snapshot.py` now also freezes
-      this into the offline snapshot, same "wifi off" discipline as everything else
-      the endpoint serves).
+      Exposed via `GET /api/v1/forecast/latest`'s new `anomalies` + `anomaly_caveat`
+      fields (`scripts/build_forecast_snapshot.py` now also freezes this into the
+      offline snapshot, same "wifi off" discipline as everything else the endpoint
+      serves); confirmed live against the old cached snapshot (empty `anomalies: []`,
+      `anomaly_caveat` present, no crash).
+- ⚠️ **Not yet live-verified with a real, non-empty row — infrastructure blocker,
+      not a code gap, 2026-08-07.** The unit tests (5, all passing,
+      `tests/test_anomaly_detection.py`) prove the scoring logic; the loader/schema/
+      API wiring is code-complete and reviewed. What's missing is a real end-to-end
+      run: `forecast_pipeline.py` needs a fresh GFS/GEFS fetch (repeatedly hit
+      AWS byte-range GEFS grib downloads coming back truncated — fixed with a
+      skip-and-continue handler, see the loader's docstring) *and* a live Postgres
+      write via the Supabase pooler, and the **pooler itself became unresponsive**
+      partway through this session — TCP connects instantly
+      (`nc -zv aws-1-ap-northeast-2.pooler.supabase.com 6543` succeeds) but the
+      Postgres protocol handshake never completes, for `psql` too, not just this
+      loader. Most likely cause: several `kill -9`'d attempts earlier in this
+      session (needed to escape the corrupted-grib retries before the fix landed)
+      left orphaned sessions the pooler hadn't reaped. Waited ~3 min and retried
+      once — still hung. **Recommend someone check the Supabase project's
+      connection-pool count on the dashboard**; the code itself needs nothing
+      further once a connection goes through.
 
 **Dashboard sub-features (for Ali to build)**
 
