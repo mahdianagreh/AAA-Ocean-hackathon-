@@ -78,6 +78,68 @@ Evidence: `evidence/b8/photos_get.json`, `evidence/b8/exposure_before_approval.j
 `evidence/b8/approve_response.json`, `evidence/b8/exposure_after_approval.json`,
 `evidence/b8/proposed_weight_R08.json`.
 
+## Co-tested rows — Pulga's "also needs" contribution
+
+Two rows list Pulga as a secondary tester, not the owner: `p4-04` (Mahdi owns the
+model; Pulga owns wiring the drivers into `/explain`) and `p4-B` (Karam owns the POI
+source; Pulga owns the nearest-zone join). Tested both live.
+
+### p4-04 — Top Weather Drivers Explainer
+
+**Verdict: FAIL**, for the specific Pulga-owned piece — the checklist item in
+`tasks/phase4/04-pulga.md §3` ("thread real driver output from `predict_one()` into
+the `shap_drivers` field the explain route already accepts") was never actually done.
+
+- Live `POST /runoff/predict` for the anchor event/catchment (`AQ-C01`,
+  `rainfall_mm_3h=41.2`) returns real, non-fabricated drivers under a `drivers` field
+  — `rain_self_percentile`, `rain_over_p90`, `precip_prior_1d_mm`,
+  `precip_prior_3d_mm`, each with a real `contribution`/`value`. Confirms Mahdi's
+  half is real. `evidence/p4-04/runoff_predict_real_drivers.json`.
+- **Nothing in `main.py` threads this into `/explain`.** `grep -n shap_drivers
+  backend/src/api/main.py` shows exactly one use — `shap_drivers=req.shap_drivers` —
+  a straight pass-through of whatever the caller supplies. The caller must still
+  hand-assemble the driver list itself, same as every existing test fixture does.
+- Fed the real `drivers` list into `/explain` two ways, live:
+  1. **Unmodified** (key name `"key"`, matching `runoff_predict`'s own field name) →
+     `500 number fidelity failure` (`/explain`'s own self-check correctly caught the
+     mismatch rather than serving something silently wrong — the safety net works).
+     `evidence/p4-04/explain_with_unrenamed_key_field_500.json`.
+  2. **Renamed `key`→`feature`** (the minimum a caller would have to do) and dropped
+     the percentile arg to avoid the self-check trip → a real response, but the text
+     reads: *"Wadi Yutum is classified as high risk because rain self percentile,
+     rain over p90, precip prior 1d mm and precip prior 3d mm."* — no verb, no
+     sentence, because none of the four real driver names are in `DRIVER_PHRASE`
+     (`backend/src/rag/explain.py`, 7 entries: `rainfall_3h_mm`/`rainfall_mm_3h`,
+     `slope_mean`, `antecedent_index`, `frac_bare_sparse_vegetation`,
+     `road_density_km_per_km2`, `clay_0_5cm_mean`) — every one falls through to the
+     generic `feature.replace("_", " ")` path. `evidence/p4-04/explain_with_real_driver_names.json`.
+- `tests/test_explain_fidelity.py` (10 passing tests) exclusively uses hand-typed
+  fixture names that already match `DRIVER_PHRASE` (`rainfall_3h_mm`, `slope_mean`,
+  `antecedent_index`) — it has never been re-run against the model's actual current
+  driver vocabulary, confirming this gap has been sitting un-caught by the test suite
+  since Phase 3, not something Phase 5's changes introduced.
+- This is not a `/explain` defect — the endpoint does exactly what it says (phrases
+  what it's handed, self-checks fidelity). It is a real, unfinished integration: the
+  runoff model's driver names and the explainer's phrase vocabulary were never
+  reconciled, and no code path bridges them automatically.
+
+### p4-B — Dive Site Safety Status
+
+**Verdict: PASS**
+
+- Live `GET /dive-sites`: 46 real POIs, every one carrying a real
+  `nearest_reef_zone_id` and `distance_m` (geodesic, joined via the real
+  `places.geojson` → reef-zone geometry, per the `96fa638`/`206ee50` commits).
+- 10 sites sit within 2 km of a reef zone with **zero caveats** — real, plausible
+  Aqaba dive sites (`Cedar Pride Shipwreck`, `Japanese Gardens Coral Reefs`, `Tank`,
+  `Gorgon 1` at `distance_m: 0.0`).
+- The remaining POIs, 30–54 km inland, correctly carry an explicit warning caveat
+  naming the exact distance and stating the join is "unreliable for this one, not a
+  real safety association" — the join measures rather than asserts, exactly as
+  `data_access.py`'s own docstring commits to. Not silently dropped, not silently
+  trusted.
+- `evidence/p4-B/dive_sites.json`.
+
 ## Backend halves of shared rows
 
 | ID | What was tested | Verdict |
@@ -130,3 +192,14 @@ and its `b5` equivalent). Container restarted once afterward to clear the in-pro
 `lru_cache`. Re-verified post-cleanup: all 8 reef zones back at
 `1.0`/`PLACEHOLDER_PENDING_MARINE_SCIENTIST`, `reef_zones.gpkg` hash unchanged,
 `git status --short` shows no tracked-file changes from any of this.
+
+## Definition of done for this file
+
+Every row assigned to Pulga in [`00-master-test-matrix.md`](00-master-test-matrix.md)
+— the 6 rows owned outright (`core-D`, `core-E`, `b4`, `b5`, `b7`, `b8`), the backend
+half of 6 shared rows (`p4-07`, `p4-10`, `p4-15`, `p4-A`, `p4-C`, `p4-I`), and the
+Pulga-side piece of 2 co-tested rows (`p4-04`, `p4-B`) — now carries a `PASS`/`FAIL`
+verdict recorded from a live check against the running container, with an evidence
+file for every one. 13 of those 14 came back real and working; one (`p4-04`) came
+back a genuine, unfixed gap, written down rather than patched, per this phase's one
+hard rule. Nothing in this file changed a line of product code.

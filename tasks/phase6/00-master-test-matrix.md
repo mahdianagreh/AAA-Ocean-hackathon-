@@ -23,7 +23,7 @@ instructions, only rows.
 | p4-01 | Storm Replay Mode | Abd | Ali | Abd, Ali | — | — | |
 | p4-02 | Live Forecast Mode | Nizar | Ali | Nizar, Ali | — | — | |
 | p4-03 | 8-Hour Countdown | Ali | — | Ali | — | — | |
-| p4-04 | Top Weather Drivers Explainer | Mahdi | Pulga, Ali | Mahdi, Pulga, Ali | — | — | |
+| p4-04 | Top Weather Drivers Explainer | Mahdi | Pulga, Ali | Mahdi, Pulga, Ali | **FAIL (Pulga's piece)** | `evidence/p4-04/runoff_predict_real_drivers.json`, `evidence/p4-04/explain_with_unrenamed_key_field_500.json`, `evidence/p4-04/explain_with_real_driver_names.json` | Real drivers exist (Mahdi's half real); never threaded into `/explain`, and driver names don't match `DRIVER_PHRASE`'s vocabulary even if threaded manually. See 04-pulga.md |
 | p4-05 | Confidence Meter | Karam | Nizar | Karam, Nizar | — | — | |
 | p4-06 | Bilingual Assistant | (done) | — | Ali | — | — | |
 | p4-07 | What-If Scenario Presets | Pulga | Ali | Pulga (backend), Ali (frontend) | **PASS (backend)** | `evidence/p4-07/rainfall_multiplier_and_transmission_loss.json` | Backend contract only — frontend half is Ali's |
@@ -40,7 +40,7 @@ instructions, only rows.
 | p4-18 | Toughest Coral Fact | Ali | — | Ali | — | — | |
 | p4-19 | One-Line Mission Statement | (done) | — | Ali | — | — | |
 | p4-A | Named Reef Zone Priority List | Ali | Pulga | Ali (frontend), Pulga (backend data) | **PASS (backend)** | `evidence/p4-A/alerts_sorted.json` | `/alerts` sort + real data only |
-| p4-B | Dive Site Safety Status | Karam | Pulga, Ali | Karam, Pulga, Ali | — | — | |
+| p4-B | Dive Site Safety Status | Karam | Pulga, Ali | Karam, Pulga, Ali | **PASS (Pulga's piece)** | `evidence/p4-B/dive_sites.json` | 46 real POIs, real nearest-zone join, honest distance caveats on implausible ones. See 04-pulga.md |
 | p4-C | Transmission Loss Reality Check | Mahdi | Pulga, Ali | Mahdi, Pulga (backend), Ali | **PASS (backend)** | `evidence/p4-C/transmission_loss_echo.json` | `transmission_loss_override` echo only |
 | p4-D | Culvert & Drainage Correction Map | Mahdi | Ali | Mahdi, Ali | — | — | |
 | p4-E | Enclosed Harbor Warning Flag | (done) | Ali (verify) | Ali | — | — | |
@@ -73,13 +73,15 @@ it are real.
 | State | Count |
 |---|---|
 | PASS (fully, both halves) | 0 |
-| PASS (backend half only — frontend half still open for Ali) | 6 — `p4-07`, `p4-10`, `p4-15`, `p4-A`, `p4-C`, `p4-I` |
-| PASS (no separate frontend half) | 6 — `core-D`, `core-E`, `b4`, `b5`, `b7` (infrastructure), `b8` |
-| FAIL | 0 |
+| PASS (backend/data half only — frontend half still open for Ali) | 6 — `p4-07`, `p4-10`, `p4-15`, `p4-A`, `p4-C`, `p4-I` |
+| PASS (no separate frontend half) | 7 — `core-D`, `core-E`, `b4`, `b5`, `b7` (infrastructure), `b8`, `p4-B` (Pulga's piece) |
+| FAIL | 1 — `p4-04` (Pulga's piece: real driver data exists, never wired into `/explain`, and the driver-name vocabulary doesn't match even if it were) |
 | BLOCKED-NOT-BUILT | 0 |
-| Untested (blank) | 32 — every row not listed above |
+| Untested (blank) | 30 — every row not listed above |
 
-44 rows total. 12 carry a recorded verdict so far, all from Pulga's pass this
-session. Every other row is genuinely untested as of this pass — do not read a blank
-row as a pass, a fail, or as "the earlier phase's ✅ still holds." It means exactly
-one thing: nobody has personally run the check yet.
+44 rows total. 14 carry a recorded verdict so far, all from Pulga's pass this
+session — 12 fully owned rows plus the Pulga-side piece of 2 co-tested rows (`p4-04`,
+`p4-B`). Every other row, and the Mahdi/Ali sides of `p4-04`, are genuinely untested
+as of this pass — do not read a blank row as a pass, a fail, or as "the earlier
+phase's ✅ still holds." It means exactly one thing: nobody has personally run the
+check yet.
