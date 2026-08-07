@@ -1,0 +1,714 @@
+[
+    {
+        "osm_id": "548026041",
+        "name_en": "Siq al Khazali",
+        "name_ar": "\u0627\u0644\u062e\u0632\u0639\u0644\u064a",
+        "lon": 35.42347,
+        "lat": 29.51796,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 40943.002676475655,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "40,943 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "605992953",
+        "name_en": "Nabatean Rock Inscriptions",
+        "name_ar": null,
+        "lon": 35.41153,
+        "lat": 29.55899,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 39994.933460350134,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "39,995 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "606119886",
+        "name_en": "Little Bridge",
+        "name_ar": null,
+        "lon": 35.44302,
+        "lat": 29.52041,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 42839.19608910506,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "42,839 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "606119888",
+        "name_en": "Lawrence House",
+        "name_ar": null,
+        "lon": 35.45931,
+        "lat": 29.52862,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 44431.85963346135,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "44,432 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "663869877",
+        "name_en": "Cedar Pride",
+        "name_ar": null,
+        "lon": 34.98833,
+        "lat": 29.52167,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 997.4323776517522,
+        "caveats": []
+    },
+    {
+        "osm_id": "1163294177",
+        "name_en": "cinema decorations",
+        "name_ar": null,
+        "lon": 35.47292,
+        "lat": 29.72717,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 50814.558963347146,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "50,815 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "2374261090",
+        "name_en": "Japanese Gardens Coral Reefs",
+        "name_ar": null,
+        "lon": 34.97325,
+        "lat": 29.42993,
+        "nearest_reef_zone_id": "R-06",
+        "distance_m": 21.57919236412272,
+        "caveats": []
+    },
+    {
+        "osm_id": "2533895318",
+        "name_en": "Siq Trail",
+        "name_ar": null,
+        "lon": 35.47009,
+        "lat": 29.49362,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 45546.823740886684,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "45,547 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "2887202999",
+        "name_en": "Sand dune",
+        "name_ar": null,
+        "lon": 35.42167,
+        "lat": 29.52898,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 40784.3181392362,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "40,784 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "4061501453",
+        "name_en": "rock arch",
+        "name_ar": null,
+        "lon": 35.45478,
+        "lat": 29.80923,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 53717.53765718485,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "53,718 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "4061501454",
+        "name_en": "rock arch",
+        "name_ar": null,
+        "lon": 35.45599,
+        "lat": 29.81042,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 53888.29570050279,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "53,888 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "4329102691",
+        "name_en": "Cedar Pride Shipwreck",
+        "name_ar": null,
+        "lon": 34.97316,
+        "lat": 29.43107,
+        "nearest_reef_zone_id": "R-06",
+        "distance_m": 65.22687219540053,
+        "caveats": []
+    },
+    {
+        "osm_id": "5021313421",
+        "name_en": "Wadi Rum",
+        "name_ar": "\u0648\u0627\u062f\u064a \u0631\u0645",
+        "lon": 35.33622,
+        "lat": 29.50844,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 32499.904049756948,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "32,500 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "5073989621",
+        "name_en": "Siq Um Al Tawaki",
+        "name_ar": null,
+        "lon": 35.49427,
+        "lat": 29.62217,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 48999.015897144964,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "48,999 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "5353345693",
+        "name_en": "Siq Um Al Tawaqi",
+        "name_ar": null,
+        "lon": 35.49356,
+        "lat": 29.61953,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 48869.92754984169,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "48,870 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "5504662457",
+        "name_en": "Gorgon 1",
+        "name_ar": null,
+        "lon": 34.97212,
+        "lat": 29.42619,
+        "nearest_reef_zone_id": "R-06",
+        "distance_m": 0.0,
+        "caveats": []
+    },
+    {
+        "osm_id": "5522700737",
+        "name_en": "Tank",
+        "name_ar": null,
+        "lon": 34.97166,
+        "lat": 29.41878,
+        "nearest_reef_zone_id": "R-07",
+        "distance_m": 58.04517829002027,
+        "caveats": []
+    },
+    {
+        "osm_id": "5522700738",
+        "name_en": "Plane wreck",
+        "name_ar": null,
+        "lon": 34.97162,
+        "lat": 29.41806,
+        "nearest_reef_zone_id": "R-06",
+        "distance_m": 77.4794173391656,
+        "caveats": []
+    },
+    {
+        "osm_id": "5531098360",
+        "name_en": "Aqaba Trail",
+        "name_ar": null,
+        "lon": 35.00717,
+        "lat": 29.53314,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 882.0244153619276,
+        "caveats": []
+    },
+    {
+        "osm_id": "5584488921",
+        "name_en": "Good Free Climb Area",
+        "name_ar": null,
+        "lon": 35.41388,
+        "lat": 29.50895,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 40027.012541623306,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "40,027 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "5603008074",
+        "name_en": "Rainbow reef",
+        "name_ar": null,
+        "lon": 34.97378,
+        "lat": 29.43252,
+        "nearest_reef_zone_id": "R-06",
+        "distance_m": 2.6131749558262527,
+        "caveats": []
+    },
+    {
+        "osm_id": "5603102410",
+        "name_en": "Chicken rock",
+        "name_ar": null,
+        "lon": 35.39173,
+        "lat": 29.47363,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 38182.998923618776,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "38,183 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "5613554021",
+        "name_en": "Wild Wadi Rum",
+        "name_ar": null,
+        "lon": 35.41869,
+        "lat": 29.57468,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 40873.271290017765,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "40,873 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "5892548627",
+        "name_en": "Lawrence's Spring",
+        "name_ar": "\u0627\u0628\u0648 \u0639\u064a\u064a\u0646\u0629",
+        "lon": 35.41019,
+        "lat": 29.55979,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 39873.46069672731,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "39,873 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "6042430690",
+        "name_en": "Red sand dune Abu Breshmana near Jabal Um Ishrin",
+        "name_ar": null,
+        "lon": 35.44333,
+        "lat": 29.5631,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 43105.96480345981,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "43,106 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "6050649085",
+        "name_en": "Al Hasany Sand dunes",
+        "name_ar": null,
+        "lon": 35.44885,
+        "lat": 29.54842,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 43516.861554899195,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "43,517 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "6171348985",
+        "name_en": "Natural Bridge",
+        "name_ar": null,
+        "lon": 35.47509,
+        "lat": 29.47839,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 46161.51297920703,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "46,162 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "6190345195",
+        "name_en": "Petroglyphs",
+        "name_ar": null,
+        "lon": 35.41108,
+        "lat": 29.57174,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 40100.56341139513,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "40,101 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "6328743388",
+        "name_en": "Canyon makharas",
+        "name_ar": null,
+        "lon": 35.45469,
+        "lat": 29.61761,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 45146.31687575542,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "45,146 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "6336131592",
+        "name_en": "Lawrence Face",
+        "name_ar": null,
+        "lon": 35.49334,
+        "lat": 29.61974,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 48853.9469526468,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "48,854 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "6513207929",
+        "name_en": "King abdullah reef",
+        "name_ar": null,
+        "lon": 34.96854,
+        "lat": 29.43977,
+        "nearest_reef_zone_id": "R-05",
+        "distance_m": 102.01321573530468,
+        "caveats": []
+    },
+    {
+        "osm_id": "7184751285",
+        "name_en": "sunset",
+        "name_ar": null,
+        "lon": 35.44617,
+        "lat": 29.46623,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 43526.74810896724,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "43,527 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "7184751385",
+        "name_en": "big dune",
+        "name_ar": null,
+        "lon": 35.44407,
+        "lat": 29.55354,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 43091.34260302849,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "43,091 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "7384766385",
+        "name_en": null,
+        "name_ar": "\u0645\u062f\u062e\u0644 \u0646\u063a\u0631\u0647",
+        "lon": 35.42174,
+        "lat": 29.36737,
+        "nearest_reef_zone_id": "R-07",
+        "distance_m": 43187.82847268417,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "43,188 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "9028531617",
+        "name_en": "Underwater military museum",
+        "name_ar": null,
+        "lon": 34.9671,
+        "lat": 29.44647,
+        "nearest_reef_zone_id": "R-05",
+        "distance_m": 0.0,
+        "caveats": []
+    },
+    {
+        "osm_id": "9668054422",
+        "name_en": "Ancient inscriptions",
+        "name_ar": null,
+        "lon": 35.49668,
+        "lat": 29.59812,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 48728.79041574497,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "48,729 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "9668078145",
+        "name_en": "Mushroom rock",
+        "name_ar": null,
+        "lon": 35.45278,
+        "lat": 29.70881,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 48207.612746385195,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "48,208 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "9668078147",
+        "name_en": "Cave",
+        "name_ar": null,
+        "lon": 35.44603,
+        "lat": 29.72242,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 48229.349111149764,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "48,229 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "9668078155",
+        "name_en": "Thamudic inscriptions",
+        "name_ar": null,
+        "lon": 35.34949,
+        "lat": 29.64634,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 36299.95141364526,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "36,300 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "10137569217",
+        "name_en": "JHRC Train Adventure starting point",
+        "name_ar": null,
+        "lon": 35.48254,
+        "lat": 29.66041,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 48988.09721767411,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "48,988 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "10576966768",
+        "name_en": "Qasr el-Kithara",
+        "name_ar": null,
+        "lon": 35.31673,
+        "lat": 29.80069,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 42643.53477573004,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "42,644 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "10723070280",
+        "name_en": "Barrah Canyon",
+        "name_ar": null,
+        "lon": 35.4909,
+        "lat": 29.558,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 47655.23883402402,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "47,655 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "10875295126",
+        "name_en": "Rock Bridge",
+        "name_ar": null,
+        "lon": 35.36707,
+        "lat": 29.46627,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 35932.36031280886,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "35,932 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "11473651487",
+        "name_en": "House of Lawrenze",
+        "name_ar": null,
+        "lon": 35.45929,
+        "lat": 29.52833,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 44429.14595565564,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "44,429 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "13374361401",
+        "name_en": null,
+        "name_ar": "\u0628\u0631\u0629 \u0627\u0644\u0633\u0645\u0627\u0639\u064a\u0646",
+        "lon": 35.37636,
+        "lat": 29.57434,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 36803.118854733984,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "36,803 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    },
+    {
+        "osm_id": "13659293801",
+        "name_en": "Bird Stone",
+        "name_ar": null,
+        "lon": 35.5014,
+        "lat": 29.57359,
+        "nearest_reef_zone_id": "R-01",
+        "distance_m": 48821.84083399594,
+        "caveats": [
+            {
+                "field": "nearest_reef_zone_id",
+                "message": "48,822 m from the nearest reef zone. The source OSM category (\"kind: dive\") also carries Wadi Rum desert attractions alongside real coastal dive sites, and this POI is far enough inland that it is very unlikely to be an actual dive site \u2014 treat the join as unreliable for this one, not as a real safety association.",
+                "severity": "warning",
+                "source": "backend/src/api/data_access.py:dive_sites"
+            }
+        ]
+    }
+]
