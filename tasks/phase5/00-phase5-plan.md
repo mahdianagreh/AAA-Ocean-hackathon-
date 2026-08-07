@@ -88,7 +88,7 @@ plan; it is the reason every per-person file's Definition of Done distinguishes
 | 0 | 7 Aug | This plan lands. Everyone reads §"Where Phase 2 left us" and their own file. Mahdi starts credential rotation immediately — nothing else on this list is more urgent. |
 | 1–2 | 8–9 Aug | Part A closure items with real, specific gaps (A1.3/A1.4 Karam, A2.3/A2.5 Mahdi, A3.4/A6.1 Pulga+Ali, A4.2 Nizar). Part B schema/table decisions locked (`candidate_sites`, `calibration_trials` extension, `sampling_feedback`, `forecast_anomalies`) — commit these before writing model code against them. |
 | 2–4 | 9–11 Aug | Part B model/backend work in parallel. Dashboard sub-features build against whichever backend contract lands first, same "provisional schema, real code" discipline as Day 1 of the original project. |
-| 5 | 11 Aug | Cross-team wiring: Ali repoints `ScenarioDrawer` (A3.4), wires the mooring comparison (A6.3), and starts pulling B1–B9's dashboard slices as their backends land. |
+| 5 | 11 Aug | Ali repoints `ScenarioDrawer` (A3.4), wires the mooring comparison (A6.3), and builds the B1–B9 dashboard slices against the committed API contracts already in each owner's file. |
 | Freeze | 12 Aug | Every ✅-able item is ✅. Every feature that can't be fully validated in time is explicitly labelled "plumbing, first-pass model" — never silently presented as finished. |
 | Present | 13 Aug | Demo. |
 
@@ -98,12 +98,12 @@ plan; it is the reason every per-person file's Definition of Done distinguishes
 
 | Priority | Person | Workstream |
 |---|---|---|
-| **1** | Karam | Close A1 (rainfall/climatology/manifest); support B3, B4 |
-| **1** | Mahdi | Close A2 (**credential rotation first**); own B1, B2, B3, B9 |
-| **1** | Pulga | Close A3; own B4, B5, B7, B8; support B9 |
-| **2** | Nizar | Close A4; own B6 |
-| **2** | Abd | Close A5; support B1 |
-| **2** | Ali | Close A6; build the dashboard half of every B1–B9 feature |
+| **1** | Karam | Close A1 (rainfall/climatology/manifest) |
+| **1** | Mahdi | Close A2 (**credential rotation first**); own B1, B2, B3, B9 end to end |
+| **1** | Pulga | Close A3; own B4, B5, B7, B8 end to end |
+| **2** | Nizar | Close A4; own B6 end to end |
+| **2** | Abd | Close A5 |
+| **2** | Ali | Close A6; build the dashboard for every B1–B9 feature against each owner's already-committed API contract |
 
 Ali appears against every feature below — not because he's behind, but because every
 feature in this phase, same as every phase before it, ends in a screen, and he's the

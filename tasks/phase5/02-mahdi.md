@@ -1,17 +1,15 @@
 # Mahdi — Terrain, Hydrology, the Runoff Model, and Four New AI Features
 
 **Phase 5 · Workstream 2**
-**Feeds:** Ali (dashboards for B1/B2/B3/B9), Pulga (B4/B8/B9 cross-deps), Nizar (B6)
 Read [`00-phase5-plan.md`](00-phase5-plan.md) first.
 
 ---
 
 ## Why this phase matters
 
-You carry the heaviest Part B load this phase — four owned features (B1, B2, B3, B9)
-plus support on B6 and B8 — on top of one genuinely urgent Part A item. Do the urgent
-one first. Everything else on this list can slip a day; a live credential exposure
-cannot.
+You carry the heaviest Part B load this phase — four owned features (B1, B2, B3, B9),
+each yours end to end — on top of one genuinely urgent Part A item. Do the urgent one
+first. Everything else on this list can slip a day; a live credential exposure cannot.
 
 ---
 
@@ -49,7 +47,7 @@ cannot.
 
 ---
 
-## 1 · B1 — Automated Plume Segmentation Model (with Abd)
+## 1 · B1 — Automated Plume Segmentation Model
 
 **Model & data**
 
@@ -61,6 +59,9 @@ cannot.
 - [ ] Every mask stores `human_reviewed: bool` and, once reviewed, an
       `agreement_score` against the human correction — this is the training signal,
       not an afterthought field.
+- [ ] Count the real, human-reviewed masks currently in the library before writing
+      any dashboard copy about training maturity — report the real number, not an
+      estimate, and size the model's own claims to match it.
 
 **Backend & storage**
 
@@ -69,7 +70,7 @@ cannot.
       do not create a second ledger).
 - [ ] Confidence output per generated mask, stored alongside it.
 
-**Dashboard sub-features (Ali builds — full spec also in [`06-ali.md`](06-ali.md))**
+**Dashboard sub-features (for Ali to build)**
 
 - Confidence heatmap toggle directly on the plume layer.
 - "Flag for human review" action on any auto-generated mask, feeding straight back
@@ -91,7 +92,7 @@ that in `docs/model_card.md`'s new B1 section, in the same words, not softened.
 **Model & data**
 
 - [ ] Regression model predicting per-catchment transmission loss from terrain slope,
-      soil texture (Pulga's clay/sand/silt extraction), and drainage density.
+      soil texture, and drainage density.
 - [ ] Replaces the borrowed Negev `[0.20, 0.85]` range (`docs/HANDOFF_transmission_loss_2026-08-06.md`)
       with a site-specific learned estimate — **the borrowed range does not disappear**,
       it becomes the fallback when the learned model has nothing to say.
@@ -100,14 +101,13 @@ that in `docs/model_card.md`'s new B1 section, in the same words, not softened.
 
 - [ ] New field on the sediment-proxy response: `transmission_loss_basis: "learned" |
       "negev_proxy"` — the response is always honest about which value is in use.
-      This slots next to the `transmission_loss` field Pulga's
-      `transmission_loss_override` parameter already echoes back
+      This slots next to the existing `transmission_loss` field
       (`backend/src/api/schemas.py`) — add the basis flag there, don't invent a
       parallel field.
 - [ ] Feeds directly into the exposure engine's `formula_terms`, per Standing Law
       rule 10 — the basis flag travels with the number, not just in a log.
 
-**Dashboard sub-features (Ali builds)**
+**Dashboard sub-features (for Ali to build)**
 
 - The existing transmission-loss slider's default position moves to the learned
   prediction instead of a blank midpoint.
@@ -126,15 +126,19 @@ same slide.
 
 ---
 
-## 3 · B3 — Cross-Site Transfer Learning (with Karam)
+## 3 · B3 — Cross-Site Transfer Learning
 
 **Model & data**
 
 - [ ] Pre-train on Aqaba's validated model, fine-tune on a new site's thin data.
 - [ ] Formalize the fine-tuning pipeline as a **reusable script**, not a one-off
-      notebook — Karam is generalizing the rainfall ingestion side (his file, §"Your
-      role in B3") specifically so this script never special-cases input format per
-      site.
+      notebook, parameterized by bounding box and site identifier rather than
+      hardcoding Aqaba's AOI — same "ask the box, never retype the literal"
+      discipline `backend/src/config/spatial.py` already enforces, extended to a
+      second site.
+- [ ] Test the pipeline against one real or realistic second-site bounding box before
+      freeze — a transfer-learning pipeline nobody has run once is not a shipped
+      feature.
 
 **Backend & storage**
 
@@ -143,15 +147,13 @@ same slide.
       this** — `AQ-C`/`AQ-O`/`R-`/`AQ-YYYY-MM-DD`/`sim_{ULID}` are Aqaba-specific and
       frozen (`tasks/00-contracts.md` §2); `site_id` is a new, separate field.
 
-**Dashboard sub-features (Ali builds)**
+**Dashboard sub-features (for Ali to build)**
 
 - A "model maturity" badge per site — number of validated local events vs. Aqaba's
   baseline, shown honestly, never hidden or smoothed over.
 - Powers a future multi-site switcher in the map UI: same dashboard, different
   coastline, with an honest "this site has N validated events, Aqaba has M"
   comparison built directly into the switch action.
-- Directly supports B4: a newly-scored candidate site (Pulga's site-scoring agent)
-  gets a transfer-learned starter model immediately instead of starting from zero.
 
 **Limitation to state:** a site with zero validated local events cannot be
 meaningfully scored against Aqaba's own accuracy — the maturity badge exists
@@ -159,7 +161,7 @@ specifically so nobody mistakes "we ran the model on it" for "we validated it he
 
 ---
 
-## 4 · B9 — Automated Culvert/Drainage-Conflict Detector (with Pulga)
+## 4 · B9 — Automated Culvert/Drainage-Conflict Detector
 
 **Model & data**
 
@@ -172,24 +174,22 @@ specifically so nobody mistakes "we ran the model on it" for "we validated it he
 
 **Backend & storage**
 
-- [ ] Runs automatically on every new site port (ties directly into B3's transfer
-      pipeline — a new site's outlets get their own conflict report as part of
-      onboarding, not a separate manual task someone has to remember to run), producing
-      a conflict report as a structured artifact instead of a one-off manual task.
+- [ ] Runs automatically on every new site port, producing a conflict report as a
+      structured artifact instead of a one-off manual task.
 - [ ] All distance/proximity math in this detector is **EPSG:32636, never degrees**
       (Standing Law rule 8) — this is exactly the kind of "how close is this culvert
       to this outlet" calculation that silently produces a wrong number in degrees.
+- [ ] Wire its output into `outlet.position_confidence` yourself — you already own
+      this field (A2.4). Three of five outlets are currently marked `"low"`; update
+      that value only with inspectable evidence attached, never a silent flip to
+      `"high"`.
 
-**Dashboard sub-features (Ali builds)**
+**Dashboard sub-features (for Ali to build)**
 
 - A map layer showing detected conflicts as clickable pins.
 - DEM-vs-OSM shown side by side on click.
-- Directly feeds `outlet.position_confidence` — currently three of five outlets are
-  marked `"low"` (per A2.4's live-verified field) — this is the mechanism that
-  improves that number with evidence instead of a manual guess. **Improves it
-  toward a new value with evidence attached, never silently flips `"low"` to
-  `"high"` without the evidence being inspectable** — same non-negotiable pattern as
-  B8's `sensitivity_weight` safeguard below.
+- `position_confidence` changes render with their evidence visible, never a silent
+  before/after.
 
 **Limitation to state:** the detector is trained/tuned on one coastline's known
 culvert pattern (27 real hits). Its false-positive/false-negative rate on a genuinely
@@ -198,40 +198,10 @@ running it on a second site, not after.
 
 ---
 
-## 5 · Your role in B6 — Live Anomaly Detection (primary: Nizar, [`03-nizar.md`](03-nizar.md))
-
-Nizar owns the detector and the `forecast_anomalies` table. What he needs from you:
-
-- [ ] Confirm which catchment-climatology artifact (per Karam's A1.3 resolution) is
-      the correct baseline for "what's normal" — the anomaly detector is only honest
-      if its baseline is the same real climatology the rest of the project already
-      uses, not a second, independently-computed one.
-
----
-
-## 6 · Your role in B8 — Coral Health Vision Model, the CV pipeline (primary: Pulga, [`04-pulga.md`](04-pulga.md))
-
-Pulga owns the backend/storage/dashboard for this feature. Your specific piece is the
-CV classifier itself.
-
-- [ ] Build the CNN classifying diver-uploaded reef photos into health states
-      (healthy/stressed/bleached).
-- [ ] **The non-negotiable design requirement, stated here in writing, not just
-      implied:** accumulated photo classifications per zone may **propose** a
-      `sensitivity_weight` update, flagged explicitly for marine-scientist review.
-      They must **never silently overwrite the placeholder**
-      (`sensitivity_weight = 1.0`, `PLACEHOLDER_PENDING_MARINE_SCIENTIST`,
-      `tasks/00-contracts.md` §5 swap-in #5, still open). Automating the
-      evidence-gathering is good; automating the final judgement call is exactly the
-      failure mode Standing Law rule 13 exists to prevent.
-
----
-
-## 7 · Continue the 3D Aqaba Journey ([`mahdi-3D-implementation-plan.md`](../../mahdi-3D-implementation-plan.md)) — yours end to end
+## 5 · Continue the 3D Aqaba Journey ([`mahdi-3D-implementation-plan.md`](../../mahdi-3D-implementation-plan.md)) — yours end to end
 
 This is your feature this phase, full stack — terrain, buildings, water, camera,
-QA — not a shared item split across teammates. Work straight down the plan's own
-section order:
+QA. Work straight down the plan's own section order:
 
 - [ ] **§3.1 — fetch the DEM. It is not currently on disk.** Run `scripts/03_dem_fetch.py`;
       confirm the output lands at `data/processed/dem/dem_utm36n.tif`. This is the plan's
@@ -279,31 +249,11 @@ still won't resolve. Building heights are estimated for 99.7%+ of the corridor, 
 2. A2.5 — the physical wifi-off run has been done this phase, not just the automated
    spec existing.
 3. B1 — segmentation model live-serving with per-mask confidence and a `model_versions`
-   row; the "still manual" count is visible, not hidden.
+   row; the real mask count is reported, not estimated.
 4. B2 — `transmission_loss_basis` distinguishes learned vs. Negev-proxy on every
    response; `docs/pitch_limitations.md` states both the win and the honest cost.
 5. B3 — fine-tuning pipeline runs against at least one real second-site bounding box;
    the maturity badge shows a real, non-zero validated-event count comparison.
 6. B9 — conflict detector runs automatically on a new site port; `position_confidence`
    updates carry inspectable evidence, never a silent flip.
-7. B6/B8 support items handed off with the artifacts named in the tables below.
-
----
-
-## Handoffs
-
-| Teammate | What they get | When |
-|---|---|---|
-| **Ali** | B1 confidence/review-flag API, B2 basis flag + SHAP-style feature endpoint, B3 maturity-badge data, B9 conflict-pin GeoJSON | Day 4 |
-| **Pulga** | B9's outlet-side conflict detector output (feeds his B4 site-scoring agent's terrain criteria); B8's CV classifier endpoint | Day 3–4 |
-| **Nizar** | Confirmation of which climatology artifact is B6's correct baseline | Day 2 |
-
-## What you depend on
-
-| From | What | Blocked? |
-|---|---|---|
-| **Karam** | Generalized rainfall ingestion pipeline + one test bounding box (B3) | Yes, partly — start the fine-tuning script's structure now, plug in his pipeline when it lands Day 3 |
-| **Karam** | Confirmed climatology artifact (A1.3), for B6's baseline | No — proceed with the existing 5-row summary, swap if a daily series is confirmed (Day 2) |
-| **Pulga** | B8's photo-upload endpoint and storage schema, before the CV classifier has anywhere real to write its output | Yes — build/train the classifier against local test images first, wire to his endpoint once it exists (Day 3) |
-| **Nizar** | Confirmation of whether the HYCOM cache re-fetch (A4.2) also unblocks B1's plume-forcing placeholder | No — B1's own training/serving work doesn't depend on this; only the dashboard's forcing caveat text does (Day 2) |
-| **Abd** | Real plume-mask count and schema confirmation for B1 | Yes, partly — architecture work proceeds either way; the dashboard's "X of Y masks" copy waits on this number (Day 2) |
+7. The 3D Journey plan's own definition of done (§8) is met in full.

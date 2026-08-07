@@ -1,7 +1,6 @@
 # Pulga — Backend, Exposure Engine, RAG, and Four New AI Features
 
 **Phase 5 · Workstream 4**
-**Feeds:** Ali (dashboards for B4/B5/B7/B8), Mahdi (B9 outlet-side input)
 Read [`00-phase5-plan.md`](00-phase5-plan.md) first.
 
 ---
@@ -11,11 +10,10 @@ Read [`00-phase5-plan.md`](00-phase5-plan.md) first.
 Three of my four Part A items are already closed with live evidence — the mooring
 endpoint, the real ACA export, the dated data-dictionary amendment all shipped this
 project session and are confirmed live against the running container. The one real
-gap left is not mine to close alone: the backend half of the what-if scenario engine
-is real, but the frontend still bypasses it. That's flagged below and handed to Ali
-explicitly, not silently left as "someone else's problem." My Part B load is four
-owned features, one of which (B8) carries this phase's single most important safety
-rule.
+gap left is that the backend half of the what-if scenario engine is real, but the
+frontend still bypasses it — flagged below as a known, named gap. My Part B load is
+four owned features, one of which (B8) carries this phase's single most important
+safety rule.
 
 ---
 
@@ -36,13 +34,13 @@ rule.
       **The frontend half is not done, and it's not a backend gap** —
       `frontend/src/api/risk.ts::riskFromSeries()` computes a separate, explicitly
       commented "deliberately does NOT alter [real model] numbers" local index, and
-      `ScenarioDrawer.tsx` never calls the real endpoint at all. This is Ali's item
-      now (his file, A6-adjacent) — my job this phase is making sure the contract is
-      stable and documented so he can just wire it, not redesign it.
+      `ScenarioDrawer.tsx` never calls the real endpoint at all. Document the backend
+      contract clearly (field names, bounds, what gets echoed back) so wiring the
+      drawer to it is a small, well-specified frontend change whenever it's picked up.
 
 ---
 
-## 1 · B4 — Automated Site-Scoring Agent (with Karam)
+## 1 · B4 — Automated Site-Scoring Agent
 
 **Model & data**
 
@@ -56,6 +54,9 @@ rule.
       real rainfall percentile, a real OSM building-density figure, a real reef-cover
       estimate for the candidate box, and writes prose around those retrieved
       numbers — it does not run its own hidden calculation and present that instead.
+- [ ] Source the rainfall/climate criteria directly from the already-published
+      `catchment_rainfall_climatology.parquet` and `docs/data_dictionary.md` — no new
+      ingestion pipeline needed, this data already exists and is documented.
 
 **Backend & storage**
 
@@ -84,7 +85,7 @@ rule.
       home zone eventually; get the reprojection right from the first call, not after
       someone quotes a wrong area.
 
-**Dashboard sub-features (Ali builds — full spec also in [`06-ali.md`](06-ali.md))**
+**Dashboard sub-features (for Ali to build)**
 
 - A "Score a new coastline" input box: paste coordinates, get back a
   live-generated six-criterion score rendered exactly like the existing scorecard
@@ -120,7 +121,7 @@ this file.
       generated artifact that looks finished must carry a visible flag saying it
       isn't reviewed yet, not silently read as authoritative.
 
-**Dashboard sub-features (Ali builds)**
+**Dashboard sub-features (for Ali to build)**
 
 - "Generate Report" button on any completed event.
 - A visible, un-hideable draft-status badge on every AI-generated report.
@@ -134,7 +135,7 @@ uniformly confident narrative regardless of which event it's about.
 
 ---
 
-## 3 · B7 — Adaptive Sampling Recommender (with Ali)
+## 3 · B7 — Adaptive Sampling Recommender
 
 **Model & data**
 
@@ -151,7 +152,7 @@ uniformly confident narrative regardless of which event it's about.
       the ranking must fall back to the existing formula unchanged, never blend in
       a feedback signal computed from nothing.
 
-**Dashboard sub-features (Ali builds)**
+**Dashboard sub-features (for Ali to build)**
 
 - Upgrades the existing Named Reef Zone Priority List with "last sampled" and
   "prediction vs. outcome" history.
@@ -167,14 +168,15 @@ history exists, it's overclaiming.
 
 ---
 
-## 4 · B8 — Coral Health Vision Model (CV pipeline: Mahdi)
+## 4 · B8 — Coral Health Vision Model
 
 **Model & data**
 
 - [ ] CNN classifying diver-uploaded reef photos into health states
-      (healthy/stressed/bleached), tied to a specific named reef zone. Mahdi owns
-      the classifier itself (his file, §6) — I own the endpoint, storage, and the
-      safeguard below.
+      (healthy/stressed/bleached), tied to a specific named reef zone. Start from a
+      small, pretrained image classifier fine-tuned on whatever real reef photos are
+      available — a first-pass model built once, not a dependency on a separate
+      person's ML pipeline.
 
 **Backend & storage**
 
@@ -196,7 +198,7 @@ from photo evidence, lives *next to* the live `sensitivity_weight` field the exp
 engine actually reads — the engine never reads the proposed field, only a human
 sign-off action copies a proposed value into the live one, and that action is logged.
 
-**Dashboard sub-features (Ali builds)**
+**Dashboard sub-features (for Ali to build)**
 
 - Photo upload widget per named reef zone.
 - Immediate classification result shown on upload, feeding a per-zone health trend
@@ -213,24 +215,10 @@ sufficient grounds to change a number the whole exposure engine multiplies throu
 
 ---
 
-## 5 · Your role in B9 — Culvert/Drainage-Conflict Detector (primary: Mahdi, [`02-mahdi.md`](02-mahdi.md))
-
-Mahdi owns the detector. My piece: the outlet-side consumer.
-
-- [ ] Once his detector produces a conflict report, wire `outlet.position_confidence`
-      to read from it where evidence supports a change — same "propose with
-      inspectable evidence, never silently flip" pattern as B8's safeguard above.
-      Three of five outlets are currently `"low"` confidence; this is the mechanism
-      that can honestly move that number, not a shortcut to just relabel them
-      `"high"`.
-
----
-
 ## Definition of done
 
 1. A3.4 — the backend contract (`rainfall_multiplier`, `transmission_loss_override`)
-   is documented clearly enough that Ali can wire `ScenarioDrawer` without asking me
-   what a field means.
+   is fully documented (field names, bounds, echoed-back values).
 2. B4 — `POST /api/v1/sites/score` live, every criterion citing real retrieved
    evidence, `candidate_sites` table populated by at least one real scored box.
 3. B5 — `POST /api/v1/reports/generate` live, every generated report carries
@@ -239,23 +227,3 @@ Mahdi owns the detector. My piece: the outlet-side consumer.
    zero history; UI copy matches the honesty note above exactly.
 5. B8 — photo endpoint live; `proposed_sensitivity_weight` is a separate field from
    the live `sensitivity_weight`; no code path writes the live field automatically.
-6. B9 support — `position_confidence` update path exists and is evidence-inspectable.
-
----
-
-## Handoffs
-
-| Teammate | What they get | When |
-|---|---|---|
-| **Ali** | B4 score endpoint + citation shape, B5 report endpoint + draft-status contract, B7 feedback schema + honesty-copy requirement, B8 photo endpoint + the two-field safeguard contract | Day 3–4 |
-| **Karam** | Confirmation of which climate-criteria sources are wired into B4 | Day 3 |
-| **Mahdi** | B8's photo-classification endpoint contract, for his CNN to write against; consumption plan for his B9 conflict report | Day 3 |
-
-## What you depend on
-
-| From | What | Blocked? |
-|---|---|---|
-| **Karam** | Climate-criteria data sources + provenance-string format (B4) | Yes, partly — stub the citation shape against existing `/ask` provenance now, swap the real sources in when his file lands Day 3 |
-| **Mahdi** | B8's CV classifier itself | Yes — the endpoint/schema/safeguard can be built and tested against a placeholder classifier response first, wired to his real model when it lands (Day 3–4) |
-| **Mahdi** | B9's conflict-report output, before `position_confidence` can actually update | Yes — no action possible until his detector produces its first real report (Day 3–4) |
-| **Ali** | Confirmation of the A6.1 `/ask` live-vs-fixture decision, since B5's citation wiring assumes an answer either way | Yes, partly — draft B5's citation flow against the current client-side fixture behavior, revise if his Day 2 decision flips it |
