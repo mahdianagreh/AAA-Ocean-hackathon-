@@ -175,6 +175,5 @@ contract behind it.
 | From | What | Blocked? |
 |---|---|---|
 | **Mahdi** | B1 confidence/review-flag API, B2 basis flag + SHAP-style feature endpoint, B3 maturity-badge data, B9 conflict-pin GeoJSON | Yes, partly — build each dashboard slice against a stub shape now, wire live when his Day 4 handoff lands |
-| **Mahdi** | `terrain_merged_utm36n.tif` + baked Terrain-RGB tiles, before `JourneyScene.tsx`'s `raster-dem` source has anything real to load | Yes — the 3D Journey's terrain layer cannot start until his Day 2 handoff lands |
 | **Nizar** | `forecast_anomalies` schema + the confidence-meter framing rule | Yes, partly — same stub-then-wire approach, his Day 3 handoff |
 | **Pulga** | B4 score endpoint + citation shape, B5 report endpoint + draft-status contract, B7 feedback schema + honesty-copy requirement, B8 photo endpoint + the two-field safeguard contract | Yes, partly — same pattern, Day 3–4 |

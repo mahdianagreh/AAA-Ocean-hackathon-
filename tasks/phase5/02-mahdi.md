@@ -227,13 +227,11 @@ CV classifier itself.
 
 ---
 
-## 7 · Continue the 3D Aqaba Journey — your terrain/DEM tasks ([`mahdi-3D-implementation-plan.md`](../../mahdi-3D-implementation-plan.md))
+## 7 · Continue the 3D Aqaba Journey ([`mahdi-3D-implementation-plan.md`](../../mahdi-3D-implementation-plan.md)) — yours end to end
 
-This plan tracks `tasks/phase4/00-phase4-plan.md` row 14 ("3D Journey," owner Ali, plume
-portion Abd — now unblocked). It isn't reassigned to you, but §3.1 and half of §3.3 are
-squarely your domain (terrain, hydrology, DEM, Docker), not Ali's — he's the one
-building `JourneyScene.tsx` against whatever raster you hand him, not fetching or
-merging it himself. Close these before he's blocked on them:
+This is your feature this phase, full stack — terrain, buildings, water, camera,
+QA — not a shared item split across teammates. Work straight down the plan's own
+section order:
 
 - [ ] **§3.1 — fetch the DEM. It is not currently on disk.** Run `scripts/03_dem_fetch.py`;
       confirm the output lands at `data/processed/dem/dem_utm36n.tif`. This is the plan's
@@ -254,17 +252,23 @@ merging it himself. Close these before he's blocked on them:
 - [ ] Render a quick elevation-shaded top-down comparison against reference photos 1, 3,
       8 and save it to `docs/3d_journey/qa/screenshots/`, per the plan's own QA protocol
       (§6).
-- [ ] **§3.3 — reuse `coastline.gpkg` directly**; cross-check it against reference photo 1
-      (does the real coastline correctly narrow from the wide Eilat/Aqaba bay down to the
-      narrower southern stretch in photo 8?).
-- [ ] Hand the merged `terrain_merged_utm36n.tif` and baked Terrain-RGB tiles to Ali —
-      this is what `JourneyScene.tsx`'s `raster-dem` source actually loads; nothing on his
-      side can start until this lands.
+- [ ] **§3.2 — filter the buildings layer and apply the documented height rule**
+      (`building_height_rules.json`), Aqaba Fort and Ayla Lagoon special-cased.
+- [ ] **§3.3 — reuse `depth_utm36n.tif` and `coastline.gpkg` directly**; cross-check the
+      coastline against reference photo 1 (does it correctly narrow from the wide
+      Eilat/Aqaba bay down to the narrower southern stretch in photo 8?).
+- [ ] **§3.4 — reuse `reef_zones.gpkg` (`R-01`…`R-08`)** as the marine leg and terminal
+      point.
+- [ ] **§4 — build the camera waypoint script** from the plan's verified real coordinates
+      (reef-zone centroids, `outlets.geojson`), geocoding the remaining landmark rows in
+      §2a before locking them in.
+- [ ] **§6 — run the full QA protocol**, all 8 photo comparisons saved with captions.
+- [ ] **§7 — fold the limitations into `docs/pitch_limitations.md`.**
 
-**Limitation to state, same as everywhere else in the plan:** this surface is built once
-by merging two already-caveated products (30 m DEM, 50 m bathymetry) — the merge doesn't
+**Limitation to state, same as everywhere else in the plan:** the merged terrain surface
+combines two already-caveated products (30 m DEM, 50 m bathymetry) — the merge doesn't
 improve either one's resolution, and close-up steep terrain or reef-scale seafloor detail
-still won't resolve.
+still won't resolve. Building heights are estimated for 99.7%+ of the corridor, per §0.4.
 
 ---
 
@@ -291,7 +295,6 @@ still won't resolve.
 | Teammate | What they get | When |
 |---|---|---|
 | **Ali** | B1 confidence/review-flag API, B2 basis flag + SHAP-style feature endpoint, B3 maturity-badge data, B9 conflict-pin GeoJSON | Day 4 |
-| **Ali** | `terrain_merged_utm36n.tif` + baked Terrain-RGB tiles for the 3D Journey's `raster-dem` source (`mahdi-3D-implementation-plan.md` §3.1) | Day 2 |
 | **Pulga** | B9's outlet-side conflict detector output (feeds his B4 site-scoring agent's terrain criteria); B8's CV classifier endpoint | Day 3–4 |
 | **Nizar** | Confirmation of which climatology artifact is B6's correct baseline | Day 2 |
 
