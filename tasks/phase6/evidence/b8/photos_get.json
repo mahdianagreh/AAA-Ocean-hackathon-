@@ -1,0 +1,39 @@
+{
+    "photos": [
+        {
+            "photo_id": "photo_01KZF0071RVSV8CZCBFC99FMA3",
+            "reef_zone_id": "R-05",
+            "uploaded_at": "2026-08-07T20:52:57.016826Z",
+            "predicted_class": "bleached",
+            "confidence": 0.55,
+            "model_basis": "heuristic_rule_v1",
+            "model_version": null
+        },
+        {
+            "photo_id": "photo_01KZF0072FWGB51AF5B2CGKXW9",
+            "reef_zone_id": "R-05",
+            "uploaded_at": "2026-08-07T20:52:57.039200Z",
+            "predicted_class": "bleached",
+            "confidence": 0.55,
+            "model_basis": "heuristic_rule_v1",
+            "model_version": null
+        },
+        {
+            "photo_id": "photo_01KZF0073CQXFBDE9PQP5ZN9PA",
+            "reef_zone_id": "R-05",
+            "uploaded_at": "2026-08-07T20:52:57.068925Z",
+            "predicted_class": "bleached",
+            "confidence": 0.55,
+            "model_basis": "heuristic_rule_v1",
+            "model_version": null
+        }
+    ],
+    "proposed_sensitivity_weight": {
+        "reef_zone_id": "R-05",
+        "proposed_value": 1.6000000000000003,
+        "status": "PROPOSED_PENDING_REVIEW",
+        "n_photos": 3,
+        "live_sensitivity_weight": 1.0,
+        "live_sensitivity_weight_status": "PLACEHOLDER_PENDING_MARINE_SCIENTIST"
+    }
+}

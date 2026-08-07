@@ -1,0 +1,98 @@
+{
+    "report_id": "report_01KZEZV873ZMMQ7W40EABWVSRV",
+    "event_id": "AQ-2016-10-28",
+    "status": "human_reviewed",
+    "generated_at": "2026-08-07T20:50:14.371829Z",
+    "reviewed_at": "2026-08-07T20:50:14.422049Z",
+    "reviewed_by": "phase6-tester",
+    "sections": [
+        {
+            "title": "Exposure summary",
+            "claims": [
+                {
+                    "text": "Zone R-08 reached minimal (0.6/100), confidence high.",
+                    "source": "exposure_run:sim_01KZEZST4JZQ96GVGC1JH8DVH6#R-08"
+                },
+                {
+                    "text": "R-08.plume_probability = 0.75",
+                    "source": "exposure_run:sim_01KZEZST4JZQ96GVGC1JH8DVH6#R-08.formula_terms"
+                },
+                {
+                    "text": "R-08.relative_sediment_intensity = 0.012221358106364249",
+                    "source": "exposure_run:sim_01KZEZST4JZQ96GVGC1JH8DVH6#R-08.formula_terms"
+                },
+                {
+                    "text": "R-08.transmission_loss = 0.525",
+                    "source": "exposure_run:sim_01KZEZST4JZQ96GVGC1JH8DVH6#R-08.formula_terms"
+                },
+                {
+                    "text": "R-08.confidence_adjustment_reason = '0/30 GEFS members exceed the 2.34 mm/24h threshold (catchment_rainfall_climatology p99, window_hours=24, imerg_v07_final) -> agreement 1.00, x0.8 for coarse global current model + GMRT-substituted bathymetry'",
+                    "source": "exposure_run:sim_01KZEZST4JZQ96GVGC1JH8DVH6#R-08.formula_terms"
+                }
+            ]
+        },
+        {
+            "title": "Caveats carried with this run",
+            "claims": [
+                {
+                    "text": "Risk bands (0\u201320 minimal \u2026 80\u2013100 critical) are a reasonable default, not validated policy. Operational thresholds require marine-scientist input.",
+                    "source": "concept \u00a714.5"
+                },
+                {
+                    "text": "Reef area comes from Allen Coral Atlas v2.0 at 5 m: 1.235 km\u00b2 across the 8 named zones. The earlier provisional geometry claimed 5.69 km\u00b2 \u2014 4.6x more \u2014 because it assumed a uniform 250 m strip along the whole coastline. Any number derived from the provisional area is an overestimate, and the per-zone ranking changed as well as the totals.",
+                    "source": "docs/data_dictionary.md \u00a74"
+                },
+                {
+                    "text": "Scope is Jordan's coast. The Atlas export covers the full padded box, and 6.09 km\u00b2 of the 7.32 km\u00b2 it maps lies in Egyptian, Saudi and Israeli water \u2014 deliberately discarded, all of it more than 5 km from the Jordanian zone chain. Risk shown here is risk to the named Jordanian zones, not to all reef in the Gulf of Aqaba.",
+                    "source": "docs/data_dictionary.md \u00a74"
+                }
+            ]
+        },
+        {
+            "title": "Sensor validation",
+            "claims": [
+                {
+                    "text": "Measured peak suspended sediment g l: 2.18",
+                    "source": "Kalman, A., Katz, T., Vincze, M., Longenecker, J., Mathalon, A., Hill, P., and Goodman-Tchernov, B. (2025). Anatomy of a Flash Flood in a Hyperarid Environment: From Atmospheric Masses to Sediment Dispersal in the Sea. Natural Hazards and Earth System Sciences, 25, 3201-3219."
+                },
+                {
+                    "text": "Measured salinity minimum psu: 38.75",
+                    "source": "Kalman, A., Katz, T., Vincze, M., Longenecker, J., Mathalon, A., Hill, P., and Goodman-Tchernov, B. (2025). Anatomy of a Flash Flood in a Hyperarid Environment: From Atmospheric Masses to Sediment Dispersal in the Sea. Natural Hazards and Earth System Sciences, 25, 3201-3219."
+                },
+                {
+                    "text": "Measured salinity anomaly delta psu: -1.75",
+                    "source": "Kalman, A., Katz, T., Vincze, M., Longenecker, J., Mathalon, A., Hill, P., and Goodman-Tchernov, B. (2025). Anatomy of a Flash Flood in a Hyperarid Environment: From Atmospheric Masses to Sediment Dispersal in the Sea. Natural Hazards and Earth System Sciences, 25, 3201-3219."
+                },
+                {
+                    "text": "Measured sediment mass total t: 24400",
+                    "source": "Kalman, A., Katz, T., Vincze, M., Longenecker, J., Mathalon, A., Hill, P., and Goodman-Tchernov, B. (2025). Anatomy of a Flash Flood in a Hyperarid Environment: From Atmospheric Masses to Sediment Dispersal in the Sea. Natural Hazards and Earth System Sciences, 25, 3201-3219."
+                }
+            ]
+        },
+        {
+            "title": "Related documentation",
+            "claims": [
+                {
+                    "text": "| Term | Range | Source | Kind |\n|---|---|---|---|\n| `plume_probability` | 0\u20131 | Abd's contoured particle field | derived |\n| `relative_sediment_intensity` | 0\u20131 | Mahdi's anchored sediment index, normalised | derived (real for AQ-2016-10-28/AQ-C01, the only event/catchment with a training-set feature row today; placeholder 0.5 otherwise) |\n| `exposure_duration_weight` | 0\u20131 | span of contour timestamps \u00f7 horizon | derived |\n| `habitat_sensitivity_weight` | 1.0 | **team placeholder** | **assumed** |\n| `confidence_adjustment` | 0\u20131 | GEFS ensemble spread | derived (stub today) |",
+                    "source": "docs/model_card.md#Inputs and where each comes from"
+                },
+                {
+                    "text": "```\nAQ-2016-10-28\n```\n\n**Reason:** the canonical date is the **flood-arrival date in UTC**. Rainfall\nbegan days earlier, so a rainfall-onset ID would disagree with the marine\narrival that the project actually forecasts. Fixing the ID to the arrival date\nin UTC keeps event IDs, marine observations, and model targets on one clock.\n\nThis resolves the `AQ-2016-10-XX` placeholders in the concept doc\n(`reefshield_aqaba_concept.md:481`, `:1117`, `:1502`).\n\n> **Note:** `tasks/00-contracts.md:68` shows `AQ-2016-10-25` in the ID-format\n> table. That is a **formatting example**, not this event. The corre",
+                    "source": "docs/event_dates.md#Canonical event ID"
+                },
+                {
+                    "text": "sea_reaching_flood_record:\n  total_documented: 13\n  record_begins: 1994\n  record_ends: 2016-10-28\n  source_citation: Kalman et al. (2025), quoting Katz et al. (2015) and Kalman et al. (2020b)\n  source_quote: \"The flood was the 13th flood recorded since records began in 1994\"\n  measurement_location: Kinnet Canal outlet, Eilat shoreline\n  location_caveat: >-\n    These are floods documented on the ISRAELI side. Our five catchments are\n    Jordanian. A day absent from this list is NOT a confirmed negative - it may\n    be an Aqaba-side flood that nobody recorded. Precision is therefore not\n    comp",
+                    "source": "docs/event_dates.md#---------------------------------------------------------------------------"
+                },
+                {
+                    "text": "The same event appears under several names. All refer to `AQ-2016-10-28`:\n\n- October 2016 Aqaba\u2013Eilat flash flood\n- 27 October 2016 rainfall/flood event\n- 28 October 2016 marine-arrival event\n\nExpect all three in the literature and in search results. The 27 vs 28 October\nsplit is not a contradiction: 27 October refers to the **rainfall**, 28 October\nto the **flood reaching the sea**.",
+                    "source": "docs/event_dates.md#Literature aliases"
+                },
+                {
+                    "text": "**The headline claim, measured rather than assumed:** trained only on data\nthrough 2014 \u2014 October 2016 genuinely unseen \u2014 the model's predicted\nprobability for AQ-C01 on the canonical anchor date, **`AQ-2016-10-28`**,\nranks **76th of 1,102** held-out AQ-C01 catchment-days from 2015\u20132022\n(**93.1st percentile**). (An earlier check against 2016-10-27 \u2014 the day\nIMERG recorded the storm's peak rainfall, one day before the ID's date \u2014\nfound 57th/94.83rd; this version deliberately checks the *documented* event\nID rather than whichever nearby day ranks best, which is the more defensible\nnumber to quot",
+                    "source": "docs/model_card.md#Temporal holdout \u2014 train \u22642014, test \u22652015 (measured 6 Aug 2026, `scripts/19`)"
+                }
+            ]
+        }
+    ]
+}
