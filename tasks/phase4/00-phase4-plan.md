@@ -79,7 +79,7 @@ every feature has a screen; that is the frontend's job, not a sign Ali is behind
 | C | Transmission Loss Reality Check | 🟡 | Mahdi | Pulga, Ali |
 | D | Culvert & Drainage Correction Map | ✅ | Mahdi | Ali |
 | E | Enclosed Harbor Warning Flag | ✅ | — (done) | Ali (verify) |
-| F | Multi-Source Weather Agreement | 🟡 | Nizar | — |
+| F | Multi-Source Weather Agreement | ✅ | Nizar | Ali (wire the UI) |
 | G | Historical Event Search | ✅ | Karam | Ali |
 | H | Offline Emergency Mode | 🟡 | Mahdi | Ali |
 | I | Coastal Zone Risk Comparison | ✅ | Ali | Pulga |
@@ -88,6 +88,24 @@ every feature has a screen; that is the frontend's job, not a sign Ali is behind
 
 Six rows are already done end to end (6, 13, 19, E — mostly, plus static content 17/18)
 and need no further work; they're in each relevant person's file as "verify, don't rebuild."
+
+> **Resolved, 7 Aug, from Nizar — Feature F's ambiguity, and which reading got built.**
+> "Multi-Source Weather Agreement" named no single comparison anywhere in the repo — I
+> found 3-4 defensible readings: HYCOM-vs-Copernicus-Marine currents, GFS-vs-GEFS
+> rainfall (no comparable data exists in `/forecast/latest` today — would need new code),
+> and GFS-vs-IFS (a real function, `ecmwf.gfs_vs_ifs_agreement()`, already exists but is
+> unwired to any endpoint and uses its own independently-invented `1.0mm` threshold).
+> Built the **currents** reading — `GET /api/v1/currents/agreement` — because it's the
+> only one with real, network-free, already-honest numbers today:
+> `compare_hycom_vs_copernicus()` plus the cached historical `.nc` archives. Defaults to
+> the demo event's mooring peak-response time (per `docs/forcing_limitations.md`'s own
+> instruction to use that number over "today's"), live-verified to reproduce the
+> documented 65.8° disagreement exactly. Reports a continuous `agreement` score
+> (`1 - direction_diff_deg/180`), deliberately not reusing `qa_currents.py`'s hardcoded
+> 15° good/bad cutoff — that would have been exactly the second, independently-invented
+> threshold this feature was told to avoid. `gfs_vs_ifs_agreement()` is noted but not
+> built; a real candidate for later if the team wants a second Multi-Source reading.
+> Frontend needs wiring (Ali) — nothing in `frontend/src/**` calls this yet.
 
 ## The dependency chain that gates the most rows
 

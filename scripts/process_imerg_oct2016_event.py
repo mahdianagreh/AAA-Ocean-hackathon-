@@ -3,8 +3,10 @@
 
 Window comes from ``docs/event_dates.md`` -> ``imerg_scan_window_utc``, the
 conservative window covering the ~66 h rainfall event reported by
-Kalman et al. (2025). Retrieves 156 half-hourly Harmony subsets over the
-Aqaba box, validates the collection, combines it, derives trailing rolling
+Kalman et al. (2025) (240 half-hourly Harmony subsets as of the 2026-08-07
+extension, EXPECTED_GRANULES below is the number that actually governs this,
+not this docstring). Retrieves the half-hourly subsets over the Aqaba box,
+validates the collection, combines it, derives trailing rolling
 accumulations, and reports the actual wettest windows.
 
 Resumable: existing granules are detected by timestamp and never re-requested;
@@ -52,15 +54,24 @@ OUTPUT_JSON = PROCESSED_DIR / f"{EVENT_ID}_summary.json"
 
 # Fallback, kept in sync with docs/event_dates.md ->
 # primary_event.engineering.imerg_scan_window_utc
+# Extended 2026-08-07 (Phase 5, A1.1) -- see docs/event_dates.md's
+# imerg_scan_window_utc note for why. These constants are the script's own
+# consistency self-check, so they move in lockstep with the contract file's
+# end time, not independently of it.
 FALLBACK_START = "2016-10-25T00:00:00Z"
-FALLBACK_END = "2016-10-28T06:00:00Z"
+FALLBACK_END = "2016-10-30T00:00:00Z"
 
 INTERVAL_MINUTES = 30
 INTERVAL_HOURS = 0.5
-EXPECTED_GRANULES = 156
+EXPECTED_GRANULES = 240
 EXPECTED_FIRST = "2016-10-25T00:00:00"
-EXPECTED_LAST = "2016-10-28T05:30:00"
-EXPECTED_GRID = (5, 4)
+EXPECTED_LAST = "2016-10-29T23:30:00"
+# (13, 13), not the (5, 4) this constant held before today: that was the grid for
+# the RETIRED, narrower AOI box. Every granule on disk -- the original re-pull
+# under the corrected TERRAIN_AOI (Phase 2, A1.1) and today's newly-fetched ones
+# alike -- already validates as one consistent (13, 13) grid; only this
+# self-check constant had not been updated to match since the AOI correction.
+EXPECTED_GRID = (13, 13)
 
 # Harmony returns one file per granule; chunk requests so a single job stays
 # modest and an interruption loses little work.
@@ -84,10 +95,11 @@ RULE = "=" * 74
 def read_scan_window() -> tuple[datetime, datetime, str]:
     """Parse imerg_scan_window_utc from the timing contract.
 
-    The contract states an inclusive hour boundary (``06:00:00Z``). A granule
-    starting exactly at that instant would make 157 files, so the end is
-    converted to an *exclusive* granule-start bound by stepping back one
-    second — giving the documented 78-hour span and 156 granules.
+    The contract states an inclusive hour boundary. A granule starting exactly
+    at that instant would add one extra file, so the end is converted to an
+    *exclusive* granule-start bound by stepping back one second -- giving
+    whatever span and granule count the contract's current start/end implies
+    (see EXPECTED_GRANULES/EXPECTED_FIRST/EXPECTED_LAST, which move with it).
     """
     start_raw, end_raw, provenance = FALLBACK_START, FALLBACK_END, "fallback"
 

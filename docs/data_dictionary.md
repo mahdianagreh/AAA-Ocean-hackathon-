@@ -689,6 +689,28 @@ plausible. Both the variable name and the rate period come from `IMERG_PRODUCTS`
 3. ~11 km cells smooth localized convective storms — inherited from the product, same as
    the half-hourly run.
 
+**Phase 5, A1.3 — confirming this table IS "the daily series."** Re-verified 2026-08-07:
+`catchment_rainfall_daily.parquet` is 50,675 rows = 10,135 days × 5 catchments, every row
+`quality_flag: GOOD` / `source_geometry_status: REAL`, date range 1998-01-01 to
+2025-09-30 — the 10,135-day figure matches this section's own completeness stat exactly
+and `catchment_rainfall_climatology.parquet`'s `n_days=10135` per catchment. There is no
+separate, more complete daily artefact anywhere else. Full column list:
+`event_id` (always `"DAILY-SWEEP"` — a stage marker, not a real event ID),
+`timestamp_utc`, `catchment_id`, `precipitation_mm_day`, `precipitation_depth_mm`,
+`rain_1h_mm`, `rain_3h_mm`, `rain_6h_mm`, `rain_24h_mm`, `coverage_fraction`,
+`valid_area_fraction`, `quality_flag`, `source_geometry_status`.
+
+**The four `rain_*h_mm` columns are 100% null across every row, in this table AND in
+`event_catchment_features.parquet`.** Not a naming coincidence with `precipitation_*` —
+they are reserved for sub-daily intensity and were meant to be filled from stage 2's
+`daily_intensity.parquet` (`peak_1h_mm`/`peak_3h_mm`/`peak_6h_mm`, 11,810 rows, real,
+non-null), but that join was never built. Kept as an explicit, documented gap rather than
+dropped: dropping the columns would erase the record that this join is a real, specific,
+buildable piece of future work, not a dead end. Read `precipitation_mm_day` /
+`precipitation_depth_mm` for daily depth today; read `daily_intensity.parquet` directly
+for any of the ~100 events it covers if sub-daily intensity is needed before the join
+exists.
+
 ---
 
 ## 2. NASA GPM IMERG V07 — Early Run
@@ -981,6 +1003,18 @@ excluded before any commit touches this repo).
   `TERRAIN_AOI`/`MARINE_AOI` from the shared `config.spatial` module instead of a hardcoded
   bbox — done as part of the team's Day-0 merge, not by this workstream, but confirmed
   working post-merge.
+- **Phase 5, B6 — `forecast_anomalies` added (2026-08-07).** A new derived table, not an
+  external product — no new source row needed, but noted here for the same reason
+  `forecast_exceedance` is: every number on the dashboard traces to a file. Scores each
+  GEFS run's ensemble-mean 24h rainfall against `catchment_rainfall_climatology`'s real
+  percentiles (`p50`/`p99`/`p99_9`) — a **percentile-relative score, not a z-score**,
+  because the climatology artifact only has percentiles, not a mean/std or the daily
+  series. See `backend/src/processing/anomaly_detection.py` for the formula and
+  `supabase/migrations/20260807120000_forecast_anomalies.sql` for the schema. Exposed via
+  `GET /api/v1/forecast/latest`'s `anomalies` + `anomaly_caveat` fields. Explicit
+  limitation, stated here and in every API response: this is a statistical outlier signal
+  against ~27 years of climatology, never validated against a real flood event's lead
+  time — not a working early-warning system.
 
 
 ---
@@ -1235,6 +1269,109 @@ band caveat travels on every exposure and alert response.
 dimensionless on [0,1], so the product is on [0,1] and ×100 maps it onto the band
 table with no further reshaping. Any curve invented here would change the ranking
 between zones while looking like a presentation detail.
+
+## Scenario engine parameters (`rainfall_multiplier`, `transmission_loss_override`) — Phase 5, A3.4
+
+The what-if backend contract, documented fully now that both fields are echoed
+consistently on every response that applies them.
+
+| Field | Type | Bounds | Applies to | Echoed in |
+|---|---|---|---|---|
+| `rainfall_multiplier` | float | `[0.5, 2.0]`, default `1.0` | `RunoffRequest`, `ExposureRequest` | `RunoffPrediction.rainfall_multiplier` (structured); `ExposureResult.formula_terms["relative_sediment_intensity_source"]` (string suffix, only when ≠1.0) |
+| `transmission_loss_override` | float\|None | `[0.20, 0.85]`, default `None` | `RunoffRequest`, `ExposureRequest` | `RunoffPrediction.transmission_loss` (structured); `ExposureResult.formula_terms["transmission_loss"]` (structured — **fixed in Phase 5**, previously dropped silently) |
+
+**The Phase 5 fix:** `exposure_calculate` was applying `transmission_loss_override`
+to the real feature row (it reached `predict_one()` correctly) but never surfaced
+the value anywhere in the response — the only way to know what transmission loss
+was actually used was to call `/runoff/predict` separately and hope the two agreed.
+`main.py::exposure_calculate` now reads `real.get("transmission_loss")` (or
+`pred.transmission_loss` on the no-training-row fallback path) into
+`formula_terms["transmission_loss"]`, mirroring exactly what `runoff_predict`
+already did. No schema migration was needed — `formula_terms` is stored as an
+unstructured JSON blob precisely so a new term never needs one
+(`exposure/store.py`'s own documented rationale).
+
+Only the four raw rainfall-**depth** columns are scaled by `rainfall_multiplier`
+(`RAINFALL_MM_COLUMNS` in `main.py`: `precipitation_mm_day`, `precip_prior_1d_mm`,
+`precip_prior_3d_mm`, `precip_prior_7d_mm`) — never the percentile-rank features,
+since "150% of the 90th percentile" is not a meaningful operation. Both fields are
+part of the exposure TTL-cache key (`da.TTLCache.key(...)`), so two different
+scenario requests for the same event/outlet never collide on a stale cached result.
+
+## `candidate_sites`, `generated_reports`, `sampling_feedback`, `reef_zone_photos` — Phase 5 new artifacts
+
+Four new SQLite-backed tables, added for Phase 5's B4/B5/B7/B8 features. Each
+follows `exposure/store.py`'s existing pattern exactly: its own SQLite file under
+`data/outputs/`, an env-var override for tests, a `_conn()` contextmanager that
+runs `CREATE TABLE IF NOT EXISTS` on every connect, and schema-fluid JSON-blob
+columns for anything that will grow new terms over time — the same reasoning
+`exposure_runs`/`exposure_results` already use for `formula_terms`.
+
+| Table | File | ID prefix | Purpose |
+|---|---|---|---|
+| `candidate_sites` | `data/outputs/candidate_sites.sqlite` | `site_{ULID}` | B4 — every auto-scored coastline, browsable |
+| `generated_reports` | `data/outputs/generated_reports.sqlite` | `report_{ULID}` | B5 — draft/reviewed forensic reports, `status` never self-upgrades |
+| `sampling_feedback` | `data/outputs/sampling_feedback.sqlite` | `feedback_{ULID}` | B7 — logged sampling outcomes vs. predictions |
+| `reef_zone_photos` | `data/outputs/reef_zone_photos.sqlite` | `photo_{ULID}` | B8 — uploaded photo classifications; image bytes live under `data/raw/reef_photos/`, git-ignored |
+
+**None of these four new prefixes reuse or resemble the five frozen ID schemes**
+in `tasks/00-contracts.md` §2 (`AQ-C`, `AQ-O`, `R-`, `AQ-YYYY-MM-DD`, `sim_{ULID}`)
+— a candidate site, a report, a feedback row, and a photo are never Aqaba
+catchment/outlet/reef-zone/event/simulation entities, so none of them squat an
+`AQ-*` ID. `tests/test_site_id_contract.py` is the matching static guard for
+`site_{ULID}`, mirroring `tests/test_run_id_contract.py`'s existing enforcement of
+`sim_{ULID}` — the same "new frozen convention gets a scanning guard" pattern this
+project already uses for the spatial contract.
+
+The shared ULID generator moved to `backend/src/lib/ulid.py` in the same pass
+(extracted from `exposure/store.py::_new_ulid`, which now imports it) so these four
+new tables and the original `exposure_runs` table all mint IDs identically instead
+of four copies of the same ~15 lines.
+
+**`reef_zone_photos.sqlite` also carries two more tables:**
+
+- **`sensitivity_weight_approvals`** (`approval_id`, `reef_zone_id`, `approved_at`,
+  `reviewer`, `reasoning`, `proposed_value`, `approved_value`) — a permanent log of
+  every time a human has moved `sensitivity_weight` off the
+  `PLACEHOLDER_PENDING_MARINE_SCIENTIST` default (`tasks/00-contracts.md` §5, swap-in
+  #5).
+- **`sensitivity_weight_overrides`** (`reef_zone_id`, `value`, `updated_at`) — the
+  live override itself, one row per zone, latest wins.
+
+`POST /api/v1/reef-zones/{id}/sensitivity-weight/approve` is the **only** code path
+anywhere that writes to either table, and the only code path anywhere that calls
+`data_access.clear_all_caches()` for this field — B8's photo-upload endpoint computes
+a `proposed_sensitivity_weight` from accumulated classifications into a wholly
+separate response field, and never touches either table or the cache at all
+(Standing Law rule 13: propose, never auto-overwrite).
+
+**The override is a read-time overlay, never a `reef_zones.gpkg` rewrite** —
+`data_access.py::reef_zones()` applies `all_overrides()` on top of the base geometry
+on every call. Found while wiring `approve` against the real deployed container, not
+assumed: `./data` is mounted **read-only** there (same class of bug this project
+already hit once for `exposure_runs.sqlite`), so a direct `.gpkg` write would have
+worked on a developer's machine and failed in production. Confirmed via SHA-256 hash
+that the base file is byte-for-byte unchanged before and after an approval.
+
+**The override is also genuinely live in the exposure formula, not just on
+`/reef-zones`'s display.** `exposure_calculate` used to pass
+`engine.HABITAT_SENSITIVITY_PLACEHOLDER` (the constant) into
+`engine.summarise_zone()` unconditionally — an approval changed what `/reef-zones`
+showed but never once entered a real `risk_score`. Fixed: the same real per-zone
+value (override included) that `/reef-zones` displays now feeds the formula
+directly, verified end to end against the running container — approving a zone's
+weight moves its `risk_score` by exactly that factor on the next
+`/exposure/calculate` call.
+
+**B7's `adjusted_priority` is additive, not a formula change.**
+`ExposureResult.risk_score` is unchanged — the exact same product
+`exposure/engine.py::calculate_exposure()` has always computed.
+`adjusted_priority` is a second, separate field that equals `risk_score` exactly
+(`adjusted_priority_status: "NO_FEEDBACK_YET"`) until
+`sampling_feedback.MIN_FEEDBACK_FOR_ADJUSTMENT` (5) real logged outcomes exist for
+that zone, at which point it becomes `risk_score × historical_accuracy` — bounded
+to `[0, risk_score]`, so feedback can only ever dampen the score, never inflate it
+past what the model itself computed.
 
 ## Bugs caught in Phase 2 (continuing the Phase-1 count)
 
