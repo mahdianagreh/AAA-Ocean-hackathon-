@@ -208,6 +208,16 @@ python scripts/analyse_ordering_anomaly.py
 Long downloads: always `nohup ... &`, always resumable, and check a **process
 is alive** rather than trusting a log line — a stalled process looks healthy.
 
+**No root-level dependency manifest, and that's deliberate, not an oversight (Phase 5,
+A1.4).** Three real ones exist per-service — `backend/requirements-api.txt`,
+`backend/requirements-worker.txt`, `frontend/package.json` — because the API and worker
+images are intentionally different sizes (`backend/Dockerfile`'s own comment: the api
+image stays small and rebuilds fast; the worker carries the heavier geospatial/simulation
+stack). A single root `pyproject.toml`/`requirements.txt` merging both would either bloat
+the api image back up or require the same two-file split duplicated one level up. For
+local dev (not a container), install both: `pip install -r backend/requirements-api.txt
+-r backend/requirements-worker.txt`.
+
 ## Layout
 
 ```

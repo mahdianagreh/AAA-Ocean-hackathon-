@@ -689,6 +689,28 @@ plausible. Both the variable name and the rate period come from `IMERG_PRODUCTS`
 3. ~11 km cells smooth localized convective storms — inherited from the product, same as
    the half-hourly run.
 
+**Phase 5, A1.3 — confirming this table IS "the daily series."** Re-verified 2026-08-07:
+`catchment_rainfall_daily.parquet` is 50,675 rows = 10,135 days × 5 catchments, every row
+`quality_flag: GOOD` / `source_geometry_status: REAL`, date range 1998-01-01 to
+2025-09-30 — the 10,135-day figure matches this section's own completeness stat exactly
+and `catchment_rainfall_climatology.parquet`'s `n_days=10135` per catchment. There is no
+separate, more complete daily artefact anywhere else. Full column list:
+`event_id` (always `"DAILY-SWEEP"` — a stage marker, not a real event ID),
+`timestamp_utc`, `catchment_id`, `precipitation_mm_day`, `precipitation_depth_mm`,
+`rain_1h_mm`, `rain_3h_mm`, `rain_6h_mm`, `rain_24h_mm`, `coverage_fraction`,
+`valid_area_fraction`, `quality_flag`, `source_geometry_status`.
+
+**The four `rain_*h_mm` columns are 100% null across every row, in this table AND in
+`event_catchment_features.parquet`.** Not a naming coincidence with `precipitation_*` —
+they are reserved for sub-daily intensity and were meant to be filled from stage 2's
+`daily_intensity.parquet` (`peak_1h_mm`/`peak_3h_mm`/`peak_6h_mm`, 11,810 rows, real,
+non-null), but that join was never built. Kept as an explicit, documented gap rather than
+dropped: dropping the columns would erase the record that this join is a real, specific,
+buildable piece of future work, not a dead end. Read `precipitation_mm_day` /
+`precipitation_depth_mm` for daily depth today; read `daily_intensity.parquet` directly
+for any of the ~100 events it covers if sub-daily intensity is needed before the join
+exists.
+
 ---
 
 ## 2. NASA GPM IMERG V07 — Early Run
