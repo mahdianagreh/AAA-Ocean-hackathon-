@@ -1,0 +1,33 @@
+{
+    "event_id": "AQ-2016-10-28",
+    "outlet_id": "AQ-O02",
+    "frame_count": 6,
+    "frames": [
+        {
+            "t_hours": 3.0,
+            "url": "/api/v1/plume/map?event_id=AQ-2016-10-28&outlet_id=AQ-O02&horizon_hours=24&upto_hours=3"
+        },
+        {
+            "t_hours": 6.0,
+            "url": "/api/v1/plume/map?event_id=AQ-2016-10-28&outlet_id=AQ-O02&horizon_hours=24&upto_hours=6"
+        },
+        {
+            "t_hours": 9.0,
+            "url": "/api/v1/plume/map?event_id=AQ-2016-10-28&outlet_id=AQ-O02&horizon_hours=24&upto_hours=9"
+        },
+        {
+            "t_hours": 12.0,
+            "url": "/api/v1/plume/map?event_id=AQ-2016-10-28&outlet_id=AQ-O02&horizon_hours=24&upto_hours=12"
+        },
+        {
+            "t_hours": 18.0,
+            "url": "/api/v1/plume/map?event_id=AQ-2016-10-28&outlet_id=AQ-O02&horizon_hours=24&upto_hours=18"
+        },
+        {
+            "t_hours": 24.0,
+            "url": "/api/v1/plume/map?event_id=AQ-2016-10-28&outlet_id=AQ-O02&horizon_hours=24&upto_hours=24"
+        }
+    ],
+    "basemap_present": true,
+    "plume_source": "particle-engine"
+}
