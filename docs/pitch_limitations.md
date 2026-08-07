@@ -122,6 +122,11 @@ judgement, not ours.
 **If our exposure ranking looks confident, that confidence comes from the sediment
 side, not the sensitivity side.**
 
+**Update, Phase 5:** a real path toward evidence now exists (§12, the coral health
+vision model) — but it *proposes* a weight from photo evidence, it does not decide
+one. The marine-scientist review this section calls for is still the only thing
+that can actually replace the placeholder.
+
 ---
 
 ## 6. Allen Coral Atlas maps shallow reef only
@@ -218,6 +223,60 @@ appear** (`docs/data_dictionary.md` §8, `docs/mooring_coordinate_derivation.md`
 `backend/src/models/backtest_metrics.py`'s `assert_spatial_metrics_allowed`) as a documented
 artifact, not ground truth. No spatial metric (IoU, Dice, centroid distance) is computed
 against it for this event, in code, not just in a comment.
+
+---
+
+## 10. Our site-scoring agent is validated on exactly one site — the site it was built from
+
+Phase 5's automated site-scoring agent (`POST /api/v1/sites/score`) grounds every
+criterion in a real, computed fact from this project's own data — never a fabricated
+number, and never a live external fetch (see the deviation note in
+`backend/src/models/site_scoring.py`). But the six-criterion rubric itself
+(`docs/Ali/research/01-signature.md`) was built and tuned against exactly one
+place: Aqaba. A score for anywhere else is the rubric's first real test, not a
+validated instrument, and the API says so on every response, not just here.
+
+For any coordinate outside where our own processed datasets actually have
+coverage, most criteria honestly report `status="insufficient_data"` rather than a
+guessed score — including **C6 for every location, Aqaba included**: no geospatial
+dataset can characterise the *absence* of other monitoring infrastructure
+elsewhere, which is a desk-research judgement call, not a computable fact.
+
+---
+
+## 11. Our adaptive sampling recommender cannot be demoed as a working feature yet
+
+It cannot be — not because it is unfinished, but because it structurally cannot be
+meaningfully evaluated with zero real deployment history. The plumbing is real:
+logged feedback, a real accuracy calculation, a fallback that is mathematically
+guaranteed to equal the model's own unmodified score until enough feedback exists.
+What is not real yet is a track record, because there hasn't been one — this is
+infrastructure for a capability that activates after real-world use, and we are
+saying so rather than dressing up an empty table as a working recommender.
+
+---
+
+## 12. Our coral health vision model is a heuristic today, not a trained model
+
+We checked: no labelled reef photo exists anywhere in this repository — every image
+we have is a QA figure or a screenshot, never an underwater photo, never labelled
+healthy/stressed/bleached. Rather than fabricate a training set or silently ship an
+untrained model as if it were validated, `classify()` says so explicitly on every
+response (`model_basis: "heuristic_rule_v1"`), using a documented rule of thumb —
+not a trained classifier — capped at low confidence.
+
+The training path is real and fully built (handcrafted color/texture features,
+`sklearn.ensemble.GradientBoostingClassifier`, no new heavy dependency), and will
+pick up a real trained model automatically the moment a real, human-labelled photo
+set exists. Until then, this is the second limitation on this page (after §5's
+sensitivity weights) where the honest state of the art is "the plumbing is real,
+the training data is not" — and that is item 3 of §8's own list, not a new gap.
+
+**Update:** a marine-scientist-approved sensitivity weight is now genuinely live,
+not just displayed — it moves the actual exposure `risk_score` by the approved
+factor, not only what `/reef-zones` shows. What is *proposed* from photo evidence
+still requires that same human approval before it is ever used; nothing here
+changed which step requires a person.
 
 ---
 

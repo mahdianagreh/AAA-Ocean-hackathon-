@@ -600,6 +600,51 @@ signal lasted ~31 h and both usable satellite passes were 2.5–3.5 days later.
 
 ---
 
+## F · Coral health vision model — Pulga (Phase 5, B8)
+
+**Handcrafted color/texture features + `sklearn.ensemble.GradientBoostingClassifier`,
+not a CNN.** `backend/requirements-api.txt` has no torch/tensorflow/timm — only
+scikit-learn, xgboost, pillow — and this project already hit a slow-network pip
+timeout once on a 303 MB CUDA wheel earlier this phase. Seven real features per
+photo (`models/coral_health_classifier.py::extract_features`): per-channel RGB mean
+and standard deviation, plus a simple edge-density texture proxy.
+
+**No real training data exists in this repository, and `classify()` says so
+honestly on every response.** Every image already in this project (QA figures,
+satellite overlays, Google Maps screenshots) was checked — none is an underwater
+reef photo, none is labelled healthy/stressed/bleached. So today, every
+classification carries `model_basis: "heuristic_rule_v1"`: a documented rule of
+thumb on the same real color features (bleaching's real visual signature — pale,
+high brightness, low color variance), capped at 0.55 confidence, **not** a trained
+model. `scripts/30_train_coral_health_classifier.py` exists and is fully runnable,
+but reports "0 training images found, nothing trained" until a real, human-labelled
+set is added under `data/raw/reef_photos/_training/{healthy,stressed,bleached}/` —
+`models/coral_health_classifier.py::train()` refuses outright to persist a model
+trained on zero real images, the same rule `models/artifacts.py::save()` already
+enforces for the runoff GBM's synthetic-data refusal. Once real training images
+exist, a trained artifact lands in `data/models/coral_health_classifier.joblib`
+with its own `model_versions.jsonl` row (`component: "coral_health_classifier"`),
+and `model_basis` flips to `"trained_classifier"` automatically — no code change
+needed to pick it up.
+
+**The one thing this component can never do, by construction:** classifications
+never touch the live `sensitivity_weight` `/reef-zones` serves. They accumulate into
+a separate `proposed_sensitivity_weight` field (`GET /reef-zones/{id}/photos`), and
+only a human calling `POST /reef-zones/{id}/sensitivity-weight/approve` — naming a
+reviewer and reasoning, both required — can move a value from proposed to live,
+logged permanently in `sensitivity_weight_approvals`. See
+`docs/data_dictionary.md`'s Phase 5 artifacts section for the full mechanism.
+
+**Once approved, it is genuinely live, not just displayed.** `exposure_calculate`
+used to feed the exposure formula a hardcoded placeholder unconditionally — an
+approval changed what `/reef-zones` showed but never once entered a real
+`risk_score`. Fixed: the formula now reads the same real per-zone value (override
+included) that `/reef-zones` displays, so a marine-scientist-approved weight moves
+the actual exposure score by exactly that factor, live-verified end to end
+against the running container.
+
+---
+
 ## Data foundation
 
 Full provenance, licences and per-source limitations:

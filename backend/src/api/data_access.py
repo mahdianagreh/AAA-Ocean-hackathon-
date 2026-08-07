@@ -48,6 +48,13 @@ ARTIFACTS: dict[str, Path] = {
     # Distinct from "event_dates" above: that file is the small, literature-cited
     # subset with paper provenance; this is the exhaustive daily-screening result.
     "event_catalogue": DATA / "processed" / "events" / "events.parquet",
+    # Phase 5, B4 (site-scoring agent) — real evidence sources, Aqaba-only. A
+    # bounding box outside where these three actually have coverage gets an
+    # honest "insufficient_data" criterion, never a fabricated score.
+    "osm_buildings": VECTORS / "osm_aqaba.gpkg",
+    "osm_drainage": VECTORS / "osm_aqaba.gpkg",
+    "rainfall_climatology": FEATURES / "catchment_rainfall_climatology.parquet",
+    "bathymetry": DATA / "processed" / "bathymetry" / "depth_utm36n.tif",
 }
 
 
@@ -126,6 +133,14 @@ def catchments(include_geometry: bool = True) -> list[dict]:
             rec["geometry"] = _geojson(r.geometry)
         out.append(rec)
     return sorted(out, key=lambda x: x["catchment_id"])
+
+
+@lru_cache(maxsize=1)
+def catchments_gdf():
+    """GeoDataFrame form — Phase 5, B4 needs real catchment geometry to know
+    which catchments' rainfall climatology (C2) applies to an arbitrary box,
+    the same way `reef_zones_gdf()` exists for the exposure engine's overlay."""
+    return _geo(ARTIFACTS["catchments"])
 
 
 @lru_cache(maxsize=1)
@@ -311,6 +326,11 @@ def reef_zones(include_geometry: bool = True) -> tuple[list[dict], bool]:
             "zone_name": _clean(r.get("zone_name")),
             "habitat_class": _clean(r.get("habitat_class")),
             "area_km2": _clean(r.get("area_km2")),
+            # Phase 5, B8: a read-time overlay, applied below the loop, on top of
+            # whatever the base .gpkg says — see reef_zone_photos.py's docstring
+            # for why the override lives here rather than in a rewritten .gpkg
+            # (./data is mounted read-only in the deployed container; found while
+            # wiring approve_sensitivity_weight against it, not assumed).
             "sensitivity_weight": _clean(r.get("sensitivity_weight")) or 1.0,
             "sensitivity_weight_status": _clean(r.get("sensitivity_weight_status"))
             or "PLACEHOLDER_PENDING_MARINE_SCIENTIST",
@@ -327,6 +347,19 @@ def reef_zones(include_geometry: bool = True) -> tuple[list[dict], bool]:
         if include_geometry:
             rec["geometry"] = _geojson(r.geometry)
         out.append(rec)
+
+    # Read-time overlay: a human-approved sensitivity_weight override, if one
+    # exists for a zone. The base .gpkg above is never rewritten by this
+    # function or by anything the running API calls.
+    from models.reef_zone_photos import all_overrides
+
+    overrides = all_overrides()
+    for rec in out:
+        override = overrides.get(rec["reef_zone_id"])
+        if override is not None:
+            rec["sensitivity_weight"] = override
+            rec["sensitivity_weight_status"] = "SCIENTIST_ASSIGNED"
+
     return sorted(out, key=lambda x: x["reef_zone_id"]), is_prov
 
 
@@ -337,6 +370,91 @@ def reef_zones_gdf():
     path = real if real.exists() else prov
     gdf = _geo(path, layer="reef_zones")
     return gdf if gdf is not None else _geo(path)
+
+
+# ------------------------------------------------------ site-scoring evidence (B4)
+
+@lru_cache(maxsize=1)
+def osm_buildings_gdf():
+    """`osm_aqaba.gpkg`'s `buildings` layer, EPSG:4326 — Aqaba-only coverage.
+
+    A bounding box that doesn't overlap this extract's real footprint is not a
+    gap in this function; it's a gap in the request, and the caller (B4's
+    scoring agent) must report that honestly rather than treat an empty clip
+    as a real zero.
+    """
+    return _geo(ARTIFACTS["osm_buildings"], layer="buildings")
+
+
+@lru_cache(maxsize=1)
+def osm_drainage_gdf():
+    """`osm_aqaba.gpkg`'s `drainage_features` layer — real `intermittent` tags,
+    the same field `docs/data_dictionary.md` §3 already cites for the 27
+    culverts and the waterway-composition breakdown."""
+    return _geo(ARTIFACTS["osm_drainage"], layer="drainage_features")
+
+
+@lru_cache(maxsize=1)
+def rainfall_climatology_df():
+    """`catchment_rainfall_climatology.parquet` — one row per catchment, real
+    p50/p99 percentiles. `None` if the artifact is absent, never an empty
+    DataFrame standing in for missing data."""
+    import pandas as pd
+
+    path = ARTIFACTS["rainfall_climatology"]
+    return pd.read_parquet(path) if path.exists() else None
+
+
+def bathymetry_path() -> Path | None:
+    """`depth_utm36n.tif`'s path, or None if the raster isn't on disk. Callers
+    sample it lazily with rasterio rather than loading the whole grid here —
+    this function is a path lookup, not a raster cache."""
+    path = ARTIFACTS["bathymetry"]
+    return path if path.exists() else None
+
+
+def bathymetry_stats_for_bbox(bbox: tuple[float, float, float, float]) -> dict | None:
+    """Real min/max depth sampled from `depth_utm36n.tif` inside an arbitrary
+    EPSG:4326 box — Phase 5, B4's C4 criterion. `None` when the box doesn't
+    overlap the raster at all (outside Aqaba, or the window reads nothing but
+    nodata) — never a fabricated depth range standing in for missing coverage.
+
+    A windowed read (`rasterio.windows.from_bounds`), not a full-band load —
+    the raster is 20.7 MB and this may be called with a small box repeatedly.
+    """
+    path = bathymetry_path()
+    if path is None:
+        return None
+
+    import geopandas as gpd
+    import numpy as np
+    import rasterio
+    from rasterio.windows import from_bounds
+    from shapely.geometry import box as shapely_box
+
+    with rasterio.open(path) as src:
+        bounds_utm = gpd.GeoSeries(
+            [shapely_box(*bbox)], crs="EPSG:4326"
+        ).to_crs(src.crs).total_bounds
+        try:
+            window = from_bounds(*bounds_utm, transform=src.transform)
+            data = src.read(1, window=window)
+        except (ValueError, IndexError):
+            return None
+        if data.size == 0:
+            return None
+        nodata = src.nodata
+        valid = data if nodata is None else data[data != nodata]
+        valid = valid[~np.isnan(valid)] if valid.size else valid
+        if valid.size == 0:
+            return None
+        # Raster is negative-down elevation; depth is positive-down.
+        depths = -valid
+        return {
+            "n_cells": int(valid.size),
+            "min_depth_m": float(depths.min()),
+            "max_depth_m": float(depths.max()),
+        }
 
 
 # --------------------------------------------------------------------- outlets
@@ -697,6 +815,7 @@ def gefs_exceedance_for(catchment_id: str) -> dict | None:
 
 def clear_all_caches() -> None:
     catchments.cache_clear()
+    catchments_gdf.cache_clear()
     reef_zones.cache_clear()
     outlets.cache_clear()
     events.cache_clear()
@@ -704,5 +823,8 @@ def clear_all_caches() -> None:
     data_sources.cache_clear()
     _feature_table.cache_clear()
     forecast_snapshot.cache_clear()
+    osm_buildings_gdf.cache_clear()
+    osm_drainage_gdf.cache_clear()
+    rainfall_climatology_df.cache_clear()
     PLUME_CACHE._store.clear()
     EXPOSURE_CACHE._store.clear()

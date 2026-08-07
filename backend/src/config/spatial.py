@@ -213,6 +213,38 @@ def verify_against_files(tolerance: float = 1e-9) -> dict[str, BBox]:
     return seen
 
 
+def assert_projected_crs(gdf, what: str) -> None:
+    """Like `exposure.engine._assert_measure_crs`, but for geometry that is not
+    necessarily inside the Aqaba AOI — accepts any projected (metric) CRS rather
+    than demanding EPSG:32636 specifically.
+
+    Every existing Aqaba-only call site keeps using `_assert_measure_crs` and its
+    hardcoded 32636 check unchanged; this is new, additive infrastructure for B4's
+    site-scoring agent, which accepts an arbitrary caller-supplied bounding box that
+    may be nowhere near UTM zone 36N. What does not change is the rule itself: an
+    area or distance computed in a geographic (degrees) CRS is wrong, unconditionally.
+    """
+    if gdf.crs is None:
+        raise ValueError(f"{what} has no CRS — refusing to measure an unknown frame")
+    if gdf.crs.is_geographic:
+        raise ValueError(
+            f"{what} is geographic ({gdf.crs}) — refusing to measure area/distance "
+            "in degrees"
+        )
+
+
+def local_utm_crs(gdf) -> str:
+    """Pick the right UTM zone for wherever `gdf`'s geometry actually is.
+
+    `geopandas.GeoDataFrame.estimate_utm_crs()` already ships with geopandas (a
+    dependency everywhere in this backend already) — nothing here needed a dynamic
+    zone-picker before, because every existing dataset is Aqaba-only and hardcoded
+    to EPSG:32636. B4's arbitrary bounding boxes are the first thing in this
+    codebase that isn't.
+    """
+    return gdf.estimate_utm_crs().to_string()
+
+
 __all__ = [
     "BBox",
     "TERRAIN_AOI",
@@ -225,4 +257,6 @@ __all__ = [
     "AOIFileMismatch",
     "load_aoi_bbox",
     "verify_against_files",
+    "assert_projected_crs",
+    "local_utm_crs",
 ]

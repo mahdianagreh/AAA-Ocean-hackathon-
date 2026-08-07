@@ -46,12 +46,30 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from exposure import engine, store
-from ingestion import ocean_currents as oc
-from models import particle_engine, plume_forcing
+from ingestion import ocean_currents as oc  # noqa: F401 — its own module does a
+                                             # `sys.path.insert(backend/src, 0)` as a
+                                             # side effect (see its docstring); must
+                                             # import before `from config import
+                                             # spatial` below, or a repo-root config.py
+                                             # shadows the backend/src config package
+                                             # under tests/test_api_contracts.py's
+                                             # dotted `backend.src.api.main` import.
+from config import spatial
+from models import (
+    candidate_sites,
+    coral_health_classifier,
+    generated_reports,
+    particle_engine,
+    plume_forcing,
+    reef_zone_photos,
+    report_assembly,
+    sampling_feedback,
+    site_scoring,
+)
 from rag import answer as rag_answer
 from rag import corpus as rag_corpus
 from rag import explain as rag_explain
@@ -60,12 +78,16 @@ from . import caveats as cav
 from . import data_access as da
 from .schemas import (
     AlertOut,
+    ApproveSensitivityWeightRequest,
+    ApproveSensitivityWeightResponse,
     AskRequest,
     AskResponse,
     BacktestRequest,
     BacktestResult,
     CatchmentOut,
     Caveat,
+    Citation,
+    CriterionScore,
     DataSourceOut,
     DiveSiteOut,
     DriverOut,
@@ -75,6 +97,7 @@ from .schemas import (
     ExposureRequest,
     ExposureResult,
     ExposureRun,
+    GenerateReportRequest,
     HealthOut,
     MooringMarker,
     MooringOut,
@@ -82,10 +105,18 @@ from .schemas import (
     PlumeContour,
     PlumeRequest,
     PlumeResult,
+    ProposedSensitivityWeightOut,
     Provenance,
     ReefZoneOut,
+    ReefZonePhotoOut,
+    ReportOut,
+    ReportSection,
+    ReviewReportRequest,
     RunoffPrediction,
     RunoffRequest,
+    SamplingFeedbackRequest,
+    SiteScoreRequest,
+    SiteScoreResponse,
     Value,
 )
 
@@ -388,6 +419,104 @@ def list_reef_zones(include_geometry: bool = Query(True)):
             caveats=caveats,
         ))
     return out
+
+
+def _known_reef_zone_ids() -> set[str]:
+    zones, _ = da.reef_zones(include_geometry=False)
+    return {z["reef_zone_id"] for z in zones}
+
+
+# --------------------------------------------------- coral health vision (Phase 5, B8)
+
+@app.post(f"{PREFIX}/reef-zones/{{id}}/photos", response_model=ReefZonePhotoOut,
+         tags=["geometry"])
+async def upload_reef_zone_photo(id: str, file: UploadFile = File(...)):
+    """The first file-upload endpoint in this backend — no existing pattern
+    to match, this establishes one. Real feature extraction + classification
+    always runs (`model_basis` says honestly whether a trained model or the
+    documented heuristic answered). Never touches the live
+    `sensitivity_weight` — see `models/reef_zone_photos.py`'s docstring."""
+    if id not in _known_reef_zone_ids():
+        raise HTTPException(404, f"unknown reef zone {id}")
+
+    from io import BytesIO
+
+    from PIL import Image
+
+    image_bytes = await file.read()
+    try:
+        image = Image.open(BytesIO(image_bytes))
+        image.load()
+    except Exception as exc:
+        raise HTTPException(422, f"not a readable image: {type(exc).__name__}")
+
+    result = coral_health_classifier.classify(image)
+    saved = reef_zone_photos.save_photo(
+        reef_zone_id=id, image_bytes=image_bytes,
+        predicted_class=result["predicted_class"], confidence=result["confidence"],
+        model_basis=result["model_basis"], model_version=result["model_version"],
+    )
+    return ReefZonePhotoOut(**saved)
+
+
+@app.get(f"{PREFIX}/reef-zones/{{id}}/photos", tags=["geometry"])
+def list_reef_zone_photos(id: str):
+    """Per-zone photo history, plus the proposed sensitivity weight computed
+    from it — deliberately a SEPARATE field from the live value, never merged
+    into `/reef-zones`' response."""
+    if id not in _known_reef_zone_ids():
+        raise HTTPException(404, f"unknown reef zone {id}")
+
+    zones, _ = da.reef_zones(include_geometry=False)
+    zone = next(z for z in zones if z["reef_zone_id"] == id)
+    proposal = reef_zone_photos.proposed_sensitivity_weight_for_zone(id)
+
+    return {
+        "photos": [ReefZonePhotoOut(**p) for p in reef_zone_photos.photos_for_zone(id)],
+        "proposed_sensitivity_weight": ProposedSensitivityWeightOut(
+            **proposal,
+            live_sensitivity_weight=zone["sensitivity_weight"],
+            live_sensitivity_weight_status=zone["sensitivity_weight_status"],
+        ),
+    }
+
+
+@app.post(f"{PREFIX}/reef-zones/{{id}}/sensitivity-weight/approve",
+         response_model=ApproveSensitivityWeightResponse, tags=["geometry"])
+def approve_sensitivity_weight(id: str, req: ApproveSensitivityWeightRequest):
+    """The ONLY code path anywhere that sets a live `sensitivity_weight`
+    override — Standing Law rule 13. Requires a named reviewer and stated
+    reasoning (not optional — a proposal cannot approve itself).
+
+    Writes a read-time overlay (`reef_zone_photos.set_override`), never
+    `reef_zones.gpkg` itself — `./data` is mounted read-only in the deployed
+    container (`docker-compose.yml`'s own comment; this was found live
+    against that container, not assumed), so a direct `.gpkg` rewrite would
+    work on a developer's machine and fail the moment this actually runs
+    where it's deployed. Logs the action permanently
+    (`reef_zone_photos.record_approval`) and is the one and only call site in
+    this file for `data_access.clear_all_caches()` on this field."""
+    if id not in _known_reef_zone_ids():
+        raise HTTPException(404, f"unknown reef zone {id}")
+
+    proposal = reef_zone_photos.proposed_sensitivity_weight_for_zone(id)
+
+    approval_id = reef_zone_photos.record_approval(
+        reef_zone_id=id, reviewer=req.reviewer, reasoning=req.reasoning,
+        proposed_value=proposal["proposed_value"] or 0.0,
+        approved_value=req.approved_value,
+    )
+    reef_zone_photos.set_override(id, req.approved_value)
+
+    # The one and only call site anywhere in this file that clears the cache
+    # for a sensitivity_weight approval — grepping the diff for
+    # `clear_all_caches()` is the mechanical proof this safeguard holds.
+    da.clear_all_caches()
+
+    return ApproveSensitivityWeightResponse(
+        reef_zone_id=id, approval_id=approval_id, approved_value=req.approved_value,
+        approved_at=datetime.now(timezone.utc), reviewer=req.reviewer,
+    )
 
 
 # ---------------------------------------------------------------------- events
@@ -1140,6 +1269,11 @@ def exposure_calculate(req: ExposureRequest):
     # from a placeholder must be distinguishable later from one that did not.
     cid = req.catchment_id or outlet.get("catchment_id")
     intensity, intensity_source = 0.5, "default 0.5 (no catchment supplied)"
+    # A3.4 fix: runoff_predict already echoes transmission_loss structurally
+    # (RunoffPrediction.transmission_loss); this endpoint silently dropped it —
+    # transmission_loss_override was applied but never surfaced anywhere in the
+    # response. None until a real path below actually computes one.
+    transmission_loss_value: float | None = None
     # Per-request model_versions: MODEL_VERSIONS is the static fallback, but when
     # a real trained artifact actually produced the intensity number — whether via
     # the training-row path below or the runoff_predict() fallback — that real
@@ -1156,6 +1290,7 @@ def exposure_calculate(req: ExposureRequest):
                 real = predict_one(
                     _apply_rainfall_multiplier(row, req.rainfall_multiplier),
                     transmission_loss_override=req.transmission_loss_override)
+                transmission_loss_value = real.get("transmission_loss")
                 if real.get("model_version_id"):
                     run_model_versions["runoff_model"] = real["model_version_id"]
                 index = real.get("sediment_index")
@@ -1177,6 +1312,7 @@ def exposure_calculate(req: ExposureRequest):
                 rainfall_multiplier=req.rainfall_multiplier,
                 transmission_loss_override=req.transmission_loss_override))
             intensity = pred.relative_sediment_intensity
+            transmission_loss_value = pred.transmission_loss
             if pred.is_stub:
                 intensity_source = (
                     f"PLACEHOLDER: {req.event_id} has no feature row, so this is the "
@@ -1240,18 +1376,30 @@ def exposure_calculate(req: ExposureRequest):
 
     results: list[ExposureResult] = []
     for zid in sorted(zones_gdf["reef_zone_id"].unique()):
+        # Phase 5, B8 close-out: this used to be the hardcoded PLACEHOLDER
+        # constant unconditionally, regardless of what reef_zones.gpkg (or a
+        # human-approved sensitivity-weight override, once one exists) actually
+        # says -- so an approval changed what /reef-zones DISPLAYED but never
+        # once fed into a real risk_score. zone_meta already carries the real
+        # per-zone value (with any override already overlaid by
+        # data_access.reef_zones()) from a few lines above; reading it here
+        # closes that gap. Identical behaviour today -- every zone's real value
+        # equals the placeholder (1.0) until a human actually approves one.
+        sensitivity_weight = zone_meta.get(zid, {}).get(
+            "sensitivity_weight", engine.HABITAT_SENSITIVITY_PLACEHOLDER)
         summary = engine.summarise_zone(
             zid, overlay,
             relative_sediment_intensity=intensity,
             confidence_adjustment=confidence_adjustment,
             horizon_hours=float(req.horizon_hours),
-            sensitivity_weight=engine.HABITAT_SENSITIVITY_PLACEHOLDER,
+            sensitivity_weight=sensitivity_weight,
         )
         if summary is None:
             continue  # not reached is reported as not reached, never as zero risk
 
         summary["formula_terms"].update({
             "relative_sediment_intensity_source": intensity_source,
+            "transmission_loss": transmission_loss_value,
             "confidence_adjustment_reason": confidence_adjustment_reason,
             # Components, not just the composed sentence -- a sentence can't be
             # translated cleanly, components can (docs/OPEN-ISSUES.md #4).
@@ -1277,9 +1425,18 @@ def exposure_calculate(req: ExposureRequest):
             if c.field not in ("outlet_id", "risk_level")
         ] + [c for c in plume.caveats if c.field not in ("outlet_id",)]
 
+        # Phase 5, B7 — additive, computed alongside risk_score but never
+        # feeding back into it. Defaults to risk_score itself with zero real
+        # feedback for this zone; see sampling_feedback.adjusted_priority's
+        # own docstring for why that's the literal fallback, not a special case.
+        adj_priority, adj_status = sampling_feedback.adjusted_priority(
+            zid, summary["risk_score"])
+
         results.append(ExposureResult(
             **summary,
             confidence=confidence,
+            adjusted_priority=adj_priority,
+            adjusted_priority_status=adj_status,
             caveats=zone_caveats,
         ))
 
@@ -1350,6 +1507,29 @@ def get_exposure_run(run_id: str):
     if run is None:
         raise HTTPException(404, f"unknown run {run_id}")
     return run
+
+
+@app.post(f"{PREFIX}/reef-zones/{{id}}/feedback", tags=["exposure"])
+def submit_sampling_feedback(id: str, req: SamplingFeedbackRequest):
+    """B7 — log whether a real sample confirmed the named run's prediction for
+    this zone. `run_id` must be a real, already-stored exposure run — this is
+    feedback on an actual prediction, not a free-floating opinion. Blends into
+    future `adjusted_priority` values only once
+    `sampling_feedback.MIN_FEEDBACK_FOR_ADJUSTMENT` real rows exist for the
+    zone; this endpoint itself never touches `risk_score`."""
+    run = store.get_run(req.run_id)
+    if run is None:
+        raise HTTPException(404, f"unknown exposure run {req.run_id}")
+    result = next((r for r in run["results"] if r["reef_zone_id"] == id), None)
+    if result is None:
+        raise HTTPException(
+            404, f"run {req.run_id} has no result for reef zone {id}")
+
+    feedback_id = sampling_feedback.save_feedback(
+        reef_zone_id=id, run_id=req.run_id,
+        predicted_risk_score=result["risk_score"], outcome=req.outcome)
+    return {"feedback_id": feedback_id, "reef_zone_id": id, "run_id": req.run_id,
+            "outcome": req.outcome}
 
 
 # ------------------------------------------------------------------- backtests
@@ -1528,6 +1708,148 @@ def ask(req: AskRequest):
 def ask_corpus():
     """What /ask can actually see. Makes the docs/ali exclusion inspectable."""
     return {**rag_corpus.summary(), **rag_index.index_stats()}
+
+
+# ------------------------------------------------------- site scoring (Phase 5, B4)
+
+@app.post(f"{PREFIX}/sites/score", response_model=SiteScoreResponse, tags=["language"])
+def score_site(req: SiteScoreRequest):
+    """Six-criterion rubric (C1-C6), scored from this project's own real
+    processed datasets — never from `docs/ali/*` (Standing Law rule 11), and
+    never from a live external fetch (see `models/site_scoring.py`'s
+    docstring for why that was tried and deliberately dropped). A criterion
+    with no real coverage for the requested box reports
+    `status="insufficient_data"`, not a fabricated score.
+    """
+    bbox = req.bbox
+
+    # C2 needs to know which real catchments (if any) this box overlaps.
+    catchments_gdf = da.catchments_gdf()
+    catchment_ids: list[str] = []
+    if catchments_gdf is not None and not catchments_gdf.empty:
+        import geopandas as gpd
+        from shapely.geometry import box as shapely_box
+
+        req_box = gpd.GeoSeries([shapely_box(*bbox)], crs="EPSG:4326")
+        cgdf = catchments_gdf.to_crs("EPSG:4326")
+        idcol = "catchment_id" if "catchment_id" in cgdf.columns else "id"
+        overlapping = cgdf[cgdf.intersects(req_box.iloc[0])]
+        catchment_ids = sorted(overlapping[idcol].tolist())
+
+    raw_results = [
+        site_scoring.score_c1_ephemeral_drainage(bbox, da.osm_drainage_gdf()),
+        site_scoring.score_c2_rainfall_intensity(
+            catchment_ids, da.rainfall_climatology_df()),
+        site_scoring.score_c3_reef_proximity(
+            bbox, da.reef_zones_gdf(), spatial.local_utm_crs),
+        site_scoring.score_c4_basin_geometry(
+            da.bathymetry_stats_for_bbox(bbox)),
+        site_scoring.score_c5_development(bbox, da.osm_buildings_gdf()),
+        site_scoring.score_c6_data_poor(),
+    ]
+    narrative = site_scoring.narrate_site(raw_results)
+
+    criteria = [
+        CriterionScore(
+            criterion=r["criterion"],
+            score=r["score"],
+            status=r["status"],
+            evidence=[Citation(**e) for e in r["evidence"]],
+        )
+        for r in raw_results
+    ]
+    caveats = [Caveat(
+        field="criteria",
+        message=site_scoring.ONE_SITE_CAVEAT,
+        severity="warning",
+        source="tasks/phase5/04-pulga.md",
+    )]
+
+    site_id = candidate_sites.new_site_id()
+    candidate_sites.save_score(
+        site_id=site_id,
+        site_name=req.site_name,
+        bbox=bbox,
+        criteria=[c.model_dump() for c in criteria],
+        narrative=narrative,
+        caveats=[c.model_dump() for c in caveats],
+    )
+
+    return SiteScoreResponse(
+        site_id=site_id,
+        site_name=req.site_name,
+        bbox=bbox,
+        criteria=criteria,
+        narrative=narrative,
+        caveats=caveats,
+    )
+
+
+@app.get(f"{PREFIX}/sites/{{site_id}}", response_model=SiteScoreResponse, tags=["language"])
+def get_site_score(site_id: str):
+    stored = candidate_sites.get_score(site_id)
+    if stored is None:
+        raise HTTPException(404, f"unknown candidate site {site_id}")
+    return SiteScoreResponse(
+        site_id=stored["site_id"],
+        site_name=stored["site_name"],
+        bbox=tuple(stored["bbox"]),
+        criteria=[CriterionScore(**c) for c in stored["criteria"]],
+        narrative=stored["narrative"],
+        caveats=[Caveat(**c) for c in stored["caveats"]],
+    )
+
+
+# ------------------------------------------------------ forensic reports (Phase 5, B5)
+
+def _report_out(row: dict) -> ReportOut:
+    return ReportOut(
+        report_id=row["report_id"],
+        event_id=row["event_id"],
+        status=row["status"],
+        generated_at=row["generated_at"],
+        reviewed_at=row.get("reviewed_at"),
+        reviewed_by=row.get("reviewed_by"),
+        sections=[ReportSection(**s) for s in row["sections"]],
+    )
+
+
+@app.post(f"{PREFIX}/reports/generate", response_model=ReportOut, tags=["language"])
+def generate_report(req: GenerateReportRequest):
+    """Assembles a draft from real stored data — retrieves, never computes
+    (Standing Law rule 12). Always born `status="ai_drafted"`; nothing in this
+    handler can insert any other status."""
+    exposure_run = store.latest_run(event_id=req.event_id)
+    mooring = da.mooring_for(req.event_id)
+    rag_chunks = rag_index.retrieve(
+        f"sediment and exposure for {req.event_id}", k=5)
+
+    sections = report_assembly.assemble_report(
+        req.event_id, exposure_run, mooring, rag_chunks)
+
+    report_id = generated_reports.new_report_id()
+    row = generated_reports.save_draft(report_id, req.event_id, sections)
+    return _report_out(row)
+
+
+@app.get(f"{PREFIX}/reports/{{report_id}}", response_model=ReportOut, tags=["language"])
+def get_report(report_id: str):
+    row = generated_reports.get_report(report_id)
+    if row is None:
+        raise HTTPException(404, f"unknown report {report_id}")
+    return _report_out(row)
+
+
+@app.patch(f"{PREFIX}/reports/{{report_id}}/review", response_model=ReportOut,
+          tags=["language"])
+def review_report(report_id: str, req: ReviewReportRequest):
+    """The only code path anywhere that can move a report from ai_drafted to
+    human_reviewed. `reviewed_by` is required — a report cannot review
+    itself."""
+    row = generated_reports.set_reviewed(report_id, req.reviewed_by)
+    if row is None:
+        raise HTTPException(404, f"unknown report {report_id}")
+    return _report_out(row)
 
 
 @app.get(f"{PREFIX}/cache-stats", tags=["meta"])
