@@ -1248,6 +1248,109 @@ dimensionless on [0,1], so the product is on [0,1] and ×100 maps it onto the ba
 table with no further reshaping. Any curve invented here would change the ranking
 between zones while looking like a presentation detail.
 
+## Scenario engine parameters (`rainfall_multiplier`, `transmission_loss_override`) — Phase 5, A3.4
+
+The what-if backend contract, documented fully now that both fields are echoed
+consistently on every response that applies them.
+
+| Field | Type | Bounds | Applies to | Echoed in |
+|---|---|---|---|---|
+| `rainfall_multiplier` | float | `[0.5, 2.0]`, default `1.0` | `RunoffRequest`, `ExposureRequest` | `RunoffPrediction.rainfall_multiplier` (structured); `ExposureResult.formula_terms["relative_sediment_intensity_source"]` (string suffix, only when ≠1.0) |
+| `transmission_loss_override` | float\|None | `[0.20, 0.85]`, default `None` | `RunoffRequest`, `ExposureRequest` | `RunoffPrediction.transmission_loss` (structured); `ExposureResult.formula_terms["transmission_loss"]` (structured — **fixed in Phase 5**, previously dropped silently) |
+
+**The Phase 5 fix:** `exposure_calculate` was applying `transmission_loss_override`
+to the real feature row (it reached `predict_one()` correctly) but never surfaced
+the value anywhere in the response — the only way to know what transmission loss
+was actually used was to call `/runoff/predict` separately and hope the two agreed.
+`main.py::exposure_calculate` now reads `real.get("transmission_loss")` (or
+`pred.transmission_loss` on the no-training-row fallback path) into
+`formula_terms["transmission_loss"]`, mirroring exactly what `runoff_predict`
+already did. No schema migration was needed — `formula_terms` is stored as an
+unstructured JSON blob precisely so a new term never needs one
+(`exposure/store.py`'s own documented rationale).
+
+Only the four raw rainfall-**depth** columns are scaled by `rainfall_multiplier`
+(`RAINFALL_MM_COLUMNS` in `main.py`: `precipitation_mm_day`, `precip_prior_1d_mm`,
+`precip_prior_3d_mm`, `precip_prior_7d_mm`) — never the percentile-rank features,
+since "150% of the 90th percentile" is not a meaningful operation. Both fields are
+part of the exposure TTL-cache key (`da.TTLCache.key(...)`), so two different
+scenario requests for the same event/outlet never collide on a stale cached result.
+
+## `candidate_sites`, `generated_reports`, `sampling_feedback`, `reef_zone_photos` — Phase 5 new artifacts
+
+Four new SQLite-backed tables, added for Phase 5's B4/B5/B7/B8 features. Each
+follows `exposure/store.py`'s existing pattern exactly: its own SQLite file under
+`data/outputs/`, an env-var override for tests, a `_conn()` contextmanager that
+runs `CREATE TABLE IF NOT EXISTS` on every connect, and schema-fluid JSON-blob
+columns for anything that will grow new terms over time — the same reasoning
+`exposure_runs`/`exposure_results` already use for `formula_terms`.
+
+| Table | File | ID prefix | Purpose |
+|---|---|---|---|
+| `candidate_sites` | `data/outputs/candidate_sites.sqlite` | `site_{ULID}` | B4 — every auto-scored coastline, browsable |
+| `generated_reports` | `data/outputs/generated_reports.sqlite` | `report_{ULID}` | B5 — draft/reviewed forensic reports, `status` never self-upgrades |
+| `sampling_feedback` | `data/outputs/sampling_feedback.sqlite` | `feedback_{ULID}` | B7 — logged sampling outcomes vs. predictions |
+| `reef_zone_photos` | `data/outputs/reef_zone_photos.sqlite` | `photo_{ULID}` | B8 — uploaded photo classifications; image bytes live under `data/raw/reef_photos/`, git-ignored |
+
+**None of these four new prefixes reuse or resemble the five frozen ID schemes**
+in `tasks/00-contracts.md` §2 (`AQ-C`, `AQ-O`, `R-`, `AQ-YYYY-MM-DD`, `sim_{ULID}`)
+— a candidate site, a report, a feedback row, and a photo are never Aqaba
+catchment/outlet/reef-zone/event/simulation entities, so none of them squat an
+`AQ-*` ID. `tests/test_site_id_contract.py` is the matching static guard for
+`site_{ULID}`, mirroring `tests/test_run_id_contract.py`'s existing enforcement of
+`sim_{ULID}` — the same "new frozen convention gets a scanning guard" pattern this
+project already uses for the spatial contract.
+
+The shared ULID generator moved to `backend/src/lib/ulid.py` in the same pass
+(extracted from `exposure/store.py::_new_ulid`, which now imports it) so these four
+new tables and the original `exposure_runs` table all mint IDs identically instead
+of four copies of the same ~15 lines.
+
+**`reef_zone_photos.sqlite` also carries two more tables:**
+
+- **`sensitivity_weight_approvals`** (`approval_id`, `reef_zone_id`, `approved_at`,
+  `reviewer`, `reasoning`, `proposed_value`, `approved_value`) — a permanent log of
+  every time a human has moved `sensitivity_weight` off the
+  `PLACEHOLDER_PENDING_MARINE_SCIENTIST` default (`tasks/00-contracts.md` §5, swap-in
+  #5).
+- **`sensitivity_weight_overrides`** (`reef_zone_id`, `value`, `updated_at`) — the
+  live override itself, one row per zone, latest wins.
+
+`POST /api/v1/reef-zones/{id}/sensitivity-weight/approve` is the **only** code path
+anywhere that writes to either table, and the only code path anywhere that calls
+`data_access.clear_all_caches()` for this field — B8's photo-upload endpoint computes
+a `proposed_sensitivity_weight` from accumulated classifications into a wholly
+separate response field, and never touches either table or the cache at all
+(Standing Law rule 13: propose, never auto-overwrite).
+
+**The override is a read-time overlay, never a `reef_zones.gpkg` rewrite** —
+`data_access.py::reef_zones()` applies `all_overrides()` on top of the base geometry
+on every call. Found while wiring `approve` against the real deployed container, not
+assumed: `./data` is mounted **read-only** there (same class of bug this project
+already hit once for `exposure_runs.sqlite`), so a direct `.gpkg` write would have
+worked on a developer's machine and failed in production. Confirmed via SHA-256 hash
+that the base file is byte-for-byte unchanged before and after an approval.
+
+**The override is also genuinely live in the exposure formula, not just on
+`/reef-zones`'s display.** `exposure_calculate` used to pass
+`engine.HABITAT_SENSITIVITY_PLACEHOLDER` (the constant) into
+`engine.summarise_zone()` unconditionally — an approval changed what `/reef-zones`
+showed but never once entered a real `risk_score`. Fixed: the same real per-zone
+value (override included) that `/reef-zones` displays now feeds the formula
+directly, verified end to end against the running container — approving a zone's
+weight moves its `risk_score` by exactly that factor on the next
+`/exposure/calculate` call.
+
+**B7's `adjusted_priority` is additive, not a formula change.**
+`ExposureResult.risk_score` is unchanged — the exact same product
+`exposure/engine.py::calculate_exposure()` has always computed.
+`adjusted_priority` is a second, separate field that equals `risk_score` exactly
+(`adjusted_priority_status: "NO_FEEDBACK_YET"`) until
+`sampling_feedback.MIN_FEEDBACK_FOR_ADJUSTMENT` (5) real logged outcomes exist for
+that zone, at which point it becomes `risk_score × historical_accuracy` — bounded
+to `[0, risk_score]`, so feedback can only ever dampen the score, never inflate it
+past what the model itself computed.
+
 ## Bugs caught in Phase 2 (continuing the Phase-1 count)
 
 | # | Bug | Silent failure it would have caused |

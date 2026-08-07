@@ -33,6 +33,12 @@
 fastapi==0.141.1
 uvicorn[standard]==0.52.1
 pydantic==2.13.4
+# Phase 5, B8: POST /api/v1/reef-zones/{id}/photos is this backend's first
+# multipart file-upload endpoint. FastAPI's UploadFile mechanism requires
+# this unconditionally -- not optional, not a heavy install (pure Python,
+# ~30 KB) -- unlike the CV-library decision this session deliberately avoided
+# (no torch/tensorflow added; see models/coral_health_classifier.py).
+python-multipart==0.0.32
 pandas==2.3.3
 numpy==2.4.6
 pyarrow==25.0.0
