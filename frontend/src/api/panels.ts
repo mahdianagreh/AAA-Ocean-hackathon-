@@ -59,6 +59,23 @@ export interface Validation {
    *  target against an explicit "not computed" rather than a fabricated match. */
   modelled: null | Record<string, unknown>;
   modelled_blocked_on: string;
+  /** The particle engine's calibration fit against this same mooring record —
+   *  a timing-only comparison (onset/duration/peak), never a magnitude one.
+   *  null only if the calibration grid search has not been run at all. */
+  calibration_fit: null | {
+    event_id: string;
+    selected_regime_verdict: string;
+    params: Record<string, unknown>;
+    arrival_time_error_hours: number | null;
+    duration_error_hours: number | null;
+    peak_timing_error_hours: number | null;
+    n_trials: number;
+    forcing_is_placeholder: boolean;
+    forcing_placeholder_reason: string;
+    windage_caveat: string;
+    peak_timing_caveat: string;
+    source: string;
+  };
 }
 
 export interface Sources {

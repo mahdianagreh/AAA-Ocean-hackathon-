@@ -16,8 +16,11 @@ import { ValueWithUnit } from '../components/ValueWithUnit';
  *  is more credible than one with a picture.
  *
  *  The measured column is real and published. The modelled column is empty,
- *  because no simulation run has been registered — and an empty column is the
- *  honest rendering of that.
+ *  because no simulation run computes those same magnitudes (sediment g/L,
+ *  salinity PSU) — the particle engine was never built to. What it does
+ *  compute — a timing-only fit (onset/duration/peak) from the calibration
+ *  grid search in `data/models/plume_calibration.json` — gets its own section
+ *  below instead of forcing a fabricated match into these rows.
  */
 export function ValidationPanel() {
   const { t } = useTranslation();
@@ -107,6 +110,80 @@ export function ValidationPanel() {
           <code className="font-mono num">{v.modelled_blocked_on}</code>
         </p>
       </section>
+
+      {/* The one comparison the particle engine CAN make: timing, not magnitude.
+          Kept separate from the table above rather than forced into its rows —
+          the engine never computes sediment g/L or salinity PSU, so filling
+          those cells from this data would be a fabricated match. */}
+      {v.calibration_fit ? (
+        <section className="flex flex-col gap-2 rule bg-surface-2 p-3">
+          <h3 className="text-sm font-semibold">{t('validation.calibrationTitle')}</h3>
+          <p className="text-xs text-ink-2">
+            {t('validation.calibrationIntro', { n: v.calibration_fit.n_trials })}
+          </p>
+          <table className="w-full border-collapse text-xs">
+            <tbody>
+              <tr className="border-b border-hairline">
+                <th scope="row" className="py-1 text-start font-normal text-ink-2">
+                  {t('validation.arrivalError')}
+                </th>
+                <td className="py-1 text-end">
+                  <ValueWithUnit
+                    value={v.calibration_fit.arrival_time_error_hours}
+                    unit="h"
+                    digits={2}
+                    provenance="modelled"
+                  />
+                </td>
+              </tr>
+              <tr className="border-b border-hairline">
+                <th scope="row" className="py-1 text-start font-normal text-ink-2">
+                  {t('validation.durationError')}
+                </th>
+                <td className="py-1 text-end">
+                  <ValueWithUnit
+                    value={v.calibration_fit.duration_error_hours}
+                    unit="h"
+                    digits={2}
+                    provenance="modelled"
+                  />
+                </td>
+              </tr>
+              <tr className="border-b border-hairline">
+                <th scope="row" className="py-1 text-start font-normal text-ink-2">
+                  {t('validation.peakTimingError')}
+                </th>
+                <td className="py-1 text-end">
+                  <ValueWithUnit
+                    value={v.calibration_fit.peak_timing_error_hours}
+                    unit="h"
+                    digits={2}
+                    provenance="modelled"
+                  />
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p className="text-2xs text-ink-2">
+            {t('validation.regimeVerdict')}:{' '}
+            <code className="font-mono num">{v.calibration_fit.selected_regime_verdict}</code>
+          </p>
+          {/* Caveats rendered verbatim from the calibration record, same treatment
+              as the citation/excerpt fields below — sourced prose, not UI chrome,
+              so it is not run through i18n. */}
+          <p className="text-2xs text-ink-2">{v.calibration_fit.peak_timing_caveat}</p>
+          <p className="text-2xs text-ink-2">{v.calibration_fit.windage_caveat}</p>
+          {v.calibration_fit.forcing_is_placeholder ? (
+            <p className="text-2xs text-risk-high-on">
+              {v.calibration_fit.forcing_placeholder_reason}
+            </p>
+          ) : null}
+          <p className="text-2xs text-ink-2">
+            {t('validation.source')}{' '}
+            <code className="font-mono num">{v.calibration_fit.source}</code>
+          </p>
+        </section>
+      ) : null}
 
       {/* The null result, stated as a finding rather than omitted. */}
       <section className="flex flex-col gap-2 rule bg-surface-2 p-3">

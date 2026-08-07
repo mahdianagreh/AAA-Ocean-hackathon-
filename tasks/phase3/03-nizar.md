@@ -1,5 +1,21 @@
 # Nizar — Phase 3
 
+> **Closed out, 7 Aug.** All 6 items below are done; checkboxes here were never ticked at
+> the time because the follow-up verification happened inside Phase 4 instead. Current,
+> re-verified state as of 7 Aug (`tasks/phase4/03-nizar.md` items 1 & 4 for the full
+> trail):
+> - Cached forecast snapshot: live, `GET /api/v1/forecast/latest`, real GFS+GEFS data.
+> - `model_versions`: 4 rows, all real trained artifacts (not just the first one).
+> - `reef_exposures`/`simulation_runs`: populated with real particle-engine runs
+>   (`plume_source: REAL_PARTICLE_ENGINE`), not synthetic stubs.
+> - Currents to Abd: `get_historical_interpolator()` in `ocean_currents.py`, cached
+>   historical `.nc` files on disk, verified working with sockets blocked.
+> - DB-vs-files integration check: `scripts/verify_db_matches_files.py` — all green
+>   except one known, already-documented file-side staleness (5 feature rows for an
+>   event removed from the catalogue), not a loader bug.
+> - Nothing in the demo path reaches the network — confirmed, by design
+>   (`main.py`/`exposure/store.py`'s own docstrings), not just observed.
+
 Read [`00-phase3-plan.md`](00-phase3-plan.md) first.
 
 Your schema is done and it holds. Verified against the live database on 4 Aug via the

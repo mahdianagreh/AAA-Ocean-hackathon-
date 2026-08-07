@@ -249,7 +249,7 @@ Provisional data in the final demo would be a serious failure. Every swap is a t
 | 1 | `catchments_PROVISIONAL.gpkg` | **Done 2 Aug** → `catchments.gpkg` | Karam + Pulga re-run | minutes | ☑ |
 | 2 | `outlets_PROVISIONAL.gpkg` | **Done 2 Aug** → `outlets.gpkg` | Nizar re-runs | minutes | ☑ |
 | 3 | `reef_zones_PROVISIONAL.gpkg` | **Done 3 Aug** → `reef_zones.gpkg` (Allen Coral Atlas v2.0) | Pulga re-runs exposure | minutes | ☑ |
-| 4 | `observed_plume_PROVISIONAL.gpkg` | Real Sentinel-2 derived mask | Abd publishes; Nizar re-calibrates | ~1 hour | ☐ |
+| 4 | `observed_plume_PROVISIONAL.gpkg` | **Done 2 Aug** → `observed_plume.gpkg` — real extraction, **final verdict NO-GO** | Abd published; Nizar calibrates against the mooring instead | done | ☑ |
 | 5 | `sensitivity_weight = 1.0` | Marine-scientist input, **or stays 1.0 and is labeled an assumption on the slide** | Pulga | none | ☐ |
 | 6 | Provisional AOI | Confirmed analysis box | Everyone re-clips | minutes | ☐ |
 
@@ -297,6 +297,29 @@ provisional one, so existing code keeps working. Re-run the exposure engine.
 - New audit files alongside it: `aca_fragments_BEFORE_MERGE.gpkg` (raw ACA polygons) and
   `aca_pieces_ASSIGNED.gpkg` (which piece went to which zone, and whether by overlap or
   by snap).
+
+### Swap 4 has landed — a negative result, not a picture, confirmed in writing 6 Aug
+
+`data/processed/vectors/observed_plume.gpkg` and `observed_plume_probability.tif` — the
+real Sentinel-2/Landsat 8 extraction pipeline ran (`739195f`, 2 Aug). **This swap did not
+produce a usable observed plume mask, and was never going to:** visual QC against
+Sentinel-2 (2016-11-02) and an independent Landsat 8 pass (2016-11-01) shows no plume in
+either. Cross-checked against the Kalman et al. (2025) mooring, turbidity had already
+returned to background 2.5–3.5 days before either satellite pass — a physical null (the
+plume dispersed faster than the revisit gap), not a cloud-cover or processing failure. The
+one spectral-anomaly signal the pipeline did surface is a documented coastline-hugging
+artifact (confirmed against a same-season baseline and a larger coastal buffer), not a
+detection — see `docs/event_audit.md`'s go/no-go section for the full methodology.
+
+**What this means for the demo, stated plainly:** there is no real satellite-observed
+plume mask for `AQ-2016-10-28`, and there will not be one. `backend/src/models/
+backtest_metrics.py`'s `assert_spatial_metrics_allowed()` refuses IoU/Dice/centroid-distance
+for this event for exactly this reason — do not compute one, and do not let a slide imply
+otherwise. The validation target is the mooring's salinity/turbidity time series instead
+(see `05-abd.md` item 2 and `frontend/src/panels/ValidationPanel.tsx`'s "Satellite
+validation — NO-GO" section, which already states this on screen). The old
+`observed_plume_PROVISIONAL.gpkg` is left on disk for audit trail, not deleted; nothing
+in the API or frontend reads it.
 
 **Day 12 gate:** grep the repo for `PROVISIONAL`. Anything still matching is either swapped or explicitly declared a known placeholder in the validation report. No silent placeholders.
 

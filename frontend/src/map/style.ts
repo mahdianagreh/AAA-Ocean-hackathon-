@@ -461,7 +461,7 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
         paint: { 'text-color': c.accent, 'text-halo-color': c.canvas, 'text-halo-width': 1.4 },
       },
     ],
-  } as StyleSpecification;
+  } as unknown as StyleSpecification;
 }
 
 /** Language changes only need the label layers restyled, which avoids the flash

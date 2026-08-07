@@ -44,8 +44,14 @@ RUN apt-get update \
 
 # Requirements copied alone first, so a code change does not invalidate the
 # dependency layer. Rebuilds go from minutes to seconds.
+#
+# --timeout=100: pip's default read timeout is 15s of no data on the socket, and on
+# a throttled connection (measured ~3 KB/s on one build host, nothing to do with the
+# package or this Dockerfile) a large wheel can go quiet for longer than that
+# without the transfer actually being dead. Three consecutive builds failed on the
+# identical ReadTimeoutError to files.pythonhosted.org before this was added.
 COPY backend/requirements-api.txt /tmp/
-RUN pip install --only-binary=:all: -r /tmp/requirements-api.txt
+RUN pip install --timeout=100 --only-binary=:all: -r /tmp/requirements-api.txt
 
 COPY --chown=reefshield:reefshield backend/ /app/backend/
 
@@ -78,7 +84,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements-api.txt backend/requirements-worker.txt /tmp/
-RUN pip install --only-binary=:all: -r /tmp/requirements-worker.txt
+RUN pip install --timeout=100 --only-binary=:all: -r /tmp/requirements-worker.txt
 
 COPY --chown=reefshield:reefshield backend/ /app/backend/
 COPY --chown=reefshield:reefshield scripts/ /app/scripts/

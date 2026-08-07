@@ -17,11 +17,16 @@ durable — it reads whatever is currently in the local SQLite file
 re-implementing SQLite reads.
 
 Scope: `simulation_runs` rows created here are bridge markers for a SQLite-
-recorded exposure computation, not real particle-engine transport runs — no
-real current/wind forcing produced these plumes (`plume_source` is
-`SYNTHETIC_STUB` for every run today), so `current_source_id`/`wind_source_id`
-are left NULL rather than fabricated. Full `simulation_runs` population from a
-real transport run is Abd's task once his engine is wired to real currents.
+recorded exposure computation, not a from-scratch simulation_runs row a
+transport engine would insert itself. Updated 7 Aug: `plume_source` is no
+longer always `SYNTHETIC_STUB` — Abd's real particle engine landed
+(`0de8c26`) and `engine_label` below now distinguishes `custom_2d` runs from
+the older synthetic-stub ones. `current_source_id`/`wind_source_id` are still
+left NULL either way: even a real-particle-engine run's wind forcing is a
+`ConstantWindField(0, 0)` placeholder today (no historical marine wind
+archive exists in this repo), so a real `current_source_id` without a real
+`wind_source_id` would be a half-true row — NULL for both until wind forcing
+is real too.
 """
 
 from __future__ import annotations
@@ -109,9 +114,12 @@ def bridge_exposure_runs(limit: int = 500) -> tuple[int, int]:
             plume_source = None
             if run["results"]:
                 plume_source = run["results"][0]["formula_terms"].get("plume_source")
-            engine_label = (
-                "api_synthetic_stub" if plume_source == "SYNTHETIC_STUB" else "unknown"
-            )
+            if plume_source == "SYNTHETIC_STUB":
+                engine_label = "api_synthetic_stub"
+            elif plume_source == "REAL_PARTICLE_ENGINE":
+                engine_label = "custom_2d"
+            else:
+                engine_label = "unknown"  # a genuinely new plume_source value we haven't seen
 
             session.execute(
                 UPSERT_SIMULATION_RUN_SQL,

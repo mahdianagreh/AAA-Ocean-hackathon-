@@ -1,5 +1,30 @@
 # Pulga — Phase 4
 
+> **Update, 6 Aug, from Karam — item 5's dive-site join is unblocked.** `places.geojson`
+> had zero stable ID on any POI until today; the source OSM layer's real `osm_id` now
+> survives into the file (115/115 unique, diffed to confirm nothing else changed). **Use
+> `osm_id` as the join key** for the nearest-reef-zone lookup. Also, separately: the
+> plume is not still a stub — `/plume/simulate`/`/exposure/calculate` already return
+> real particle-engine output and non-zero, differentiated scores per outlet, confirmed
+> live. Abd's file is stale on this point.
+
+> **Update, 7 Aug, from Nizar — resolves my own item 4 ask: which store is authoritative
+> for the demo.** Confirmed by reading `main.py` and `exposure/store.py`'s own design
+> comments, then verifying live: **`/runoff/predict` and `/exposure/calculate` never
+> read or write Postgres, at all, by deliberate design** — every number the demo shows
+> comes from local files (`data/models/`, `data/processed/`) and the local
+> `exposure_runs.sqlite`. Postgres (`model_versions`, `simulation_runs`,
+> `reef_exposures`) is a **batch mirror only**, populated by manually re-running my
+> loader scripts (`backend/src/db/loaders/{model_versions,exposure_runs}.py`) — it is
+> never read by the live request path. I found it genuinely stale (Postgres still had
+> only the pre-sediment-anchor model artifact) and have refreshed it as of today, but if
+> anyone builds a feature that reads reef-exposure or model-version data **from
+> Supabase** rather than from the live API/local files, it will silently show numbers
+> from whenever someone last remembered to re-run the loaders — not the numbers the
+> demo's own live calls are producing. If nothing in your stream reads Supabase
+> directly, this doesn't affect you; flagging because item 4 told me to raise it
+> explicitly rather than assume silence means it's fine.
+
 Read [`00-phase4-plan.md`](00-phase4-plan.md) first.
 
 Everything from Phase 3 held up under live testing on 6 Aug: `/alerts` returns real

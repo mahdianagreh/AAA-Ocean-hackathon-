@@ -24,7 +24,7 @@ export const dirFor = (lang: Lang): 'ltr' | 'rtl' => (lang === 'ar' ? 'rtl' : 'l
 
 /** Which overlay is open. 03 §1: the limitations text and the provenance panel are
  *  overlays rather than routes, because the whole product is one screen. */
-export type Overlay = 'provenance' | 'limitations' | 'validation' | 'assistant' | null;
+export type Overlay = 'provenance' | 'limitations' | 'validation' | 'assistant' | 'journey' | null;
 
 /** The six scenario controls. Defaults are the midpoints of what the documents
  *  actually say, not round numbers: transmission loss defaults to 50% because the

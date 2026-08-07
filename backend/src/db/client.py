@@ -39,7 +39,24 @@ def _database_url() -> str:
 
 
 # Module-level singleton — created once per process, on first import.
-engine: Engine = create_engine(_database_url(), pool_pre_ping=True, future=True)
+#
+# connect_args={"prepare_threshold": None} disables psycopg3's automatic server-side
+# prepared statements. Required for Supabase's pooler (port 6543, transaction-mode
+# pgbouncer): pgbouncer freely swaps the underlying Postgres backend connection
+# between statements, but a prepared statement lives on one specific backend —
+# psycopg3 doesn't know the swap happened and tries to reuse a name
+# ("_pg3_0") that may not exist (or already exists under a different plan) on
+# whichever backend it lands on next. Surfaced as
+# `psycopg.errors.DuplicatePreparedStatement: prepared statement "_pg3_0" already
+# exists`, found 7 Aug re-running a loader against real pooled traffic — not
+# something a single quick loader run exercises reliably, which is why it wasn't
+# caught in Phase 3's original testing.
+engine: Engine = create_engine(
+    _database_url(),
+    pool_pre_ping=True,
+    future=True,
+    connect_args={"prepare_threshold": None},
+)
 _SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 

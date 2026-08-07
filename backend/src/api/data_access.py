@@ -44,6 +44,10 @@ ARTIFACTS: dict[str, Path] = {
     # Live means "latest cached forecast" (tasks/phase3/00-phase3-plan.md), never a
     # request-time GFS/GEFS/Postgres call.
     "forecast_snapshot": DATA / "processed" / "forecasts" / "latest_snapshot.json",
+    # The real 675-event rainfall-detected catalogue (scripts/build_event_catalogue.py).
+    # Distinct from "event_dates" above: that file is the small, literature-cited
+    # subset with paper provenance; this is the exhaustive daily-screening result.
+    "event_catalogue": DATA / "processed" / "events" / "events.parquet",
 }
 
 
@@ -175,6 +179,101 @@ def training_row(event_id: str, catchment_id: str) -> dict | None:
     if hit.empty:
         return None
     return {k: _clean(v) for k, v in hit.iloc[0].items()}
+
+
+# One file today. Keyed by event_id rather than a glob, same reasoning as
+# training_row()'s explicit date-parse — a per-event file is either the one that
+# exists or it doesn't, and there is no pattern to infer one from the other yet.
+MOORING_FILES: dict[str, Path] = {
+    "AQ-2016-10-28": DATA / "processed" / "marine" / "mooring_target_AQ-2016-10-28.json",
+}
+
+
+def mooring_for(event_id: str) -> dict | None:
+    """The parsed mooring record for one event, or None — same contract as
+    training_row(): no file for this event is not an error, it is a gap the
+    caller must be able to see rather than a synthesized default."""
+    path = MOORING_FILES.get(event_id)
+    if path is None or not path.exists():
+        return None
+    from models.calibration import load_mooring_target
+
+    return load_mooring_target(path)
+
+
+# Karam's basemap export (scripts/frontend_basemap.py), not a `data/processed/`
+# contract path — it's committed for the frontend's offline map layer, and this
+# reads the same file rather than a second derivation of the same POIs.
+PLACES_PATH = ROOT / "frontend" / "public" / "basemap" / "places.geojson"
+
+
+@lru_cache(maxsize=1)
+def dive_sites() -> list[dict]:
+    """Dive-site POIs, `kind == "dive"` in Karam's basemap export. `osm_id` is the
+    stable join key — his 6 Aug handoff confirmed 115/115 unique, survives the OSM
+    re-extract, where the file previously had no stable ID on any POI at all.
+
+    Named "kind: dive" in the source, but that OSM category is broader than
+    underwater dive sites — it also carries Wadi Rum desert attractions (Siq al
+    Khazali, Barrah Canyon, sand dunes), tens of km inland from Aqaba. Returned
+    as-is here, unfiltered further; `dive_sites_with_nearest_zone()` reports the
+    real distance to the nearest reef zone so a caller can see which of these are
+    actually coastal rather than trust the category name.
+    """
+    if not PLACES_PATH.exists():
+        return []
+    data = json.loads(PLACES_PATH.read_text())
+    out = []
+    for f in data.get("features", []):
+        if f.get("properties", {}).get("kind") != "dive":
+            continue
+        # Geometry is MultiPoint, not Point, even for a single-location POI —
+        # take the first point as the representative location.
+        lon, lat = f["geometry"]["coordinates"][0]
+        out.append({
+            "osm_id": f["properties"]["osm_id"],
+            "name_en": f["properties"].get("name_en"),
+            "name_ar": f["properties"].get("name_ar"),
+            "lon": lon,
+            "lat": lat,
+        })
+    return out
+
+
+def dive_sites_with_nearest_zone() -> list[dict]:
+    """Each dive site joined to its nearest reef zone by real EPSG:32636 distance
+    — never a lookup by proximity in degrees, which distorts distance differently
+    north-south vs east-west (the same rule `exposure/engine.py` enforces via
+    `_assert_measure_crs`). Distance is always reported, however large — a POI
+    tens of km inland (see `dive_sites()`'s docstring) is not silently dropped,
+    its distance just says so; the caller decides what counts as "too far to be
+    a real dive-site safety concern," this function only measures.
+    """
+    sites = dive_sites()
+    if not sites:
+        return []
+    zones = reef_zones_gdf()
+    if zones is None or zones.empty:
+        return [{**s, "nearest_reef_zone_id": None, "distance_m": None} for s in sites]
+
+    import geopandas as gpd
+    from shapely.geometry import Point
+
+    from exposure.engine import CRS_MEASURE
+
+    zones_utm = zones.to_crs(CRS_MEASURE)
+    out = []
+    for s in sites:
+        pt = (gpd.GeoSeries([Point(s["lon"], s["lat"])], crs="EPSG:4326")
+              .to_crs(CRS_MEASURE).iloc[0])
+        d = zones_utm.geometry.distance(pt)
+        idx = d.idxmin()
+        out.append({
+            **s,
+            "nearest_reef_zone_id": zones_utm.loc[idx, "reef_zone_id"],
+            "distance_m": float(d.loc[idx]),
+        })
+    return out
 
 
 def landcover_for(cid: str) -> dict | None:
@@ -317,6 +416,35 @@ def events() -> list[dict]:
             "source": "docs/event_dates.md",
         }
     return sorted(seen.values(), key=lambda x: x["event_id"])
+
+
+@lru_cache(maxsize=1)
+def event_catalogue() -> list[dict]:
+    """The real, exhaustive 675-event rainfall catalogue
+    (scripts/build_event_catalogue.py), sorted by `rank` (1 = highest
+    `max_daily_mm`). THE canonical ranking for "which storm was worst" — `rank`
+    /`max_daily_mm`, not `max_anomaly_ratio`, which ranks storms differently and
+    is exposed for reference only (Phase 4 §01-karam.md item 1).
+
+    Deliberately separate from `events()`: that function's docstring calls
+    docs/event_dates.md "the source of truth" for the small literature-cited
+    list, and nothing else in this codebase depends on that contract — this is
+    the exhaustive daily-screening result, source of the ranking/search data
+    Phase 4 actually needs. Empty list if the artifact is absent — missing is
+    missing, no fallback to the 5-event markdown list pretending to be 675.
+    """
+    import pandas as pd
+
+    path = ARTIFACTS["event_catalogue"]
+    if not path.exists():
+        return []
+    df = pd.read_parquet(path, columns=[
+        "event_id", "date", "rank", "max_daily_mm", "mean_daily_mm",
+        "max_anomaly_ratio", "catchments_exceeding_p99", "wettest_catchment",
+        "storm_days", "is_exhaustive",
+    ]).sort_values("rank")
+    df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+    return df.to_dict("records")
 
 
 @lru_cache(maxsize=8)
@@ -552,11 +680,27 @@ def forecast_snapshot() -> dict | None:
     return json.loads(path.read_text())
 
 
+def gefs_exceedance_for(catchment_id: str) -> dict | None:
+    """This catchment's row from the cached snapshot's `gefs_exceedance` array --
+    `exceedance_prob`/`members_exceeding`/`members_total` against Karam's real p99
+    climatology (`catchment_rainfall_climatology`, `forecast_pipeline.py`). `None`
+    when the snapshot is absent or has no row for this catchment -- the caller
+    must treat that as a real gap, not fall back to a silent fabricated number."""
+    snapshot = forecast_snapshot()
+    if not snapshot:
+        return None
+    for row in snapshot.get("gefs_exceedance", []):
+        if row.get("catchment_id") == catchment_id:
+            return row
+    return None
+
+
 def clear_all_caches() -> None:
     catchments.cache_clear()
     reef_zones.cache_clear()
     outlets.cache_clear()
     events.cache_clear()
+    event_catalogue.cache_clear()
     data_sources.cache_clear()
     _feature_table.cache_clear()
     forecast_snapshot.cache_clear()

@@ -6,6 +6,7 @@ import { ValidationPanel } from './ValidationPanel';
 import { ProvenancePanel } from './ProvenancePanel';
 import { LimitationsPanel } from './LimitationsPanel';
 import { Assistant } from './Assistant';
+import { Journey3D } from '../journey/Journey3D';
 
 /** 03 §1: overlays, not routes. The whole product is one screen, and pushing the
  *  limitations text to its own URL would mean leaving the map to read it.
@@ -20,6 +21,7 @@ const PANELS: Record<Exclude<Overlay, null>, () => React.ReactNode> = {
   provenance: () => <ProvenancePanel />,
   limitations: () => <LimitationsPanel />,
   assistant: () => <Assistant />,
+  journey: () => <Journey3D />,
 };
 
 export function OverlayHost() {

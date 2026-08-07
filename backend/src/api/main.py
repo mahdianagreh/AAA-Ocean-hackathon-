@@ -67,6 +67,8 @@ from .schemas import (
     CatchmentOut,
     Caveat,
     DataSourceOut,
+    DiveSiteOut,
+    DriverOut,
     EventOut,
     ExplainRequest,
     ExplainResponse,
@@ -74,6 +76,8 @@ from .schemas import (
     ExposureResult,
     ExposureRun,
     HealthOut,
+    MooringMarker,
+    MooringOut,
     OutletOut,
     PlumeContour,
     PlumeRequest,
@@ -82,6 +86,7 @@ from .schemas import (
     ReefZoneOut,
     RunoffPrediction,
     RunoffRequest,
+    Value,
 )
 
 API_VERSION = "0.2.0"
@@ -387,20 +392,154 @@ def list_reef_zones(include_geometry: bool = Query(True)):
 
 # ---------------------------------------------------------------------- events
 
+def _merged_events() -> list[dict]:
+    """The real 675-event catalogue, each row optionally carrying its
+    literature label/source on top of the real ranking columns.
+
+    Base is `da.event_catalogue()` (exhaustive, real ranking) rather than
+    `da.events()` (5-event markdown parse) -- Phase 4 found the API was never
+    serving the catalogue at all. A literature-documented event (e.g.
+    AQ-2016-10-28) keeps its human-readable label; every event keeps `rank`.
+    """
+    catalogue = da.event_catalogue()
+    literature = {e["event_id"]: e for e in da.events()}
+    if not catalogue:
+        # No catalogue artifact on disk -- serve the literature list alone
+        # rather than nothing, but say every row is missing its ranking.
+        return list(literature.values())
+
+    merged = []
+    for row in catalogue:
+        # Built field-by-field, not `**row` + overrides: `catalogue` is the
+        # lru_cache'd list itself, and mutating a shared cached dict in place
+        # (e.g. via .pop()) would corrupt it for every later request.
+        lit = literature.get(row["event_id"])
+        merged.append({
+            "event_id": row["event_id"],
+            "start": row["date"],
+            "end": None,
+            "label": lit["label"] if lit else None,
+            "source": lit["source"] if lit else "data/processed/events/events.parquet",
+            "caveats": [],
+            "rank": row["rank"],
+            "max_daily_mm": row["max_daily_mm"],
+            "mean_daily_mm": row["mean_daily_mm"],
+            "max_anomaly_ratio": row["max_anomaly_ratio"],
+            "catchments_exceeding_p99": row["catchments_exceeding_p99"],
+            "wettest_catchment": row["wettest_catchment"],
+            "storm_days": row["storm_days"],
+            "is_exhaustive": row["is_exhaustive"],
+        })
+    # A literature event absent from the catalogue would be a real gap worth
+    # seeing, not a silent drop -- append it with its ranking fields at their
+    # EventOut default of None, never fabricated.
+    catalogued_ids = {r["event_id"] for r in catalogue}
+    merged.extend(lit for eid, lit in literature.items() if eid not in catalogued_ids)
+    return merged
+
+
 @app.get(f"{PREFIX}/events", response_model=list[EventOut], tags=["events"])
 def list_events():
-    evs = da.events()
+    evs = _merged_events()
     if not evs:
-        raise HTTPException(503, "docs/event_dates.md is not present")
+        raise HTTPException(503, "no event catalogue or docs/event_dates.md present")
     return [EventOut(**e) for e in evs]
 
 
 @app.get(f"{PREFIX}/events/{{event_id}}", response_model=EventOut, tags=["events"])
 def get_event(event_id: str):
-    for e in da.events():
+    for e in _merged_events():
         if e["event_id"] == event_id:
             return EventOut(**e)
     raise HTTPException(404, f"unknown event {event_id}")
+
+
+@app.get(f"{PREFIX}/events/{{event_id}}/mooring", response_model=MooringOut,
+         tags=["events"])
+def event_mooring(event_id: str):
+    """A thin read-through of the Kalman et al. (2025) mooring record — Phase 4,
+    Real Sensor Proof Overlay. Shape matches frontend/public/fixtures/event.json's
+    already-shipped `mooring` object field-for-field, so flipping fixture -> live
+    needs no frontend change.
+
+    404, not an empty/default object, when this event has no mooring record —
+    today that is every event except AQ-2016-10-28.
+    """
+    raw = da.mooring_for(event_id)
+    if raw is None:
+        raise HTTPException(404, f"no mooring record for {event_id}")
+
+    parsed = raw["_parsed"]
+    m = raw["magnitude"]
+    return MooringOut(
+        event_id=raw["event_id"],
+        source_citation=raw["source_citation"],
+        source_doi=raw["source_doi"],
+        source_file=raw["source_file"],
+        position=raw["position"],
+        markers=[
+            MooringMarker(key="turbidity_onset", t=parsed["onset"], provenance="converted"),
+            MooringMarker(key="turbidity_cleared", t=parsed["clear"], provenance="converted"),
+        ],
+        elevated_duration_hours=Value(
+            value=raw["timing_utc"]["elevated_duration_hours"], unit="h",
+            provenance="converted"),
+        peak_suspended_sediment=Value(
+            value=m["peak_suspended_sediment_g_l"], unit="g/L", provenance="reported"),
+        salinity_minimum=Value(
+            value=m["salinity_minimum_psu"], unit="PSU", provenance="reported"),
+        salinity_anomaly=Value(
+            value=m["salinity_anomaly_delta_psu"], unit="‰", provenance="reported",
+            uncertainty={"sigma": m["salinity_anomaly_sigma"]}),
+        sediment_mass_total=Value(
+            value=m["sediment_mass_total_t"], unit="t", provenance="reported"),
+        series_available=False,
+        caveats=[],
+    )
+
+
+#: Real coastal dive/wreck sites (Gorgon 1, Cedar Pride Shipwreck, King Abdullah
+#: reef, ...) measured 0-997 m from their nearest reef zone. Everything else
+#: tagged `kind: dive` in the source OSM extract is a Wadi Rum desert attraction
+#: (Barrah Canyon, sand dunes, petroglyphs) at 32,500 m or more — a 32x jump with
+#: nothing between the two clusters. 2,000 m is a round number inside that gap,
+#: not a fitted threshold; it exists to flag the mismatch, not to hide it.
+DIVE_SITE_IMPLAUSIBLE_DISTANCE_M = 2000.0
+
+
+@app.get(f"{PREFIX}/dive-sites", response_model=list[DiveSiteOut], tags=["geometry"])
+def list_dive_sites():
+    """Dive-site POIs joined to their nearest reef zone — Phase 4, feature B
+    (Dive Site Safety Status). Karam's 6 Aug handoff: `osm_id` is now a stable
+    join key in `places.geojson` (115/115 unique, confirmed against the source
+    OSM re-extract).
+
+    Returns the geometric join only — nearest_reef_zone_id and distance_m — not
+    a risk score. A "safety status" needs an event/outlet-scoped exposure result,
+    which this endpoint has no parameters for; the caller cross-references
+    nearest_reef_zone_id against whatever `/alerts` or `/exposure/calculate`
+    result it already has for the event it's showing, rather than this endpoint
+    re-deriving that per dive site.
+    """
+    out = []
+    for s in da.dive_sites_with_nearest_zone():
+        caveats = []
+        if s["distance_m"] is not None and s["distance_m"] > DIVE_SITE_IMPLAUSIBLE_DISTANCE_M:
+            caveats.append(Caveat(
+                field="nearest_reef_zone_id",
+                message=(
+                    f"{s['distance_m']:,.0f} m from the nearest reef zone. The "
+                    "source OSM category (\"kind: dive\") also carries Wadi Rum "
+                    "desert attractions alongside real coastal dive sites, and "
+                    "this POI is far enough inland that it is very unlikely to "
+                    "be an actual dive site — treat the join as unreliable for "
+                    "this one, not as a real safety association."
+                ),
+                severity="warning",
+                source="backend/src/api/data_access.py:dive_sites",
+            ))
+        out.append(DiveSiteOut(**s, caveats=caveats))
+    return out
 
 
 # -------------------------------------------------------------------- forecast
@@ -432,7 +571,157 @@ def forecast_latest():
     }
 
 
+# -------------------------------------------------------- multi-source currents
+
+# The demo event's mooring peak-response time, and the nearest point BOTH
+# historical current archives resolve simultaneously (per
+# docs/forcing_limitations.md — a systematic 0.01 deg scan of the whole marine
+# AOI found zero points both models resolve at once; this is the nearest
+# shared one, 6 km from the outlet). Defaults, not requirements — override via
+# query params to compare "today" instead.
+_DEMO_EVENT_TIME = "2016-10-28T06:50:00"
+_DEMO_AGREEMENT_LON = 34.85
+_DEMO_AGREEMENT_LAT = 29.30
+
+
+@app.get(f"{PREFIX}/currents/agreement", tags=["forecast"])
+def currents_agreement(
+    lon: float = Query(default=_DEMO_AGREEMENT_LON),
+    lat: float = Query(default=_DEMO_AGREEMENT_LAT),
+    time: str = Query(
+        default=_DEMO_EVENT_TIME,
+        description="ISO 8601. Defaults to the demo event's mooring peak-response "
+        "time, per docs/forcing_limitations.md's own instruction to use that number "
+        "over 'today's' figure for anything backtest-facing.",
+    ),
+    historical: bool = Query(
+        default=True,
+        description="True: read the cached AQ-2016-10-28 archives (HYCOM "
+        "GLBu0.08/expt_91.2, Copernicus GLORYS12V1). False: read the live/rolling "
+        "'recent' cache instead.",
+    ),
+):
+    """Multi-source weather agreement — the currents reading of Feature F.
+
+    "Multi-Source Weather Agreement" (tasks/phase4/00-phase4-plan.md, feature F)
+    names no single comparison; HYCOM-vs-Copernicus-Marine currents is the one
+    reading with real, network-free, already-honest numbers today (the other
+    candidates -- GFS-vs-GEFS rainfall, GFS-vs-IFS via `ecmwf.gfs_vs_ifs_agreement`
+    -- are either unbuilt or use an independently-invented threshold; see the
+    dated note in tasks/phase4/00-phase4-plan.md).
+
+    Never a live fetch: reads whichever cached `.nc` pair is already on disk
+    (data/raw/currents/), exactly like `get_historical_interpolator()`. Reports a
+    CONTINUOUS agreement score (1.0 at 0 deg disagreement, 0.0 at 180 deg) rather
+    than reusing `qa_currents.py`'s hardcoded 15 deg good/bad cutoff -- that
+    cutoff is exactly the kind of second, independently-invented threshold this
+    feature is told not to introduce alongside item 2's ensemble-agreement
+    formula.
+    """
+    import numpy as np
+
+    if historical:
+        hycom_path = oc.RAW_DIR / "hycom_aoi_AQ-2016-10-28.nc"
+        copernicus_path = oc.RAW_DIR / "copernicus_marine_aoi_AQ-2016-10-28.nc"
+    else:
+        hycom_path = oc.RAW_DIR / "hycom_aoi_recent.nc"
+        copernicus_path = oc.RAW_DIR / "copernicus_marine_aoi_recent.nc"
+
+    if not hycom_path.exists():
+        raise HTTPException(
+            503, f"No cached current data at {hycom_path} for this window."
+        )
+
+    try:
+        parsed_time = np.datetime64(time)
+    except ValueError as exc:
+        raise HTTPException(422, f"unparseable time {time!r}: {exc}") from exc
+
+    comparison = oc.compare_hycom_vs_copernicus(
+        lon=lon, lat=lat, time=parsed_time,
+        hycom_path=hycom_path, copernicus_path=copernicus_path,
+    )
+    # NaN, not None, when a point/time falls outside a cached grid's resolved
+    # cells or its time range (e.g. the "recent" cache aging past its fetch
+    # window). A gap is a gap, per the project's standing rule -- and it's what
+    # stops FastAPI's default JSON encoder from 500ing on a bare nan.
+    comparison = {
+        k: (None if isinstance(v, float) and np.isnan(v) else v)
+        for k, v in comparison.items()
+    }
+
+    diff = comparison.get("direction_diff_deg")
+    agreement = max(0.0, 1.0 - diff / 180.0) if diff is not None else None
+
+    return {
+        **comparison,
+        "agreement": agreement,
+        "window": "historical (AQ-2016-10-28 mooring peak)" if historical else "live/recent",
+        "sources": {
+            "hycom": "HYCOM GLBu0.08/expt_91.2" if historical else "HYCOM GLBy0.08 (latest)",
+            "copernicus_marine": "GLORYS12V1 multiyear reanalysis" if historical
+                else "GLOBAL_ANALYSISFORECAST_PHY_001_024",
+        },
+        "caveats": [
+            {
+                "field": "agreement",
+                "message": "Both models mask the provisional outlet (34.96, 29.52) as "
+                            "unresolved/land identically -- corroborating, not "
+                            "contradicting, evidence for the ~9km resolution limit. "
+                            "See docs/forcing_limitations.md.",
+                "severity": "warning",
+                "source": "backend/src/ingestion/ocean_currents.py",
+            },
+        ],
+    }
+
+
 # ---------------------------------------------------------------------- runoff
+
+#: Raw rainfall-depth features the `rainfall_multiplier` scenario knob scales.
+#: Deliberately excludes rain_over_p50/p90/p99 and rain_self_percentile — those are
+#: percentile ranks against the historical record, and "150% of the 90th percentile"
+#: is not a meaningful operation. Scaling only the raw-mm terms is a real, defensible
+#: perturbation; recomputing percentiles against a scaled value would be a second,
+#: much larger piece of work (re-deriving the historical distribution per request)
+#: that Phase 4 does not attempt.
+RAINFALL_MM_COLUMNS = ("precipitation_mm_day", "precip_prior_1d_mm",
+                       "precip_prior_3d_mm", "precip_prior_7d_mm")
+
+
+def _apply_rainfall_multiplier(row: dict, multiplier: float) -> dict:
+    if multiplier == 1.0:
+        return row
+    return {**row, **{c: row[c] * multiplier for c in RAINFALL_MM_COLUMNS
+                      if row.get(c) is not None}}
+
+
+def _squash_sediment_index(index, anchor_index, sediment_class) -> tuple[float, str]:
+    """The raw sediment index is unbounded; every caller that needs 0-1 squashes
+    it by ratio / (1 + ratio) against the anchor event — extracted so the two
+    call sites (exposure_calculate, runoff_predict) cannot silently drift onto
+    two different formulas for the same number.
+
+    NOT a linear ratio clamped at 1.0, which was the first attempt and was worse
+    than the zero it replaced: October 2016 is only 12th of 2,362 days by this
+    magnitude, so every storm at or above it pinned to exactly 1.000 and the term
+    stopped discriminating at all — three different events came back with an
+    identical sediment intensity. This map is monotonic, never saturates, and
+    puts the one documented major flood at 0.5 — the honest shape for a single
+    calibration point, which has nothing justifying a linear extrapolation far
+    above it.
+    """
+    from models.sediment_proxy import ANCHOR_EVENT
+
+    ratio = max(0.0, float(index) / float(anchor_index))
+    intensity = ratio / (1.0 + ratio)
+    source = (
+        f"sediment_index {float(index):,.0f} = {ratio:.2f}x {ANCHOR_EVENT}, "
+        f"squashed by r/(1+r) to {intensity:.3f} (class {sediment_class}); "
+        "anchor maps to 0.500"
+    )
+    return intensity, source
+
 
 @app.post(f"{PREFIX}/runoff/predict", response_model=RunoffPrediction, tags=["model"])
 def runoff_predict(req: RunoffRequest):
@@ -450,10 +739,25 @@ def runoff_predict(req: RunoffRequest):
     if not any(c["catchment_id"] == req.catchment_id for c in da.catchments()):
         raise HTTPException(404, f"unknown catchment {req.catchment_id}")
 
+    # Prefer a real feature row (da.training_row) over the request's own fields.
+    #
+    # Mahdi found (docs/HANDOFF_pulga_2026-08-06.md) that predict_one() on the bare
+    # request dict — catchment_id/rainfall_mm_3h/antecedent_index, none of which
+    # match the model's 20 real feature names — still runs cleanly and returns a
+    # CONFIDENT-LOOKING, FIXED result: identical runoff_probability, identical
+    # feature_attributions, regardless of catchment or event. TreeSHAP does not
+    # fail on an all-NaN row, so `feature_attributions_status` stays None in this
+    # case too — the model cannot self-report that this happened. It has to be
+    # caught here, not trusted from predict_one()'s output.
+    training_row = da.training_row(req.event_id, req.catchment_id) if req.event_id else None
+    base_features = training_row if training_row is not None else req.model_dump(exclude_none=True)
+    features = _apply_rainfall_multiplier(base_features, req.rainfall_multiplier)
+
     try:
         from models.runoff_model import predict_one
 
-        real = predict_one(req.model_dump(exclude_none=True))
+        real = predict_one(
+            features, transmission_loss_override=req.transmission_loss_override)
     except (FileNotFoundError, ImportError, ModuleNotFoundError):
         real = None            # nothing registered yet — fall through to the stub
     except KeyError as exc:    # unknown version id explicitly requested
@@ -481,13 +785,61 @@ def runoff_predict(req: RunoffRequest):
         # report, so the field is None and reads as a gap. `sediment_index` is the
         # sediment measure and is unanchored — comparable between requests, no absolute
         # meaning — which `sediment_basis` states and which travels as a caveat.
+        # The raw index is unbounded (e.g. 145,434 for the anchor storm) — this
+        # schema's relative_sediment_intensity is ge=0/le=1, and constructing
+        # RunoffPrediction below with the raw index would raise a
+        # ValidationError. This was unreachable before Phase 4's training_row
+        # preference: every prior caller sent a bare request, which produces a
+        # small, already-in-range sediment_index (see the honesty branch
+        # above) rather than a real anchored one. Squash exactly the way
+        # exposure_calculate does — same formula, one function, so the two
+        # cannot silently drift onto different numbers for the same input.
         sediment_index = real.get("sediment_index")
+        anchor_index = real.get("anchor_index_for_normalisation")
+        if sediment_index is not None and anchor_index:
+            sediment_intensity, sediment_intensity_source = _squash_sediment_index(
+                sediment_index, anchor_index, real.get("sediment_class"))
+        else:
+            sediment_intensity = float(real.get("runoff_probability", 0.0))
+            sediment_intensity_source = str(real.get("sediment_basis", "unanchored"))
+        minimal_request_caveats = []
+        if training_row is not None:
+            # Renamed at this boundary to match frontend/src/api/predictions.ts's
+            # PredictionDriver{key, contribution, value} exactly — the model's own
+            # names (`feature`, `shap`) never reach the response. See schemas.DriverOut.
+            drivers = [
+                DriverOut(key=d["feature"], contribution=d["shap"], value=d["value"])
+                for d in (real.get("feature_attributions") or [])
+            ]
+            feature_attributions_status = real.get("feature_attributions_status")
+        else:
+            # See the comment above `training_row` for why this branch exists:
+            # a bare request produces a fixed, catchment/event-independent result
+            # that predict_one() itself cannot flag. Suppressed here rather than
+            # returned as if real — a plausible-looking chart of drivers that do
+            # not depend on the input is worse than no chart.
+            drivers = []
+            feature_attributions_status = (
+                "not meaningful — no training-set feature row for this request "
+                f"(event_id={req.event_id!r}); only rainfall_mm_3h/antecedent_index "
+                "were supplied, not the 20 features the model reads, so this "
+                "result would be identical across every catchment and event"
+            )
+            minimal_request_caveats = [Caveat(
+                field="runoff_probability",
+                message="No event_id matched a real training-set feature row, so "
+                        "runoff_probability, sediment_index and every other "
+                        "real-path field here were computed from a mostly-absent "
+                        "feature vector — the same fixed result regardless of "
+                        "catchment or event. Supply event_id for a date/catchment "
+                        "in the training set for a meaningful prediction.",
+                severity="critical",
+                source="docs/HANDOFF_pulga_2026-08-06.md",
+            )]
         return RunoffPrediction(
             catchment_id=req.catchment_id,
             predicted_runoff_m3=None,
-            relative_sediment_intensity=(
-                float(sediment_index) if sediment_index is not None
-                else float(real.get("runoff_probability", 0.0))),
+            relative_sediment_intensity=sediment_intensity,
             runoff_probability=real.get("runoff_probability"),
             severity=real.get("severity"),
             confidence=real.get("confidence"),
@@ -498,12 +850,17 @@ def runoff_predict(req: RunoffRequest):
                             if real.get("sediment_class") is not None else None),
             model_version=str(real.get("model_version_id", "unregistered")),
             is_stub=False,
+            drivers=drivers,
+            feature_attributions_status=feature_attributions_status,
+            rainfall_multiplier=req.rainfall_multiplier,
+            transmission_loss=real.get("transmission_loss"),
             provenance=[
                 Provenance(kind="derived",
                            detail=f"Mahdi's runoff model {real.get('model_version_id')}"),
                 Provenance(kind="source", detail=str(real.get("basis", "unknown"))),
             ],
             caveats=(cav.landcover_epoch() + cav.soil_is_modelled()
+                     + minimal_request_caveats
                      + [Caveat(field="predicted_runoff_m3",
                                message="Component A predicts runoff OCCURRENCE, not "
                                        "volume. No m3 figure exists; this is a gap, "
@@ -511,7 +868,7 @@ def runoff_predict(req: RunoffRequest):
                                severity="critical",
                                source="backend/src/models/runoff_model.py"),
                         Caveat(field="relative_sediment_intensity",
-                               message=str(real.get("sediment_basis", "unanchored")),
+                               message=sediment_intensity_source,
                                severity="warning",
                                source="backend/src/models/sediment_proxy.py")]),
         )
@@ -851,9 +1208,9 @@ def plume_map_frames(event_id: str, outlet_id: str,
 def exposure_calculate(req: ExposureRequest):
     """Component D. Real formula, real EPSG:32636 geometry, real formula_terms.
 
-    The plume input is currently the synthetic stub, and every response says so.
-    The engine itself is not a stub — swapping the contour source does not change
-    a line of it.
+    The plume input is the real particle engine (see `_real_contours`) — the
+    exposure formula itself was written before that landed and never needed a
+    change; swapping the contour source did not touch a line of it.
     """
     outlet = next((o for o in da.outlets() if o["outlet_id"] == req.outlet_id), None)
     if outlet is None:
@@ -868,7 +1225,8 @@ def exposure_calculate(req: ExposureRequest):
             raise HTTPException(404, f"no such reef zones: {req.reef_zone_ids}")
 
     key = da.TTLCache.key("exposure", req.event_id, req.outlet_id, req.horizon_hours,
-                          tuple(sorted(req.reef_zone_ids or [])), req.catchment_id)
+                          tuple(sorted(req.reef_zone_ids or [])), req.catchment_id,
+                          req.rainfall_multiplier, req.transmission_loss_override)
     cached = da.EXPOSURE_CACHE.get(key)
     if cached is not None:
         return cached
@@ -900,41 +1258,29 @@ def exposure_calculate(req: ExposureRequest):
             try:
                 from models.runoff_model import predict_one
 
-                real = predict_one(row)
+                real = predict_one(
+                    _apply_rainfall_multiplier(row, req.rainfall_multiplier),
+                    transmission_loss_override=req.transmission_loss_override)
                 if real.get("model_version_id"):
                     run_model_versions["runoff_model"] = real["model_version_id"]
                 index = real.get("sediment_index")
                 anchor_index = real.get("anchor_index_for_normalisation")
                 if index is not None and anchor_index:
-                    # The index is unbounded and the formula needs 0-1, so it is squashed
-                    # by ratio / (1 + ratio) against the anchor event.
-                    #
-                    # NOT a linear ratio clamped at 1.0, which was the first attempt and
-                    # was worse than the zero it replaced: October 2016 is only 12th of
-                    # 2,362 days by this magnitude, so every storm at or above it pinned
-                    # to exactly 1.000 and the term stopped discriminating at all. Three
-                    # different events came back with an identical sediment intensity.
-                    #
-                    # This map is monotonic, never saturates, and puts the one documented
-                    # major flood at 0.5. That is also the more honest shape: with a
-                    # SINGLE calibration point there is nothing justifying a linear
-                    # extrapolation far above it, so the scale deliberately compresses
-                    # where the evidence runs out.
-                    from models.sediment_proxy import ANCHOR_EVENT
-
-                    ratio = max(0.0, float(index) / float(anchor_index))
-                    intensity = ratio / (1.0 + ratio)
-                    intensity_source = (
-                        f"sediment_index {float(index):,.0f} = {ratio:.2f}x "
-                        f"{ANCHOR_EVENT}, squashed by r/(1+r) to {intensity:.3f} "
-                        f"(class {real.get('sediment_class')}); anchor maps to 0.500"
-                    )
+                    intensity, intensity_source = _squash_sediment_index(
+                        index, anchor_index, real.get("sediment_class"))
+                if req.rainfall_multiplier != 1.0:
+                    intensity_source += (
+                        f" [rainfall_multiplier={req.rainfall_multiplier}x applied to "
+                        "raw rainfall depth only; percentile-rank features reflect "
+                        "the original storm, not the scaled one]")
             except (FileNotFoundError, ImportError, ModuleNotFoundError, KeyError) as exc:
                 intensity_source = (
                     f"default 0.5 — real model unavailable ({type(exc).__name__})")
         else:
-            pred = runoff_predict(RunoffRequest(catchment_id=cid, rainfall_mm_3h=30.0,
-                                               event_id=req.event_id))
+            pred = runoff_predict(RunoffRequest(
+                catchment_id=cid, rainfall_mm_3h=30.0, event_id=req.event_id,
+                rainfall_multiplier=req.rainfall_multiplier,
+                transmission_loss_override=req.transmission_loss_override))
             intensity = pred.relative_sediment_intensity
             if pred.is_stub:
                 intensity_source = (
@@ -947,9 +1293,40 @@ def exposure_calculate(req: ExposureRequest):
                     f"30 mm/3h for {cid} was used for intensity")
                 run_model_versions["runoff_model"] = pred.model_version
 
-    # Confidence: coarse global currents and a substituted bathymetry product are
-    # both real reasons not to claim high confidence.
-    confidence_adjustment = 0.6
+    # Confidence: real per-catchment GEFS ensemble agreement (Nizar's forecast
+    # pipeline, via Karam's own p99 climatology as the exceedance threshold) times
+    # a fixed qualitative penalty for the currents/bathymetry substitutions that
+    # apply regardless of forecast skill.
+    #
+    # agreement = 1 at a unanimous ensemble (all 30 members on the same side of the
+    # threshold -- most trustworthy), 0 at an exact 50/50 split (least trustworthy).
+    #
+    # Confirmed by Nizar, 7 Aug: this is the right shape for "confidence" here. Live-
+    # verified against AQ-C05 (0/30 members exceeding -> agreement 1.00 -> 0.8, capped
+    # correctly by the currents/bathymetry penalty regardless of the unanimous
+    # ensemble). "Confidence" meaning ensemble agreement, not e.g. model skill or
+    # historical accuracy, is the correct reading for what this term qualifies: how
+    # much the plume-direction and reef-exposure numbers should be trusted given
+    # known forcing limitations, which ensemble spread on the RAINFALL side does not
+    # actually speak to on its own -- but it is the best proxy this repo has without
+    # a second, independent skill metric, and it is honestly labelled as such via
+    # confidence_adjustment_reason. No functional change from the formula below.
+    exceedance = da.gefs_exceedance_for(cid) if cid else None
+    if exceedance is not None:
+        agreement = abs(exceedance["exceedance_prob"] - 0.5) * 2.0
+        confidence_adjustment = agreement * 0.8  # 0.8: currents/bathymetry penalty
+        confidence_adjustment_reason = (
+            f"{exceedance['members_exceeding']}/{exceedance['members_total']} GEFS "
+            f"members exceed the {exceedance['threshold_mm']:.2f} mm/24h threshold "
+            f"({exceedance['threshold_source']}) -> agreement {agreement:.2f}, "
+            "x0.8 for coarse global current model + GMRT-substituted bathymetry"
+        )
+    else:
+        confidence_adjustment = 0.6
+        confidence_adjustment_reason = (
+            "PLACEHOLDER 0.6 -- no GEFS exceedance row for "
+            f"{cid or 'this catchment'} in the cached forecast snapshot"
+        )
     confidence = engine.confidence_label(confidence_adjustment)
 
     # Goes through plume_simulate() (and its cache), not a private call of its own
@@ -988,8 +1365,12 @@ def exposure_calculate(req: ExposureRequest):
 
         summary["formula_terms"].update({
             "relative_sediment_intensity_source": intensity_source,
-            "confidence_adjustment_reason":
-                "coarse global current model + GMRT-substituted bathymetry",
+            "confidence_adjustment_reason": confidence_adjustment_reason,
+            # Components, not just the composed sentence -- a sentence can't be
+            # translated cleanly, components can (docs/OPEN-ISSUES.md #4).
+            "confidence_members_exceeding": exceedance["members_exceeding"] if exceedance else None,
+            "confidence_members_total": exceedance["members_total"] if exceedance else None,
+            "confidence_threshold_value_mm": exceedance["threshold_mm"] if exceedance else None,
             "plume_source": "SYNTHETIC_STUB" if plume.is_stub else "REAL_PARTICLE_ENGINE",
             "model_versions": run_model_versions,
         })
@@ -1177,6 +1558,10 @@ def list_alerts(
                 (zone_meta.get(zid) or {}).get("sensitivity_weight_status", "")
             ),
         ))
+    # Highest risk first — Phase 4. Never sorted before; a client building a
+    # priority list (feature A) or a coastal comparison (feature I) off this
+    # endpoint got whatever order store.latest_results() happened to produce.
+    out.sort(key=lambda a: a.risk_score, reverse=True)
     return out
 
 

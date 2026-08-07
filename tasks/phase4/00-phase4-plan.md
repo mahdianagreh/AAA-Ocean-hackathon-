@@ -1,5 +1,16 @@
 # Phase 4 — the feature list, against what actually runs
 
+> **Correction, 6 Aug, from Karam: the "one fact" below is stale, not current.** The
+> audit that produced it ran against a branch that hadn't merged the real
+> particle-engine wiring (`0de8c26`) yet — that commit landed on `main` before this
+> plan's own merge commit (`6de325c`). Live-checked just now: `/plume/simulate` returns
+> `is_stub: false`, real HYCOM currents, and `/exposure/calculate` produces
+> differentiated non-zero scores per outlet (not a uniform 9.05/100 ceiling). See
+> `05-abd.md`'s correction note for the full live check. This changes which rows below
+> are genuinely still 🟡/🔴 for the *plume* reason specifically — most of row
+> 1/2/4/5/14's "muted because of the plume stub" framing no longer applies; re-check
+> each one's actual live state before treating this table as current.
+
 Source: the demo feature audit run live against the stack on 6 Aug 2026 (containers
 rebuilt, every claim checked against the filesystem or a running endpoint, not recalled).
 Full findings: the audit report in this conversation's history. This plan turns that
@@ -68,7 +79,7 @@ every feature has a screen; that is the frontend's job, not a sign Ali is behind
 | C | Transmission Loss Reality Check | 🟡 | Mahdi | Pulga, Ali |
 | D | Culvert & Drainage Correction Map | ✅ | Mahdi | Ali |
 | E | Enclosed Harbor Warning Flag | ✅ | — (done) | Ali (verify) |
-| F | Multi-Source Weather Agreement | 🟡 | Nizar | — |
+| F | Multi-Source Weather Agreement | ✅ | Nizar | Ali (wire the UI) |
 | G | Historical Event Search | ✅ | Karam | Ali |
 | H | Offline Emergency Mode | 🟡 | Mahdi | Ali |
 | I | Coastal Zone Risk Comparison | ✅ | Ali | Pulga |
@@ -77,6 +88,24 @@ every feature has a screen; that is the frontend's job, not a sign Ali is behind
 
 Six rows are already done end to end (6, 13, 19, E — mostly, plus static content 17/18)
 and need no further work; they're in each relevant person's file as "verify, don't rebuild."
+
+> **Resolved, 7 Aug, from Nizar — Feature F's ambiguity, and which reading got built.**
+> "Multi-Source Weather Agreement" named no single comparison anywhere in the repo — I
+> found 3-4 defensible readings: HYCOM-vs-Copernicus-Marine currents, GFS-vs-GEFS
+> rainfall (no comparable data exists in `/forecast/latest` today — would need new code),
+> and GFS-vs-IFS (a real function, `ecmwf.gfs_vs_ifs_agreement()`, already exists but is
+> unwired to any endpoint and uses its own independently-invented `1.0mm` threshold).
+> Built the **currents** reading — `GET /api/v1/currents/agreement` — because it's the
+> only one with real, network-free, already-honest numbers today:
+> `compare_hycom_vs_copernicus()` plus the cached historical `.nc` archives. Defaults to
+> the demo event's mooring peak-response time (per `docs/forcing_limitations.md`'s own
+> instruction to use that number over "today's"), live-verified to reproduce the
+> documented 65.8° disagreement exactly. Reports a continuous `agreement` score
+> (`1 - direction_diff_deg/180`), deliberately not reusing `qa_currents.py`'s hardcoded
+> 15° good/bad cutoff — that would have been exactly the second, independently-invented
+> threshold this feature was told to avoid. `gfs_vs_ifs_agreement()` is noted but not
+> built; a real candidate for later if the team wants a second Multi-Source reading.
+> Frontend needs wiring (Ali) — nothing in `frontend/src/**` calls this yet.
 
 ## The dependency chain that gates the most rows
 

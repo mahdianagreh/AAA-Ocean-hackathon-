@@ -1,6 +1,6 @@
 # Model card — ReefShield Aqaba
 
-**Last updated:** 2026-08-05 · Part of the `/ask` corpus, so anything written here is
+**Last updated:** 2026-08-06 · Part of the `/ask` corpus, so anything written here is
 answerable live and must be defensible live.
 
 This card covers the components that turn data into a displayed number. It is
@@ -19,7 +19,7 @@ model.**
 | **E · Explanation** | risk state → grounded bilingual paragraph | Pulga | **implemented, tested** |
 | **E · Retrieval (`/ask`)** | technical corpus → cited answers | Pulga | **implemented, tested** |
 | **A · Runoff classifier** | rainfall + catchment features → runoff probability | Mahdi | **implemented, LOCO-validated** |
-| **C · Plume transport** | outlet discharge → probability contours | Abd | real engine exists; API wiring stubbed |
+| **C · Plume transport** | outlet discharge → probability contours | Abd | **implemented, wired live** — near-shore current-grid masking limits realism at the demo outlets, see below |
 
 The section for C is deliberately short — that owner should fill it in, and writing
 confident text about someone else's model would be exactly the kind of unearned
@@ -65,7 +65,7 @@ for intuition, and **operational thresholds require marine-scientist input.**
 | Term | Range | Source | Kind |
 |---|---|---|---|
 | `plume_probability` | 0–1 | Abd's contoured particle field | derived |
-| `relative_sediment_intensity` | 0–1 | Mahdi's sediment class, normalised | derived (stub today) |
+| `relative_sediment_intensity` | 0–1 | Mahdi's anchored sediment index, normalised | derived (real for AQ-2016-10-28/AQ-C01, the only event/catchment with a training-set feature row today; placeholder 0.5 otherwise) |
 | `exposure_duration_weight` | 0–1 | span of contour timestamps ÷ horizon | derived |
 | `habitat_sensitivity_weight` | 1.0 | **team placeholder** | **assumed** |
 | `confidence_adjustment` | 0–1 | GEFS ensemble spread | derived (stub today) |
@@ -588,13 +588,111 @@ as input; every response reports the fixed default. Full write-up:
 
 ## C · Plume transport (particle engine) — Abd
 
-Real engine at `backend/src/models/particle_engine.py` with its own tests. The API
-route `POST /api/v1/plume/simulate` is **stubbed pending wiring**, flagged the same
-way. Consumes `depth_utm36n.tif` and `coastline.gpkg`.
+**Wired and live as of 6 Aug 2026** (`0de8c26`; confirmed live against `main` `6de325c`
+during the Phase 4 audit closeout — the API previously stubbed this route, and that is
+no longer true, independently confirmed by both Abd and Karam). `POST
+/api/v1/plume/simulate` calls the real engine at
+`backend/src/models/particle_engine.py` unconditionally and always returns
+`is_stub: false`; `POST /api/v1/exposure/calculate` reuses the same run.
+`plume_source: REAL_PARTICLE_ENGINE`, and `model_versions.particle_engine` names the
+calibrated build (`custom_2d-calibrated-AQ-2016-10-28`), not `stub-0.1`. Consumes
+`depth_utm36n.tif` and `coastline.gpkg`.
+
+**Physics.** A 2D probabilistic particle cloud (deliberately not a hydrodynamic
+model — concept doc §25 names "team overbuilds full physics" as a risk to avoid).
+Every active particle steps forward each `time_step_minutes` as:
+
+```
+position(t+1) = position(t)
+    + current-driven advection         [current_fn(lon, lat, t, depth)]
+    + windage x wind                   [wind_fn x windage_fraction x regime multiplier]
+    + stochastic horizontal diffusion  [N(0, sqrt(2 x diffusion_m2_s x dt)) per axis]
+    + settling / deposition            [probabilistic, depth-scaled]
+    + reflection off the coastline     [rejected step + probabilistic beaching]
+```
+
+`transport_regime` (`hypopycnal`/`hyperpycnal`) toggles two things at once, per Katz et
+al. (2015): hyperpycnal (bottom-hugging) flow zeroes the windage multiplier (decoupled
+from wind-driven surface drift) and treats the particle as already near the bed for
+settling purposes. Contours are peak-normalized kernel-density levels of the particle
+cloud at each requested timestep (`kernel_density_contours`) — a **relative density**,
+explicitly not a calibrated arrival probability.
+
+**Currents.** `AQ-2016-10-28` consults a real, offline-cached HYCOM `GLBu0.08/expt_91.2`
+historical archive (`_current_fn_for_event` in `main.py`) — not a synthetic stand-in.
+Any other `event_id` with no cached archive falls back honestly to
+`ConstantCurrentField(0, 0)`; `caveats.particle_engine_forcing()` states which of the
+two was used on every single response, so a caller never has to guess.
+
+**Say this precisely, not more than this:** "consults a real archive" is not the same
+claim as "visibly advects on it," and for this project's own outlets it usually is not
+the same result. At `AQ-O01` **and** `AQ-O02` — the second is the outlet this card's own
+live-verification evidence uses — the ~9 km HYCOM cell under the release point reads
+NaN u/v (masked as land), so `simulate()` correctly falls back to zero current there per
+its documented `nan_to_num` rule. Measured directly: tracking that `AQ-O02` run's
+contour centroids across all six reported timesteps shows **no coherent directional
+drift** — displacement from the release point wobbles non-monotonically within roughly
+100 m at every density level, the signature of a random walk (diffusion), not of
+current-driven advection. The response is honest about this (see the `contours` caveat
+quoted in `docs/HANDOFF_abd_2026-08-06.md` §2.5) — the point here is that a reader of
+just the headline numbers (`is_stub: false`, a real archive named in `provenance`)
+would not learn it without reading the caveats array too. Treat "the plume visibly
+moves with the current" as unverified for both demo outlets at this event's horizon
+until a release point that lands on a resolved cell is used, or the current grid is
+swapped for a finer one.
+
+**Calibration.** `scripts/28_calibrate_plume_engine.py` ran a 72-trial grid search
+(diffusion × windage × settling × regime) against the Kalman et al. (2025) mooring
+record, scoring on timing only — arrival, duration, peak — and never a spatial metric.
+No IoU/Dice/centroid distance exists or ever will for this event;
+`backend/src/models/backtest_metrics.py`'s `assert_spatial_metrics_allowed` refuses to
+compute one (see "Known limitations" #5 below). Winner: `hypopycnal`, diffusion
+`5.0 m²/s`, settling `0.1 mm/s`,
+arrival error `-6.83h`, duration error `+4.25h`, peak-timing error `-22.54h` (large, but
+measured against a documented onset/clear-midpoint placeholder, not a digitized true
+peak). Wind forcing is still `ConstantWindField(0,0)` — no historical wind source is in
+this repo yet — so the winning `windage_fraction: 0.0` is a tie-break artifact, not a
+calibrated value. Full numbers in `data/models/plume_calibration.json`, reported
+honestly on screen in `ValidationPanel.tsx`'s "Transport-timing fit" section, not just
+in a file.
 
 Note: `docs/pitch_limitations.md` §9 records that satellite validation of the 2016
 plume found nothing, for a documented physical reason — the in-situ mooring shows the
 signal lasted ~31 h and both usable satellite passes were 2.5–3.5 days later.
+
+### Verification
+
+`tests/test_particle_engine.py` (23 checks) plus the live-endpoint checks folded into
+`tests/test_api_contracts.py` — 475 passed / 51 skipped / 1 xfailed across the full
+suite as of 6 Aug 2026. Live-curled against a container-equivalent process
+(`uvicorn api.main:app --app-dir backend/src`), not inferred from source reading alone.
+
+### Known limitations
+
+1. **One demo event has real currents; every other event degrades to a documented
+   placeholder.** Only `AQ-2016-10-28` has a cached HYCOM archive baked ahead of time.
+2. **Wind forcing is a placeholder for every event**, calibrated or not — `windage`
+   numbers should not be read as scientifically fitted until real historical wind
+   (ERA5-Land u10/v10) is wired in.
+3. **The current grid can mask a release point as land — at every outlet tested so
+   far, not just one.** The ~9 km HYCOM cell under the release point reads NaN u/v
+   (treated as zero current per `simulate()`'s own `nan_to_num` rule) at `AQ-O01`,
+   `AQ-O02`, `AQ-O03` and `AQ-O05` alike for this event. Confirmed by measurement, not
+   just by the caveat text: `AQ-O02`'s contour centroids show no coherent directional
+   drift across any of the six reported timesteps, only non-monotonic ~15–100 m wobble
+   at every density level — the signature of diffusion, not advection. Transport stays
+   diffusion/settling-only until the plume drifts onto a resolved cell, which does not
+   happen within this event's 24 h horizon at the demonstrated diffusion rate. Surfaced
+   as a response caveat, not silently absorbed — but a reader of only the headline
+   fields (`is_stub`, `model_version`, `provenance`) will miss it unless the `caveats`
+   array is read too.
+4. **Peak-timing calibration error is measured against a proxy, not an observation** —
+   the mooring's 5-minute series gives onset/clear directly but not a digitized peak
+   timestamp, so peak timing is scored against the onset–clear midpoint.
+5. **No spatial (IoU/Dice/centroid) validation exists or ever will for this event** —
+   the Sentinel-2/Landsat-8 extraction returned a final NO-GO (`docs/event_audit.md`
+   §3, `docs/pitch_limitations.md` §9); the codebase actively refuses to compute one
+   (`backend/src/models/backtest_metrics.py`'s `assert_spatial_metrics_allowed`).
 
 ---
 
