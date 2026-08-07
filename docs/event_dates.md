@@ -211,11 +211,11 @@ Explicitly:
 
 ```
 wettest_3h_window_utc:
-  start : 2016-10-28T02:30:00Z
-  end   : 2016-10-28T05:30:00Z
-  max_rain_3h_mm : 11.715
-  lat : 29.650
-  lon : 35.050
+  start : 2016-10-28T03:00:00Z
+  end   : 2016-10-28T06:00:00Z
+  max_rain_3h_mm : 15.415
+  lat : 29.950
+  lon : 35.450
 ```
 
 > **Derived from NASA GPM IMERG V07 over the Aqaba `DOWNLOAD_BBOX`, not
@@ -224,8 +224,21 @@ wettest_3h_window_utc:
 The paper does not give a timestamped intensity maximum in text — it reports
 duration, the 18-hour/82 % concentration, and totals. This window was computed
 from the half-hourly series across the full literature-constrained scan window
-(156 granules, 100 % complete) using trailing rolling 3-hour sums with
+(240 granules, 100 % complete) using trailing rolling 3-hour sums with
 `min_periods = 6` and NaN propagation, no interpolation.
+
+**Recomputed 2026-08-07 (Phase 5, A1.1) — the table below is not the same
+numbers as before, on purpose.** The prior version of this table (1h 6.760,
+3h 11.715, 6h 12.990, 24h 20.545) was computed over the **retired coastal
+box** (`34.80, 29.25, 35.15, 29.70`), same as the ordering anomaly below, and
+was never re-pulled over the corrected `TERRAIN_AOI` at the cell level — only
+the catchment-aggregated numbers a few paragraphs down got that fix. Recomputed
+now over the real `TERRAIN_AOI` (`34.75, 29.15, 35.94, 30.30`, 13×13 cells at
+0.1°) and a scan window extended to `2016-10-30T00:00:00Z` (was
+`2016-10-28T06:00:00Z` — see caveat 2 below, now resolved). The new 1 h peak
+cell (lat 29.850, lon 34.750) sits on the AOI's own west edge, outside the
+retired box's coverage entirely, which is most of why the numbers moved, not a
+computation change.
 
 Produced by `scripts/process_imerg_oct2016_event.py`; full output in
 `data/processed/events/AQ-2016-10-28_summary.json`.
@@ -234,13 +247,13 @@ Other derived maxima over the same grid:
 
 | Window | Max (mm) | UTC span | Cell |
 |---|---|---|---|
-| 1 h | 6.760 | 2016-10-28T02:00Z → 03:00Z | 29.450, 35.050 |
-| **3 h** | **11.715** | **2016-10-28T02:30Z → 05:30Z** | **29.650, 35.050** |
-| 6 h | 12.990 | 2016-10-28T00:00Z → 06:00Z | 29.650, 35.050 |
-| 24 h | 20.545 | 2016-10-27T05:30Z → 2016-10-28T05:30Z | 29.450, 34.850 |
+| 1 h | 9.645 | 2016-10-27T14:30Z → 15:30Z | 29.850, 34.750 |
+| **3 h** | **15.415** | **2016-10-28T03:00Z → 06:00Z** | **29.950, 35.450** |
+| 6 h | 18.425 | 2016-10-28T01:00Z → 07:00Z | 29.950, 35.450 |
+| 24 h | 23.090 | 2016-10-27T07:00Z → 2016-10-28T07:00Z | 29.950, 35.450 |
 
-Per-cell 78-hour totals range 16.09–20.82 mm (mean 18.58 mm). Peak half-hourly
-intensity over the box is 9.79 mm/hr.
+Per-cell 120-hour totals (full extended scan window) range 10.63–24.29 mm
+(mean 16.98 mm). Peak half-hourly intensity over the box is 15.22 mm/hr.
 
 #### ⚠️ Two caveats before using this window scientifically
 
@@ -285,14 +298,16 @@ Full output: `data/processed/events/ordering_anomaly_analysis.json`.
 about this event, provided they are made over catchments. It does **not**
 license the old box's numbers for anything.
 
-**2. The 6 h and 24 h maxima abut the scan-window edge.** The 6 h maximum's
-window ends exactly at `06:00:00Z`, the last instant in the scan window, and
-its label sits on the final time step. Rainfall is still non-zero at the last
-granule (0.42 mm/hr), so a longer window could yield a larger 6 h or 24 h total.
-**The 1 h and 3 h maxima are safe** — they peak at indices 149–154 with rates
-clearly declining afterwards (9.43 → 0.42 mm/hr), so the intensity peak is
-genuinely enclosed. If 6 h or 24 h figures matter, extend the scan window past
-`2016-10-28T06:00:00Z` and recompute.
+**2. ~~The 6 h and 24 h maxima abut the scan-window edge.~~ RESOLVED
+2026-08-07 (Phase 5, A1.1).** The old 6 h maximum's window ended exactly at
+`06:00:00Z`, the last instant in the old scan window, with rainfall still
+non-zero at the last granule (0.42 mm/hr) — a longer window could have yielded
+a larger 6 h or 24 h total, and there was no way to rule that out from inside
+the old window. Extended the scan window to `2016-10-30T00:00:00Z` (94.5 h
+past the old edge) and recomputed: the new 6 h and 24 h maxima (18.425 mm,
+23.090 mm above) both land well inside the window, not at either edge, and
+the same recomputation is what produced the cell-level table above — this
+was the single change that fixed both open items in this section at once.
 
 ---
 
@@ -339,10 +354,10 @@ When resolved, note that **February is outside DST**: Israel is on IST
 | Peak suspended sediment `2.18 g/L` · salinity minimum `38.75 ‰` · background mean `40.53 ‰` · anomaly `19σ` | **Directly reported by the paper** |
 | Mooring coordinate `34.98151, 29.53799 ± 1.5 km` | **Derived** — see `docs/mooring_coordinate_derivation.md`; not a reported coordinate |
 | Canonical ID `AQ-2016-10-28` | **Project convention** — UTC flood-arrival date |
-| Scan window `2016-10-25T00:00:00Z → 2016-10-28T06:00:00Z` | **Engineering analysis window** — conservative, padded around the ≈66 h duration |
+| Scan window `2016-10-25T00:00:00Z → 2016-10-30T00:00:00Z` | **Engineering analysis window** — extended 2026-08-07 (Phase 5, A1.1), was `→ 2016-10-28T06:00:00Z` |
 | Smoke-test window `2016-10-27T03:00:00Z → 2016-10-27T05:59:59Z` | **Engineering analysis window** — pipeline testing only |
-| `wettest_3h_window_utc` = `2016-10-28T02:30:00Z → 05:30:00Z`, 11.715 mm | **Derived from IMERG** (Oct 2016; not paper-reported) |
-| `wettest_1h / 6h / 24h` maxima | **Derived from IMERG** (6 h and 24 h edge-truncated) |
+| `wettest_3h_window_utc` = `2016-10-28T03:00:00Z → 06:00:00Z`, 15.415 mm | **Derived from IMERG**, recomputed 2026-08-07 over the corrected AOI + extended window (was 11.715 mm over the retired box) |
+| `wettest_1h / 6h / 24h` maxima | **Derived from IMERG**, recomputed 2026-08-07 — no longer edge-truncated |
 | February 2013 timing | **Unresolved** — pending Katz et al. (2015) |
 
 ---
@@ -392,8 +407,22 @@ primary_event:
   engineering:
     imerg_scan_window_utc:
       start: 2016-10-25T00:00:00Z
-      end: 2016-10-28T06:00:00Z
-      note: conservative padded window covering the reported ~66 h event
+      end: 2016-10-30T00:00:00Z
+      note: >-
+        conservative padded window covering the reported ~66 h event.
+        Extended 2026-08-07 (Phase 5, A1.1) from a 2016-10-28T06:00:00Z end --
+        the old edge sat exactly where wettest_6h/24h_window_utc were computed,
+        so a genuine truncation could not be ruled out. Rain physically ends
+        ~2016-10-27T21:00Z (rain_end_to_arrival_hours: 3 before the 00:00Z
+        arrival), so this is generous margin past the last rain, not an
+        arbitrary widening. Set to 2016-10-30T00:00:00Z specifically (not
+        2016-10-29T00:00:00Z, the first value tried) to match the raw granule
+        set that scripts/sweep_imerg_halfhourly.py's own AQ-2016-10-28 window
+        (2016-10-27..2016-10-29T23:30Z, from the 675-event catalogue sweep)
+        already has on disk in the same directory -- the two scripts share
+        data/raw/imerg/events/AQ-2016-10-28/, so this file's window must be a
+        superset of that one's, not an independently-chosen value that leaves
+        the directory holding more granules than this window expects.
     smoke_test_3h_window_utc:
       start: 2016-10-27T03:00:00Z
       end: 2016-10-27T05:59:59Z
@@ -402,27 +431,38 @@ primary_event:
   derived_from_imerg:
     # Derived from NASA GPM IMERG V07 over the Aqaba DOWNLOAD_BBOX,
     # not directly reported by the paper.
+    # Recomputed 2026-08-07 (Phase 5, A1.1): corrected TERRAIN_AOI (the prior
+    # values were the retired coastal box) and an extended scan window (no
+    # edge truncation). See the "Wettest 3-hour window" section prose above
+    # for the full before/after and why the numbers moved.
     wettest_3h_window_utc:
-      start: 2016-10-28T02:30:00Z
-      end: 2016-10-28T05:30:00Z
-      max_rain_3h_mm: 11.715
-      lat: 29.650
-      lon: 35.050
-    wettest_1h_window_utc:
-      start: 2016-10-28T02:00:00Z
-      end: 2016-10-28T03:00:00Z
-      max_rain_1h_mm: 6.760
-    wettest_6h_window_utc:
-      start: 2016-10-28T00:00:00Z
+      start: 2016-10-28T03:00:00Z
       end: 2016-10-28T06:00:00Z
-      max_rain_6h_mm: 12.990
-      caveat: window ends at the scan-window edge; may be truncated
+      max_rain_3h_mm: 15.415
+      lat: 29.950
+      lon: 35.450
+    wettest_1h_window_utc:
+      start: 2016-10-27T14:30:00Z
+      end: 2016-10-27T15:30:00Z
+      max_rain_1h_mm: 9.645
+      lat: 29.850
+      lon: 34.750
+    wettest_6h_window_utc:
+      start: 2016-10-28T01:00:00Z
+      end: 2016-10-28T07:00:00Z
+      max_rain_6h_mm: 18.425
+      lat: 29.950
+      lon: 35.450
+      caveat: none -- re-verified 2026-08-07 against a window extended to
+        2016-10-30T00:00:00Z; this window lands well inside it, not at either edge
     wettest_24h_window_utc:
-      start: 2016-10-27T05:30:00Z
-      end: 2016-10-28T05:30:00Z
-      max_rain_24h_mm: 20.545
-      caveat: window ends at the scan-window edge; may be truncated
-    granules_used: 156
+      start: 2016-10-27T07:00:00Z
+      end: 2016-10-28T07:00:00Z
+      max_rain_24h_mm: 23.090
+      lat: 29.950
+      lon: 35.450
+      caveat: none -- re-verified 2026-08-07, same as the 6h window above
+    granules_used: 240
     completeness_percent: 100.0
     produced_by: scripts/process_imerg_oct2016_event.py
     summary: data/processed/events/AQ-2016-10-28_summary.json
