@@ -49,6 +49,14 @@ first. Everything else on this list can slip a day; a live credential exposure c
 
 ## 1 · B1 — Automated Plume Segmentation Model
 
+**Flagged 7 Aug, not yet resolved — see `docs/HANDOFF_abd_2026-08-07_b1_data.md`.** The
+"one digit's worth of masks" assumption below doesn't hold: the real count is zero,
+confirmed by Abd's own final NO-GO verdict (`docs/event_audit.md` §3) — no satellite ever
+saw the anchor plume, for a physical reason (dispersed faster than either satellite's
+revisit gap), not a data-collection gap. `plume_segmentation.py`'s own docstring already
+documents why a trained segmenter isn't meaningful on this little data. Nothing below has
+been built pending a decision on whether B1's scope changes.
+
 **Model & data**
 
 - [ ] U-Net or a lightweight segmentation model, trained on the accumulated labelled
@@ -89,6 +97,13 @@ that in `docs/model_card.md`'s new B1 section, in the same words, not softened.
 
 ## 2 · B2 — Learned Transmission-Loss Model
 
+**Flagged 7 Aug, model half not built — see `docs/HANDOFF_abd_2026-08-07_b2_data.md`.**
+No training data exists: the two Negev/literature numbers in `sediment_proxy.py` are
+fixed ranges, not a dataset of catchment features paired with measured loss, for any
+site. Same shape as B1's finding, same reason nothing's been trained.
+**`transmission_loss_basis` is done** — see Backend & storage below, shipped
+unconditionally as `"negev_proxy"` since "learned" has no implementation.
+
 **Model & data**
 
 - [ ] Regression model predicting per-catchment transmission loss from terrain slope,
@@ -99,13 +114,14 @@ that in `docs/model_card.md`'s new B1 section, in the same words, not softened.
 
 **Backend & storage**
 
-- [ ] New field on the sediment-proxy response: `transmission_loss_basis: "learned" |
+- [x] New field on the sediment-proxy response: `transmission_loss_basis: "learned" |
       "negev_proxy"` — the response is always honest about which value is in use.
       This slots next to the existing `transmission_loss` field
       (`backend/src/api/schemas.py`) — add the basis flag there, don't invent a
-      parallel field.
-- [ ] Feeds directly into the exposure engine's `formula_terms`, per Standing Law
-      rule 10 — the basis flag travels with the number, not just in a log.
+      parallel field. **Done 7 Aug** — unconditionally `"negev_proxy"` today.
+- [x] Feeds directly into the exposure engine's `formula_terms`, per Standing Law
+      rule 10 — the basis flag travels with the number, not just in a log. **Done
+      7 Aug**, `exposure_calculate()`'s `formula_terms`.
 
 **Dashboard sub-features (for Ali to build)**
 
@@ -127,6 +143,12 @@ same slide.
 ---
 
 ## 3 · B3 — Cross-Site Transfer Learning
+
+**Out of scope, 7 Aug — see `docs/HANDOFF_abd_2026-08-07_b3_scope.md`.** The project's
+scope is Aqaba only, for now. B3 needs a real second site to fine-tune onto and test
+against; there isn't one. Not building a pipeline that "tests" against an invented
+bounding box — that isn't the real-site test the task asks for. Revisit if a second
+site becomes real scope.
 
 **Model & data**
 

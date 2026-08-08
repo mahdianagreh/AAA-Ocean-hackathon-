@@ -48,6 +48,11 @@ STUB_VERSION_ID = "STUB-no-model-trained"
 #: response alone. Kept as a string to avoid importing sediment_proxy here.
 SEDIMENT_ANCHOR = "AQ-2016-10-28 / AQ-C01 (~24,400 t)"
 
+#: Phase 5, B2. Mirrors sediment_proxy.TRANSMISSION_LOSS_BASIS - duplicated as
+#: a literal for the same reason as SEDIMENT_ANCHOR above, not because the two
+#: could drift independently. Unconditional: there is no "learned" path yet.
+TRANSMISSION_LOSS_BASIS = "negev_proxy"
+
 #: How many SHAP drivers the risk card shows.
 TOP_DRIVERS = 4
 
@@ -234,6 +239,7 @@ def _stub_response(df: pd.DataFrame) -> list[dict[str, Any]]:
             "sediment_class": "medium",
             "sediment_index": None,
             "transmission_loss": None,
+            "transmission_loss_basis": None,
         })
     return out
 
@@ -373,6 +379,7 @@ def predict(
             "sediment_basis": (str(sed.class_basis.iloc[i]) if sed is not None
                                else unanchored_note),
             "transmission_loss": float(sediment.params.transmission_loss),
+            "transmission_loss_basis": TRANSMISSION_LOSS_BASIS,
         })
     return results
 

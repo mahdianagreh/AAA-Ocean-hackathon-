@@ -854,6 +854,7 @@ def runoff_predict(req: RunoffRequest):
             feature_attributions_status=feature_attributions_status,
             rainfall_multiplier=req.rainfall_multiplier,
             transmission_loss=real.get("transmission_loss"),
+            transmission_loss_basis=real.get("transmission_loss_basis"),
             provenance=[
                 Provenance(kind="derived",
                            detail=f"Mahdi's runoff model {real.get('model_version_id')}"),
@@ -1245,6 +1246,11 @@ def exposure_calculate(req: ExposureRequest):
     # from a placeholder must be distinguishable later from one that did not.
     cid = req.catchment_id or outlet.get("catchment_id")
     intensity, intensity_source = 0.5, "default 0.5 (no catchment supplied)"
+    # Phase 5, B2: which source produced the transmission_loss folded into this
+    # intensity number. None until a real path sets it below — never defaulted to
+    # "negev_proxy" here, so a run that never reached the real model doesn't claim
+    # a basis for a number it didn't compute.
+    transmission_loss_basis = None
     # Per-request model_versions: MODEL_VERSIONS is the static fallback, but when
     # a real trained artifact actually produced the intensity number — whether via
     # the training-row path below or the runoff_predict() fallback — that real
@@ -1263,6 +1269,7 @@ def exposure_calculate(req: ExposureRequest):
                     transmission_loss_override=req.transmission_loss_override)
                 if real.get("model_version_id"):
                     run_model_versions["runoff_model"] = real["model_version_id"]
+                transmission_loss_basis = real.get("transmission_loss_basis")
                 index = real.get("sediment_index")
                 anchor_index = real.get("anchor_index_for_normalisation")
                 if index is not None and anchor_index:
@@ -1292,6 +1299,7 @@ def exposure_calculate(req: ExposureRequest):
                     f"sediment anchor, but runoff model {pred.model_version} at "
                     f"30 mm/3h for {cid} was used for intensity")
                 run_model_versions["runoff_model"] = pred.model_version
+                transmission_loss_basis = pred.transmission_loss_basis
 
     # Confidence: real per-catchment GEFS ensemble agreement (Nizar's forecast
     # pipeline, via Karam's own p99 climatology as the exceedance threshold) times
@@ -1365,6 +1373,11 @@ def exposure_calculate(req: ExposureRequest):
 
         summary["formula_terms"].update({
             "relative_sediment_intensity_source": intensity_source,
+            # Phase 5, B2 — Standing Law rule 10: the basis travels with the number,
+            # not just in a log. None when no real path set relative_sediment_intensity
+            # at all; "negev_proxy" whenever it did, since "learned" has no
+            # implementation yet (docs/HANDOFF_abd_2026-08-07_b2_data.md).
+            "transmission_loss_basis": transmission_loss_basis,
             "confidence_adjustment_reason": confidence_adjustment_reason,
             # Components, not just the composed sentence -- a sentence can't be
             # translated cleanly, components can (docs/OPEN-ISSUES.md #4).
