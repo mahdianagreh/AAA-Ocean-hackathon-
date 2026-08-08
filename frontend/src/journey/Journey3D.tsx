@@ -16,7 +16,17 @@ import { transportPaint, accumulationPaint } from './layers/plume';
 import { reefRiskColorExpression, reefStrokeExpression } from './layers/reef';
 import { makeRainSeeds, rainFrameFeatures, RAIN_POOL_SIZE, type RainSeed } from './layers/rain';
 import { runoffFeatures, runoffDashArray } from './layers/runoff';
+import { TERRAIN_EXAGGERATION } from './layers/terrain';
+import { loadImageryCorners, IMAGE_URL } from './layers/imagery';
 import type { JourneyPhase } from './constants';
+
+//: The same Esri World Imagery this project's 2D plume map already ships in
+//: production output (backend/src/rendering/plume_map.py), same attribution
+//: convention (a documented fallback string, not a live network fetch of the
+//: attribution text) — see docs/data_dictionary.md's Esri entry and
+//: docs/plume_imagery_decision.md for why real imagery is the deliberate
+//: choice here, not a generated basemap.
+const IMAGERY_ATTRIBUTION = 'Esri, Maxar, Earthstar Geographics, and the GIS User Community';
 
 /** The 3D Journey (feature 14). Rainfall -> wadi -> outlet -> plume -> reef,
  *  the concept doc's own chain, flown through as one real, data-driven,
@@ -158,14 +168,31 @@ export function Journey3D() {
       new AttributionControl({
         compact: true,
         customAttribution: [
-          'Bathymetry/terrain: GEBCO / GMRT (substituted)',
+          'Terrain: Copernicus DEM GLO-30 (land) + GMRT bathymetry (sea, GEBCO stand-in)',
+          `Imagery: ${IMAGERY_ATTRIBUTION}`,
           'Buildings, wadis © OpenStreetMap contributors (ODbL)',
           'Reef habitat © Allen Coral Atlas (CC BY 4.0)',
         ],
       }),
       'bottom-right',
     );
-    m.on('load', () => setMapReady(true));
+    m.on('load', () => {
+      m.setTerrain({ source: 'terrain', exaggeration: TERRAIN_EXAGGERATION });
+      setMapReady(true);
+      // Async: the sidecar JSON carries the real image's corner bounds, so
+      // the `image` source can't be declared in the static style (journeyStyle.ts)
+      // the way every other source is — see layers/imagery.ts's own docstring.
+      // Resolves to null (degrade honestly, no drape) if the baked file was
+      // never copied into frontend/public/basemap-raster/ in this environment.
+      void loadImageryCorners().then((corners) => {
+        if (!corners || !map.current) return;
+        map.current.addSource('imagery', { type: 'image', url: IMAGE_URL, coordinates: corners.coordinates });
+        map.current.addLayer(
+          { id: 'imagery-raster', type: 'raster', source: 'imagery', paint: { 'raster-opacity': 1 } },
+          'terrain-hillshade',
+        );
+      });
+    });
     map.current = m;
     // Dev/specimen only — same pattern as map/MapView.tsx's own __map handle,
     // used there to prove RTL labels were actually placed, not just requested.
@@ -368,7 +395,7 @@ export function Journey3D() {
           mm: fixture.rainfall?.peak_mm,
           date: fixture.rainfall?.peak_date_utc?.slice(0, 10),
         })}</p>
-        <p>{t('journey.realismCaveat', { exaggeration: 'sqrt(depth)×15' })}</p>
+        <p>{t('journey.realismCaveat', { exaggeration: TERRAIN_EXAGGERATION })}</p>
         {fixture.current_masking_caveat ? (
           <p className="text-risk-high-on">{fixture.current_masking_caveat}</p>
         ) : null}

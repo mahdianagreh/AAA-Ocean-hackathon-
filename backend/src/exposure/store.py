@@ -32,12 +32,12 @@ from __future__ import annotations
 
 import json
 import os
-import secrets
 import sqlite3
-import time
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+
+from lib.ulid import new_ulid as _new_ulid
 
 _DEFAULT = Path(__file__).resolve().parents[3] / "data" / "outputs" / "exposure_runs.sqlite"
 
@@ -86,34 +86,6 @@ def _conn():
         con.commit()
     finally:
         con.close()
-
-
-# Crockford base32: excludes I, L, O, U to avoid transcription confusion.
-_CROCKFORD = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
-
-
-def _new_ulid() -> str:
-    """A real ULID: 48-bit millisecond timestamp + 80-bit randomness, 26 chars.
-
-    No dependency added for this — it is ~10 lines of bit-shifting, and the run-id
-    format is stable enough (tasks/00-contracts.md: `sim_{ULID}`) that pulling in a
-    library for it is not worth the extra surface on the api image, which is kept
-    deliberately minimal (see main.py's "no geospatial stack" note for the same
-    reasoning applied elsewhere).
-
-    Lexicographic sort order matches creation order at millisecond granularity,
-    because the timestamp occupies the leading characters — the property
-    `new_run_id()`'s old docstring called "sortable-ish" without it actually being
-    guaranteed. Two runs in the same millisecond are not ordered relative to each
-    other (their random suffix decides), which matches the standard ULID spec and
-    is fine here: nothing orders runs at sub-millisecond precision.
-    """
-    ts_ms = int(time.time() * 1000) & ((1 << 48) - 1)
-    value = (ts_ms << 80) | secrets.randbits(80)  # 128 significant bits
-    # 26 chars * 5 bits = 130 bits; the top 2 bits are always 0 since value has
-    # only 128 significant bits — Python's arbitrary-width ints yield 0 for shifts
-    # past the top, so no explicit padding is needed.
-    return "".join(_CROCKFORD[(value >> (5 * (25 - i))) & 0x1F] for i in range(26))
 
 
 def new_run_id() -> str:

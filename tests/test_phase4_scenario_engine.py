@@ -215,6 +215,38 @@ def test_default_transmission_loss_is_the_anchored_value_not_none():
     assert r["transmission_loss"] == 0.525
 
 
+def test_exposure_calculate_echoes_transmission_loss_too():
+    """A3.4 close-out (Phase 5): runoff_predict has always echoed
+    transmission_loss structurally; exposure_calculate applied
+    transmission_loss_override to the real feature row but silently dropped the
+    echo — the only way to know what value was actually used was to also call
+    /runoff/predict separately. Fixed in main.py's exposure_calculate: the same
+    value now lands in formula_terms["transmission_loss"], reusing
+    RunoffPrediction's own real, computed value rather than re-deriving one."""
+    from api.main import PREFIX
+
+    client = _client()
+    r = client.post(f"{PREFIX}/exposure/calculate",
+                    json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O02",
+                          "transmission_loss_override": 0.3}).json()
+    assert r["results"], "expected at least one reached reef zone for this fixture"
+    for result in r["results"]:
+        assert result["formula_terms"]["transmission_loss"] == 0.3
+
+
+def test_exposure_calculate_transmission_loss_default_is_anchored_not_none():
+    """Same fixed field, default (no override) case — must be the anchored
+    0.525, not silently absent, matching /runoff/predict's own default."""
+    from api.main import PREFIX
+
+    client = _client()
+    r = client.post(f"{PREFIX}/exposure/calculate",
+                    json={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O02"}).json()
+    assert r["results"]
+    for result in r["results"]:
+        assert result["formula_terms"]["transmission_loss"] == 0.525
+
+
 def test_runoff_predict_does_not_crash_on_the_anchor_storm():
     """The exact regression: a real training-set row makes predict_one() return a
     raw sediment_index in the thousands (145,434 for the anchor storm), and

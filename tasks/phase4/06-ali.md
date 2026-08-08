@@ -33,6 +33,41 @@
 > code is now one file per concern under `frontend/src/journey/layers/` rather
 > than one growing file, if you're extending any single piece of it. Full detail
 > in `05-abd.md` §1a's "Upgrade" note and `docs/HANDOFF_abd_2026-08-06.md` §5.
+>
+> **Third update, 7 Aug — the terrain/bathymetry redundancy the second update
+> flagged "worth checking" is now moot: it's gone.** `relief_bands()` and
+> `frontend/src/journey/layers/relief.ts` (the banded fill-extrusion relief) are
+> deleted. The 3D Journey now runs on real, continuous MapLibre terrain — a real
+> Copernicus DEM merged with the real bathymetry, baked into a Terrain-RGB tile
+> pyramid, applied with native `map.setTerrain()` — plus the same real Esri
+> imagery the 2D map already uses, draped directly on the mesh. Full provenance
+> in `docs/data_dictionary.md` §9, build narrative in `05-abd.md` §1a's third
+> "Upgrade" note.
+>
+> **Two things worth knowing if you touch this feature (or any other 3D/terrain
+> surface) next:**
+> 1. `mahdi-3D-implementation-plan.md` is the team's own spec for this terrain
+>    approach — it surfaced mid-build here, independently written, and this
+>    upgrade reconciled with it rather than picking one over the other. Worth
+>    reading before starting a second terrain effort elsewhere in the app.
+> 2. The old sqrt-scaled height-budget constants (`BUILDINGS_BASE_M`,
+>    `REEF_BASE_M`, `PLUME_BASE_M`, `RELIEF_HEIGHT_SCALE`) are gone from
+>    `constants.ts` — confirmed from MapLibre 6.1.0's own installed source that
+>    real terrain mode already adds the real ground/seafloor elevation to
+>    `fill-extrusion-base`/`-height`, so `base: 0` is correct now, not an
+>    abstract stacked offset. If you extrude anything else onto this terrain,
+>    you very likely want `base: 0` too, not a new clearance constant.
+>
+> Verification is now a committed Playwright spec, not just a one-off check —
+> `frontend/tests/journey3d.spec.ts`. Also flagging, since it surfaced while
+> re-verifying this and isn't this file's area to fix:
+> `offline-arabic.spec.ts`'s "no external requests" test fails on unmodified
+> `main` (three real backend calls during a plain pan/zoom on the *main* 2D
+> map) — confirmed unrelated to the terrain work via `git stash` isolation.
+> Someone who owns the main map's data-fetching or that test should take a
+> look. **This upgrade is not pushed yet** — committed locally, held for review
+> per the user's own instruction, so none of it is on `origin/main` as of this
+> note.
 
 Read [`00-phase4-plan.md`](00-phase4-plan.md) first.
 
@@ -135,6 +170,14 @@ wiring landed, and a first pass of the plume-cloud portion got built along with 
 (`frontend/src/journey/`, real terrain relief + real extruded plume + real reef
 exposure). Functional, not a finished visual design — treat this row as "refine,"
 not "build from zero."
+
+**Superseded again, 7 Aug — the "real terrain relief" above is gone, not just
+refined.** See the third update note at the top of this file: real continuous
+MapLibre terrain (Copernicus DEM + bathymetry, `map.setTerrain()`) and a real
+Esri imagery drape replaced the banded relief entirely. If you pick this row up
+next, the visual-design work still open is on top of real terrain now, not
+banded blocks — check the third update note and `docs/data_dictionary.md` §9
+before assuming anything about the old relief system still applies.
 
 **What-If Scenario Presets (7) / Judge-Controlled Slider (15).** `ScenarioDrawer.tsx`
 exists but its own copy says "not a calibrated model" — accurate today, since it's not

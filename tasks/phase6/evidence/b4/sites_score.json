@@ -1,0 +1,99 @@
+{
+    "site_id": "site_01KZEZTT8WCXVWBJG8WQKRCQMJ",
+    "site_name": "Phase6 live check",
+    "bbox": [
+        34.9,
+        29.45,
+        35.0,
+        29.55
+    ],
+    "criteria": [
+        {
+            "criterion": "C1",
+            "score": 2.0,
+            "status": "scored",
+            "evidence": [
+                {
+                    "source_file": "data/processed/vectors/osm_aqaba.gpkg",
+                    "section": "drainage_features layer, real clip to the requested box",
+                    "excerpt": "8/11 drainage features in this box are tagged intermittent=yes (73%)",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C2",
+            "score": 1.0,
+            "status": "scored",
+            "evidence": [
+                {
+                    "source_file": "data/processed/features/catchment_rainfall_climatology.parquet",
+                    "section": "catchments ['AQ-C01', 'AQ-C02']",
+                    "excerpt": "wet on 2.6% of days; the wettest 1% of days are 1.3x a typical wet day (p99=2.65mm, p50_wet=2.07mm)",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C3",
+            "score": 1.0,
+            "status": "scored",
+            "evidence": [
+                {
+                    "source_file": "data/processed/vectors/reef_zones.gpkg",
+                    "section": "nearest reef zone, real projected distance",
+                    "excerpt": "3628 m from the box centroid to the nearest named reef zone",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C4",
+            "score": 0.0,
+            "status": "scored",
+            "evidence": [
+                {
+                    "source_file": "data/processed/bathymetry/depth_utm36n.tif",
+                    "section": "real depth sample within the box",
+                    "excerpt": "depth range 1092 m across 44550 sampled cells (narrow range is the shallow-basin proxy)",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C5",
+            "score": 2.0,
+            "status": "scored",
+            "evidence": [
+                {
+                    "source_file": "data/processed/vectors/osm_aqaba.gpkg",
+                    "section": "buildings layer, real clip to the requested box",
+                    "excerpt": "459 real OSM building footprints inside this box",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C6",
+            "score": null,
+            "status": "insufficient_data",
+            "evidence": [
+                {
+                    "source_file": "docs/data_dictionary.md",
+                    "section": "C6",
+                    "excerpt": "whether other monitoring/gauge infrastructure exists elsewhere is a desk-research judgement, not a computable geospatial fact \u2014 no automated evidence source exists for this criterion, for any location",
+                    "score": null
+                }
+            ]
+        }
+    ],
+    "narrative": "C1 (Ephemeral, not perennial, drainage): 2.0/2 \u2014 8/11 drainage features in this box are tagged intermittent=yes (73%) (data/processed/vectors/osm_aqaba.gpkg). C2 (Rare but high-intensity rainfall): 1.0/2 \u2014 wet on 2.6% of days; the wettest 1% of days are 1.3x a typical wet day (p99=2.65mm, p50_wet=2.07mm) (data/processed/features/catchment_rainfall_climatology.parquet). C3 (Reef or seagrass within a few kilometres): 1.0/2 \u2014 3628 m from the box centroid to the nearest named reef zone (data/processed/vectors/reef_zones.gpkg). C4 (Narrow shelf or restricted-flushing basin): 0.0/2 \u2014 depth range 1092 m across 44550 sampled cells (narrow range is the shallow-basin proxy) (data/processed/bathymetry/depth_utm36n.tif). C5 (Development at the outlet): 2.0/2 \u2014 459 real OSM building footprints inside this box (data/processed/vectors/osm_aqaba.gpkg). C6 (Data-poor and unmonitored): insufficient data \u2014 whether other monitoring/gauge infrastructure exists elsewhere is a desk-research judgement, not a computable geospatial fact \u2014 no automated evidence source exists for this criterion, for any location.",
+    "caveats": [
+        {
+            "field": "criteria",
+            "message": "This six-criterion rubric was built and tuned against exactly one site \u2014 Aqaba. A score for any other coordinate is the rubric's first real test, not a validated instrument.",
+            "severity": "warning",
+            "source": "tasks/phase5/04-pulga.md"
+        }
+    ]
+}

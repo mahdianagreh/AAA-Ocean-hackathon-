@@ -1,0 +1,42 @@
+File-level check of the mooring sensor data, independent of Pulga's /mooring API test.
+
+Files on disk:
+  data/processed/marine/mooring_target_AQ-2016-10-28.json  (the 5 measured fields)
+  data/raw/literature/kalman_et_al_2025_fulltext_ATC1.pdf  (the cited primary source, 1,413,395 bytes, 46 pages, valid PDF v1.7)
+
+Citation in the JSON: Kalman, A., Katz, T., Vincze, M., Longenecker, J., Mathalon, A.,
+Hill, P., and Goodman-Tchernov, B. (2025). Anatomy of a Flash Flood in a Hyperarid
+Environment. Natural Hazards and Earth System Sciences, 25, 3201-3219.
+DOI: 10.5194/nhess-25-3201-2025 (real, resolvable DOI format for this journal).
+
+Cross-checked the 5 "reported" magnitude fields against the actual extracted PDF text
+(`pdftotext`, plain and -layout modes) rather than trusting the JSON's own provenance
+tag on faith:
+
+  peak_suspended_sediment_g_l: 2.18   -> FOUND, PDF line 1866: "increased to as high as
+    2.18 g l-1 sediment concentration" and again at line 2932: "recorded (2.18 g/l) at
+    250 m offshore" -- matches both the value and the "250 m offshore" position note.
+  salinity_minimum_psu: 38.75          -> FOUND, PDF line 2756: "salinity at the moored
+    station was reduced to 38.75 ‰"
+  salinity_anomaly_delta_psu: -1.75    -> "1.75" occurs 8 times in the extracted text
+    (consistent with the anomaly being discussed in multiple places); not isolated to
+    one exact quoted sentence the way the two figures above were.
+  salinity_anomaly_sigma: 19           -> "19" occurs too often in a 46-page paper
+    (page numbers, other measurements, citation years) to isolate as a single
+    confirming sentence; not independently confirmed by this method either way.
+  sediment_mass_total_t: 24400         -> NOT FOUND. Neither "24,400" nor "24400" nor
+    "24.4" appears anywhere in the extracted text (plain or -layout mode, both
+    checked). docs/event_dates.md (this project's own single source of truth for
+    event data) attributes this exact figure to "mooring time series, Kalman et al.
+    (2025)" at dates_confirmed[0].sediment_mass_t -- so the project's own record
+    disagrees with what I could independently verify in the cited PDF's text.
+
+This is not being fixed or re-derived here, per this phase's own rule against fixing
+what you find while testing. Recorded exactly as observed: most likely explanation is
+that the figure sits in a table or figure image that doesn't extract as text (pdftotext
+is known to lose numbers embedded in rasterized figures/tables) -- but that is a
+plausible explanation, not a confirmation, and the gap between "the project's record
+says this traces to this paper" and "I could not find it in this paper's extractable
+text" is real either way. Worth a follow-up look (Phase 7 concern): open the PDF
+visually and check its tables/figures directly, or find whichever script/note
+originally sourced 24,400 t and confirm it by that path instead.

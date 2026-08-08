@@ -1,4 +1,4 @@
-import { BUILDINGS_BASE_M, type Palette } from '../constants';
+import type { Palette } from '../constants';
 
 /** Real OSM building footprints — `buildings.geojson`
  *  (scripts/frontend_basemap.py's `buildings()`), clipped to a small buffer
@@ -8,9 +8,11 @@ import { BUILDINGS_BASE_M, type Palette } from '../constants';
  *  data carries which for every feature (`levels` is the real tag value or the
  *  default, never silently blended).
  *
- *  Based `BUILDINGS_BASE_M` above ground rather than at 0 so a building whose
- *  footprint falls on a taller coastal relief band is never rendered *inside*
- *  that band — see constants.ts's stacking-order docstring.
+ *  Base is `0` — with real terrain active (layers/terrain.ts), MapLibre reads
+ *  that as the actual ground elevation under each building's own footprint,
+ *  not sea level, so a building on the port strip and one on the inland slope
+ *  both sit correctly on the real DEM surface without a manual clearance
+ *  band.
  */
 
 const url = (name: string) => `${import.meta.env.BASE_URL}basemap/${name}.geojson`;
@@ -27,12 +29,8 @@ export function buildingsFragment(c: Palette) {
         source: 'buildings',
         paint: {
           'fill-extrusion-color': c.surface_2,
-          'fill-extrusion-base': BUILDINGS_BASE_M,
-          'fill-extrusion-height': [
-            '+',
-            BUILDINGS_BASE_M,
-            ['coalesce', ['get', 'height_m'], 6],
-          ] as unknown as number,
+          'fill-extrusion-base': 0,
+          'fill-extrusion-height': ['coalesce', ['get', 'height_m'], 6] as unknown as number,
           'fill-extrusion-opacity': 0.9,
         },
       },

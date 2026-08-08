@@ -1,0 +1,99 @@
+{
+    "site_id": "site_01KZEZTTC22NPASE54V4WEJABB",
+    "site_name": null,
+    "bbox": [
+        -30.0,
+        0.0,
+        -29.9,
+        0.1
+    ],
+    "criteria": [
+        {
+            "criterion": "C1",
+            "score": null,
+            "status": "insufficient_data",
+            "evidence": [
+                {
+                    "source_file": "docs/data_dictionary.md",
+                    "section": "C1",
+                    "excerpt": "no OSM drainage-feature coverage for this box",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C2",
+            "score": null,
+            "status": "insufficient_data",
+            "evidence": [
+                {
+                    "source_file": "docs/data_dictionary.md",
+                    "section": "C2",
+                    "excerpt": "no per-catchment rainfall climatology overlaps this box",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C3",
+            "score": 0.0,
+            "status": "scored",
+            "evidence": [
+                {
+                    "source_file": "data/processed/vectors/reef_zones.gpkg",
+                    "section": "nearest reef zone, real projected distance",
+                    "excerpt": "9852359 m from the box centroid to the nearest named reef zone",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C4",
+            "score": null,
+            "status": "insufficient_data",
+            "evidence": [
+                {
+                    "source_file": "docs/data_dictionary.md",
+                    "section": "C4",
+                    "excerpt": "no bathymetry coverage for this box",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C5",
+            "score": null,
+            "status": "insufficient_data",
+            "evidence": [
+                {
+                    "source_file": "docs/data_dictionary.md",
+                    "section": "C5",
+                    "excerpt": "no OSM building-footprint coverage for this box",
+                    "score": null
+                }
+            ]
+        },
+        {
+            "criterion": "C6",
+            "score": null,
+            "status": "insufficient_data",
+            "evidence": [
+                {
+                    "source_file": "docs/data_dictionary.md",
+                    "section": "C6",
+                    "excerpt": "whether other monitoring/gauge infrastructure exists elsewhere is a desk-research judgement, not a computable geospatial fact \u2014 no automated evidence source exists for this criterion, for any location",
+                    "score": null
+                }
+            ]
+        }
+    ],
+    "narrative": "C1 (Ephemeral, not perennial, drainage): insufficient data \u2014 no OSM drainage-feature coverage for this box. C2 (Rare but high-intensity rainfall): insufficient data \u2014 no per-catchment rainfall climatology overlaps this box. C3 (Reef or seagrass within a few kilometres): 0.0/2 \u2014 9852359 m from the box centroid to the nearest named reef zone (data/processed/vectors/reef_zones.gpkg). C4 (Narrow shelf or restricted-flushing basin): insufficient data \u2014 no bathymetry coverage for this box. C5 (Development at the outlet): insufficient data \u2014 no OSM building-footprint coverage for this box. C6 (Data-poor and unmonitored): insufficient data \u2014 whether other monitoring/gauge infrastructure exists elsewhere is a desk-research judgement, not a computable geospatial fact \u2014 no automated evidence source exists for this criterion, for any location.",
+    "caveats": [
+        {
+            "field": "criteria",
+            "message": "This six-criterion rubric was built and tuned against exactly one site \u2014 Aqaba. A score for any other coordinate is the rubric's first real test, not a validated instrument.",
+            "severity": "warning",
+            "source": "tasks/phase5/04-pulga.md"
+        }
+    ]
+}

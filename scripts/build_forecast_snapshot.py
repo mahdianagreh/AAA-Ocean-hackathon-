@@ -72,6 +72,7 @@ def build_snapshot() -> dict:
 
         gefs_run_id = runs_by_model.get("gefs", {}).get("id")
         exceedance = []
+        anomalies = []
         if gefs_run_id:
             exceedance = [
                 _row_to_dict(r)
@@ -84,11 +85,27 @@ def build_snapshot() -> dict:
                     {"run_id": gefs_run_id},
                 ).mappings().all()
             ]
+            # B6 -- Live Anomaly Detection. Percentile-relative, not a z-score
+            # (catchment_rainfall_climatology only has percentiles) -- see
+            # backend/src/processing/anomaly_detection.py's docstring.
+            anomalies = [
+                _row_to_dict(r)
+                for r in session.execute(
+                    text(
+                        "SELECT catchment_id, window_hours, rain_mm, climatology_p50, "
+                        "climatology_p99, climatology_p99_9, percentile_band, anomaly_score, "
+                        "is_anomalous, computed_at FROM forecast_anomalies "
+                        "WHERE forecast_run_id = :run_id ORDER BY catchment_id"
+                    ),
+                    {"run_id": gefs_run_id},
+                ).mappings().all()
+            ]
 
     return {
         "models": runs_by_model,
         "gfs_catchment_rainfall": gfs_rainfall,
         "gefs_exceedance": exceedance,
+        "gefs_anomalies": anomalies,
     }
 
 

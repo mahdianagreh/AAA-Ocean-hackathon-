@@ -226,7 +226,7 @@
     "reset": "Reset",
     "hourLabel": "+{{h}} h",
     "mapLabel": "3D scene: real terrain, bathymetry, buildings, rainfall, runoff, plume and reef exposure",
-    "realismCaveat": "Relief height is sqrt(real depth or elevation) × 15 for legibility at this camera distance, not a linear scale — sea depth is drawn as upward relief coloured by depth, not sunk below the surface. The plume's height encodes its real contour probability level, not a physical thickness. Rain and runoff are real geography with a stylised animation, not measured particle physics.",
+    "realismCaveat": "Terrain is a real, continuous mesh — Copernicus DEM (land) merged with GMRT bathymetry (sea) at their true coastline seam, draped with real satellite imagery, exaggerated {{exaggeration}}× for legibility at this camera distance. Buildings extrude to their real OSM height on that real ground. Reef zones and the plume sit at their true seafloor position with a small stylised raised height, not their real physical thickness — the plume's height also encodes its real contour probability level, not a physical thickness. Rain and runoff are real geography with a stylised animation, not measured particle physics.",
     "source": "Source:"
   },
   "validation": {

@@ -1,4 +1,4 @@
-import { PLUME_BASE_M, PLUME_HEIGHT_PER_LEVEL_M, type Palette } from '../constants';
+import { PLUME_HEIGHT_PER_LEVEL_M, type Palette } from '../constants';
 
 /** The plume — real particle-engine contours, one real timestep at a time
  *  (`journey3d.json`'s `frames`, from a live run of the same calibrated engine
@@ -17,6 +17,18 @@ import { PLUME_BASE_M, PLUME_HEIGHT_PER_LEVEL_M, type Palette } from '../constan
  *  "what a genuine volumetric cloud would still need"), so accumulation here
  *  is an honest visual convention over the real final-timestep shape, not a
  *  second real signal.
+ *
+ *  Base `0` + real terrain (layers/terrain.ts) anchors each contour ring to
+ *  the real seafloor depth at its own centroid, extruded upward by a small
+ *  probability-scaled amount (PLUME_HEIGHT_PER_LEVEL_M) — a reasonable
+ *  approximation for this event's shallow, nearshore release (also the
+ *  diffusion-dominated case documented in tasks/phase4/05-abd.md §1a), but
+ *  not a claim that sediment plumes physically hug the seafloor everywhere:
+ *  a genuinely deep-water release would need a surface-relative rendering
+ *  mode this project does not have. MapLibre also samples one elevation per
+ *  polygon (avoiding a per-vertex "tilted roof" artifact), so a contour ring
+ *  large enough to span a real depth change takes its centroid's depth for
+ *  the whole ring, not a per-point drape.
  */
 
 const EMPTY_FC = { type: 'FeatureCollection' as const, features: [] };
@@ -44,9 +56,9 @@ export function transportPaint(c?: Palette) {
       0.1, c?.data_modelled ?? '#8a9a7a',
       0.75, c?.accent ?? '#3a8a6a',
     ] as unknown as string,
-    'fill-extrusion-base': PLUME_BASE_M,
+    'fill-extrusion-base': 0,
     'fill-extrusion-height': [
-      '+', PLUME_BASE_M, ['*', ['get', 'probability'], PLUME_HEIGHT_PER_LEVEL_M],
+      '*', ['get', 'probability'], PLUME_HEIGHT_PER_LEVEL_M,
     ] as unknown as number,
     'fill-extrusion-opacity': 0.7,
   };
@@ -63,9 +75,9 @@ export function accumulationPaint(c: Palette) {
       0.1, c.riskStroke.moderate,
       0.75, c.riskStroke.high,
     ] as unknown as string,
-    'fill-extrusion-base': PLUME_BASE_M,
+    'fill-extrusion-base': 0,
     'fill-extrusion-height': [
-      '+', PLUME_BASE_M, ['*', ['get', 'probability'], PLUME_HEIGHT_PER_LEVEL_M * 1.3],
+      '*', ['get', 'probability'], PLUME_HEIGHT_PER_LEVEL_M * 1.3,
     ] as unknown as number,
     'fill-extrusion-opacity': 0.92,
   };

@@ -1,0 +1,30 @@
+[
+    {
+        "alert_id": "alert_sim_01KZEZQR4J8N6YXDJMCVHYQMRK_R-03",
+        "source_run_id": "sim_01KZEZQR4J8N6YXDJMCVHYQMRK",
+        "reef_zone_id": "R-03",
+        "risk_level": "minimal",
+        "risk_score": 4.40275218522904,
+        "issued_at": "2026-08-07T20:48:59.633821Z",
+        "arrival_window_hours": [
+            3.0,
+            24.0
+        ],
+        "headline_en": "Tourist Camp / north Marine Park boundary: minimal sediment exposure risk in 3\u201324 h",
+        "headline_ar": "Tourist Camp / north Marine Park boundary: \u062e\u0637\u0631 \u062a\u0639\u0631\u0651\u0636 \u0644\u0644\u0631\u0648\u0627\u0633\u0628 minimal \u062e\u0644\u0627\u0644 3\u201324 \u0633\u0627\u0639\u0629",
+        "caveats": [
+            {
+                "field": "risk_level",
+                "message": "Risk bands (0\u201320 minimal \u2026 80\u2013100 critical) are a reasonable default, not validated policy. Operational thresholds require marine-scientist input.",
+                "severity": "warning",
+                "source": "concept \u00a714.5"
+            },
+            {
+                "field": "sensitivity_weight",
+                "message": "This zone's sensitivity weight is a team placeholder (1.0), not a scientific assessment. Allen Coral Atlas maps habitat, not sensitivity; real weights require marine-scientist input.",
+                "severity": "warning",
+                "source": "docs/pitch_limitations.md \u00a75"
+            }
+        ]
+    }
+]

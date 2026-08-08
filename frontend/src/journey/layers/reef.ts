@@ -1,4 +1,4 @@
-import { REEF_BASE_M, REEF_HEIGHT_M, type Palette } from '../constants';
+import { REEF_HIGHLIGHT_HEIGHT_M, type Palette } from '../constants';
 
 /** Reef zones — real Allen Coral Atlas geometry, coloured by the real
  *  exposure result for this run. Neutral (one flat, uncoloured tone) until the
@@ -9,6 +9,11 @@ import { REEF_BASE_M, REEF_HEIGHT_M, type Palette } from '../constants';
  *  A zone the plume never reached carries no colour at reveal either (falls
  *  through the `match` to the same neutral tone) — never a fabricated
  *  zero-risk tint for "not measured."
+ *
+ *  Base `0` + real terrain (layers/terrain.ts) means this sits at the zone's
+ *  own true seafloor depth, not an abstract stacked height — see
+ *  REEF_HIGHLIGHT_HEIGHT_M's own docstring for why the extrusion is taller
+ *  than real coral relief.
  */
 
 const url = (name: string) => `${import.meta.env.BASE_URL}basemap/${name}.geojson`;
@@ -25,8 +30,8 @@ export function reefFragment(c: Palette) {
         source: 'reef',
         paint: {
           'fill-extrusion-color': c.ink_3,
-          'fill-extrusion-base': REEF_BASE_M,
-          'fill-extrusion-height': REEF_HEIGHT_M,
+          'fill-extrusion-base': 0,
+          'fill-extrusion-height': REEF_HIGHLIGHT_HEIGHT_M,
           'fill-extrusion-opacity': 0.95,
         },
       },

@@ -1,0 +1,37 @@
+Phase 6, p4-F — Multi-Source Weather Agreement
+Tested live against a freshly built reefshield-api-1 container (docker compose up -d --build api), 2026-08-08.
+
+Command:
+  curl -s -w "\nHTTP %{http_code}\n" http://localhost:8100/api/v1/currents/agreement
+
+Result:
+  Internal Server Error
+  HTTP 500
+
+Root cause (from `docker compose logs api`, full traceback below): main.py's
+currents_agreement() checks `hycom_path.exists()` and returns a clean 503 if it's
+missing, but has NO equivalent existence check for `copernicus_path` before calling
+oc.compare_hycom_vs_copernicus(lon, lat, time, hycom_path=hycom_path,
+copernicus_path=copernicus_path). Only the HYCOM historical cache
+(data/raw/currents/hycom_aoi_AQ-2016-10-28.nc) actually exists on disk — Copernicus
+Marine credentials were never configured (documented elsewhere as "not yet provided"),
+so copernicus_marine_aoi_AQ-2016-10-28.nc was never cached. The missing file reaches
+xarray.open_dataset() unchecked and raises FileNotFoundError, which FastAPI surfaces
+as a bare 500, not the graceful 503 the sibling hycom check produces.
+
+Traceback (docker compose logs api):
+api-1  |   File "/app/backend/src/api/main.py", line 787, in currents_agreement
+api-1  |     comparison = oc.compare_hycom_vs_copernicus(
+api-1  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api-1  |   File "/app/backend/src/ingestion/ocean_currents.py", line 346, in compare_hycom_vs_copernicus
+api-1  |     cm_ds = xr.open_dataset(copernicus_path or (RAW_DIR / "copernicus_marine_aoi_recent.nc"))
+api-1  |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+api-1  |   File "src/netCDF4/_netCDF4.pyx", line 2521, in netCDF4._netCDF4.Dataset.__init__
+api-1  |   File "src/netCDF4/_netCDF4.pyx", line 2158, in netCDF4._netCDF4._ensure_nc_success
+api-1  | FileNotFoundError: [Errno 2] No such file or directory: '/app/data/raw/currents/copernicus_marine_aoi_AQ-2016-10-28.nc'
+
+Per this phase's rule 1 ("if you find something broken, do not fix it"): not fixed.
+The 65.8 degree disagreement figure this row was supposed to verify was never reached
+-- the endpoint never returns a response body at all on this container.
+
+VERDICT: FAIL

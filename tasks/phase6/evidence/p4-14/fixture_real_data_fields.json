@@ -1,0 +1,8 @@
+{
+  "is_stub": false,
+  "model_version": "custom_2d-calibrated-AQ-2016-10-28",
+  "plume_source": "REAL_PARTICLE_ENGINE",
+  "event_id": "AQ-2016-10-28",
+  "outlet_id": "AQ-O02",
+  "current_masking_caveat": "AQ-O02's release point falls on a cell the current grid masks as land (NaN u/v, treated as zero current per simulate()'s own documented nan_to_num rule). This run's transport is diffusion and settling only, not current-driven, until it drifts onto a resolved cell -- a real reason a plume can stay tight near the outlet even over a long horizon, not evidence that nothing is happening."
+}

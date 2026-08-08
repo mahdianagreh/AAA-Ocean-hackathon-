@@ -1,0 +1,19 @@
+{
+    "text": "Wadi Yutum is classified as high risk because rain self percentile, rain over p90, precip prior 1d mm and precip prior 3d mm.",
+    "language": "en",
+    "source_numbers": {
+        "driver_rain_self_percentile": 0.9894157493649449,
+        "driver_rain_over_p90": 1.0190859284850926,
+        "driver_precip_prior_1d_mm": 9.576631823146164,
+        "driver_precip_prior_3d_mm": 11.461350847038071
+    },
+    "generator": "deterministic_template",
+    "caveats": [
+        {
+            "field": "text",
+            "message": "This paragraph is generated from a fixed template. Numbers are interpolated exactly as supplied and are never recomputed or rounded by the phrasing layer.",
+            "severity": "info",
+            "source": "backend/src/rag/explain.py"
+        }
+    ]
+}

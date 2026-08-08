@@ -1,0 +1,58 @@
+{
+    "text": "Wadi Yutum is classified as high risk because forecast 3-hour rainfall exceeds the catchment's historical 99.5 percentile and antecedent soil moisture. The plume ensemble indicates a 75% probability of reaching Reef Zone R-08 within 3\u201324 hours.",
+    "language": "en",
+    "source_numbers": {
+        "plume_probability_pct": "75.00",
+        "arrival_start_hours": 3.0,
+        "arrival_end_hours": 24.0,
+        "rainfall_percentile": 99.5,
+        "driver_rainfall_3h_mm": 41.2,
+        "driver_antecedent_soil_moisture": 0.22
+    },
+    "generator": "deterministic_template",
+    "caveats": [
+        {
+            "field": "text",
+            "message": "This paragraph is generated from a fixed template. Numbers are interpolated exactly as supplied and are never recomputed or rounded by the phrasing layer.",
+            "severity": "info",
+            "source": "backend/src/rag/explain.py"
+        }
+    ]
+}
+{
+    "answer": "Based on the project's own documentation:\n\n[1] \u201cWadi Yutum contributing area: 4,453 km\u00b2 \u00b14% (range 4,349\u20134,690). Three approaches agree \u2014 explicit endorheic masking 4,349, fill=False proxy 4,453, HydroBASINS exorheic 4,690. Roughly 1,800\u20132,000 km\u00b2 of the topographic basin drains to internal sinks and never reaches the Gulf; it is excluded on purpose.\u201d\n    \u2014 source: docs/data_dictionary.md \u00a7 Caveats that must travel with the numbers\n\n[2] \u201cSay this precisely, not more than this: \"consults a real archive\" is not the same claim as \"visibly advects on it,\" and for this project's own outlets it usually is not the same result.\u201d\n    \u2014 source: docs/model_card.md \u00a7 C \u00b7 Plume transport (particle engine) \u2014 Abd\n\n[3] \u201cfigure what it shows generated --------- [phase2_01_formula_terms_table.png](phase2_01_formula_terms_table.png) The audit trail behind 4 scored zones from AQ-O02. Risk falls and arrival is later with distance, which is the circular-buffer sanity check passing.\u201d\n    \u2014 source: docs/qa_screenshots/MANIFEST.md \u00a7 Phase 2 backend\n\n[4] \u201cColumn Units Notes --------- catchment_id \u2014 AQ-C01\u2026AQ-C05, join key outlet_id \u2014 AQ-O01\u2026AQ-O05 area_km2 km\u00b2 \u00b14% \u2014 see the endorheic caveat below elev_min_m / elev_max_m / elev_mean_m m Land cells only, sea excluded relief_m m max \u2212 min slope_mean_deg / slope_max_deg \u00b0 From the 30 m grid stream_len_km km Stream cells \u00d7\u2026\u201d\n    \u2014 source: docs/data_dictionary.md \u00a7 `catchment_terrain.parquet` columns\n\n[5] \u201c1. One demo event has real currents; every other event degrades to a documented placeholder. Only AQ-2016-10-28 has a cached HYCOM archive baked ahead of time. 2. Wind forcing is a placeholder for every event, calibrated or not \u2014 windage numbers should not be read as scientifically fitted until real historical wind\u2026\u201d\n    \u2014 source: docs/model_card.md \u00a7 Known limitations\n\nEvery statement above is quoted from the file cited beside it. Nothing here is inferred or rephrased.",
+    "citations": [
+        {
+            "source_file": "docs/data_dictionary.md",
+            "section": "Caveats that must travel with the numbers",
+            "excerpt": "Wadi Yutum contributing area: 4,453 km\u00b2 \u00b14% (range 4,349\u20134,690). Three approaches agree \u2014 explicit endorheic masking 4,349, fill=False proxy 4,453, HydroBASINS exorheic 4,690. Roughly 1,800\u20132,000 km\u00b2 of the topographic basin drains to internal sinks and never reaches the Gulf; it is excluded on purpose.",
+            "score": 13.9875
+        },
+        {
+            "source_file": "docs/model_card.md",
+            "section": "C \u00b7 Plume transport (particle engine) \u2014 Abd",
+            "excerpt": "Say this precisely, not more than this: \"consults a real archive\" is not the same claim as \"visibly advects on it,\" and for this project's own outlets it usually is not the same result.",
+            "score": 8.5828
+        },
+        {
+            "source_file": "docs/qa_screenshots/MANIFEST.md",
+            "section": "Phase 2 backend",
+            "excerpt": "figure what it shows generated --------- [phase2_01_formula_terms_table.png](phase2_01_formula_terms_table.png) The audit trail behind 4 scored zones from AQ-O02. Risk falls and arrival is later with distance, which is the circular-buffer sanity check passing.",
+            "score": 8.2103
+        },
+        {
+            "source_file": "docs/data_dictionary.md",
+            "section": "`catchment_terrain.parquet` columns",
+            "excerpt": "Column Units Notes --------- catchment_id \u2014 AQ-C01\u2026AQ-C05, join key outlet_id \u2014 AQ-O01\u2026AQ-O05 area_km2 km\u00b2 \u00b14% \u2014 see the endorheic caveat below elev_min_m / elev_max_m / elev_mean_m m Land cells only, sea excluded relief_m m max \u2212 min slope_mean_deg / slope_max_deg \u00b0 From the 30 m grid stream_len_km km Stream cells \u00d7\u2026",
+            "score": 7.6002
+        },
+        {
+            "source_file": "docs/model_card.md",
+            "section": "Known limitations",
+            "excerpt": "1. One demo event has real currents; every other event degrades to a documented placeholder. Only AQ-2016-10-28 has a cached HYCOM archive baked ahead of time. 2. Wind forcing is a placeholder for every event, calibrated or not \u2014 windage numbers should not be read as scientifically fitted until real historical wind\u2026",
+            "score": 7.2597
+        }
+    ],
+    "language": "en",
+    "corpus_files_searched": 12
+}

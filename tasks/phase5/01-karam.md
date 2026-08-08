@@ -23,46 +23,50 @@ Verified against the real repo on 7 Aug — not re-derived from memory.
       anomaly resolved.** Confirmed: `docs/event_dates.md` documents the resolution,
       backed by `data/processed/events/ordering_anomaly_analysis.json`
       (`"resolved": true`). Per-catchment numbers match exactly.
-      **One narrower thing is still genuinely open**, not closed: the 6h/24h maxima
-      abut the scan-window's edge. Extend the scan window and re-check those two
-      specific figures before quoting them anywhere final.
+      **The scan-window edge case is now actually fixed, not just logged** —
+      re-checking it surfaced a second, larger problem: the cell-level
+      wettest-window table (1h/3h/6h/24h) had never been re-pulled over the
+      corrected AOI at all — only the catchment-aggregated numbers had. Extended
+      the scan window to `2016-10-30T00:00:00Z`, re-ran
+      `scripts/process_imerg_oct2016_event.py` (240 granules, 100% complete,
+      validated), and both problems resolved at once: new values are
+      1h 9.645mm / 3h 15.415mm / 6h 18.425mm / 24h 23.090mm, none at a window
+      edge. Also fixed a stale `EXPECTED_GRID=(5,4)` self-check constant in that
+      script left over from before the AOI correction (should have been
+      `(13,13)` all along — nobody had re-run the script end-to-end since the
+      correction to notice). Full before/after and why in `docs/event_dates.md`.
 - [x] **A1.2 — `event_catchment_features.parquet` is a real, complete joined
       matrix.** Confirmed: (500, 139), 100 events × 5 catchments, 1998–2022.
-      **Real, undocumented gap found**: `rain_1h_mm`, `rain_3h_mm`, `rain_6h_mm`,
-      `rain_24h_mm` are 100% null across all 500 rows. Either document why (superseded
-      by the `precipitation_*` columns?) or drop them — a 100%-null column with no
-      explanation is exactly the kind of thing a judge's question finds first.
-- [ ] **A1.3 — the daily 2000→2026 IMERG sweep.** What exists,
-      `catchment_rainfall_climatology.parquet`, is real but is a **5-row per-catchment
-      percentile summary** (`n_days=10135` each), not a daily series. If a daily series
-      genuinely exists elsewhere (`catchment_rainfall_daily.parquet` was located but
-      not opened during verification), document exactly what it is and where it lives
-      in `docs/data_dictionary.md`. If it doesn't exist, say that instead — "missing is
-      never zero" applies to documentation claims too. Anyone building against
-      climatology data this phase can then read the doc directly, rather than needing
-      to ask.
-- [ ] **A1.4 — dependency manifest.** No manifest exists at the repo root; real ones
-      exist per-service (`backend/requirements-api.txt`, `backend/requirements-worker.txt`,
-      `frontend/package.json`). Either add a thin root-level `pyproject.toml` that
-      points at the two backend requirement files (so `pip install -e .` from the
-      root works for a new contributor), or add one paragraph to the top-level
-      `README`/`CLAUDE.md` explaining the per-service split is intentional. Either
-      is fine — silence on the question is not.
-- [ ] **A1.5 — the repo-ownership/continuity conversation.** This can't be verified
-      from a file, which is itself the finding: if it hasn't happened, it's still the
-      single highest-probability reason this doesn't continue past the hackathon, and
-      it costs nothing to fix. Have it this week, and drop one line in
-      `docs/OPEN-ISSUES.md` recording that it happened and what was decided.
+      **Found the real reason for the null columns, not just the symptom**:
+      `rain_1h/3h/6h/24h_mm` were clearly meant to be joined from
+      `daily_intensity.parquet`'s `peak_1h/3h/6h_mm` (real, non-null, 11,810
+      rows) — that join was simply never built, and the same null pattern
+      appears in `catchment_rainfall_daily.parquet` too. Documented in
+      `docs/data_dictionary.md` §1b rather than dropped — dropping would erase
+      the record that a real, buildable join is what's actually missing.
+- [x] **A1.3 — the daily 2000→2026 IMERG sweep.** Confirmed
+      `catchment_rainfall_daily.parquet` **is** the real daily series — 50,675
+      rows = 10,135 days × 5 catchments, 1998-01-01 to 2025-09-30, every row
+      `quality_flag: GOOD` / `source_geometry_status: REAL`, matching the
+      climatology summary's `n_days` exactly. No separate, more complete daily
+      artefact exists anywhere else. Documented in full in
+      `docs/data_dictionary.md` §1b, including the column list.
+- [x] **A1.4 — dependency manifest.** Went with the documentation route (either
+      was fine per this file). Added a paragraph to `CLAUDE.md` under Commands
+      explaining the per-service split is intentional (api image stays small
+      and fast to rebuild; worker carries the heavier geospatial stack) and
+      giving the two-file local-install command.
+- [ ] **A1.5 — the repo-ownership/continuity conversation.** Not something I can
+      close myself — asked Karam whether it's happened yet.
 
 ---
 
 ## Definition of done
 
-1. A1.1's remaining scan-window edge case is either fixed or explicitly logged as a
-   known residual limitation in `docs/event_dates.md`.
-2. A1.2's four all-null columns are documented or removed.
+1. A1.1's scan-window edge case is fixed, not just logged — done, see above.
+2. A1.2's four all-null columns are documented, not removed — done.
 3. A1.3 says, in `docs/data_dictionary.md`, exactly what climatology artifact exists
-   today and what (if anything) is still missing — no ambiguity left standing.
-4. A1.4 — a dependency manifest question has an explicit answer, not silence.
+   today — done, confirmed it's the real daily series.
+4. A1.4 — a dependency manifest question has an explicit answer, not silence — done.
 5. A1.5 — the ownership conversation has happened and is logged, or is explicitly
-   scheduled with a date.
+   scheduled with a date. **Still open, waiting on Karam.**

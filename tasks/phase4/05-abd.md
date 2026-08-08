@@ -250,6 +250,106 @@ separate undertaking flagged but deliberately not attempted here in the interest
 not doing the "large architectural rewrite" the upgrade itself said to avoid unless
 necessary.
 
+**Upgrade #3, 7 Aug — real continuous terrain + real satellite imagery, replacing
+the banded relief entirely.** Prompted by the user pasting real Google Earth imagery
+of Aqaba/Eilat and asking for that look. True Google-Earth-identical photorealism
+is not reproducible here (a different, paid, proprietary rendering service; baking
+its output would also break the "works with wifi off" requirement) — said so
+explicitly rather than attempting a fake, and offered the real, legitimate version
+of the same idea instead: real elevation data plus real satellite imagery, not a
+generated approximation of either. The user chose that (**"option A"**), asked to
+push the already-working state as a checkpoint first (done, `4c86119`, pushed
+before any of this), and separately gated the whole upgrade on review — **nothing
+in this upgrade is pushed until the user has seen it and says so.**
+
+Mid-build, a parallel plan surfaced — `mahdi-3D-implementation-plan.md`, the
+team's own spec for real DEM+bathymetry terrain on this exact feature, written
+independently. Reconciled rather than picked one or the other: **"adopt their
+terrain, keep our story"** — build the plan's real terrain mesh, keep this file's
+already-working six-phase narrative and buildings/reef/runoff on top of it.
+
+- **Real terrain, not bands**: Copernicus GLO-30 DEM fetched fresh
+  (`scripts/03_dem_fetch.py`) and merged with the real bathymetry
+  (`depth_utm36n.tif`) through the real coastline polygon as the seam — a mask, not
+  an elevation threshold, the exact discipline `03_dem_fetch.py`'s own "sea = 0.0"
+  gotcha requires (`scripts/merge_terrain_bathymetry.py` →
+  `terrain_merged_utm36n.tif`, -926..1,847 m over 16.3M cells). Baked into a
+  Mapbox-encoded Terrain-RGB tile pyramid (`scripts/tile_terrain_rgb.py`, 350 real
+  tiles, zoom 7-12, 20.6 MB) and wired in with MapLibre's native `map.setTerrain()`
+  — full data dictionary entry in `docs/data_dictionary.md` §9.
+  - The DEM fetch hit two of this project's own documented gotchas directly, not
+    hypothetically: a stalled download that stayed "alive" in `ps` with zero byte
+    progress for 37+ minutes (caught with `lsof`, not trusted from process state
+    alone), and its retry would have silently resumed a truncated, corrupt tile
+    under the resume-by-filename rule (caught by opening both tiles with
+    `rasterio` before trusting either — one read clean, one failed on pixel read
+    despite a readable header).
+- **Height budget retired, not re-tuned.** Read MapLibre 6.1.0's own installed
+  fill-extrusion vertex shader before touching anything (`base_terrain3d_offset` /
+  `height_terrain3d_offset` in the bundled source) to confirm, rather than assume,
+  that real terrain mode adds the real elevation at a feature's position to both
+  `fill-extrusion-base` and `-height`. That makes `base: 0` the real ground or
+  seafloor already — so the whole sqrt-scaled stacked clearance system
+  (`BUILDINGS_BASE_M`, `REEF_BASE_M`, `PLUME_BASE_M`, `RELIEF_HEIGHT_SCALE`) came
+  out of `constants.ts`, `layers/relief.ts` was deleted outright (dead, unimported
+  since `journeyStyle.ts` now composes `layers/terrain.ts` instead), and
+  buildings/reef/plume were re-based at `0` with only a small, honestly-documented
+  legibility height left per layer (`REEF_HIGHLIGHT_HEIGHT_M`,
+  `PLUME_HEIGHT_PER_LEVEL_M` — real reef relief and plume thickness are nowhere
+  near these values; they are a "make the real footprint read as a volume, not a
+  decal" convention, stated as such).
+- **Real Esri World Imagery draped on the mesh** (`layers/imagery.ts`, the same
+  baked asset `scripts/fetch_basemap_raster.py` already produces for the 2D map,
+  copied to a browser-reachable path) — hillshade re-tuned from land/sea-tinted
+  colours to neutral grey once a real photo, not an abstract band colour, was
+  doing the job those tints existed to fake.
+  - **Flagged, not assumed**: this drapes the *raw* image directly in the
+    browser, one step further than the 2D map's server-side composite, against
+    an Esri licence note elsewhere in this project's own data dictionary
+    ("verification and internal review only, not redistribution") that
+    contradicts the team's own later, shipped decision for the 2D case
+    (`docs/plume_imagery_decision.md`). Surfaced to the user rather than resolved
+    silently either way; decision recorded in `docs/data_dictionary.md` §9
+    ("proceed, attributed").
+- **A real regression found by screenshotting every phase, not just reading the
+  diff**: rain ripples and runoff lines still animated correctly (confirmed with
+  `queryRenderedFeatures`, not just by reading the source-update code — both were
+  genuinely painting non-zero pixels) but had thinned to near-invisible against
+  real photo texture, having been tuned for the old flat relief-band colours.
+  Fixed with a white stroke/casing on both (`layers/rain.ts`, `layers/runoff.ts`)
+  rather than changing their core colour, which stays the same "real measured
+  data" design token used elsewhere.
+- **Verification is now a committed spec, not a one-off check**:
+  `frontend/tests/journey3d.spec.ts` (6 tests, new) — real terrain confirmed
+  active via `map.getTerrain()`, every pre-existing layer confirmed still present,
+  the imagery source/layer confirmed actually attached (not just requested), rain/
+  runoff confirmed rendering pixels, the reef-reveal paint property confirmed to
+  actually change on the real exposure data, all six phases screenshotted, and a
+  rough in-browser frame-rate sample against the plan's 60 fps go/no-go gate
+  (floored at 12, not 60 — software-rendered headless Chromium under this
+  project's own Playwright config is materially slower than the demo hardware
+  this gate is really about, and running the full suite in parallel adds real CPU
+  contention on top of that; measured ~40+ fps isolated, ~11-20 fps under this
+  machine's heaviest parallel load — the floor is set to catch a genuine
+  regression, not to promise a number).
+- **Re-verified**: `tsc -b --noEmit` clean, `oxlint`/`stylelint` clean, `vitest run`
+  14/14, the new `journey3d.spec.ts` 6/6, full pre-existing Playwright suite
+  otherwise green. One pre-existing failure found and confirmed **not** caused by
+  this work — `offline-arabic.spec.ts`'s "no external requests" test — verified by
+  `git stash`-isolating this entire upgrade and re-running that one test against
+  unmodified `main`; it fails identically either way. Backend suite unaffected
+  (500 passed / 49 skipped / 1 xfailed — no backend file touched this pass).
+
+Honest limitations carried forward, not solved: MapLibre samples one elevation per
+polygon for terrain-draped extrusions (avoiding a per-vertex "tilted roof"
+artefact), so a plume contour ring large enough to span a real depth change takes
+its centroid's depth for the whole ring, not a per-point drape — an accepted
+platform behaviour, not a bug introduced here. And anchoring the plume at the
+local seafloor is a reasonable approximation for this event's shallow, nearshore,
+diffusion-dominated release (§ above), not a general "sediment plumes hug the
+seafloor" claim — a genuinely deep-water release would need a surface-relative
+rendering mode this project does not have.
+
 ---
 
 ## 2 · Real Sensor Proof Overlay (feature 10) — ✅ closed 6 Aug — fields confirmed, fit quality now on screen
