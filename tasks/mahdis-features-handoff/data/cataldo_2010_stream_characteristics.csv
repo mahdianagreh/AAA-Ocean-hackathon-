@@ -1,0 +1,17 @@
+system,reach_label,reach_km,contributing_area_km2,d10_mm,k_cm_per_sec_x1e-4,annual_precip_mm,annual_runoff_mm
+Walnut Gulch AZ,11-8,6.6,15,0.43,1950,350,11.43
+Walnut Gulch AZ,8-6,1.4,93,0.43,1950,350,11.43
+Walnut Gulch AZ,6-2,4.3,112,0.43,1950,350,11.43
+Walnut Gulch AZ,2-1,6.8,148,0.43,1950,350,11.43
+Queen Creek AZ,,32.2,866,,,254,6.35
+Prairie Dog Creek KS,,41.8,2538,0.055,36,533,10.16
+Republica Creek KS,,54.7,63564,0.033,23,792,31.75
+Smokey Hill River KS,,75.8,13520,0.202,630,594,6.35
+Salina River KS,,48.5,17534,0.165,520,536,35.56
+Little Blue NE,,48.3,8625,0.109,180,711,55.88
+Little Missouri ND,,120.7,16032,0.135,400,366,19.05
+Moreau River SD,,109.4,11189,0.07,38,465,12.7
+Shell Creek NE,,49.9,699,0.029,20,711,44.45
+Sappa KS,,56.3,2720,0.119,360,508,25.4
+Cimarron R OK,,252.7,5335,0.089,75,432,44.45
+Washita River OK,,88.5,5120,0.039,108,749,44.5
