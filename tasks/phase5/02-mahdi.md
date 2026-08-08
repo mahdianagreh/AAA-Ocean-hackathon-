@@ -97,20 +97,29 @@ that in `docs/model_card.md`'s new B1 section, in the same words, not softened.
 
 ## 2 · B2 — Learned Transmission-Loss Model
 
-**Flagged 7 Aug, model half not built — see `docs/HANDOFF_abd_2026-08-07_b2_data.md`.**
-No training data exists: the two Negev/literature numbers in `sediment_proxy.py` are
-fixed ranges, not a dataset of catchment features paired with measured loss, for any
-site. Same shape as B1's finding, same reason nothing's been trained.
-**`transmission_loss_basis` is done** — see Backend & storage below, shipped
-unconditionally as `"negev_proxy"` since "learned" has no implementation.
+**Closed 8 Aug — tested with real data, learned model rejected.** Flagged 7 Aug for no
+training data; Karam found a real one (Cataldo et al. 2010, 12 real systems, 58
+usable storm events after deriving true fractional loss from the paper's own
+regression equations — see `tasks/mahdis-features-handoff/RESULT_b2_learned_model_tested_and_rejected.md`
+and `scripts/31_test_learned_transmission_loss.py`). Fit and leave-one-system-out
+validated 7 feature combinations (area, reach length, grain size, hydraulic
+conductivity): **every one scores worse than predicting the mean** (negative R²
+throughout) — transmission loss is dominated by storm-to-storm dynamics this dataset
+doesn't capture, not by static catchment characteristics. **Not building a learned
+model.** `transmission_loss_basis` stays unconditionally `"negev_proxy"` — already
+shipped, and now a tested conclusion rather than a placeholder.
 
 **Model & data**
 
-- [ ] Regression model predicting per-catchment transmission loss from terrain slope,
-      soil texture, and drainage density.
-- [ ] Replaces the borrowed Negev `[0.20, 0.85]` range (`docs/HANDOFF_transmission_loss_2026-08-06.md`)
-      with a site-specific learned estimate — **the borrowed range does not disappear**,
-      it becomes the fallback when the learned model has nothing to say.
+- [x] Regression model predicting per-catchment transmission loss from terrain slope,
+      soil texture, and drainage density. **Tested 8 Aug, rejected** — no available
+      feature combination beats the mean baseline under leave-one-system-out
+      validation on real data. See close-out above.
+- [x] Replaces the borrowed Negev `[0.20, 0.85]` range with a site-specific learned
+      estimate — **the borrowed range does not disappear**, it becomes the fallback
+      when the learned model has nothing to say. **Resolved: the fallback is what
+      ships, permanently** — tested and found to be the better answer, not a
+      placeholder waiting on a learned model.
 
 **Backend & storage**
 
