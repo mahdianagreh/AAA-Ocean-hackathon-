@@ -1,0 +1,9 @@
+AQ-C01 <class 'list'> [{'t': '2016-10-26T00:00:00Z', 'mm': 1.8767, 'coverage': 1.0}, {'t': '2016-10-27T00:00:00Z', 'mm': 9.5766, 'coverage': 1.0}, {'t': '2016-10-28T00:00:00Z', 'mm': 6.4395, 'coverage': 1.0}, {'t': '2016-10-29T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}, {'t': '2016-10-30T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}]
+AQ-C02 <class 'list'> [{'t': '2016-10-26T00:00:00Z', 'mm': 0.4607, 'coverage': 1.0}, {'t': '2016-10-27T00:00:00Z', 'mm': 9.2053, 'coverage': 1.0}, {'t': '2016-10-28T00:00:00Z', 'mm': 8.2933, 'coverage': 1.0}, {'t': '2016-10-29T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}, {'t': '2016-10-30T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}]
+AQ-C03 <class 'list'> [{'t': '2016-10-26T00:00:00Z', 'mm': 1.0132, 'coverage': 1.0}, {'t': '2016-10-27T00:00:00Z', 'mm': 10.202, 'coverage': 1.0}, {'t': '2016-10-28T00:00:00Z', 'mm': 6.3963, 'coverage': 1.0}, {'t': '2016-10-29T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}, {'t': '2016-10-30T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}]
+AQ-C04 <class 'list'> [{'t': '2016-10-26T00:00:00Z', 'mm': 0.7492, 'coverage': 1.0}, {'t': '2016-10-27T00:00:00Z', 'mm': 9.4742, 'coverage': 1.0}, {'t': '2016-10-28T00:00:00Z', 'mm': 7.9937, 'coverage': 1.0}, {'t': '2016-10-29T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}, {'t': '2016-10-30T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}]
+AQ-C05 <class 'list'> [{'t': '2016-10-26T00:00:00Z', 'mm': 0.723, 'coverage': 1.0}, {'t': '2016-10-27T00:00:00Z', 'mm': 9.7271, 'coverage': 1.0}, {'t': '2016-10-28T00:00:00Z', 'mm': 7.838, 'coverage': 1.0}, {'t': '2016-10-29T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}, {'t': '2016-10-30T00:00:00Z', 'mm': 0.0, 'coverage': 1.0}]
+
+provenance: modelled
+source: data/processed/features/catchment_rainfall_daily.parquet
+note: NASA GPM IMERG V07, aggregated per catchment. Daily resolution.
