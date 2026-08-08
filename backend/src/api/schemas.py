@@ -387,6 +387,17 @@ class RunoffPrediction(BaseModel):
         description="The model's own computed transmission_loss for this row (real "
                     "path only) — 0.525 unless transmission_loss_override was set.",
     )
+    # Phase 5, B2. "learned" has no implementation yet — see
+    # docs/HANDOFF_abd_2026-08-07_b2_data.md. Every transmission_loss value in the
+    # system today, default or slider-overridden, is a point on the borrowed Negev
+    # range, never a per-catchment estimate — so this is "negev_proxy" whenever
+    # transmission_loss is set, and None (not "negev_proxy") when it isn't, same as
+    # the field it describes.
+    transmission_loss_basis: Literal["learned", "negev_proxy"] | None = Field(
+        default=None,
+        description="Which source produced transmission_loss. 'learned' does not "
+                    "exist yet — always 'negev_proxy' on the real path today.",
+    )
     provenance: list[Provenance] = []
     caveats: list[Caveat] = []
 

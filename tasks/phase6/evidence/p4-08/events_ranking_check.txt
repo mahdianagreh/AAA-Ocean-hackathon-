@@ -1,0 +1,11 @@
+total events: 676
+events with rank: 675
+unique ranks: 675
+is sorted ascending by rank: True
+first 5 (should be top-ranked):
+  1 AQ-2014-03-09 21.5472560368737
+  2 AQ-2022-01-01 21.526798923897037
+  3 AQ-2010-01-18 17.48188004999526
+  4 AQ-2023-03-14 14.453802651495536
+  5 AQ-2010-02-25 14.419513975811563
+demo event AQ-2016-10-28 rank: [13]

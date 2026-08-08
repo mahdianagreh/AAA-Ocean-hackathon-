@@ -1,0 +1,34 @@
+=== Real demo event AQ-2016-10-28 at AQ-C01 (IMERG observed 9.58mm/24h) vs real AQ-C01 climatology ===
+{
+  "rain_mm": 9.58,
+  "climatology_p50": 0.0012,
+  "climatology_p90": 0.137,
+  "climatology_p95": 0.4709,
+  "climatology_p99": 2.9613,
+  "climatology_p99_9": 10.079,
+  "n_windows": 10135,
+  "percentile_band": "above_p99",
+  "anomaly_score": 0.9504852249498899,
+  "is_anomalous": true,
+  "caveat": "Statistical outlier signal vs. climatology, not a validated early-warning system -- never checked against a real flood event's lead time."
+}
+
+=== Real current GEFS forecast at AQ-C01 (lead_hours=3, rain_mm=0.0, from live /forecast/latest) vs same climatology ===
+{
+  "rain_mm": 0.0,
+  "climatology_p50": 0.0012,
+  "climatology_p90": 0.137,
+  "climatology_p95": 0.4709,
+  "climatology_p99": 2.9613,
+  "climatology_p99_9": 10.079,
+  "n_windows": 10135,
+  "percentile_band": "below_p50",
+  "anomaly_score": 0.0,
+  "is_anomalous": false,
+  "caveat": "Statistical outlier signal vs. climatology, not a validated early-warning system -- never checked against a real flood event's lead time."
+}
+
+=== Structural separation check: /forecast/latest anomaly keys vs /exposure/calculate confidence keys ===
+forecast/latest top-level keys include: anomalies, anomaly_caveat, exceedance (separate arrays, zero shared field names)
+exposure/calculate formula_terms keys include: confidence_adjustment, confidence_adjustment_reason, confidence_members_exceeding, confidence_members_total, confidence_threshold_value_mm
+No overlapping field name between the two endpoints -- conflation is structurally impossible, not just avoided by convention.

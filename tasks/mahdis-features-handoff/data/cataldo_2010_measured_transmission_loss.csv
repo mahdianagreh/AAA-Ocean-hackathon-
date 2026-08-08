@@ -1,0 +1,91 @@
+system,event_id,source,computed_tl_m3_per_km
+Walnut Gulch AZ,W1,Cataldo et al. 2010 Table 2,9471.10
+Walnut Gulch AZ,W2,Cataldo et al. 2010 Table 2,3488.60
+Walnut Gulch AZ,W3,Cataldo et al. 2010 Table 2,686.1
+Walnut Gulch AZ,W4,Cataldo et al. 2010 Table 2,12135.40
+Walnut Gulch AZ,W5,Cataldo et al. 2010 Table 2,631.9
+Walnut Gulch AZ,W6,Cataldo et al. 2010 Table 2,3280.80
+Walnut Gulch AZ,W7,Cataldo et al. 2010 Table 2,1086.10
+Walnut Gulch AZ,W8,Cataldo et al. 2010 Table 2,2838.70
+Walnut Gulch AZ,W9,Cataldo et al. 2010 Table 2,5894.30
+Walnut Gulch AZ,W10,Cataldo et al. 2010 Table 2,15312.10
+Walnut Gulch AZ,W11,Cataldo et al. 2010 Table 2,976.7
+Walnut Gulch AZ,W12,Cataldo et al. 2010 Table 2,1814.80
+Walnut Gulch AZ,W13,Cataldo et al. 2010 Table 2,4037.40
+Walnut Gulch AZ,W14,Cataldo et al. 2010 Table 2,362.7
+Walnut Gulch AZ,W15,Cataldo et al. 2010 Table 2,418.7
+Walnut Gulch AZ,W16,Cataldo et al. 2010 Table 2,3002.20
+Walnut Gulch AZ,W17,Cataldo et al. 2010 Table 2,1400.30
+Walnut Gulch AZ,W18,Cataldo et al. 2010 Table 2,229.9
+Walnut Gulch AZ,W19,Cataldo et al. 2010 Table 2,1050.60
+Walnut Gulch AZ,W20,Cataldo et al. 2010 Table 2,744.9
+Walnut Gulch AZ,W21,Cataldo et al. 2010 Table 2,2243.40
+Walnut Gulch AZ,W22,Cataldo et al. 2010 Table 2,2596.70
+Walnut Gulch AZ,W23,Cataldo et al. 2010 Table 2,2720.00
+Walnut Gulch AZ,W24,Cataldo et al. 2010 Table 2,2628.30
+Walnut Gulch AZ,W25,Cataldo et al. 2010 Table 2,6198.80
+Walnut Gulch AZ,W26,Cataldo et al. 2010 Table 2,11253.50
+Walnut Gulch AZ,W27,Cataldo et al. 2010 Table 2,1014.90
+Walnut Gulch AZ,W28,Cataldo et al. 2010 Table 2,1238.50
+Walnut Gulch AZ,W29,Cataldo et al. 2010 Table 2,2016.30
+Walnut Gulch AZ,W30,Cataldo et al. 2010 Table 2,4260.10
+Queen Creek AZ,Q1,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),2195.90
+Queen Creek AZ,Q2,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),793.3
+Queen Creek AZ,Q3,Cataldo et al. 2010 Table 3 (Babcock et al. 1941; statistical outlier per the paper),513.6
+Queen Creek AZ,Q4,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),3307.20
+Queen Creek AZ,Q5,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),3640.60
+Queen Creek AZ,Q6,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),23759.90
+Queen Creek AZ,Q7,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),6323.20
+Queen Creek AZ,Q8,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),10730.30
+Queen Creek AZ,Q9,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),32574.00
+Queen Creek AZ,Q10,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),50585.50
+Queen Creek AZ,Q11,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),16210.40
+Queen Creek AZ,Q12,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),36367.90
+Queen Creek AZ,Q13,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),48746.00
+Queen Creek AZ,Q14,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),27975.30
+Queen Creek AZ,Q15,Cataldo et al. 2010 Table 3 (Babcock et al. 1941),24832.90
+Prairie Dog Creek KS,PD1,Cataldo et al. 2010 Table 4 (Jordan 1977),31866.50
+Prairie Dog Creek KS,PD2,Cataldo et al. 2010 Table 4 (Jordan 1977),10789.20
+Prairie Dog Creek KS,PD3,Cataldo et al. 2010 Table 4 (Jordan 1977),14328.70
+Prairie Dog Creek KS,PD4,Cataldo et al. 2010 Table 4 (Jordan 1977),9698.50
+Prairie Dog Creek KS,PD5,Cataldo et al. 2010 Table 4 (Jordan 1977),14297.20
+Republica Creek KS,RC1,"Cataldo et al. 2010 Table 4 (Jordan 1977) -- printed as ""Republic Creek"" in Table 4, ""Republica Creek"" in Table 1; same stream, source paper's own spelling is inconsistent",43574.80
+Republica Creek KS,RC2,"Cataldo et al. 2010 Table 4 (Jordan 1977) -- see spelling note above",111315.20
+Salina River KS,SR1,Cataldo et al. 2010 Table 4 (Jordan 1977),6217.90
+Salina River KS,SR2,Cataldo et al. 2010 Table 4 (Jordan 1977),4145.30
+Salina River KS,SR3,Cataldo et al. 2010 Table 4 (Jordan 1977),68980.30
+Smokey Hill River KS,SH1,Cataldo et al. 2010 Table 4 (Jordan 1977),9132.10
+Smokey Hill River KS,SH2,Cataldo et al. 2010 Table 4 (Jordan 1977),16209.30
+Smokey Hill River KS,SH3,Cataldo et al. 2010 Table 4 (Jordan 1977),8349.40
+Smokey Hill River KS,SH4,Cataldo et al. 2010 Table 4 (Jordan 1977),3457.20
+Sappa KS,SP1,"Cataldo et al. 2010 Table 4 (Jordan 1977) -- printed as state ""NE"" in Table 4, ""KS"" in Table 1; source paper's own labelling is inconsistent, transcribed as-is",124449.10
+Sappa KS,SP2,Cataldo et al. 2010 Table 4 (Jordan 1977) -- see state note above,21022.60
+Sappa KS,SP3,Cataldo et al. 2010 Table 4 (Jordan 1977) -- see state note above,10774.10
+Sappa KS,SP4,Cataldo et al. 2010 Table 4 (Jordan 1977) -- see state note above,44782.40
+Sappa KS,SP5,Cataldo et al. 2010 Table 4 (Jordan 1977) -- see state note above,84506.30
+Sappa KS,SP6,Cataldo et al. 2010 Table 4 (Jordan 1977) -- see state note above,21591.90
+Little Missouri ND,LM1,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),22155.40
+Little Missouri ND,LM2,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),29758.60
+Moreau River SD,MR1,"Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962) -- printed as state ""ND"" in Table 4, ""SD"" in Table 1; source paper's own labelling is inconsistent, transcribed as-is",17752.30
+Moreau River SD,MR2,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962) -- see state note above,70922.20
+Cimarron R OK,CR1,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),22988.50
+Cimarron R OK,CR2,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),5760.60
+Cimarron R OK,CR3,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),14479.50
+Cimarron R OK,CR4,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),31644.00
+Cimarron R OK,CR5,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),10266.50
+Cimarron R OK,CR6,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),12675.90
+Cimarron R OK,CR7,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),4981.90
+Cimarron R OK,CR8,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),16132.20
+Cimarron R OK,CR9,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),10482.30
+Cimarron R OK,CR10,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),4260.50
+Washita River OK,WR1,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),7051.30
+Washita River OK,WR2,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),11245.90
+Washita River OK,WR3,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),20903.10
+Washita River OK,WR4,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),102717.90
+Washita River OK,WR5,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),98648.70
+Shell Creek NE,SC1,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),24698.40
+Shell Creek NE,SC2,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),7293.60
+Little Blue NE,LB1,"Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962) -- printed as ""Little Blue River"" in Table 4, ""Little Blue"" in Table 1; same stream",75111.80
+Little Blue NE,LB2,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962) -- see name note above,155895.40
+Cheyenne River SD,CH1,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),10551.40
+Cheyenne River SD,CH2,Cataldo et al. 2010 Table 4 (Sharp & Saxton 1962),10806.90

@@ -1,0 +1,7 @@
+=== known real event ===
+{"event_id":"AQ-2016-10-28","start":"2016-10-28","end":null,"label":"AQ-2016-10-28","source":"docs/event_dates.md","caveats":[],"rank":13,"max_daily_mm":10.20196726829546,"mean_daily_mm":9.63703213360547,"max_anomaly_ratio":0.6694,"catchments_exceeding_p99":0,"wettest_catchment":"AQ-C03","storm_days":3,"is_exhaustive":true}
+HTTP 200
+
+=== known-absent event ===
+{"detail":"unknown event AQ-9999-01-01"}
+HTTP 404

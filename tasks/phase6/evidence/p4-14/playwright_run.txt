@@ -1,0 +1,11 @@
+
+Running 6 tests using 6 workers
+
+  ✓  2 [chromium] › tests/journey3d.spec.ts:50:3 › 3D Journey — real terrain › real terrain mesh is active, real imagery is draped, every layer survives (8.2s)
+  ✓  1 [chromium] › tests/journey3d.spec.ts:134:3 › 3D Journey — real terrain › the reef reveal actually changes the paint property on impact (12.0s)
+  ✓  3 [chromium] › tests/journey3d.spec.ts:175:3 › 3D Journey — real terrain › rough frame-rate sample during the busiest phase (transport) clears the plan's 60fps go/no-go floor (14.1s)
+  ✓  4 [chromium] › tests/journey3d.spec.ts:158:3 › 3D Journey — real terrain › play advances phases and reset returns to normal (20.7s)
+  ✓  6 [chromium] › tests/journey3d.spec.ts:107:3 › 3D Journey — real terrain › rain and runoff actually render pixels, not just update a source nobody sees (24.3s)
+  ✓  5 [chromium] › tests/journey3d.spec.ts:90:3 › 3D Journey — real terrain › every phase is reachable, repaints without error, and is visually distinct (41.0s)
+
+  6 passed (41.7s)
