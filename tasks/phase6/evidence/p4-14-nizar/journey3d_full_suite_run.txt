@@ -1,0 +1,197 @@
+
+[2mRunning [22m72[2m tests using [22m8[2m workers[22m
+
+  [32m✓[39m  [2m 8 [22m[chromium] › tests/hardening.spec.ts:20:7 › automated axe pass › no violations on the main view (dark/ar)[2m (6.9s)[22m
+  [32m✓[39m  [2m 4 [22m[chromium] › tests/hardening.spec.ts:20:7 › automated axe pass › no violations on the main view (dark/en)[2m (7.0s)[22m
+  [32m✓[39m  [2m 1 [22m[chromium] › tests/hardening.spec.ts:20:7 › automated axe pass › no violations on the main view (light/ar)[2m (7.3s)[22m
+  [32m✓[39m  [2m 3 [22m[chromium] › tests/hardening.spec.ts:20:7 › automated axe pass › no violations on the main view (light/en)[2m (8.0s)[22m
+  [32m✓[39m  [2m 2 [22m[chromium] › tests/hardening.spec.ts:42:5 › automated axe pass › no violations in the assistant panel[2m (9.0s)[22m
+  [32m✓[39m  [2m 6 [22m[chromium] › tests/hardening.spec.ts:42:5 › automated axe pass › no violations in the validation panel[2m (9.3s)[22m
+  [32m✓[39m  [2m 7 [22m[chromium] › tests/hardening.spec.ts:42:5 › automated axe pass › no violations in the limitations panel[2m (9.8s)[22m
+  [32m✓[39m  [2m 5 [22m[chromium] › tests/hardening.spec.ts:42:5 › automated axe pass › no violations in the provenance panel[2m (11.5s)[22m
+  [32m✓[39m  [2m16 [22m[chromium] › tests/hardening.spec.ts:190:3 › the nine component states › loading, empty, error and stale all exist on the specimen[2m (504ms)[22m
+  [32m✓[39m  [2m17 [22m[chromium] › tests/hardening.spec.ts:198:3 › the nine component states › a gap is visibly distinct from a zero[2m (454ms)[22m
+  [32m✓[39m  [2m12 [22m[chromium] › tests/hardening.spec.ts:123:3 › integrity rules, asserted › no measurement renders without bidi isolation in Arabic[2m (5.1s)[22m
+  [32m✓[39m  [2m11 [22m[chromium] › tests/hardening.spec.ts:100:3 › keyboard › hit areas on the controls are at least 24px[2m (6.4s)[22m
+  [32m✓[39m  [2m 9 [22m[chromium] › tests/hardening.spec.ts:64:3 › keyboard › every overlay opens, traps focus and returns it on Escape[2m (7.4s)[22m
+  [32m✓[39m  [2m14 [22m[chromium] › tests/hardening.spec.ts:165:3 › integrity rules, asserted › nothing claims a plume probability anywhere in the view[2m (5.3s)[22m
+  [32m✓[39m  [2m15 [22m[chromium] › tests/hardening.spec.ts:173:3 › integrity rules, asserted › reduced motion is honoured[2m (5.5s)[22m
+  [32m✓[39m  [2m10 [22m[chromium] › tests/hardening.spec.ts:84:3 › keyboard › the map is keyboard pannable[2m (8.8s)[22m
+  [32m✓[39m  [2m13 [22m[chromium] › tests/hardening.spec.ts:136:3 › integrity rules, asserted › every value on screen carries a provenance or is a declared gap[2m (7.8s)[22m
+  [32m✓[39m  [2m25 [22m[chromium] › tests/offline-arabic.spec.ts:40:3 › the RTL plugin › is served from our own origin, not a CDN[2m (390ms)[22m
+  [32m✓[39m  [2m24 [22m[chromium] › tests/offline-arabic.spec.ts:30:3 › the RTL plugin › is loaded before the first map is constructed[2m (5.5s)[22m
+  [32m✓[39m  [2m27 [22m[chromium] › tests/offline-arabic.spec.ts:73:3 › no external requests › the style requests no glyph ranges at all[2m (5.0s)[22m
+  [32m✓[39m  [2m23 [22m[chromium] › tests/journey3d.spec.ts:175:3 › 3D Journey — real terrain › rough frame-rate sample during the busiest phase (transport) clears the plan's 60fps go/no-go floor[2m (11.4s)[22m
+  [32m✓[39m  [2m22 [22m[chromium] › tests/journey3d.spec.ts:158:3 › 3D Journey — real terrain › play advances phases and reset returns to normal[2m (13.3s)[22m
+  [32m✓[39m  [2m30 [22m[chromium] › tests/phase0-language-lock.spec.ts:20:5 › document chrome › light/en sets lang, dir and data-theme on <html>[2m (425ms)[22m
+  [32m✓[39m  [2m31 [22m[chromium] › tests/phase0-language-lock.spec.ts:20:5 › document chrome › light/ar sets lang, dir and data-theme on <html>[2m (419ms)[22m
+  [32m✓[39m  [2m32 [22m[chromium] › tests/phase0-language-lock.spec.ts:20:5 › document chrome › dark/en sets lang, dir and data-theme on <html>[2m (383ms)[22m
+  [32m✓[39m  [2m33 [22m[chromium] › tests/phase0-language-lock.spec.ts:20:5 › document chrome › dark/ar sets lang, dir and data-theme on <html>[2m (458ms)[22m
+  [32m✓[39m  [2m34 [22m[chromium] › tests/phase0-language-lock.spec.ts:32:3 › document chrome › language is reachable by URL alone[2m (517ms)[22m
+  [32m✓[39m  [2m35 [22m[chromium] › tests/phase0-language-lock.spec.ts:40:3 › document chrome › theme=system leaves data-theme off so the media query decides[2m (368ms)[22m
+  [32m✓[39m  [2m36 [22m[chromium] › tests/phase0-language-lock.spec.ts:50:5 › tokens resolve per theme › light/en resolves canvas and ink from the right scope[2m (417ms)[22m
+  [32m✓[39m  [2m28 [22m[chromium] › tests/offline-arabic.spec.ts:88:3 › Arabic labels are placed and shaped › the map carries real Arabic place names[2m (4.6s)[22m
+  [32m✓[39m  [2m37 [22m[chromium] › tests/phase0-language-lock.spec.ts:50:5 › tokens resolve per theme › light/ar resolves canvas and ink from the right scope[2m (501ms)[22m
+  [32m✓[39m  [2m38 [22m[chromium] › tests/phase0-language-lock.spec.ts:50:5 › tokens resolve per theme › dark/en resolves canvas and ink from the right scope[2m (523ms)[22m
+  [32m✓[39m  [2m39 [22m[chromium] › tests/phase0-language-lock.spec.ts:50:5 › tokens resolve per theme › dark/ar resolves canvas and ink from the right scope[2m (456ms)[22m
+  [32m✓[39m  [2m40 [22m[chromium] › tests/phase0-language-lock.spec.ts:76:5 › bidi isolation › values keep number before unit in en[2m (470ms)[22m
+  [32m✓[39m  [2m41 [22m[chromium] › tests/phase0-language-lock.spec.ts:76:5 › bidi isolation › values keep number before unit in ar[2m (463ms)[22m
+  [32m✓[39m  [2m42 [22m[chromium] › tests/phase0-language-lock.spec.ts:85:3 › bidi isolation › every measurement is isolated, not just the first[2m (804ms)[22m
+  [32m✓[39m  [2m43 [22m[chromium] › tests/phase0-language-lock.spec.ts:96:3 › bidi isolation › missing renders as a gap, never as zero[2m (458ms)[22m
+  [32m✓[39m  [2m44 [22m[chromium] › tests/phase0-language-lock.spec.ts:103:3 › bidi isolation › missing text is not set in the Latin mono face[2m (504ms)[22m
+  [32m✓[39m  [2m45 [22m[chromium] › tests/phase0-language-lock.spec.ts:113:3 › bidi isolation › score ranges do not reverse in Arabic[2m (876ms)[22m
+  [32m✓[39m  [2m46 [22m[chromium] › tests/phase0-language-lock.spec.ts:127:3 › bidi isolation › every mono run in the RTL pane is isolated[2m (480ms)[22m
+  [32m✓[39m  [2m48 [22m[chromium] › tests/phase0-language-lock.spec.ts:162:3 › the specimen matrix › the hazard ramp renders all five bands with a stroke[2m (620ms)[22m
+  [32m✓[39m  [2m49 [22m[chromium] › tests/phase0-language-lock.spec.ts:177:3 › the specimen matrix › the three glyphs render as line art at every used size[2m (467ms)[22m
+  [32m✓[39m  [2m47 [22m[chromium] › tests/phase0-language-lock.spec.ts:147:3 › the specimen matrix › renders four real documents, one per combination[2m (1.7s)[22m
+  [32m✓[39m  [2m50 [22m[chromium] › tests/phase0-language-lock.spec.ts:188:3 › no CDN anywhere › nothing is fetched from outside the dev origin[2m (1.1s)[22m
+  [32m✓[39m  [2m51 [22m[chromium] › tests/phase0-language-lock.spec.ts:200:3 › no CDN anywhere › the Arabic face actually loads and is used[2m (711ms)[22m
+  [31m✘[39m  [2m21 [22m[31m[chromium] › tests/journey3d.spec.ts:134:3 › 3D Journey — real terrain › the reef reveal actually changes the paint property on impact[39m[2m (8.7s)[22m
+  [31m✘[39m  [2m20 [22m[31m[chromium] › tests/journey3d.spec.ts:107:3 › 3D Journey — real terrain › rain and runoff actually render pixels, not just update a source nobody sees[39m[2m (10.6s)[22m
+  [32m✓[39m  [2m29 [22m[chromium] › tests/offline-arabic.spec.ts:124:3 › Arabic labels are placed and shaped › shaping visibly changes the canvas — the tofu check[2m (10.9s)[22m
+  [32m✓[39m  [2m19 [22m[chromium] › tests/journey3d.spec.ts:90:3 › 3D Journey — real terrain › every phase is reachable, repaints without error, and is visually distinct[2m (25.4s)[22m
+  [32m✓[39m  [2m54 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:77:3 › the choreography › Wadi Yutum leads on the flood day[2m (4.3s)[22m
+  [32m✓[39m  [2m56 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:112:3 › honest states are on screen › every card attributes its numbers — a model version or a provisional flag[2m (4.1s)[22m
+  [32m✓[39m  [2m52 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:27:3 › the choreography › one cursor moves the cards, the chart and the map together[2m (5.9s)[22m
+  [32m✓[39m  [2m57 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:139:3 › honest states are on screen › the time bar admits the axis is daily[2m (3.8s)[22m
+  [32m✓[39m  [2m55 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:92:3 › honest states are on screen › runoff probability is model output, or a gap — never a fabricated number[2m (6.0s)[22m
+  [32m✓[39m  [2m53 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:59:3 › the choreography › the event reads as an arc, not a flat line[2m (8.6s)[22m
+  [32m✓[39m  [2m59 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:166:3 › honest states are on screen › the reef legend does not imply zones differ in sensitivity[2m (3.7s)[22m
+  [32m✓[39m  [2m58 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:148:3 › honest states are on screen › the plume legend says relative density, never probability[2m (4.2s)[22m
+  [32m✓[39m  [2m61 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:193:3 › controls › a layer toggle actually hides the layer[2m (4.5s)[22m
+  [32m✓[39m  [2m60 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:175:3 › controls › the mode switch preserves the time cursor[2m (6.1s)[22m
+  [32m✓[39m  [2m64 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:236:3 › controls › the time axis does not mirror in Arabic[2m (2.7s)[22m
+  [32m✓[39m  [2m62 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:204:3 › controls › the model-grid honesty overlay can be turned on[2m (4.9s)[22m
+  [32m✓[39m  [2m63 [22m[chromium] › tests/phase2-vertical-slice.spec.ts:221:3 › controls › the slider is a real ARIA slider with keyboard support[2m (5.6s)[22m
+  [31m✘[39m  [2m18 [22m[31m[chromium] › tests/journey3d.spec.ts:50:3 › 3D Journey — real terrain › real terrain mesh is active, real imagery is draped, every layer survives[39m[2m (7.8s)[22m
+  [32m✓[39m  [2m67 [22m[chromium] › tests/scene-walk.spec.ts:143:3 › the honest panels › provenance shows the figures, the counts and the exclusion[2m (4.9s)[22m
+  [32m✓[39m  [2m69 [22m[chromium] › tests/scene-walk.spec.ts:180:3 › the honest panels › limitations renders all nine, from the documents[2m (5.7s)[22m
+  [32m✓[39m  [2m68 [22m[chromium] › tests/scene-walk.spec.ts:157:3 › the honest panels › a figure opens in a lightbox with its own QA caption[2m (5.9s)[22m
+  [32m✓[39m  [2m70 [22m[chromium] › tests/scene-walk.spec.ts:189:3 › the honest panels › the assistant refuses to answer without a citation[2m (5.6s)[22m
+  [31m✘[39m  [2m26 [22m[31m[chromium] › tests/offline-arabic.spec.ts:51:3 › no external requests › every request stays on the dev origin, including the MapLibre worker[39m[2m (8.5s)[22m
+  [32m✓[39m  [2m71 [22m[chromium] › tests/scene-walk.spec.ts:203:3 › the honest panels › a question the corpus genuinely does not cover gets no answer[2m (5.7s)[22m
+  [32m✓[39m  [2m65 [22m[chromium] › tests/scene-walk.spec.ts:33:3 › all eight scenes walk end to end (en)[2m (12.0s)[22m
+  [32m✓[39m  [2m72 [22m[chromium] › tests/scene-walk.spec.ts:216:3 › the honest panels › the assistant cites a real file and section when it does answer[2m (5.4s)[22m
+  [32m✓[39m  [2m66 [22m[chromium] › tests/scene-walk.spec.ts:33:3 › all eight scenes walk end to end (ar)[2m (11.5s)[22m
+
+
+[31m  1) [chromium] › tests/journey3d.spec.ts:50:3 › 3D Journey — real terrain › real terrain mesh is active, real imagery is draped, every layer survives [39m
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: [32m"terrain"[39m
+    Received: [31mundefined[39m
+
+    [0m [90m 58 |[39m     [90m// setTerrain() actually took effect — not just requested, but reflected[39m
+     [90m 59 |[39m     [90m// back by the map instance.[39m
+    [31m[1m>[22m[39m[90m 60 |[39m     expect(state[33m![39m[33m.[39mterrain[33m?[39m[33m.[39msource)[33m.[39mtoBe([32m'terrain'[39m)[33m;[39m
+     [90m    |[39m                                    [31m[1m^[22m[39m
+     [90m 61 |[39m     expect(state[33m![39m[33m.[39mterrain[33m?[39m[33m.[39mexaggeration)[33m.[39mtoBeCloseTo([35m1.5[39m[33m,[39m [35m5[39m)[33m;[39m
+     [90m 62 |[39m
+     [90m 63 |[39m     [90m// Every real-data layer from the pre-terrain pass is still there —[39m[0m
+    [2m    at /Users/nizarhazaymeh/Documents/GitHub/AAA-Ocean-hackathon-/frontend/tests/journey3d.spec.ts:60:36[22m
+
+[2m    Error Context: test-results/journey3d-3D-Journey-—-rea-56922-draped-every-layer-survives-chromium/error-context.md[22m
+
+[2m    attachment #2: [1mtrace[2m (application/zip) [2m─────────────────────────────────────────────────────────[2m[22m
+[2m    test-results/journey3d-3D-Journey-—-rea-56922-draped-every-layer-survives-chromium/trace.zip[22m
+[2m    Usage:[22m
+
+[2m        npx playwright show-trace test-results/journey3d-3D-Journey-—-rea-56922-draped-every-layer-survives-chromium/trace.zip[22m
+
+[2m    [2m────────────────────────────────────────────────────────────────────────────────────────────────[2m[22m
+
+[31m  2) [chromium] › tests/journey3d.spec.ts:107:3 › 3D Journey — real terrain › rain and runoff actually render pixels, not just update a source nobody sees [39m
+
+    Error: no rain-ripples pixels were actually rendered
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoBeGreaterThan[2m([22m[32mexpected[39m[2m)[22m
+
+    Expected: > [32m0[39m
+    Received:   [31m0[39m
+
+    [0m [90m 121 |[39m       [36mreturn[39m m[33m?[39m[33m.[39mqueryRenderedFeatures(undefined[33m,[39m { layers[33m:[39m [[32m'rain-ripples'[39m] })[33m.[39mlength [33m?[39m[33m?[39m [35m0[39m[33m;[39m
+     [90m 122 |[39m     })[33m;[39m
+    [31m[1m>[22m[39m[90m 123 |[39m     expect(rainRendered[33m,[39m [32m'no rain-ripples pixels were actually rendered'[39m)[33m.[39mtoBeGreaterThan([35m0[39m)[33m;[39m
+     [90m     |[39m                                                                           [31m[1m^[22m[39m
+     [90m 124 |[39m
+     [90m 125 |[39m     [36mawait[39m page[33m.[39mlocator([32m'[data-journey-phase="flood"]'[39m)[33m.[39mclick()[33m;[39m
+     [90m 126 |[39m     [36mawait[39m page[33m.[39mwaitForTimeout([35m2500[39m)[33m;[39m[0m
+    [2m    at /Users/nizarhazaymeh/Documents/GitHub/AAA-Ocean-hackathon-/frontend/tests/journey3d.spec.ts:123:75[22m
+
+[2m    Error Context: test-results/journey3d-3D-Journey-—-rea-80891-update-a-source-nobody-sees-chromium/error-context.md[22m
+
+[2m    attachment #2: [1mtrace[2m (application/zip) [2m─────────────────────────────────────────────────────────[2m[22m
+[2m    test-results/journey3d-3D-Journey-—-rea-80891-update-a-source-nobody-sees-chromium/trace.zip[22m
+[2m    Usage:[22m
+
+[2m        npx playwright show-trace test-results/journey3d-3D-Journey-—-rea-80891-update-a-source-nobody-sees-chromium/trace.zip[22m
+
+[2m    [2m────────────────────────────────────────────────────────────────────────────────────────────────[2m[22m
+
+[31m  3) [chromium] › tests/journey3d.spec.ts:134:3 › 3D Journey — real terrain › the reef reveal actually changes the paint property on impact [39m
+
+    Error: [2mexpect([22m[31mreceived[39m[2m).[22mnot[2m.[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
+
+    Expected: not [32m"\"#627476\""[39m
+
+    [0m [90m 153 |[39m     [90m// close to the neutral tone, and pinning a hex value would break the[39m
+     [90m 154 |[39m     [90m// moment a different event's exposure numbers are used.[39m
+    [31m[1m>[22m[39m[90m 155 |[39m     expect([33mJSON[39m[33m.[39mstringify(revealed))[33m.[39mnot[33m.[39mtoBe([33mJSON[39m[33m.[39mstringify(neutral))[33m;[39m
+     [90m     |[39m                                          [31m[1m^[22m[39m
+     [90m 156 |[39m   })[33m;[39m
+     [90m 157 |[39m
+     [90m 158 |[39m   test([32m'play advances phases and reset returns to normal'[39m[33m,[39m [36masync[39m ({ page }) [33m=>[39m {[0m
+    [2m    at /Users/nizarhazaymeh/Documents/GitHub/AAA-Ocean-hackathon-/frontend/tests/journey3d.spec.ts:155:42[22m
+
+[2m    Error Context: test-results/journey3d-3D-Journey-—-rea-4c2fb-he-paint-property-on-impact-chromium/error-context.md[22m
+
+[2m    attachment #2: [1mtrace[2m (application/zip) [2m─────────────────────────────────────────────────────────[2m[22m
+[2m    test-results/journey3d-3D-Journey-—-rea-4c2fb-he-paint-property-on-impact-chromium/trace.zip[22m
+[2m    Usage:[22m
+
+[2m        npx playwright show-trace test-results/journey3d-3D-Journey-—-rea-4c2fb-he-paint-property-on-impact-chromium/trace.zip[22m
+
+[2m    [2m────────────────────────────────────────────────────────────────────────────────────────────────[2m[22m
+
+[31m  4) [chromium] › tests/offline-arabic.spec.ts:51:3 › no external requests › every request stays on the dev origin, including the MapLibre worker [39m
+
+    Error: external requests: http://localhost:8000/api/v1/exposure/calculate, http://localhost:8000/api/v1/plume/map/frames?event_id=AQ-2016-10-28&outlet_id=AQ-O01, http://localhost:8000/api/v1/alerts?min_level=minimal
+
+    [2mexpect([22m[31mreceived[39m[2m).[22mtoEqual[2m([22m[32mexpected[39m[2m) // deep equality[22m
+
+    [32m- Expected  - 1[39m
+    [31m+ Received  + 5[39m
+
+    [32m- Array [][39m
+    [31m+ Array [[39m
+    [31m+   "http://localhost:8000/api/v1/exposure/calculate",[39m
+    [31m+   "http://localhost:8000/api/v1/plume/map/frames?event_id=AQ-2016-10-28&outlet_id=AQ-O01",[39m
+    [31m+   "http://localhost:8000/api/v1/alerts?min_level=minimal",[39m
+    [31m+ ][39m
+
+    [0m [90m 68 |[39m     [36mawait[39m page[33m.[39mwaitForTimeout([35m1500[39m)[33m;[39m
+     [90m 69 |[39m
+    [31m[1m>[22m[39m[90m 70 |[39m     expect(external[33m,[39m [32m`external requests: ${external.join(', ')}`[39m)[33m.[39mtoEqual([])[33m;[39m
+     [90m    |[39m                                                                   [31m[1m^[22m[39m
+     [90m 71 |[39m   })[33m;[39m
+     [90m 72 |[39m
+     [90m 73 |[39m   test([32m'the style requests no glyph ranges at all'[39m[33m,[39m [36masync[39m ({ page }) [33m=>[39m {[0m
+    [2m    at /Users/nizarhazaymeh/Documents/GitHub/AAA-Ocean-hackathon-/frontend/tests/offline-arabic.spec.ts:70:67[22m
+
+[2m    Error Context: test-results/offline-arabic-no-external-8c9cf-cluding-the-MapLibre-worker-chromium/error-context.md[22m
+
+[2m    attachment #2: [1mtrace[2m (application/zip) [2m─────────────────────────────────────────────────────────[2m[22m
+[2m    test-results/offline-arabic-no-external-8c9cf-cluding-the-MapLibre-worker-chromium/trace.zip[22m
+[2m    Usage:[22m
+
+[2m        npx playwright show-trace test-results/offline-arabic-no-external-8c9cf-cluding-the-MapLibre-worker-chromium/trace.zip[22m
+
+[2m    [2m────────────────────────────────────────────────────────────────────────────────────────────────[2m[22m
+
+[31m  4 failed[39m
+[31m    [chromium] › tests/journey3d.spec.ts:50:3 › 3D Journey — real terrain › real terrain mesh is active, real imagery is draped, every layer survives [39m
+[31m    [chromium] › tests/journey3d.spec.ts:107:3 › 3D Journey — real terrain › rain and runoff actually render pixels, not just update a source nobody sees [39m
+[31m    [chromium] › tests/journey3d.spec.ts:134:3 › 3D Journey — real terrain › the reef reveal actually changes the paint property on impact [39m
+[31m    [chromium] › tests/offline-arabic.spec.ts:51:3 › no external requests › every request stays on the dev origin, including the MapLibre worker [39m
+[32m  68 passed[39m[2m (1.5m)[22m

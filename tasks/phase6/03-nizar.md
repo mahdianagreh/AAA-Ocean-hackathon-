@@ -63,3 +63,30 @@ transcribed from `tasks/phase4/03-nizar.md` or `tasks/phase5/03-nizar.md`'s prio
   formula by hand from a fresh run (`agreement = |0-0.5|*2 = 1.0`,
   `confidence_adjustment = 1.0*0.8 = 0.8`) — matches the live response exactly.
   Row moves from partial to fully `PASS`. Evidence: `evidence/p4-05-nizar/`.
+
+## Bonus, 2026-08-08 — browser-automated a chunk of Ali's frontend-half backlog
+
+Not my assigned rows, but I have Chrome automation tooling and the matrix had 13 rows
+sitting on "backend PASS, frontend half open." Real findings, not shallow re-clicks:
+
+- **`p4-14` (3D Journey)**: ran the repo's own `frontend/tests/journey3d.spec.ts` against
+  a freshly built frontend+API. 3 of 5 real-terrain assertions **FAIL** — terrain
+  mesh/imagery draping, rain/runoff pixel rendering (0 pixels), and the reef-reveal paint
+  property never changing. Real, reproducible frontend defect. Evidence:
+  `evidence/p4-14-nizar/`.
+- **`p4-07`/`p4-15` (What-If sliders)**: dragged the real Rainfall slider live in the
+  browser, confirmed via network tracking that zero calls reach the API — matches the
+  drawer's own honest on-screen label ("stand-in index, not model output"). Confirms
+  `tasks/phase4/00-phase4-plan.md`'s A3.4 gap is still open. Evidence:
+  `evidence/p4-07-nizar/`.
+- **Architecture note for whoever tests the remaining frontend rows**: `VITE_DATA_SOURCE`
+  defaults to `fixtures` and `docker-compose.yml` never overrides it, so
+  catchments/outlets/reefZones/health never go live via the standard `--profile frontend
+  up` path. `exposure`/`plume-frames`/`alerts` (`frontend/src/api/live.ts`) are NOT gated
+  by that flag and always attempt a real call regardless — the two need to be checked
+  separately per panel, not assumed from the masthead's fixtures/live badge.
+- **Stopped here deliberately.** The remaining ~9 blank Ali-only rows (8-Hour Countdown,
+  Click-to-See-Why, etc.) aren't covered by the existing Playwright suite and I don't have
+  Ali's context on exactly where each lives in the component tree — pushing further risked
+  producing exactly the shallow "I think I checked it" verdict this phase exists to
+  eliminate. Left genuinely blank for Ali rather than guessed at.

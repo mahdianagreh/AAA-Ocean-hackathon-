@@ -1,0 +1,35 @@
+Phase 6, p4-07/p4-15 -- Nizar's browser-automated check of Ali's frontend half, 2026-08-08
+Tested against docker compose --profile frontend up --build (frontend + api, both freshly built).
+
+Navigated to http://localhost:5173, clicked the "Scenario" tab, found the What-if drawer's
+real sliders (Transmission loss, Rainfall, Antecedent wetness, Wind direction, Wind speed,
+Sediment load). Dragged the "Rainfall" slider from 100% to 150% and captured all network
+requests before and after (via mcp__claude-in-chrome__read_network_requests).
+
+Result: zero requests to localhost:8000 (the live API) were made as a result of the drag --
+confirmed by a fresh page load + network-tracking-from-navigation, then repeating the drag.
+The panel's own on-screen caption already says this honestly:
+
+  "Stand-in index, not model output -- what-if mode cannot re-run the model in the browser."
+
+This is a real, reproducible finding: the frontend's What-if drawer does NOT call
+POST /api/v1/exposure/calculate with rainfall_multiplier/transmission_loss_override (the
+real, working backend contract already confirmed PASS in p4-07/p4-15's backend evidence) --
+it computes a client-side stand-in index instead. Not fixed here, per this phase's rule 1.
+This matches the exact status already on record in tasks/phase4/00-phase4-plan.md ("A3.4:
+Backend real; frontend still bypasses it") -- confirming that gap is still open, not
+silently resolved.
+
+Separately relevant, architecture note found while investigating: `frontend/src/api/client.ts`
+gates catchments/outlets/reefZones/health behind `VITE_DATA_SOURCE` (default: 'fixtures'),
+which `docker-compose.yml` never overrides -- so the standard `docker compose --profile
+frontend up` path never switches that half of the app to live mode. Separately,
+`frontend/src/api/live.ts` (exposure/plume-frames/alerts) is NOT gated by DATA_SOURCE and
+always attempts a real network call regardless, degrading gracefully to a "not available"
+state on failure -- this is the "genuinely-live surface" A6.1 already identified. Worth
+Ali/Pulga knowing this distinction exists when testing any other frontend row in this
+matrix: a `localhost:8000` network call needs to be verified per-panel, not assumed from the
+DATA_SOURCE badge in the masthead.
+
+VERDICT: p4-07/p4-15 frontend half -- FAIL (does not call the real backend), but honestly
+labelled, not a fabrication. Backend half stays PASS as already recorded.
