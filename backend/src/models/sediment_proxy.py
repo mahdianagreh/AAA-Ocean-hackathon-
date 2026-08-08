@@ -45,6 +45,16 @@ TAU_DEFAULT = 0.525
 TAU_NEGEV = (0.20, 0.85)
 TAU_LITERATURE = (0.132, 0.98)
 
+# Phase 5, B2. The only two honest values: every response must say which one
+# produced its transmission_loss, not just carry the number. "learned" has no
+# implementation yet - flagged (docs/HANDOFF_abd_2026-08-07_b2_data.md) rather
+# than built, because there is no per-catchment measured tau anywhere in this
+# project to train a regression against. Every transmission_loss in the system
+# today - default or user-overridden via the slider - is a point somewhere on
+# this borrowed range, never a per-catchment estimate, so the basis is
+# "negev_proxy" unconditionally until that changes.
+TRANSMISSION_LOSS_BASIS = "negev_proxy"
+
 # Reference conditions - the point at which every dimensionless term equals 1.
 # Loosely the mid-range of the five Aqaba catchments, so the index is O(Q).
 THETA_REF_DEG = 12.0
