@@ -49,7 +49,9 @@ You own more data-viz than anyone. Three rules that are already law here:
 
 ### `p4-G` Historical Event Search — `/events`
 
-The page exists and lists real events. It is not done.
+✅ **Phase 6: PASS on the backend/data half** (your pass, 8 Aug). Ali's frontend half
+is open — which in this phase means yours. The page exists and lists real events. It
+is not done.
 
 - [ ] Filter by event ID **and** label; state how many rows are hidden by the filter
       rather than silently truncating. 675 events, no pagination on the API.
@@ -73,7 +75,8 @@ The page exists and lists real events. It is not done.
 
 ### `p4-K` Seasonal Risk Calendar — `/events`
 
-Not started. `scripts/29_seasonal_risk_calendar.py` exists;
+✅ **Phase 6: PASS on the data half** — you traced the calendar's data end to end.
+There is still **no surface**. `scripts/29_seasonal_risk_calendar.py` exists;
 `data/processed/features/seasonal_risk_calendar.parquet` is its output.
 
 - [ ] **There is no endpoint.** Either add one, or ship the parquet as a committed
@@ -85,7 +88,9 @@ Not started. `scripts/29_seasonal_risk_calendar.py` exists;
 
 ### `p4-05` Confidence Meter — `/dashboard`
 
-Backend is real: Nizar signed off `0/30 members exceed 2.34mm/24h → agreement 1.00`.
+✅ **The only fully-closed row in the project** — your threshold half and Nizar's
+ensemble-formula sign-off both landed 8 Aug. Do not regress it; the work below is
+what keeps it closed under the rebrand.
 
 - [ ] Compose the sentence in-language from `formula_terms`:
       `confidence_members_exceeding`, `_total`, `_threshold_value_mm`. **Never a
@@ -117,10 +122,13 @@ Phase 6 PASS on the backend: 46 real POIs, real geodesic nearest-zone join.
       an inland site shown with a dive-safety status is actively misleading.
 - [ ] Join key is `osm_id`, 115/115 unique. Never join on name.
 
-### `p4-F` Multi-Source Weather Agreement — with Nizar
+### `p4-F` Multi-Source Weather Agreement — with Nizar · 🔴 **FAIL**
 
-- [ ] `GET /api/v1/currents/agreement`. **It returns 503 on this checkout** —
-      `data/raw/currents/` does not exist. Decide with Nizar who restores the cache.
+You found this in Phase 6 and left it unfixed, correctly. Nizar reproduced it
+independently. **It gets fixed this phase — Nizar owns the fix, you own confirming
+it.** The defect is a **bare HTTP 500** with no missing-file check on the Copernicus
+Marine path; it returns 200 when the git-ignored `.nc` cache happens to be present.
+
 - [ ] `agreement` is `1 − diff/180`, continuous. When the cache has aged out it
       returns `null` — render "not available", never 0, never 100%.
 

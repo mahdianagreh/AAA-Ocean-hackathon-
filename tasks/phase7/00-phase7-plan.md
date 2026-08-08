@@ -5,8 +5,11 @@
 **Window:** 8 Aug → 13 Aug 2026, the last five days before presenting.
 
 Phase 6 measured the system and found the same shape in every row: **the backend is
-real and the screen is missing.** Six rows passed on their backend half with the
-frontend half open. Thirty rows were never tested at all. One row failed outright.
+real and the screen is missing.** As of the 8 Aug merge it carries 26 verdicts across
+44 rows — thirteen of them backend-half-only with the screen still owed, one row
+(`p4-05`) closed on both halves, and **two outright failures**, `p4-04` and `p4-F`.
+
+**Phase 6's no-fix rule was Phase 6's.** In this phase you fix what it found.
 
 Phase 7 closes that gap and nothing else. Every feature this repo has ever claimed
 gets a real surface, on the new brand, wired to the real endpoint, or it gets written
@@ -153,6 +156,7 @@ Do not rediscover these. Do not paper over them. Each one has an owner in Phase 
 | Thing | State | Owner |
 |---|---|---|
 | `p4-04` driver names never reach `/explain`, and the vocabulary would not match if they did | **FAIL**, recorded in Phase 6 | Mahdi + Pulga |
+| `p4-F` currents agreement returns a **bare HTTP 500** — no missing-file check on the Copernicus Marine path. Reproduced independently by Karam and Nizar; returns 200 when the git-ignored `.nc` cache happens to be present, so correctness depends on which machine you are on | **FAIL**, recorded in Phase 6 | Nizar + Karam |
 | Forecast lead-hour has **no code path** into an exposure score — `ExposureRequest` has no rainfall field | Architecture gap, unresolved since Phase 4 | Nizar |
 | Plume currents fall back to `ConstantCurrentField(0,0)`; wind is permanently zero | Documented limitation | Abd |
 | Replay works for `AQ-2016-10-28` only; every other event returns 422 | By design (no flood arrival time) | Abd |

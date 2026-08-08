@@ -39,6 +39,10 @@ nobody is careful. Aqua `#00B7C3` and the pulsing dot are already established fo
 
 ### `p4-02` Live Forecast Mode — read this before you plan anything
 
+✅ **Phase 6, 8 Aug: PASS on the backend half**, with a real **staleness** finding —
+the architecture is cache-only, which is a finding about freshness, not a code defect.
+Ali's frontend half is still open, and the gap below is still open.
+
 **The gap, stated exactly** (`tasks/phase4/03-nizar.md` lines 88–98):
 
 > `ExposureRequest` has no rainfall field (`schemas.py:319-326`), so a forecast
@@ -83,12 +87,14 @@ tab that renders an exposure score sourced from a training row while looking liv
 
 ### `b6` Live Anomaly Detection — `/dashboard` banner
 
-Code-complete and unit-tested (5 tests), but ⚠️ **never end-to-end verified with a
-real non-empty row** — the Supabase pooler hung during Phase 5. The cached snapshot
-has no `gefs_anomalies` key, so `anomalies` currently always returns `[]`.
+✅ **You closed this on 8 Aug: Phase 6 PASS**, fed both a real anomalous and a real
+normal value through the live detector. The detector is no longer the risk — the
+banner is, and it does not exist yet.
 
-- [ ] Verify it live with a real anomalous row **before** building the banner. If you
-      cannot, the row is Absent, not Done.
+Note the cached snapshot still has no `gefs_anomalies` key, so `/forecast/latest`
+returns `anomalies: []` against it. The banner must handle "detector works, this
+snapshot has nothing to report" without looking broken.
+
 - [ ] Banner fires on `is_anomalous`, in its own colour — **distinct from the hazard
       ramp**, because this is not a risk level.
 - [ ] Rolling sparkline with anomalous points marked by `anomaly_score`.
@@ -98,10 +104,20 @@ has no `gefs_anomalies` key, so `anomalies` currently always returns `[]`.
       distinction is how a judge concludes the team does not understand its own model.
 - [ ] It is **percentile-relative, not a z-score**. Label it that way.
 
-### `p4-F` Multi-Source Weather Agreement — with Karam
+### `p4-F` Multi-Source Weather Agreement — with Karam · 🔴 **FAIL**
 
-- [ ] `GET /api/v1/currents/agreement` **returns 503 on this checkout** —
-      `data/raw/currents/` does not exist. Restore the cache or mark the row Absent.
+Phase 6 recorded this as a **real bug**, reproduced independently by you and Karam,
+and left unfixed under Phase 6's no-fix rule. **Fixing it is yours this phase.**
+
+The defect: `GET /api/v1/currents/agreement` answers with a **bare HTTP 500** — there
+is no missing-file check on the Copernicus Marine path. With the git-ignored `.nc`
+cache present it returns 200, which is the row's real point: **its correctness
+currently depends on which machine you are sitting at.**
+
+- [ ] Fix the backend to answer a *missing cache* with a structured, honest response
+      — 503 with a body naming what is absent, in the style the model endpoints
+      already use — never a bare 500.
+- [ ] Only then build the surface.
 - [ ] Reproduces the documented 65.82° HYCOM-vs-Copernicus disagreement for the demo
       event. Show the disagreement, not a reassuring green tick.
 - [ ] `agreement = 1 − diff/180`, continuous. `null` when the cache aged out — render
@@ -128,7 +144,7 @@ has no `gefs_anomalies` key, so `anomalies` currently always returns `[]`.
 
 - [ ] The `p4-02` decision is written down here, dated, and the UI matches it
 - [ ] The countdown ticks from real values and renders its own absence
-- [ ] `b6` verified live with a real row, or marked Absent with the reason
+- [ ] The `b6` banner exists and handles an empty-but-working detector honestly
 - [ ] The anomaly banner is visually and verbally distinct from the Confidence Meter
 - [ ] Currents agreement shows real disagreement or an honest "not available"
 - [ ] Screenshots under `tasks/phase7/evidence/forecast/` and `.../anomaly/`, EN + AR,

@@ -37,7 +37,7 @@ as an alert reads as a bug.
 
 ## Your rows
 
-### `p4-04` Top Weather Drivers — **the one recorded FAIL in Phase 6**
+### `p4-04` Top Weather Drivers — **one of Phase 6's two recorded FAILs**
 
 Read `tasks/phase6/04-pulga.md` lines 87–124 before touching this. Precisely:
 
@@ -138,8 +138,8 @@ Backend PASS: `transmission_loss_override` echoes exactly.
 
 ### `b1`, `b2`, `b3`, `b9` — the four that do not exist
 
-Every checklist box in `tasks/phase5/02-mahdi.md` for these is unchecked. They have
-no backend and no data.
+Every checklist box in `tasks/phase5/02-mahdi.md` for these is unchecked. None has a
+backend. `b1` and `b9` have no data either; `b2` now does (see below).
 
 - [ ] **Do not build UI for them.** A polished empty card implies a pipeline.
 - [ ] Name all four on `/limitations`, each with one sentence saying what it would
@@ -148,6 +148,18 @@ no backend and no data.
       - `b2` learned transmission loss → the Negev proxy is in use
       - `b3` cross-site transfer → validated on exactly one site
       - `b9` culvert-conflict detector → the 27 culverts are a manual result
+
+**Two of these moved on 8 Aug — check the handoffs before you write the sentences:**
+
+- **`b2` is no longer data-blocked.** Karam found a real, open-access, multi-catchment
+  measured dataset — Cataldo et al. (2010), *The Open Hydrology Journal* — 90 measured
+  transmission-loss values across 13 named systems, extracted to
+  `tasks/mahdis-features-handoff/data/cataldo_2010_measured_transmission_loss.csv`.
+  He is explicit that D10/K are proxies, not B2's exact variables. The honest sentence
+  is now "data exists, model not built", **not** "no data exists".
+- **`b3` was scoped out on purpose**, not silently dropped. One site is the honest
+  state to ship. The limitation sentence must not imply transfer learning was tested
+  and failed — it was not attempted, deliberately.
 - [ ] Write the sentences here when done, so the matrix can quote them.
 
 ---
