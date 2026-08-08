@@ -4,6 +4,7 @@ import { SideRail } from '../shell/SideRail';
 import { TimeBar } from '../shell/TimeBar';
 import { MapView } from '../map/MapView';
 import { useEventData, useRiskCards } from '../app/useEventData';
+import { useUi } from '../app/uiStore';
 import { useLiveExposure } from '../app/useLiveExposure';
 import { OverlayHost } from '../panels/OverlayHost';
 
@@ -30,9 +31,10 @@ export function Dashboard() {
   const { t } = useTranslation();
   const { data, error } = useEventData();
   const risk = useRiskCards(data);
+  const scenario = useUi((s) => s.scenario);
   // Loaded independently of `data` — see the hook's own docstring for why a
   // failed live call must not block the historical/offline path from rendering.
-  const live = useLiveExposure(data?.series.event_id);
+  const live = useLiveExposure(data?.series.event_id, scenario);
 
   return (
     <div

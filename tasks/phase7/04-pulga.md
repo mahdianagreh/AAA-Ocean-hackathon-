@@ -10,6 +10,10 @@ sampling.
 Read [`00-phase7-plan.md`](00-phase7-plan.md) and
 [`00-design-system.md`](00-design-system.md) first.
 
+**Build order, exact steps and acceptance criteria:
+[`04-pulga-implementation-plan.md`](04-pulga-implementation-plan.md).** This file is
+the what and the why; that one is the how.
+
 You have the most rows and the most already-passing backends. Phase 6 gave you eight
 verdicts; **six of them were backend-only.** Phase 7 is where those become screens.
 

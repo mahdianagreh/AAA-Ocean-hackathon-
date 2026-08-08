@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  fetchExposure,
   fetchReefZonePhotos,
   fetchReefZonesLive,
   uploadReefZonePhoto,
+  type ExposureResult,
+  type ExposureRun,
   type ProposedSensitivityWeight,
   type ReefZonePhoto,
   type ReefZoneRow,
@@ -11,29 +14,21 @@ import {
 import { Link } from '../components/Link';
 import { Empty, ErrorState, Loading } from '../components/States';
 import { ValueWithUnit } from '../components/ValueWithUnit';
+import { FormulaChain, type Factor } from '../components/FormulaChain';
+import { StatusBadge } from '../components/StatusBadge';
+import { PlaceholderNote } from '../components/PlaceholderNote';
+import { CaveatList } from '../components/CaveatList';
 import { Card, CardGrid, PageShell, Section } from '../shell/PageShell';
-import { Caveats, IdText } from './AlertsPage';
+import { IdText } from './AlertsPage';
 
 /** One reef zone, at /reef-zones/:id.
  *
  *  There is no `GET /api/v1/reef-zones/{id}` — the detail is assembled from the
- *  list endpoint plus the `/photos` sub-resource. That is recorded in live.ts
- *  and repeated here because "the detail endpoint must be missing, let me add a
- *  fetch for it" is the obvious wrong first move.
+ *  list endpoint plus the `/photos` sub-resource.
  *
- *  THE requirement on this page is the separation of two numbers that look
- *  identical and mean opposite things:
- *
- *    live_sensitivity_weight    — what the exposure engine multiplied by. Real,
- *                                 in use, and currently an unreviewed 1.0.
- *    proposed_sensitivity_weight — what the contributed photos would suggest.
- *                                 Pending marine-scientist review, in use
- *                                 nowhere, and NOT a correction anyone approved.
- *
- *  They are therefore in two separate panels, with different framing, each
- *  labelled with whether it is in use — never adjacent cells of one table, where
- *  the eye reads the pair as before/after. A proposal mistaken for the live
- *  weight would silently change every exposure number on the platform.
+ *  Phase 7 additions:
+ *  - WP2: Click-to-See-Why formula inspector (p4-12)
+ *  - WP3: StatusBadge on weight cards, b7 adaptive sampling, b8 honesty
  */
 
 interface PhotoState {
@@ -41,12 +36,50 @@ interface PhotoState {
   proposed: ProposedSensitivityWeight;
 }
 
-/** The upload result renders `model_basis` verbatim and explains it in words.
- *  `heuristic_rule_v1` means no trained classifier exists on disk: the answer
- *  came from colour and texture rules and its confidence is capped at 0.55. A
- *  capped heuristic presented as a classifier is the exact claim this project
- *  has spent Phase 3 removing, so the caveat is part of the result, not a
- *  footnote under it. */
+/** Build the five Factor objects from formula_terms for FormulaChain */
+function buildFactors(
+  ft: Record<string, unknown>,
+  t: (key: string) => string,
+): Factor[] {
+  const factors: Factor[] = [
+    {
+      key: 'plume_probability',
+      label: t('formula.plumeProbability'),
+      value: (ft.plume_probability as number) ?? 0,
+      source: ft.plume_source as string | undefined,
+    },
+    {
+      key: 'relative_sediment_intensity',
+      label: t('formula.sedimentIntensity'),
+      value: (ft.relative_sediment_intensity as number) ?? 0,
+      source: ft.relative_sediment_intensity_source as string | undefined,
+    },
+    {
+      key: 'exposure_duration_weight',
+      label: t('formula.durationWeight'),
+      value: (ft.exposure_duration_weight as number) ?? 0,
+    },
+    {
+      key: 'habitat_sensitivity_weight',
+      label: t('formula.sensitivityWeight'),
+      value: (ft.habitat_sensitivity_weight as number) ?? 0,
+      placeholder: ft.habitat_sensitivity_weight_status as string | undefined,
+    },
+    {
+      key: 'confidence_adjustment',
+      label: t('formula.confidenceAdj'),
+      value: (ft.confidence_adjustment as number) ?? 0,
+      source: ft.confidence_adjustment_reason as string | undefined,
+      placeholder:
+        typeof ft.confidence_adjustment_reason === 'string' &&
+        (ft.confidence_adjustment_reason as string).startsWith('PLACEHOLDER')
+          ? (ft.confidence_adjustment_reason as string)
+          : undefined,
+    },
+  ];
+  return factors;
+}
+
 function UploadResult({ photo }: { photo: ReefZonePhoto }) {
   const { t } = useTranslation('pages');
   const heuristic = photo.model_basis === 'heuristic_rule_v1';
@@ -81,8 +114,119 @@ function UploadResult({ photo }: { photo: ReefZonePhoto }) {
   );
 }
 
+/** The formula inspector panel — WP2 centrepiece */
+function FormulaInspector({
+  result,
+  run,
+}: {
+  result: ExposureResult;
+  run: ExposureRun;
+}) {
+  const { t } = useTranslation('tools');
+  const ft = result.formula_terms;
+
+  const factors = buildFactors(ft, t);
+  const rawScore = (ft.raw_score as number) ?? 0;
+  const scoreScale = (ft.score_scale as number) ?? 100;
+  const riskScore = (ft.risk_score as number) ?? result.risk_score;
+
+  const zoneFraction = ft.zone_fraction_affected as number | undefined;
+  const nOverlayRows = ft.n_overlay_rows as number | undefined;
+  const measureCrs = ft.measure_crs as string | undefined;
+  const arrivalWindow = result.arrival_window_hours;
+  const horizonHours = ft.horizon_hours as number | undefined;
+  const contourTimesHit = ft.contour_times_hit as number[] | undefined;
+  const modelVersions = run.model_versions ?? (ft.model_versions as Record<string, string> | undefined);
+  const confidenceMembers = ft.confidence_members_exceeding as number | undefined;
+  const confidenceTotal = ft.confidence_members_total as number | undefined;
+  const confidenceThreshold = ft.confidence_threshold_value_mm as number | undefined;
+  const caveats = (result as unknown as Record<string, unknown>).caveats as unknown[] | undefined;
+
+  return (
+    <div className="flex flex-col gap-5" data-formula-inspector="true">
+      {/* The chain — the product identity */}
+      <FormulaChain factors={factors} product={rawScore} scale={scoreScale} result={riskScore} />
+
+      {/* Geometry */}
+      <div className="flex flex-col gap-2 rule bg-surface-2 p-3">
+        <h4 className="m-0 text-2xs font-semibold text-ink-2">{t('formula.geometryTitle')}</h4>
+        <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-2xs">
+          <dt className="text-ink-2">{t('formula.zoneFraction')}</dt>
+          <dd className="m-0">
+            <ValueWithUnit value={zoneFraction ?? null} digits={6} provenance="modelled" />
+          </dd>
+          <dt className="text-ink-2">{t('formula.overlayRows')}</dt>
+          <dd className="m-0">
+            <ValueWithUnit value={nOverlayRows ?? null} digits={0} provenance="modelled" />
+          </dd>
+          <dt className="text-ink-2">{t('formula.measureCrs')}</dt>
+          <dd className="m-0">{measureCrs ? <IdText>{measureCrs}</IdText> : '—'}</dd>
+        </dl>
+      </div>
+
+      {/* Timing */}
+      <div className="flex flex-col gap-2 rule bg-surface-2 p-3">
+        <h4 className="m-0 text-2xs font-semibold text-ink-2">{t('formula.timingTitle')}</h4>
+        <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-2xs">
+          <dt className="text-ink-2">{t('formula.arrivalWindow')}</dt>
+          <dd className="m-0">
+            {arrivalWindow
+              ? `${arrivalWindow[0]}–${arrivalWindow[1]} h`
+              : '—'}
+          </dd>
+          <dt className="text-ink-2">{t('formula.horizonHours')}</dt>
+          <dd className="m-0">
+            <ValueWithUnit value={horizonHours ?? null} digits={0} unit="h" provenance="modelled" />
+          </dd>
+          {contourTimesHit ? (
+            <>
+              <dt className="text-ink-2">{t('formula.contourTimesHit')}</dt>
+              <dd className="m-0 font-mono num">{contourTimesHit.join(', ')} h</dd>
+            </>
+          ) : null}
+        </dl>
+      </div>
+
+      {/* Model versions */}
+      {modelVersions && Object.keys(modelVersions).length > 0 ? (
+        <div className="flex flex-col gap-2 rule bg-surface-2 p-3">
+          <h4 className="m-0 text-2xs font-semibold text-ink-2">{t('formula.versionsTitle')}</h4>
+          <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-2xs">
+            {Object.entries(modelVersions).map(([k, v]) => (
+              <div key={k} className="contents">
+                <dt className="text-ink-2">{k}</dt>
+                <dd className="m-0"><IdText>{String(v)}</IdText></dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      ) : null}
+
+      {/* Confidence detail */}
+      {confidenceMembers !== undefined && confidenceTotal !== undefined ? (
+        <div className="flex flex-col gap-2 rule bg-surface-2 p-3">
+          <h4 className="m-0 text-2xs font-semibold text-ink-2">{t('formula.confidenceDetail')}</h4>
+          <p className="m-0 text-2xs text-ink-2">
+            {t('formula.confidenceMembers', {
+              exceeding: confidenceMembers,
+              total: confidenceTotal,
+              threshold: confidenceThreshold?.toFixed(2) ?? '—',
+            })}
+          </p>
+        </div>
+      ) : null}
+
+      {/* Caveats */}
+      {caveats && caveats.length > 0 ? (
+        <CaveatList items={caveats} title={t('formula.caveatsTitle')} />
+      ) : null}
+    </div>
+  );
+}
+
 export function ReefZonePage({ zoneId }: { zoneId: string }) {
   const { t } = useTranslation('pages');
+  const { t: tTools } = useTranslation('tools');
 
   const [zones, setZones] = useState<ReefZoneRow[] | null>(null);
   const [zonesFailed, setZonesFailed] = useState(false);
@@ -91,6 +235,11 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
   const [uploading, setUploading] = useState(false);
   const [uploadFailed, setUploadFailed] = useState(false);
   const [lastUpload, setLastUpload] = useState<ReefZonePhoto | null>(null);
+
+  // WP2: exposure data for the formula inspector
+  const [exposureRun, setExposureRun] = useState<ExposureRun | null>(null);
+  const [exposureLoading, setExposureLoading] = useState(true);
+  const [inspectorOpen, setInspectorOpen] = useState(false);
 
   const loadPhotos = useCallback(async () => {
     const p = await fetchReefZonePhotos(zoneId);
@@ -104,13 +253,13 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
 
   useEffect(() => {
     let live = true;
-    // Reset on a zone change, or the previous zone's photos flash under the new
-    // zone's name for one paint — which on this page means the previous zone's
-    // proposed weight beside this zone's live weight.
     setZones(null);
     setPhotoState(null);
     setLastUpload(null);
     setUploadFailed(false);
+    setExposureRun(null);
+    setExposureLoading(true);
+    setInspectorOpen(false);
 
     void fetchReefZonesLive().then((z) => {
       if (!live) return;
@@ -118,6 +267,27 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
       else setZones(z);
     });
     void loadPhotos();
+
+    // Load exposure for this zone — try all outlets to find the one that reaches this zone
+    const OUTLETS = ['AQ-O01', 'AQ-O02', 'AQ-O03', 'AQ-O04', 'AQ-O05'];
+    void Promise.all(
+      OUTLETS.map((o) =>
+        fetchExposure('AQ-2016-10-28', { outletId: o, horizonHours: 24 }),
+      ),
+    ).then((runs) => {
+      if (!live) return;
+      // Find a run that reached this zone
+      for (const run of runs) {
+        if (!run) continue;
+        const match = run.results.find((r) => r.reef_zone_id === zoneId);
+        if (match) {
+          setExposureRun(run);
+          setExposureLoading(false);
+          return;
+        }
+      }
+      setExposureLoading(false);
+    });
 
     return () => {
       live = false;
@@ -135,8 +305,6 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
         return;
       }
       setLastUpload(r);
-      // The proposal is recomputed server-side from the photo count, so the
-      // panel below is re-read rather than incremented locally.
       await loadPhotos();
     });
   };
@@ -173,6 +341,9 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
   const placeholder =
     zone.sensitivity_weight_status === 'PLACEHOLDER_PENDING_MARINE_SCIENTIST';
   const proposed = photoState?.proposed ?? null;
+
+  // Find the exposure result for this zone
+  const exposureResult = exposureRun?.results.find((r) => r.reef_zone_id === zoneId) ?? null;
 
   return (
     <PageShell
@@ -227,16 +398,56 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
         </CardGrid>
       </Section>
 
-      {/* --- the separation. Two panels, never one table. --------------------- */}
+      {/* WP2 — Click-to-See-Why: formula inspector */}
+      <Section label={tTools('formula.title')}>
+        {exposureLoading ? (
+          <Loading what="Loading exposure data…" />
+        ) : exposureResult && exposureRun ? (
+          <Card>
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="m-0 text-2xs text-ink-2">
+                {t('reefZone.riskScoreLabel', { defaultValue: 'Exposure risk score' })}
+              </p>
+              <button
+                type="button"
+                onClick={() => setInspectorOpen(!inspectorOpen)}
+                aria-expanded={inspectorOpen}
+                className="rule min-h-6 px-2 py-1 text-2xs text-accent underline"
+              >
+                {inspectorOpen ? 'Hide formula' : 'Show formula'}
+              </button>
+            </div>
+            <ValueWithUnit
+              value={exposureResult.risk_score}
+              digits={2}
+              provenance="modelled"
+              className="text-lg font-semibold"
+            />
+            <p className="m-0 text-2xs text-ink-3">
+              {exposureResult.risk_level} · from <IdText>{exposureRun.outlet_id}</IdText>
+            </p>
+
+            {inspectorOpen ? (
+              <FormulaInspector result={exposureResult} run={exposureRun} />
+            ) : null}
+          </Card>
+        ) : (
+          <Card>
+            <p className="m-0 text-2xs text-ink-2">
+              No exposure run reached this zone within 24 hours from any outlet.
+              This is a stated absence — the plume did not extend far enough.
+            </p>
+          </Card>
+        )}
+      </Section>
+
+      {/* --- WP3: the separation. Two panels, never one table. --- */}
       <Section label={t('reefZone.weightsLabel')}>
         <p className="m-0 max-w-prose text-2xs text-ink-2">{t('reefZone.weightsIntro')}</p>
         <div className="grid gap-5 lg:grid-cols-2">
-          {/* IN USE. Plain surface, the same treatment as every other real value
-              on the page. */}
+          {/* IN USE */}
           <Card>
-            <span className="inline-block w-fit border border-hairline bg-surface-2 px-1.5 py-0.5 text-2xs font-semibold text-ink-2">
-              {t('reefZone.chipInUse')}
-            </span>
+            <StatusBadge variant="in_use" />
             <h3 className="m-0 text-sm font-bold">{t('reefZone.liveTitle')}</h3>
             <ValueWithUnit
               value={proposed?.live_sensitivity_weight ?? zone.sensitivity_weight}
@@ -250,18 +461,18 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
                 {proposed?.live_sensitivity_weight_status ?? zone.sensitivity_weight_status}
               </IdText>
             </p>
-            <p className="m-0 max-w-prose text-2xs text-ink-2">
-              {placeholder ? t('reefZone.livePlaceholderNote') : t('reefZone.liveReviewedNote')}
-            </p>
+            {placeholder ? (
+              <PlaceholderNote flag="PLACEHOLDER_PENDING_MARINE_SCIENTIST" />
+            ) : (
+              <p className="m-0 max-w-prose text-2xs text-ink-2">
+                {t('reefZone.liveReviewedNote')}
+              </p>
+            )}
           </Card>
 
-          {/* NOT IN USE. Dashed, offset surface, and the chip says so in words —
-              the border alone would be colour-and-form meaning with no text, and
-              this is the one pair on the platform that must never be misread. */}
+          {/* NOT IN USE */}
           <Card className="border-dashed border-risk-high-stroke bg-surface-2">
-            <span className="inline-block w-fit border border-risk-high-stroke px-1.5 py-0.5 text-2xs font-semibold">
-              {t('reefZone.chipNotInUse')}
-            </span>
+            <StatusBadge variant="not_in_use" />
             <h3 className="m-0 text-sm font-bold">{t('reefZone.proposalTitle')}</h3>
             {photosFailed ? (
               <p className="m-0 text-2xs text-ink-2">{t('reefZone.photosUnavailable')}</p>
@@ -275,18 +486,28 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
                   provenance="modelled"
                   className="text-lg"
                 />
-                <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-2xs">
-                  <dt className="text-ink-2">{t('reefZone.proposalStatus')}</dt>
-                  <dd className="m-0">
+                {proposed.proposed_value === null ? (
+                  <p className="m-0 text-2xs text-ink-2">
                     {t(`reefZone.proposalStatusValue.${proposed.status}`, {
                       defaultValue: proposed.status,
                     })}
-                  </dd>
-                  <dt className="text-ink-2">{t('reefZone.proposalPhotos')}</dt>
-                  <dd className="m-0">
-                    <ValueWithUnit value={proposed.n_photos} digits={0} provenance="measured" />
-                  </dd>
-                </dl>
+                    {' — '}
+                    {t('reefZone.proposalPhotos')}: {proposed.n_photos} of 3 required
+                  </p>
+                ) : (
+                  <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-2xs">
+                    <dt className="text-ink-2">{t('reefZone.proposalStatus')}</dt>
+                    <dd className="m-0">
+                      {t(`reefZone.proposalStatusValue.${proposed.status}`, {
+                        defaultValue: proposed.status,
+                      })}
+                    </dd>
+                    <dt className="text-ink-2">{t('reefZone.proposalPhotos')}</dt>
+                    <dd className="m-0">
+                      <ValueWithUnit value={proposed.n_photos} digits={0} provenance="measured" />
+                    </dd>
+                  </dl>
+                )}
                 <p className="m-0 max-w-prose text-2xs text-ink-2">
                   {t('reefZone.proposalNote')}
                 </p>
@@ -296,6 +517,7 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
         </div>
       </Section>
 
+      {/* b8 — Coral Health */}
       <Section label={t('reefZone.coralHealthLabel')}>
         <Card>
           <div className="flex flex-col gap-1">
@@ -309,8 +531,6 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
               disabled={uploading}
               onChange={(e) => {
                 onFile(e.target.files?.[0] ?? null);
-                // Cleared so the same file can be submitted twice — otherwise a
-                // retry after a failure silently does nothing.
                 e.target.value = '';
               }}
               className="text-xs text-ink"
@@ -335,9 +555,38 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
         </Card>
       </Section>
 
+      {/* b7 — Adaptive Sampling: infrastructure only, not demoable */}
+      {exposureResult ? (
+        <Section label={tTools('sampling.title')}>
+          <Card>
+            <StatusBadge
+              variant={
+                (exposureResult as unknown as Record<string, unknown>).adjusted_priority_status === 'FEEDBACK_APPLIED'
+                  ? 'feedback_applied'
+                  : 'no_feedback'
+              }
+            />
+            <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-2xs">
+              <dt className="text-ink-2">{tTools('sampling.adjustedPriority')}</dt>
+              <dd className="m-0">
+                <ValueWithUnit
+                  value={(exposureResult as unknown as Record<string, unknown>).adjusted_priority as number | null ?? null}
+                  digits={4}
+                  provenance="modelled"
+                />
+              </dd>
+            </dl>
+            <p className="m-0 text-2xs text-ink-3">{tTools('sampling.dampenRule')}</p>
+            <p className="m-0 rule bg-surface-2 p-2 text-2xs text-ink-2">
+              {tTools('sampling.infrastructureNote')}
+            </p>
+          </Card>
+        </Section>
+      ) : null}
+
       {zone.caveats.length > 0 ? (
         <Section label={t('caveats.sectionLabel')}>
-          <Caveats items={zone.caveats} />
+          <CaveatList items={zone.caveats} />
         </Section>
       ) : null}
     </PageShell>

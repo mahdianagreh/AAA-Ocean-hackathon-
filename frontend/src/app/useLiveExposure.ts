@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { fetchAlerts, fetchExposure, fetchPlumeFrames } from '../api/live';
 import type { AlertRow, ExposureRun, PlumeFrames } from '../api/live';
+import type { Scenario } from './uiStore';
+import { SCENARIO_DEFAULTS } from './uiStore';
 
 /** The three genuinely-live calls, loaded independently of `useEventData`.
  *
@@ -12,6 +14,11 @@ import type { AlertRow, ExposureRun, PlumeFrames } from '../api/live';
  *  data that IS available. `fetchExposure`/`fetchPlumeFrames`/`fetchAlerts` are
  *  already best-effort (null/[] on failure, never throw) — this hook just gives
  *  them a home that cannot regress the historical/offline path.
+ *
+ *  PHASE 7: now accepts scenario parameters. The two API-backed controls
+ *  (rainfallMultiplier, transmissionLossOverride) are debounced ~400ms because
+ *  a Radix slider fires on every pixel and the exposure calculation is not cheap.
+ *  A request sequence number guards against out-of-order responses.
  */
 export interface LiveExposure {
   exposure: ExposureRun | null;
@@ -23,7 +30,10 @@ export interface LiveExposure {
   loading: boolean;
 }
 
-export function useLiveExposure(eventId: string | undefined): LiveExposure {
+export function useLiveExposure(
+  eventId: string | undefined,
+  scenario?: Scenario,
+): LiveExposure {
   const [state, setState] = useState<LiveExposure>({
     exposure: null,
     plume: null,
@@ -31,22 +41,65 @@ export function useLiveExposure(eventId: string | undefined): LiveExposure {
     loading: true,
   });
 
+  const seqRef = useRef(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Derive API parameters from the scenario.
+  // Only transmissionLoss and rainfallScale have real API parameters;
+  // the other four controls drive the client-side stand-in index only.
+  const rainfallMultiplier = scenario
+    ? scenario.rainfallScale / 100
+    : undefined;
+  const transmissionLossOverride = scenario
+    ? scenario.transmissionLoss / 100
+    : undefined;
+
+  // Are the scenario params at their defaults (meaning "don't send them")?
+  const isDefault =
+    !scenario ||
+    (scenario.rainfallScale === SCENARIO_DEFAULTS.rainfallScale &&
+      scenario.transmissionLoss === SCENARIO_DEFAULTS.transmissionLoss);
+
   useEffect(() => {
     if (!eventId) return;
-    let live = true;
-    setState((s) => ({ ...s, loading: true }));
 
-    void Promise.all([fetchExposure(eventId), fetchPlumeFrames(eventId), fetchAlerts()]).then(
-      ([exposure, plume, alerts]) => {
-        if (!live) return;
+    // Cancel any pending debounce
+    if (timerRef.current) clearTimeout(timerRef.current);
+
+    const doFetch = () => {
+      const seq = ++seqRef.current;
+      setState((s) => ({ ...s, loading: true }));
+
+      const params = isDefault
+        ? {}
+        : {
+            rainfallMultiplier,
+            transmissionLossOverride,
+          };
+
+      void Promise.all([
+        fetchExposure(eventId, params),
+        fetchPlumeFrames(eventId),
+        fetchAlerts(),
+      ]).then(([exposure, plume, alerts]) => {
+        // Sequence guard: a slow early response must not overwrite a fast later one
+        if (seq !== seqRef.current) return;
         setState({ exposure, plume, alerts, loading: false });
-      },
-    );
+      });
+    };
+
+    // Debounce 400ms when scenario params change, instant on first load
+    if (isDefault) {
+      doFetch();
+    } else {
+      timerRef.current = setTimeout(doFetch, 400);
+    }
 
     return () => {
-      live = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [eventId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId, rainfallMultiplier, transmissionLossOverride, isDefault]);
 
   return state;
 }

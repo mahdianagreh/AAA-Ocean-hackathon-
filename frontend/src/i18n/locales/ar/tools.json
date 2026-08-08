@@ -213,5 +213,43 @@
     "body": "هذا العنوان لا يطابق أي صفحة في هذا التطبيق.",
     "toDashboard": "اذهب إلى لوحة المعلومات",
     "toHome": "اذهب إلى الصفحة الرئيسية"
+  },
+  "formula": {
+    "title": "معادلة التعرض",
+    "rawScore": "الدرجة الخام",
+    "scale": "المقياس",
+    "riskScore": "درجة المخاطر",
+    "mismatchTitle": "عدم تطابق المعادلة",
+    "mismatchBody": "العوامل لا تتطابق مع الدرجة الخام المتوقعة. المحسوب {{computed}}، المتوقع {{expected}}.",
+    "caveatsTitle": "تحفظات",
+    "plumeProbability": "احتمالية العمود",
+    "sedimentIntensity": "شدة الرواسب النسبية",
+    "durationWeight": "وزن مدة التعرض",
+    "sensitivityWeight": "وزن حساسية الموائل",
+    "confidenceAdj": "تعديل الثقة",
+    "geometryTitle": "الهندسة",
+    "zoneFraction": "نسبة المنطقة المتأثرة",
+    "overlayRows": "صفوف التراكب",
+    "measureCrs": "نظام الإسقاط",
+    "timingTitle": "التوقيت",
+    "arrivalWindow": "نافذة الوصول",
+    "horizonHours": "الأفق",
+    "contourTimesHit": "أوقات ملامسة المحيط",
+    "versionsTitle": "إصدارات النموذج",
+    "confidenceDetail": "تفاصيل الثقة",
+    "confidenceReason": "السبب",
+    "confidenceMembers": "{{exceeding}} من {{total}} عضو GEFS يتجاوز {{threshold}} مم"
+  },
+  "placeholder": {
+    "sensitivity": "هذه قيمة مؤقتة (1.0) في انتظار مراجعة عالم أحياء بحرية، وليست وزن حساسية مُقاس. كل درجة تعرض لهذه المنطقة تُضرب بهذا الرقم.",
+    "generic": "هذه القيمة مُعلّمة كمؤقتة: {{flag}}. قد تتغير عند توفر بيانات حقيقية."
+  },
+  "sampling": {
+    "title": "أخذ العينات التكيفي",
+    "adjustedPriority": "الأولوية المعدّلة",
+    "adjustedStatus": "الحالة",
+    "dampenRule": "التغذية الراجعة يمكن أن تخفض الدرجة فقط، ولا ترفعها أبداً. محدودة بين [0، درجة_المخاطر].",
+    "infrastructureNote": "هذه الميزة هي بنية تحتية لقدرة تنشط بعد تاريخ نشر حقيقي. لا يمكن عرضها بشكل ذي معنى مع صفر ملاحظات ميدانية.",
+    "noFeedback": "لا توجد تغذية راجعة بعد — الأولوية المعدّلة تساوي درجة المخاطر بالضبط."
   }
 }

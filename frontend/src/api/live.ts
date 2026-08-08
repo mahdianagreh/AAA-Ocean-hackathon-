@@ -93,17 +93,43 @@ async function tryJson<T>(url: string, init?: RequestInit): Promise<T | null> {
   }
 }
 
+/** Parameters for the exposure calculation, including optional scenario knobs. */
+export interface ExposureParams {
+  outletId?: string;
+  horizonHours?: number;
+  /** 0.5 – 2.0. Omit to use the default (1.0). */
+  rainfallMultiplier?: number;
+  /** 0.20 – 0.85. Omit entirely when unset — do NOT send null or the default,
+   *  because the echo in formula_terms.transmission_loss is how you prove the
+   *  override took effect, and sending 0.525 explicitly makes "unchanged" and
+   *  "overridden to the default" indistinguishable. */
+  transmissionLossOverride?: number;
+}
+
 /** The real exposure run for the demo event, from the outlet that carries 96% of
  *  the discharge. Every term in the formula comes back, including the sediment
  *  intensity — this is where the anchored proxy becomes visible on screen rather
  *  than staying a number in a terminal. */
-export function fetchExposure(eventId: string, outletId = DEMO_OUTLET) {
+export function fetchExposure(eventId: string, params: ExposureParams = {}) {
+  const { outletId = DEMO_OUTLET, horizonHours = 24, rainfallMultiplier, transmissionLossOverride } = params;
+  const body: Record<string, unknown> = {
+    event_id: eventId,
+    outlet_id: outletId,
+    horizon_hours: horizonHours,
+  };
+  if (rainfallMultiplier !== undefined) {
+    body.rainfall_multiplier = Math.max(0.5, Math.min(2.0, rainfallMultiplier));
+  }
+  if (transmissionLossOverride !== undefined) {
+    body.transmission_loss_override = Math.max(0.20, Math.min(0.85, transmissionLossOverride));
+  }
   return tryJson<ExposureRun>(`${API_BASE}/api/v1/exposure/calculate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ event_id: eventId, outlet_id: outletId, horizon_hours: 24 }),
+    body: JSON.stringify(body),
   });
 }
+
 
 /** The timesteps a plume simulation actually produced, and a URL per frame. Never
  *  guessed — asking avoids requesting a `upto_hours` the simulation never made. */

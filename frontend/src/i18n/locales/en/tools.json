@@ -213,5 +213,43 @@
     "body": "That address does not match any page in this application.",
     "toDashboard": "Go to the dashboard",
     "toHome": "Go to the home page"
+  },
+  "formula": {
+    "title": "Exposure formula",
+    "rawScore": "raw score",
+    "scale": "scale",
+    "riskScore": "risk score",
+    "mismatchTitle": "Formula mismatch",
+    "mismatchBody": "The factors do not multiply to the expected raw score. Computed {{computed}}, expected {{expected}}.",
+    "caveatsTitle": "Caveats",
+    "plumeProbability": "Plume probability",
+    "sedimentIntensity": "Relative sediment intensity",
+    "durationWeight": "Exposure duration weight",
+    "sensitivityWeight": "Habitat sensitivity weight",
+    "confidenceAdj": "Confidence adjustment",
+    "geometryTitle": "Geometry",
+    "zoneFraction": "Zone fraction affected",
+    "overlayRows": "Overlay rows",
+    "measureCrs": "Measurement CRS",
+    "timingTitle": "Timing",
+    "arrivalWindow": "Arrival window",
+    "horizonHours": "Horizon",
+    "contourTimesHit": "Contour times hit",
+    "versionsTitle": "Model versions",
+    "confidenceDetail": "Confidence detail",
+    "confidenceReason": "Reason",
+    "confidenceMembers": "{{exceeding}} of {{total}} GEFS members exceeding {{threshold}} mm"
+  },
+  "placeholder": {
+    "sensitivity": "This is a placeholder value (1.0) awaiting marine-scientist review, not a measured sensitivity weight. Every exposure score for this zone is multiplied by this number.",
+    "generic": "This value is flagged as provisional: {{flag}}. It may change when real data becomes available."
+  },
+  "sampling": {
+    "title": "Adaptive sampling",
+    "adjustedPriority": "Adjusted priority",
+    "adjustedStatus": "Status",
+    "dampenRule": "Feedback can only dampen the score, never inflate it. Bounded to [0, risk_score].",
+    "infrastructureNote": "This feature is infrastructure for a capability that activates after real deployment history. It cannot be meaningfully demonstrated with zero field observations.",
+    "noFeedback": "No feedback yet — adjusted priority equals risk score exactly."
   }
 }

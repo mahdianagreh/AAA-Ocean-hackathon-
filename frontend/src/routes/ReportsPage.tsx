@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, PageShell, Section } from '../shell/PageShell';
+import { StatusBadge } from '../components/StatusBadge';
 import {
   fetchEvents,
   fetchReport,
@@ -235,25 +236,6 @@ export function ReportsPage() {
   );
 }
 
-function StatusBadge({ status }: { status: ReportOut['status'] }) {
-  const { t } = useTranslation('tools');
-  const drafted = status === 'ai_drafted';
-  return (
-    <span
-      data-report-status={status}
-      className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-1 text-2xs font-bold ${
-        drafted
-          ? 'border-risk-high-stroke bg-risk-high text-risk-high-on'
-          : 'border-risk-minimal-stroke bg-risk-minimal text-risk-minimal-on'
-      }`}
-    >
-      {/* A glyph as well as the fill, so the two statuses differ in shape and in
-          words rather than only in colour. */}
-      <span aria-hidden="true">{drafted ? '◆' : '✓'}</span>
-      {t(`reports.status.${status}`)}
-    </span>
-  );
-}
 
 function ReportCard({
   report,
@@ -277,7 +259,7 @@ function ReportCard({
             <span dir="ltr" className="font-mono num">
               {report.event_id}
             </span>
-            <StatusBadge status={report.status} />
+            <StatusBadge variant={report.status} />
           </h3>
           <code dir="ltr" className="font-mono num text-2xs text-ink-3">
             {report.report_id}

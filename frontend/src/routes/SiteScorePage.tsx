@@ -213,6 +213,11 @@ function Result({ result }: { result: SiteScoreResponse }) {
                       {id}
                     </span>{' '}
                     <span dir="auto">{t(`sites.criterion.${id}`)}</span>
+                    {id === 'C6' ? (
+                      <span className="ms-2 text-2xs font-normal text-ink-3">
+                        (constant, no data required)
+                      </span>
+                    ) : null}
                   </h4>
                   {insufficient ? (
                     <span className="rounded-sm border border-hairline-2 bg-surface-2 px-2 py-0.5 text-2xs font-bold text-ink-2">
