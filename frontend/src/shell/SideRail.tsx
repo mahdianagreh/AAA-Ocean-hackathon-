@@ -10,6 +10,7 @@ import { LayerToggle } from '../components/LayerToggle';
 import { ScenarioDrawer } from '../components/ScenarioDrawer';
 import { ValueWithUnit } from '../components/ValueWithUnit';
 import { PlumeMapPanel } from '../components/PlumeMapPanel';
+import { ForecastPanel } from '../panels/ForecastPanel';
 import { HARBOUR_BASIN_OUTLETS } from '../api/types';
 import type { HazardBand } from '../api/types';
 import { BAND_CLASS, HAZARD_RANGES } from '../api/types';
@@ -38,7 +39,21 @@ export function SideRail({
   live: LiveExposure;
 }) {
   const { t } = useTranslation();
-  const { cursor, setCursor, layers, toggleLayer } = useUi();
+  const { mode, cursor, setCursor, layers, toggleLayer } = useUi();
+
+  // Forecast mode's real content lives here, not the historical scene below —
+  // tasks/phase7/03-nizar.md's decision: show what /forecast/latest actually
+  // has, never silently fall back to the historical training-row path.
+  if (mode === 'forecast') {
+    return (
+      <aside
+        className="flex min-h-0 flex-col gap-5 overflow-y-auto bg-surface p-4"
+        aria-label={t('rail.label')}
+      >
+        <ForecastPanel active />
+      </aside>
+    );
+  }
 
   const ranked = [...risk].sort((a, b) => b.score - a.score);
   const worst = ranked[0];
@@ -293,7 +308,7 @@ export function SideRail({
   );
 }
 
-function Row({
+export function Row({
   label,
   caveat,
   warn,

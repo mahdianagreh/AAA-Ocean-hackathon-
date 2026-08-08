@@ -475,5 +475,39 @@
       "haveAccess": "Already have access?",
       "signIn": "Sign In"
     }
+  },
+  "forecast": {
+    "title": "Forecast (cached)",
+    "model": {
+      "gfs": "GFS",
+      "gefs": "GEFS (30-member)"
+    },
+    "noScoreYet": "This mode shows the cached forecast — rainfall, wind and ensemble exceedance. It does not yet produce a reef exposure score.",
+    "rainfall": "Rainfall per catchment",
+    "exceedance": "{{n}} of {{total}} members exceed the threshold",
+    "unreachable": "Forecast data is not available right now.",
+    "anomalyTitle": "Anomaly signal",
+    "anomalyDetected": "Unusual pattern detected in {{count}} catchment(s)",
+    "anomalyQuiet": "No unusual pattern detected in the current forecast.",
+    "sparklineLabel": "Rolling forecast anomaly score by catchment",
+    "percentileBand": {
+      "below_p50": "below the median",
+      "above_p50": "above the median",
+      "above_p90": "above the 90th percentile",
+      "above_p95": "above the 95th percentile",
+      "above_p99": "above the 99th percentile",
+      "above_p99_9": "above the 99.9th percentile"
+    },
+    "currentsTitle": "Multi-source current agreement",
+    "currentsDisagreement": "HYCOM vs. Copernicus Marine direction difference",
+    "currentsAgreementScore": "Agreement (0–1)",
+    "currentsUnavailable": "Currents comparison is not available right now."
+  },
+  "countdown": {
+    "title": "Estimated arrival",
+    "label": "Time to plume arrival",
+    "arrived": "The estimated arrival window has passed.",
+    "noWindow": "No arrival window is available for this view.",
+    "localArrival": "≈ {{time}} local time"
   }
 }

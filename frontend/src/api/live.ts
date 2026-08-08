@@ -81,6 +81,77 @@ export interface AlertRow {
   headline_ar: string;
 }
 
+export interface ForecastCatchmentRainfall {
+  catchment_id: string;
+  lead_hours: number;
+  rain_mm: number | null;
+  wind_speed_ms: number | null;
+  wind_direction_deg: number | null;
+}
+
+export interface ForecastExceedance {
+  catchment_id: string;
+  window_hours: number;
+  threshold_mm: number;
+  threshold_source: string;
+  members_total: number;
+  members_exceeding: number;
+  exceedance_prob: number | null;
+}
+
+/** Percentile-relative, not a z-score -- `catchment_rainfall_climatology` only
+ *  has percentiles, not a mean/std. See backend/src/processing/anomaly_detection.py. */
+export interface ForecastAnomaly {
+  catchment_id: string;
+  window_hours: number;
+  rain_mm: number;
+  climatology_p50: number;
+  climatology_p99: number;
+  climatology_p99_9: number;
+  percentile_band: string;
+  anomaly_score: number;
+  is_anomalous: boolean;
+}
+
+export interface ForecastRunMeta {
+  id: string;
+  model: string;
+  reference_time: string;
+  n_members: number;
+  max_lead_hours: number;
+}
+
+export interface ForecastLatest {
+  /** One reference_time per model (gfs/gefs), not a single timestamp. */
+  issued_at: Record<string, string>;
+  models: Record<string, ForecastRunMeta>;
+  catchment_rainfall: ForecastCatchmentRainfall[];
+  exceedance: ForecastExceedance[];
+  anomalies: ForecastAnomaly[];
+  anomaly_caveat: string;
+}
+
+export interface CurrentsAgreementCaveat {
+  field: string;
+  message: string;
+  severity: string;
+  source: string;
+}
+
+export interface CurrentsAgreement {
+  lon: number;
+  lat: number;
+  time: string;
+  hycom_direction_from_deg: number | null;
+  copernicus_marine_direction_from_deg: number | null;
+  direction_diff_deg: number | null;
+  /** Continuous, 1.0 at 0deg disagreement, 0.0 at 180deg -- never a hardcoded cutoff. */
+  agreement: number | null;
+  window: string;
+  sources: { hycom: string; copernicus_marine: string };
+  caveats: CurrentsAgreementCaveat[];
+}
+
 async function tryJson<T>(url: string, init?: RequestInit): Promise<T | null> {
   try {
     const r = await fetch(url, init);
@@ -295,7 +366,14 @@ export const fetchReefZonesLive = (includeGeometry = false) =>
 export const fetchDataSources = () => tryJson<DataSourceRow[]>(`${API_BASE}/api/v1/data-sources`);
 export const fetchModels = () => tryJson<Record<string, unknown>>(`${API_BASE}/api/v1/models`);
 export const fetchForecastLatest = () =>
-  tryJson<Record<string, unknown>>(`${API_BASE}/api/v1/forecast/latest`);
+  tryJson<ForecastLatest>(`${API_BASE}/api/v1/forecast/latest`);
+
+/** Real HYCOM-vs-Copernicus-Marine disagreement for the demo event by default
+ *  (mooring peak-response time) -- never a live fetch, reads whichever cached
+ *  `.nc` pair is already on disk. `null` fields mean the cache aged out or a
+ *  point falls outside a resolved cell -- render "not available", never 0. */
+export const fetchCurrentsAgreement = () =>
+  tryJson<CurrentsAgreement>(`${API_BASE}/api/v1/currents/agreement`);
 export const fetchDiveSites = () =>
   tryJson<Record<string, unknown>[]>(`${API_BASE}/api/v1/dive-sites`);
 

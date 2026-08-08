@@ -181,9 +181,11 @@ export function Masthead({ steps }: { steps: string[] }) {
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <div className="flex flex-wrap items-center gap-3">
           <ModeSwitch value={mode} onChange={(m) => setMode(m, stepCounts(steps))} />
-          {/* Only Historical has data behind it. Saying which mode is real beats
-              three modes that look equally live and two that quietly are not. */}
-          {mode !== 'historical' ? (
+          {/* Forecast mode has real cached data behind it as of 2026-08-09
+              (tasks/phase7/03-nizar.md) -- ForecastPanel states its own "no
+              exposure score yet" caveat inline, so this banner would now be
+              stale for it. Scenario mode's own status stays Ali's/Pulga's call. */}
+          {mode === 'scenario' ? (
             <span className="max-w-[22rem] text-2xs text-ink-3">{t(`mode.${mode}Pending`)}</span>
           ) : null}
         </div>

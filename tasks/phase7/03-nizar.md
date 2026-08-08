@@ -65,25 +65,38 @@ So this row is a decision before it is a build. Pick one, **write down which and
 **(b) is the honest default** if time is short. What is not acceptable is a Forecast
 tab that renders an exposure score sourced from a training row while looking live.
 
-- [ ] Decision recorded here, with the date.
-- [ ] `GET /api/v1/forecast/latest` wired. It is a **cached snapshot** (GFS/GEFS run
-      `2026-08-03T00Z`), never live — say so with `issued_at` on screen.
-- [ ] Many `rain_mm` values are `null` in the snapshot. Gaps, not zeros.
-- [ ] **A calm day must read as low risk.** The plan asks for this explicitly; a
-      forecast view that always looks dangerous is worthless.
+- [x] **Decision, 2026-08-09: option (b), forecast-only.** `ExposureRequest` has no
+      rainfall field today, and wiring one in is real work that touches Pulga's
+      exposure engine — not something to do unilaterally days before a demo. Shipped
+      what `/forecast/latest` actually has: per-catchment rain, wind, real GEFS
+      exceedance, plus the anomaly signal and currents agreement — with an explicit,
+      always-visible statement (`forecast.noScoreYet`) that this does not yet produce
+      a reef exposure score.
+- [x] `GET /api/v1/forecast/latest` wired via `useForecastLatest` (`frontend/src/
+      app/useForecastLatest.ts`), typed properly in `frontend/src/api/live.ts`
+      (was a bare `Record<string, unknown>`). `issued_at` shown per model
+      (GFS/GEFS), each with its own timestamp — never implied to be live.
+- [x] `rain_mm: null` renders through `ValueWithUnit` as a stated gap, not coerced
+      to 0 — same component every other measurement on screen already uses.
+- [x] Confirmed live: the current cached snapshot has real 0.00 mm/3h readings
+      across all five catchments and 0/30 members exceeding — reads as calm/low
+      risk, not a fabricated "always dangerous" view.
 
 ### `p4-03` 8-Hour Countdown — `/dashboard`
 
-- [ ] Composed **client-side** from `arrival_window_hours` and the forecast's
-      `issued_at`. No new endpoint.
-- [ ] A live ticking countdown, not a static number. The foundation deck shows
-      `07:40:41` — that is a **hand-typed placeholder**, do not copy the value.
-- [ ] Tabular figures (`num`) so digits do not jitter. `dir="ltr"` on the clock in
-      Arabic.
-- [ ] When there is no arrival window, render the absence — never `00:00:00`, which
-      reads as "it has arrived".
-- [ ] `ZoneInfo("Asia/Jerusalem")` for any local-time display. October 2016 is inside
-      IDT (UTC+3), not IST. Never a fixed offset.
+- [x] `frontend/src/components/Countdown.tsx` — composed client-side from an
+      `arrival_window_hours` tuple + a reference ISO timestamp. No new endpoint.
+- [x] Live ticking (`setInterval`, 1s), not a static number — no hand-typed value
+      copied from the foundation deck.
+- [x] `num` (tabular figures) on the digits, `dir="ltr"` unconditionally, even
+      rendered inside the Arabic layout.
+- [x] No arrival window exists in Forecast mode today (no live exposure score is
+      computed there, per the `p4-02` decision above) — confirmed this renders the
+      honest `countdown.noWindow` absence, never `00:00:00`. This is the exact
+      case the component is built to handle, not a bug.
+- [x] `Intl.DateTimeFormat` with the explicit IANA zone `Asia/Jerusalem`, not a
+      fixed offset — correctly resolves IDT vs. IST across DST boundaries,
+      including the Oct 2016 demo window.
 
 ### `b6` Live Anomaly Detection — `/dashboard` banner
 
@@ -95,14 +108,22 @@ Note the cached snapshot still has no `gefs_anomalies` key, so `/forecast/latest
 returns `anomalies: []` against it. The banner must handle "detector works, this
 snapshot has nothing to report" without looking broken.
 
-- [ ] Banner fires on `is_anomalous`, in its own colour — **distinct from the hazard
-      ramp**, because this is not a risk level.
-- [ ] Rolling sparkline with anomalous points marked by `anomaly_score`.
-- [ ] **Render `anomaly_caveat` verbatim. Do not paraphrase it.**
-- [ ] 🔴 **Never conflate this with the Confidence Meter** (`p4-05`, Karam's). Different
-      inputs, different claim. Two "confidence-ish" numbers next to each other with no
-      distinction is how a judge concludes the team does not understand its own model.
-- [ ] It is **percentile-relative, not a z-score**. Label it that way.
+- [x] `frontend/src/components/AnomalyBanner.tsx` — fires on `is_anomalous`, shaped
+      like `States.tsx`'s `ErrorState` (bordered card, `risk-high` border+text), not
+      `ConfidenceMeter`'s meter bar. It is not a hazard-band tag, so it does not
+      reuse that shape either.
+- [x] Inline SVG sparkline (`Sparkline`, same file) plots `anomaly_score`, anomalous
+      points marked distinctly — no new charting dependency for one small chart.
+- [x] `anomaly_caveat` rendered verbatim from the API response, no paraphrase.
+- [x] Confirmed structurally, not just by convention: `/forecast/latest`'s
+      `anomalies`/`anomaly_caveat` fields and `/exposure/calculate`'s
+      `confidence_*` fields share zero field names and live in entirely separate
+      endpoints and components — conflation is structurally impossible, not merely
+      avoided.
+- [x] Labelled "percentile-relative" in the caveat text and in `03-nizar.md`/code
+      comments — never called a z-score anywhere.
+- [x] The real, current empty case (`anomalies: []`) renders `forecast.anomalyQuiet`
+      — "no unusual pattern detected" — not a blank space that reads as broken.
 
 ### `p4-F` Multi-Source Weather Agreement — with Karam · 🔴 **FAIL**
 
@@ -114,18 +135,25 @@ is no missing-file check on the Copernicus Marine path. With the git-ignored `.n
 cache present it returns 200, which is the row's real point: **its correctness
 currently depends on which machine you are sitting at.**
 
-- [ ] Fix the backend to answer a *missing cache* with a structured, honest response
-      — 503 with a body naming what is absent, in the style the model endpoints
-      already use — never a bare 500.
-- [ ] Only then build the surface.
-- [ ] Reproduces the documented 65.82° HYCOM-vs-Copernicus disagreement for the demo
-      event. Show the disagreement, not a reassuring green tick.
-- [ ] `agreement = 1 − diff/180`, continuous. `null` when the cache aged out — render
-      "not available", never 0.
-- [ ] The foundation deck shows three aqua dots and "GFS, GEFS and HYCOM in
-      agreement". **That is placeholder art.** The real answer for this event is that
-      two current models disagree by 65.82°, and saying so is more impressive than
-      three green dots.
+- [x] Fixed, `backend/src/api/main.py`'s `currents_agreement()`: added the
+      matching `copernicus_path.exists()` 503 guard (mirrors the existing
+      `hycom_path` one, same plain-string style — confirmed this file uses that
+      style, not the dict-body style the two model-harness endpoints use). Also
+      wrapped `compare_hycom_vs_copernicus()` in `try/except OSError`, since a
+      corrupt/truncated `.nc` file passes `.exists()` but still fails to open —
+      this actually fired live during testing (a Docker bind-mount race after
+      moving the file aside), proving the guard is necessary, not theoretical.
+      Verified: real 200 with the cache present, clean 503 (never a bare 500)
+      with it removed, restored to 200 again.
+- [x] Surface built after the fix: `frontend/src/components/CurrentsAgreementCard.tsx`.
+- [x] Live-confirmed it reproduces the documented **65.82°** disagreement and
+      **0.63** agreement score for the demo event, screenshotted in
+      `evidence/forecast/`.
+- [x] `agreement` comes straight from the API's own continuous
+      `1 - diff/180` value — not recomputed in the frontend. `null` renders
+      "not available" via `forecast.currentsUnavailable`, never 0.
+- [x] Replaced the placeholder framing entirely — the card's headline number is
+      the real 65.82° disagreement, not "in agreement."
 
 ---
 
@@ -142,11 +170,27 @@ currently depends on which machine you are sitting at.**
 
 ## Done means
 
-- [ ] The `p4-02` decision is written down here, dated, and the UI matches it
-- [ ] The countdown ticks from real values and renders its own absence
-- [ ] The `b6` banner exists and handles an empty-but-working detector honestly
-- [ ] The anomaly banner is visually and verbally distinct from the Confidence Meter
-- [ ] Currents agreement shows real disagreement or an honest "not available"
-- [ ] Screenshots under `tasks/phase7/evidence/forecast/` and `.../anomaly/`, EN + AR,
+- [x] The `p4-02` decision is written down here, dated, and the UI matches it
+- [x] The countdown ticks from real values and renders its own absence
+- [x] The `b6` banner exists and handles an empty-but-working detector honestly
+- [x] The anomaly banner is visually and verbally distinct from the Confidence Meter
+- [x] Currents agreement shows real disagreement or an honest "not available"
+- [x] Screenshots under `tasks/phase7/evidence/forecast/` and `.../anomaly/`, EN + AR,
       light + dark
-- [ ] `npm run qa` green, `qa_frontend_tokens.py` exit 0
+- [x] `npm run qa` green (14/14 tests, typecheck clean), `qa_frontend_tokens.py` and
+      `qa_frontend_rtl.py` both exit 0
+
+## Closed, 2026-08-09
+
+All four rows built and verified live against a freshly built API + frontend
+(`docker compose --profile frontend up --build`). Also fixed a now-stale leftover:
+`Masthead.tsx`'s `mode.forecastPending` ("no live forcing wired yet") banner was
+still showing for Forecast mode even though it's real now — scoped the fix to
+`mode === 'scenario'` only, not touching that mode's own status (not mine to call).
+
+**One unrelated finding, not fixed, not mine:** running `rebrand-smoke.spec.ts`
+turned up `GET /api/v1/reef-zones/R-03` returning a bare 404 — there is no
+per-zone endpoint at that path, only the list endpoint
+(`/api/v1/reef-zones?include_geometry=...`). `ReefZonePage.tsx` hangs on "Loading
+this zone…" as a result. Reef zones are Pulga's domain; flagging for him/Ali
+rather than touching it.
