@@ -1,5 +1,23 @@
 # Phase 6 — Nizar's testing assignment
 
+> **Note from Karam, 8 Aug — p4-F already has a recorded FAIL, left unfixed on
+> purpose (this phase's own rule).** Ran it live against a freshly built
+> container: `GET /api/v1/currents/agreement` returns a bare HTTP 500, never
+> reaches the 65.8° figure. Full traceback in
+> `evidence/p4-F/currents_agreement.txt`. For whoever picks this up in Phase 7
+> — not doing it now, just naming it precisely: `main.py`'s
+> `currents_agreement()` (around line 787) checks `hycom_path.exists()` and
+> returns a clean 503 if it's missing, but has no matching check for
+> `copernicus_path` before calling `oc.compare_hycom_vs_copernicus()` — only
+> the HYCOM cache exists on disk, Copernicus Marine credentials were never
+> configured. The fix is presumably either (a) fetch/cache the Copernicus
+> Marine side too, once credentials exist, or (b) add the same
+> exists-or-503 guard for `copernicus_path` that already exists for
+> `hycom_path`, so the endpoint degrades honestly instead of crashing — that's
+> a real design choice, not mine to make. Your independent re-run below should
+> still happen for real, not be skipped because a FAIL is already on record —
+> the point of two testers on this row is that it doesn't depend on who ran it.
+
 Read [`00-phase6-plan.md`](00-phase6-plan.md) first. This file contains **no fix, build,
 wire, or repoint instructions** — only what to run and where to record the result. If
 something fails, write `FAIL` with evidence and move on; do not fix it in this pass.
