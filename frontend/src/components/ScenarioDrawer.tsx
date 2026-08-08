@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Slider } from 'radix-ui';
-import { useUi, type Scenario, SCENARIO_DEFAULTS } from '../app/uiStore';
+import { useUi, type Scenario } from '../app/uiStore';
 import { ValueWithUnit } from './ValueWithUnit';
 
 /** The six scenario controls — DoD item 2, "including transmission loss".
