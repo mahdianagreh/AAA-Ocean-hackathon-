@@ -1,6 +1,6 @@
 # ERA5-Land Temporal Semantics — Evidence and Determination
 
-How ReefShield determined the temporal convention of ERA5-Land flux variables,
+How AQABA AQUA AI determined the temporal convention of ERA5-Land flux variables,
 with each claim labelled by the strength of its evidence.
 
 Implemented by `normalize_era5_land_fluxes()` and `infer_temporal_semantics()`

@@ -1,6 +1,6 @@
 # What our data can and cannot tell you
 
-**ReefShield Aqaba · data foundation (land cover, soil, urban, reef habitat, bathymetry)**
+**AQABA AQUA AI · data foundation (land cover, soil, urban, reef habitat, bathymetry)**
 
 This page is written for the judges, not for our own notebooks. Every limitation
 below is one we found ourselves and chose to state, because a data platform that

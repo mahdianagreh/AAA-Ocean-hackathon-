@@ -8,3 +8,8 @@ blob-report
 *.log
 .DS_Store
 .env.local
+
+# Design source, not runtime. 3.8 MB of design-canvas HTML, brand guidelines and
+# reference screenshots — committed on purpose so the brand has a source of truth
+# in the repo, but it must never reach the image.
+Foundation pages built

@@ -7,8 +7,13 @@ import { useEventData, useRiskCards } from '../app/useEventData';
 import { useLiveExposure } from '../app/useLiveExposure';
 import { OverlayHost } from '../panels/OverlayHost';
 
-/** The one screen. 03 §1: eight storyboard scenes on a single view, with the
- *  limitations text and provenance panel as overlays rather than routes.
+/** The operational screen, at /dashboard.
+ *
+ *  03 §1 originally put eight storyboard scenes on a single view at `/`, with
+ *  the limitations text and provenance panel as overlays rather than routes.
+ *  The brand rebuild moved `/` to the marketing home and gave those panels real
+ *  URLs, but the overlays still work from here — a judge mid-demo should not
+ *  have to leave the map to check provenance and then find their way back.
  *
  *  Data is loaded ONCE here and passed down, so the map, the hyetograph and the
  *  risk cards read the same cursor and the same values. 01 §7: a judge dragging
@@ -21,7 +26,7 @@ import { OverlayHost } from '../panels/OverlayHost';
  *  than half the viewport, enforced by track sizing rather than a min-height
  *  someone has to remember to check.
  */
-export function Home() {
+export function Dashboard() {
   const { t } = useTranslation();
   const { data, error } = useEventData();
   const risk = useRiskCards(data);

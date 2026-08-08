@@ -1,6 +1,6 @@
 # Event Audit — Satellite Imagery for Plume Validation
 
-**Owner:** Abd · **Project:** ReefShield Aqaba · **Workstream:** B (Remote Sensing)
+**Owner:** Abd · **Project:** AQABA AQUA AI · **Workstream:** B (Remote Sensing)
 
 This is the project's gating deliverable per `tasks/abd.md` §1: confirm at least one
 historical event has a usable post-event scene before anything downstream is built.

@@ -15,7 +15,7 @@ import { expect, test } from '@playwright/test';
  *    5. the map still works with DNS blackholed
  */
 
-const AR = '/?lang=ar&theme=light';
+const AR = '/dashboard?lang=ar&theme=light';
 
 /** Wait for the map to exist and finish its first render. */
 async function mapReady(page: import('@playwright/test').Page) {
@@ -32,14 +32,14 @@ test.describe('the RTL plugin', () => {
     // unshaped, and the failure is invisible in English.
     await page.goto(AR);
     await expect
-      .poll(() => page.evaluate(() => window.__reefshield?.rtlStatus()), { timeout: 20_000 })
+      .poll(() => page.evaluate(() => window.__aqabaAquaAi?.rtlStatus()), { timeout: 20_000 })
       .toBe('loaded');
     await mapReady(page);
   });
 
   test('is served from our own origin, not a CDN', async ({ page }) => {
     const url = await page.goto(AR).then(() =>
-      page.evaluate(() => window.__reefshield?.pluginUrl),
+      page.evaluate(() => window.__aqabaAquaAi?.pluginUrl),
     );
     expect(url).toBeTruthy();
     expect(url).not.toMatch(/^https?:\/\//);

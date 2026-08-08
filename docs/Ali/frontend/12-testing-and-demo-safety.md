@@ -2,15 +2,20 @@
 
 **Status:** scaffold — filled during Phase 5–6 · **Owner:** Ali
 
-The backend has **433 tests across 20 files** and is still growing. A frontend with no tests would be out of step
+The backend has **552 tests across 36 files** and is still growing. A frontend with no tests would be out of step
 with this repo — and the demo runs live in front of judges.
 
-That 433 is a count of `def test_` functions, not a result. Run on 3 Aug 2026 — the first time
-anyone had actually run it — the suite gives **421 passed, 4 failed, 49 skipped**. The four
-failures are a real API contract defect ([`OPEN-ISSUES.md`](../../OPEN-ISSUES.md) item 24); the 49
-skips nobody has looked at. Both numbers belong here, because the gap between them is the point:
-a grep counts a skipped test and a failing test as passes, and quoting it is how "the backend has
-433 tests" turns into "the backend is fine".
+That 552 is a count of `def test_` functions, not a result. Run on 3 Aug 2026 — the first time
+anyone had actually run it — the suite stood at 433 tests and gave **421 passed, 4 failed, 49
+skipped**. The four failures were a real API contract defect
+([`OPEN-ISSUES.md`](../../OPEN-ISSUES.md) item 24); the 49 skips nobody had looked at. Both numbers
+belong here, because the gap between them is the point: a grep counts a skipped test and a failing
+test as passes, and quoting it is how "the backend has 552 tests" turns into "the backend is fine".
+
+> The headline count was stale at **433 across 20 files** until 8 Aug 2026, when
+> `scripts/qa_frontend_docs.py` measured 552 across 36 and failed the build on the mismatch. The
+> pass/fail/skip split below it is still the 3 Aug run and has **not** been re-measured — it is
+> dated for that reason, and the 119 tests added since are of unknown status.
 
 ---
 

@@ -1,4 +1,4 @@
-# Master Task Summary — Generic ReefShield Rainfall & Land-Reanalysis Pipeline
+# Master Task Summary — Generic AQABA AQUA AI Rainfall & Land-Reanalysis Pipeline
 
 Completed 2026-08-01. All 10 phases executed sequentially.
 

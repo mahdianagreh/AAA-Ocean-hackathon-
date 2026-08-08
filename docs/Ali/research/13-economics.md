@@ -26,7 +26,7 @@ takes.**
 **The platform's input data is free.** IMERG, ERA5-Land, GFS, GEFS, ECMWF open data,
 Sentinel-2, HLS, Copernicus DEM, SRTM, WorldCover, SoilGrids, OSM, GEBCO/GMRT, Allen Coral
 Atlas and Copernicus Marine are all open or free-on-registration
-([concept doc §11](../../../reefshield_aqaba_concept.md)) **[sourced]**.
+([concept doc §11](../../../aqaba_aqua_ai_concept.md)) **[sourced]**.
 
 **[judgement]** Three consequences that shape the whole business:
 

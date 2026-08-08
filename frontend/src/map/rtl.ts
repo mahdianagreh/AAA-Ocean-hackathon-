@@ -85,7 +85,7 @@ export function rtlStatus(): RtlStatus {
  *  loaded *before* the first map was constructed. */
 declare global {
   interface Window {
-    __reefshield?: { rtlStatus: () => RtlStatus; pluginUrl: string };
+    __aqabaAquaAi?: { rtlStatus: () => RtlStatus; pluginUrl: string };
   }
 }
-window.__reefshield = { rtlStatus, pluginUrl: PLUGIN_URL };
+window.__aqabaAquaAi = { rtlStatus, pluginUrl: PLUGIN_URL };

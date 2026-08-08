@@ -13,7 +13,7 @@ rainfall forecast → wadi runoff → sediment source & coastal outlet
 
 Read `tasks/phase3/00-phase3-plan.md` first, then your own task file in
 `tasks/phase3/`. `tasks/phase2/` is the previous phase, kept for context.
-`reefshield_aqaba_concept.md` is the full concept.
+`aqaba_aqua_ai_concept.md` is the full concept.
 
 **Phase 3 in one line:** the pieces work individually; make the chain true end to
 end and no term in the exposure formula a stub. One task gates five — the sediment

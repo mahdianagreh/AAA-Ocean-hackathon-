@@ -2,6 +2,12 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from './locales/en/common.json';
 import ar from './locales/ar/common.json';
+import enPages from './locales/en/pages.json';
+import arPages from './locales/ar/pages.json';
+import enNav from './locales/en/nav.json';
+import arNav from './locales/ar/nav.json';
+import enTools from './locales/en/tools.json';
+import arTools from './locales/ar/tools.json';
 
 /** Resources are bundled, not fetched.
  *
@@ -18,9 +24,15 @@ import ar from './locales/ar/common.json';
  */
 void i18n.use(initReactI18next).init({
   resources: {
-    en: { common: en },
-    ar: { common: ar },
+    en: { common: en, pages: enPages, tools: enTools, nav: enNav },
+    ar: { common: ar, pages: arPages, tools: arTools, nav: arNav },
   },
+  // `common` stays the default namespace so no existing t('rail.x') call
+  // changes. The route-level pages added by the rebrand live in `pages`, split
+  // out purely so several people can add copy at once without every edit
+  // landing in the same two files and colliding. Reach it with
+  // useTranslation('pages') or t('pages:key').
+  ns: ['common', 'pages', 'tools', 'nav'],
   lng: 'en',
   fallbackLng: 'en',
   defaultNS: 'common',

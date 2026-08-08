@@ -98,20 +98,36 @@ def clamp(L, C, h):
     cm = max_chroma(L, h)
     return (L, min(C, cm), h)
 
+# AQABA AQUA AI brand palette. The light row is the brand hex set exactly:
+# canvas #F4F7FA, surface #FFFFFF, surface-2 #E6F7FA, hairline #DCE5EC,
+# ink-2 #46566D, ink #0A1F4D, accent #007A99. Aqua #00B7C3 is deliberately not
+# the light accent — it measures 2.2 against white and fails AA for text; it
+# carries the dark accent and the decorative gradient instead, which is the
+# split the brand guidelines already draw (Marine Teal "charts & data",
+# Aqua "accent & AI").
 GROUND = {
     "light": {
-        "canvas":     (0.985, 0.006, 200), "surface":    (1.000, 0.000, 200),
-        "surface-2":  (0.960, 0.010, 200), "hairline":   (0.900, 0.014, 200),
-        "hairline-2": (0.840, 0.020, 200), "ink-3":      (0.545, 0.022, 205),
-        "ink-2":      (0.420, 0.028, 205), "ink":        (0.240, 0.030, 210),
-        "accent":     (0.520, 0.085, 205),
+        "canvas":     (0.975, 0.005, 248), "surface":    (1.000, 0.000, 248),
+        "surface-2":  (0.964, 0.018, 209), "hairline":   (0.917, 0.014, 241),
+        # ink-3 sits at 0.540, not the 0.560 the brand slate suggests. At 0.560 it
+        # measures 4.33 against canvas — AA-large only, and this token carries
+        # secondary body text. 0.540 restores 4.71, the figure the previous
+        # palette cleared, and keeps 4.58 against surface-2.
+        "hairline-2": (0.850, 0.020, 241), "ink-3":      (0.540, 0.040, 257),
+        "ink-2":      (0.449, 0.043, 257), "ink":        (0.255, 0.089, 263),
+        # Marine Teal #007A99 is oklch(0.538 …). At that exact lightness the accent
+        # measures 4.49 on --surface-2 — one hundredth under AA, and this token
+        # carries link text. 0.535 renders #027998, which is 2/255 off the brand
+        # hex in one channel and indistinguishable on screen, and clears AA on
+        # every ground the accent can land on.
+        "accent":     (0.535, 0.101, 224),
     },
     "dark": {
-        "canvas":     (0.180, 0.024, 215), "surface":    (0.225, 0.026, 215),
-        "surface-2":  (0.270, 0.028, 215), "hairline":   (0.330, 0.026, 213),
-        "hairline-2": (0.400, 0.028, 213), "ink-3":      (0.620, 0.022, 208),
-        "ink-2":      (0.780, 0.020, 205), "ink":        (0.940, 0.012, 202),
-        "accent":     (0.780, 0.105, 200),
+        "canvas":     (0.178, 0.032, 261), "surface":    (0.225, 0.036, 261),
+        "surface-2":  (0.270, 0.040, 261), "hairline":   (0.330, 0.034, 259),
+        "hairline-2": (0.400, 0.036, 259), "ink-3":      (0.620, 0.030, 250),
+        "ink-2":      (0.800, 0.024, 220), "ink":        (0.950, 0.014, 209),
+        "accent":     (0.710, 0.121, 203),
     },
 }
 

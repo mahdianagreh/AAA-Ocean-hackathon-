@@ -1,4 +1,4 @@
-# Event Dates — ReefShield Aqaba
+# Event Dates — AQABA AQUA AI
 
 Timing contract for the historical flash-flood events used for backtesting.
 
@@ -45,7 +45,7 @@ arrival that the project actually forecasts. Fixing the ID to the arrival date
 in UTC keeps event IDs, marine observations, and model targets on one clock.
 
 This resolves the `AQ-2016-10-XX` placeholders in the concept doc
-(`reefshield_aqaba_concept.md:481`, `:1117`, `:1502`).
+(`aqaba_aqua_ai_concept.md:481`, `:1117`, `:1502`).
 
 > **Note:** `tasks/00-contracts.md:68` shows `AQ-2016-10-25` in the ID-format
 > table. That is a **formatting example**, not this event. The correct ID for
@@ -329,7 +329,7 @@ wettest_3h_window_utc   : TO_BE_DERIVED_FROM_IMERG
 ```
 
 **No date is invented here.** What is known: the concept doc
-(`reefshield_aqaba_concept.md:160`) cites ≈21,000 tonnes of suspended sediment
+(`aqaba_aqua_ai_concept.md:160`) cites ≈21,000 tonnes of suspended sediment
 for a February 2013 event, versus ≈24,000 tonnes for October 2016. Month and
 year only — no day, no time.
 

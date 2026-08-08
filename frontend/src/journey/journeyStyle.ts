@@ -39,9 +39,9 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
 
   return {
     version: 8,
-    name: 'ReefShield 3D Journey',
+    name: 'Aqaba Aqua AI 3D Journey',
     projection: { type: 'mercator' },
-    sky: { 'sky-color': isDark ? '#020a0d' : '#bfe3ea', 'horizon-color': isDark ? '#0c2327' : c.surface_2 },
+    sky: { 'sky-color': isDark ? '#020a0d' : '#bfe3ea', 'horizon-color': isDark ? '#0c2327' : c.surface_2 }, // token-ok: 3D sky lighting, no UI token exists
     sources: {
       outlets: { type: 'geojson', data: url('outlets') },
       ...terrain.sources,
@@ -52,7 +52,7 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
       ...rain.sources,
     },
     layers: [
-      { id: 'bg', type: 'background', paint: { 'background-color': isDark ? '#020a0d' : c.canvas } },
+      { id: 'bg', type: 'background', paint: { 'background-color': isDark ? '#020a0d' : c.canvas } }, // token-ok: matches sky, no horizon seam
       {
         id: 'terrain-hillshade',
         type: 'hillshade',
@@ -62,8 +62,8 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
           // (added in Journey3D.tsx once its async corners resolve) now
           // carries true colour, so hillshade's only job left is relief
           // *shading* — a colour cast here would discolour a real photo.
-          'hillshade-shadow-color': isDark ? '#05070a' : '#14181a',
-          'hillshade-highlight-color': isDark ? '#3d434a' : '#fdfbf3',
+          'hillshade-shadow-color': isDark ? '#05070a' : '#14181a', // token-ok: relief shading
+          'hillshade-highlight-color': isDark ? '#3d434a' : '#fdfbf3', // token-ok: relief shading
           'hillshade-exaggeration': 0.45,
         },
       },

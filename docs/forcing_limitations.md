@@ -9,7 +9,7 @@
 > That means the entire gulf is spanned by two or three grid cells, so the nearshore
 > circulation — precisely where the reefs are — is not resolved. We saw this directly: our
 > own provisional wadi outlet coordinate lands on a grid cell the model treats as masked
-> land, not water. This is exactly why ReefShield does not output a single plume
+> land, not water. This is exactly why AQABA AQUA AI does not output a single plume
 > trajectory. It outputs a probabilistic exposure zone, built from many particles run
 > under stochastic diffusion, with an explicit confidence figure attached. Higher-resolution
 > local current measurements are a Phase 2 item, not a hackathon MVP requirement.

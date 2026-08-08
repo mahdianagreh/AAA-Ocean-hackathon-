@@ -14,7 +14,7 @@ import { expect, test } from '@playwright/test';
  *  exists so it never silently regresses between now and the freeze.
  */
 
-const AR = '/?lang=ar&theme=light';
+const AR = '/dashboard?lang=ar&theme=light';
 
 async function mapReady(page: import('@playwright/test').Page) {
   await page.waitForSelector('[data-map="true"] canvas', { timeout: 30_000 });
@@ -30,7 +30,7 @@ test('the whole view works with DNS blackholed', async ({ page }) => {
 
   // 1. The plugin loaded — from our origin, with no name resolution available.
   await expect
-    .poll(() => page.evaluate(() => window.__reefshield?.rtlStatus()), { timeout: 25_000 })
+    .poll(() => page.evaluate(() => window.__aqabaAquaAi?.rtlStatus()), { timeout: 25_000 })
     .toBe('loaded');
 
   await mapReady(page);

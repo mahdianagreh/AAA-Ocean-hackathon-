@@ -1,6 +1,6 @@
 # Day 1 Contracts — How Nobody Waits for Anybody
 
-**Project:** ReefShield Aqaba
+**Project:** AQABA AQUA AI
 **Read this before your own task file.**
 
 ---

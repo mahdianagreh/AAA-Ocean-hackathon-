@@ -85,7 +85,7 @@ export function rainFragment(c: Palette) {
           // fixed rather than theme-derived because it is countering real
           // photo content, not app chrome, so it doesn't shift with the app's
           // own light/dark toggle.
-          'circle-stroke-color': '#ffffff',
+          'circle-stroke-color': '#ffffff', // token-ok: reads against satellite photo, not app chrome
           'circle-stroke-width': 1.5,
           'circle-stroke-opacity': ['*', ['get', 'opacity'], 0.9] as unknown as number,
           'circle-pitch-alignment': 'map',

@@ -23,7 +23,9 @@ never invented. Keeping generated content in its own directory means the distinc
 someone reorganising components a week from now.
 
 The prediction picture is `GET /api/v1/plume/map` — a real Esri satellite photograph with the
-model's own plume drawn on it, `X-ReefShield-Generated-Imagery: none`. That is what goes
+model's own plume drawn on it, and a `…-Generated-Imagery: none` response header. (The header's
+vendor prefix is still the pre-rebrand product name — it is set by the backend, so renaming it is a
+backend change and has not been made here.) That is what goes
 where an observation belongs.
 
 Full reasoning, including why generating the prediction image was rejected on evidence

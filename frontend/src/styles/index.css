@@ -77,6 +77,26 @@
     }
   }
 
+  /* The live-status dot. Calm water, not a notification badge: it breathes
+     rather than blinks, and the word beside it carries the meaning on its own.
+     The reduced-motion block above already reduces this to a static dot. */
+  @keyframes aq-pulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.35;
+      transform: scale(1.35);
+    }
+  }
+
+  .aq-pulse {
+    animation: aq-pulse 2s ease-in-out infinite;
+  }
+
   /* Kill orphans in prose. Headings balance, body avoids a single trailing word. */
   :where(h1, h2, h3, h4) {
     text-wrap: balance;
