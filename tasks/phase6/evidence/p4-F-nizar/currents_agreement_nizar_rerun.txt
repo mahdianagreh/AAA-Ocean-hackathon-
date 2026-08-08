@@ -1,0 +1,55 @@
+Phase 6, p4-F -- Nizar's independent re-run (row owner), 2026-08-08
+Tested against a freshly built reefshield-api-1 container (docker compose up --build -d api).
+
+=== Condition 1: .nc cache files as they exist on THIS machine ===
+
+Command:
+  curl -s -w "\nHTTP %{http_code}\n" http://localhost:8000/api/v1/currents/agreement
+
+Result: HTTP 200, real data, matches the documented figure exactly:
+  direction_diff_deg: 65.82052672389983
+  agreement: 0.6343304070894453
+  hycom_direction_from_deg: 330.76069002800443
+  copernicus_marine_direction_from_deg: 36.581216751904265
+
+This is the OPPOSITE of Karam's result (bare HTTP 500) on the same code, same commit,
+same "freshly built container" instruction. `data/raw/` is git-ignored -- each
+teammate's machine has whatever `.nc` files they happened to fetch previously. My
+machine already has `copernicus_marine_aoi_AQ-2016-10-28.nc` cached from A4.2 work;
+Karam's evidently does not.
+
+=== Condition 2: reproduce Karam's exact failure on this same machine ===
+
+To find out whether this is genuinely the same bug or two different problems, moved
+`copernicus_marine_aoi_AQ-2016-10-28.nc` aside and re-hit the identical endpoint,
+same running container, no rebuild:
+
+Command:
+  mv data/raw/currents/copernicus_marine_aoi_AQ-2016-10-28.nc /tmp/currents_moveaside/
+  curl -s -w "\nHTTP %{http_code}\n" http://localhost:8000/api/v1/currents/agreement
+
+Result: HTTP 500, "Internal Server Error" -- reproduces Karam's failure exactly.
+
+Traceback (docker compose logs api):
+  FileNotFoundError: [Errno 2] No such file or directory:
+  '/app/data/raw/currents/copernicus_marine_aoi_AQ-2016-10-28.nc'
+
+Restored the file afterward and re-confirmed HTTP 200 / the same 65.82 figure returns.
+
+=== Verdict ===
+
+VERDICT: FAIL -- confirming Karam's finding, not contradicting it.
+
+This is the exact "works on my machine" trap this phase's two-tester rule exists to
+catch: the endpoint's correctness is currently accidental, contingent on which
+teammate's git-ignored local cache happens to be populated, not on the code being
+correct. The real bug (already precisely named in Karam's note in `03-nizar.md`)
+is that `currents_agreement()` in `main.py` (~line 787) guards `hycom_path.exists()`
+with a clean 503 but has no equivalent guard for `copernicus_path` before
+`compare_hycom_vs_copernicus()` opens it -- so the endpoint's reliability depends on
+an un-committed file being present, with no defensive check and no honest degradation
+when it isn't. Not fixed here, per this phase's rule 1 (Copernicus Marine credentials
+DO exist in `backend/.env` now, which would make fetching the missing cache possible,
+but doing that mid-Phase-6 would be implementing the fix, not testing). Left named for
+Phase 7: either (a) fetch/commit-a-fallback for the Copernicus Marine historical cache,
+or (b) add the same exists-or-503 guard that already exists for the HYCOM path.

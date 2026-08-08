@@ -36,3 +36,30 @@ and save evidence under `tasks/phase6/evidence/<id>/`.
 Every row above has a `PASS`/`FAIL`/`BLOCKED-NOT-BUILT` verdict in the master matrix,
 each with a linked evidence file, recorded by you running the real check — not
 transcribed from `tasks/phase4/03-nizar.md` or `tasks/phase5/03-nizar.md`'s prior claims.
+
+---
+
+## Closed, 2026-08-08 — all three rows personally re-run against a fresh container
+
+- **`p4-02` — PASS (backend), with a real finding.** `/forecast/latest` correctly
+  never makes a live network call (confirmed architecture, not a defect). But the
+  snapshot it serves (`issued_at: 2026-08-03`) is stale against Postgres's newest
+  GFS pull (`gfs_2026-08-07T06Z`) — nobody re-ran `build_forecast_snapshot.py` since.
+  Named, not fixed, per this phase's rule. Evidence: `evidence/p4-02/`.
+- **`p4-F` — FAIL, confirmed independently, with the "who ran it" question actually
+  answered.** My machine initially returned HTTP 200 (the Copernicus `.nc` cache
+  happens to already be present here from A4.2 work) — the opposite of Karam's 500.
+  Moved that file aside on the same running container and reproduced his exact
+  crash, then restored it. This is the real finding: the row's correctness is
+  presently contingent on which teammate's git-ignored local cache is populated,
+  not on the code being correct — kept as FAIL. Evidence: `evidence/p4-F-nizar/`.
+- **`b6` — PASS.** Fed the real Oct 2016 event's IMERG rain value at `AQ-C01`
+  through the live detector against real climatology — fires distinctly. Fed a
+  real current (non-event) forecast value through the same climatology — stays
+  silent. Confirmed `/forecast/latest`'s anomaly fields and `/exposure/calculate`'s
+  confidence fields (`p4-05`) share zero field names — conflation is structurally
+  impossible. Evidence: `evidence/b6/`.
+- **Bonus: `p4-05`'s previously-open half closed too.** Re-derived the confidence
+  formula by hand from a fresh run (`agreement = |0-0.5|*2 = 1.0`,
+  `confidence_adjustment = 1.0*0.8 = 0.8`) — matches the live response exactly.
+  Row moves from partial to fully `PASS`. Evidence: `evidence/p4-05-nizar/`.
