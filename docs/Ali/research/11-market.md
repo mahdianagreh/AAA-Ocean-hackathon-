@@ -154,7 +154,7 @@ per-site contribution from [`13-economics.md`](13-economics.md) §4:
 
 | Class | Sites | Contribution each | Subtotal |
 |---|---:|---|---:|
-| Authority-class (ASEZA, Egypt EEAA, Oman MECA, Fujairah, Israel INPA) | 7 | ~$73k/yr | **~$511k** |
+| Authority-class (ASEZA, Egypt EEAA, Oman MECA, Fujairah, Palestine INPA) | 7 | ~$73k/yr | **~$511k** |
 | Giga-project class (NEOM/Saudi Aqaba coast, Jeddah) | 2 | $150–400k licence − ~$29k cost = $121–371k | **~$242–742k** |
 | **MENA steady state** | **9** | | **~$750k – 1.25M/yr** |
 
@@ -251,7 +251,7 @@ From the GFCR Gulf of Aqaba concept note and the AMR management plan:
 | Fact | Value |
 |---|---|
 | Gulf of Aqaba | semi-enclosed basin, **~180 km long, 14–26 km wide**, average depth **800 m** |
-| Coastline by country | **Egypt ~180 km · Israel ~9 km · Jordan ~27 km · Saudi Arabia ~150 km** |
+| Coastline by country | **Egypt ~180 km · Palestine ~9 km · Jordan ~27 km · Saudi Arabia ~150 km** |
 | Jordan's fringing reef | runs **over 25 km** of the 27 km coast |
 | **Aqaba Marine Reserve** | **2.45 km², covering 7 km of the 27 km coastline** — about **2.6% of Jordan's marine area** |
 | Dive sites monitored/partly managed by the park | **19** |

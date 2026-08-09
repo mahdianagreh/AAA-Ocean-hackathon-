@@ -689,7 +689,7 @@ def data_sources() -> list[dict]:
                 "Scope is Jordan's coast. The 8 named zones hold 0.742 km2, which is "
                 "86.8% of the living reef the Atlas maps on Jordan's coastal corridor. A "
                 "further 3.338 km2 sits inside the same bounding box on the Egyptian and "
-                "Israeli shores and is deliberately out of scope.",
+                "Palestinian shores and is deliberately out of scope.",
                 "The earlier provisional geometry claimed 5.69 km2 — 7.7x the real "
                 "figure — because it assumed a uniform 250 m strip along the whole "
                 "coastline. Any number derived from the provisional area is an "

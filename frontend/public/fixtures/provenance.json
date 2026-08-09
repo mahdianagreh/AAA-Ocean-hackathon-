@@ -222,7 +222,7 @@
   },
   {
    "file": "reef_05_provisional_vs_final.png",
-   "caption": "The swap-in check. IDs are continuous — worst centroid drift 0.98 km against the 5 km assert bound, and no new IDs. Zones are disjoint, asserted. Coverage of Jordan's reef is 145%; the grey reef is on the Egyptian and Israeli shores, inside the same bounding box but never in scope. The headline correction is AREA: the provisional strips claimed 5.69 km² against a real 1.235 km², because they assumed a uniform 250 m width along the whole coast.",
+   "caption": "The swap-in check. IDs are continuous — worst centroid drift 0.98 km against the 5 km assert bound, and no new IDs. Zones are disjoint, asserted. Coverage of Jordan's reef is 145%; the grey reef is on the Egyptian and Palestinian shores, inside the same bounding box but never in scope. The headline correction is AREA: the provisional strips claimed 5.69 km² against a real 1.235 km², because they assumed a uniform 250 m width along the whole coast.",
    "generated": "2026-08-03 09:54 UTC",
    "source": "Marine chain",
    "thumb": "figures/reef_05_provisional_vs_final.jpg",

@@ -384,9 +384,21 @@ claim the project cannot support.
 
 `AssistantPage.tsx:67` already calls the live `ask()`. What is left:
 
+- [ ] 🔴 **The citation-count check is not enough — measured 9 Aug.** The fixture
+      retriever refused questions the corpus did not cover; the live one does not.
+      Asked *"what is our expected market value"* — market research is deliberately
+      **outside** the corpus — `POST /ask` returns an answer with **2 citations
+      scraped out of `docs/data_dictionary.md`**. Asked *"transmission loss"* it
+      returns **4**. Neither reaches the no-sourced-answer state, so a rule of
+      "reject when `citations.length === 0`" passes trivially and catches nothing.
+      **The live path never returns zero citations — it returns weak ones.** This
+      needs a **relevance floor** (a minimum retrieval score, or a check that the
+      matched section is topically related), not a count.
+      Recorded as two `test.fail()` specs in `tests/scene-walk.spec.ts`, which pass
+      while the defect exists and will fail the build the moment it is fixed.
 - [ ] **An answer with `citations.length === 0` must not render as an answer.** Assert
       this in code, not only in review — an early return with the no-sourced-answer
-      state.
+      state. Necessary, but per the finding above, not sufficient.
 - [ ] Show `corpus_files_searched` in that state, so a refusal is informative.
 - [ ] Pass the current UI language; verify an Arabic question returns and renders RTL.
 - [ ] Nowhere on this page may the words "generative", "LLM" or "AI-written" appear.

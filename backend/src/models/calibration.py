@@ -71,7 +71,7 @@ MOORING_TARGET_PATH = REPO_ROOT / "data" / "processed" / "marine" / "mooring_tar
 #: Kinnet Canal outlet, coastline-snapped -- see docs/mooring_coordinate_derivation.md
 #: §3 step 1. This is the release point for CALIBRATION specifically. It is
 #: deliberately not AQ-O01: the paper places the canal's discharge on the
-#: Eilat (Israel) shoreline, 1.40 km from Mahdi's Jordanian pour point (see
+#: Eilat (Palestine) shoreline, 1.40 km from Mahdi's Jordanian pour point (see
 #: the derivation doc §0). AQ-O01/AQ-O05 remain the release points for the
 #: forward-looking demo scenario, per 05-abd.md -- a different use of this
 #: engine, not this one.

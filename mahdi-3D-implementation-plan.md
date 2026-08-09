@@ -201,7 +201,7 @@ Traveller Hostel, Bratus Hotel, April Hotel, Jordan Seasons Hotel, Barracuda Res
 Islamic Hospital, Aqaba Court House, Nafeeseh sweets aqaba.*
 
 ![Eilat marina and New Marina](docs/3d_journey/assets/image-05-eilat-marina-new-marina.jpg)
-*Image 5 — Israeli-side marina and Ayla from the north: MARINA, Lagoona, New Lagoon, Ice
+*Image 5 — Palestinian-side marina and Ayla from the north: MARINA, Lagoona, New Lagoon, Ice
 Mall, HaDatiyim Beach, Mifrats HaShemesh Beach, "Sun boat wreck – Dive site," B12 \| Beach
 Club \| Ayla Aqaba, Cloud7 Residence, Ayla Oasis \| Resort Hotel, Saraya Aqaba – Eagle
 Hills Jordan, Al Manara, a Luxury Collection Hotel, InterContinental (Resort Aqaba).*
@@ -258,7 +258,7 @@ correctly carried and this plan keeps.
 | Lafarge cement plant | ~29.35°N, 35.01°E | geocode before use | 8 | Industrial landmark, southern AOI boundary |
 | InterContinental / Kempinski / Westin hotel strip | ~29.52–29.526°N, 35.00–35.003°E | geocode before use | 4, 6 | Tall, real, multi-story — a genuine extrusion-height win if OSM height tags are present (unlikely; see §0.4) |
 
-### 2b. Israeli / Egyptian side and desert POIs — visual context only
+### 2b. Palestinian / Egyptian side and desert POIs — visual context only
 
 **Not in this project's dataset.** `TERRAIN_AOI`/`MARINE_AOI` cover Jordanian-side geometry;
 none of the rows below have a corresponding real geometry source in this repo. They may
@@ -270,13 +270,13 @@ source data is disclosed, not silently dropped and not silently upgraded to look
 
 | Landmark | Appears in | Note |
 |---|---|---|
-| Eilat Mountains Reserve, Eilat city center, The Botanical Garden, Big Eilat | 1 | Israeli side, background context |
+| Eilat Mountains Reserve, Eilat city center, The Botanical Garden, Big Eilat | 1 | Palestinian side, background context |
 | Yitzhak Rabin Border Terminal | 2 | Border marker, north edge of AOI |
-| Eilat Ornithological Park | 2 | Israeli side |
-| Eilat Massif Natural Reserve, Camel-Ranch Eilat, Waterland Eilat, Underwater Observatory Park, Dolphin Reef Beach | 1, 3 | Israeli side |
+| Eilat Ornithological Park | 2 | Palestinian side |
+| Eilat Massif Natural Reserve, Camel-Ranch Eilat, Waterland Eilat, Underwater Observatory Park, Dolphin Reef Beach | 1, 3 | Palestinian side |
 | Taba, Egypt | 3 | Egyptian side, background only |
 | Pharaoh's Island | 3 | Small offshore island, Egyptian side |
-| MARINA, Lagoona, New Lagoon, HaDatiyim Beach, Mifrats HaShemesh Beach, "Sun boat wreck" dive site | 5 | Israeli-side marina — artificial water shapes, must not be rendered as open Gulf water even if a similar caution is applied to Ayla's own lagoons (§3.3) on the Jordanian side |
+| MARINA, Lagoona, New Lagoon, HaDatiyim Beach, Mifrats HaShemesh Beach, "Sun boat wreck" dive site | 5 | Palestinian-side marina — artificial water shapes, must not be rendered as open Gulf water even if a similar caution is applied to Ayla's own lagoons (§3.3) on the Jordanian side |
 | Saudi Arabia border crossing (منفذ الدرة) | 3 | Southern edge of scene, no geometry source |
 
 **Task before building:** every "geocode before use" row in §2a must be run through a real
@@ -443,7 +443,7 @@ check, and the reef-zone provisional/final diff.
   detail won't resolve — same caveat already documented for the existing 2D bathymetry.
 - **This is a visualization, not a new scientific claim** — it doesn't add predictive
   capability; it's a real-data-grounded way of showing the chain the model already computes.
-- **The Israeli/Egyptian-side and desert-POI rows in §2b have no geometry source in this
+- **The Palestinian/Egyptian-side and desert-POI rows in §2b have no geometry source in this
   project and must never be rendered as measured 3D content** — background context only.
 
 ---

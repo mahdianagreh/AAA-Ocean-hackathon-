@@ -527,7 +527,7 @@ def reef_05_provisional_vs_final():
              f"The swap-in check. IDs are continuous — worst centroid drift {worst:.2f} km "
              "against the 5 km assert bound, and no new IDs. Zones are disjoint, asserted. "
              f"Coverage of Jordan's reef is {a_scored / a_jord * 100:.0f}%; the grey reef is "
-             "on the Egyptian and Israeli shores, inside the same bounding box but never in "
+             "on the Egyptian and Palestinian shores, inside the same bounding box but never in "
              f"scope. The headline correction is AREA: the provisional strips claimed "
              f"{prov.geometry.area.sum() / 1e6:.2f} km² against a real "
              f"{a_scored:.3f} km², because they assumed a uniform 250 m width along the "

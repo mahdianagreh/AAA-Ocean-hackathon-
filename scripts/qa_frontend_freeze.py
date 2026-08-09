@@ -178,7 +178,15 @@ for f in sorted(list(SRC.rglob("*.tsx")) + list(SRC.rglob("*.ts"))):
         if re.search(r"Date\.now\(\)|new Date\(\)", line) and "//" not in line.split("Date")[0]:
             now.append(f"{f.relative_to(FE)}:{i}")
 # health()'s timestamp is chrome, not a rendered measurement — allowed, and named.
-allowed = {"src/api/fixtures.ts"}
+#
+# Countdown.tsx joined this list on 9 Aug 2026. The rule guards against a
+# *measurement* that silently changes with when you look at it; p4-03 is the
+# opposite case — a countdown is time-relative by definition, and its own spec
+# requires it to tick rather than render a frozen number. The value it displays
+# is derived from `arrival_window_hours` plus the run's `issued_at`, both of
+# which ARE frozen; only the "how long from now" framing moves. Both entries stay
+# printed below, so the exemption is visible rather than silent.
+allowed = {"src/api/fixtures.ts", "src/components/Countdown.tsx"}
 unexpected = [n for n in now if n.split(":")[0] not in allowed]
 check("no wall-clock in rendered values", not unexpected, "; ".join(unexpected[:4]))
 if now:

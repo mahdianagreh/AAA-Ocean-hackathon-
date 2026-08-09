@@ -19,7 +19,7 @@ What it measures, and what it refuses to measure
   lift           observed hits / hits expected by chance
 
   PRECISION IS NOT COMPUTED, deliberately. The gold list is floods recorded at
-  the Kinnet Canal on the ISRAELI shoreline; our catchments are Jordanian. A
+  the Kinnet Canal on the PALESTINIAN shoreline; our catchments are Jordanian. A
   flagged day absent from the list may be a real Aqaba-side flood nobody
   recorded, so an unmatched flag is not a false positive and any precision
   figure would be a floor of unknown depth. See the location_caveat in

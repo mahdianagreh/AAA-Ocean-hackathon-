@@ -170,7 +170,7 @@ selected by env var. Components never know which is live.
 `data/processed/vectors/*.gpkg`; event values from the event contract in
 [`00-phase2-plan.md`](../../../tasks/phase2/00-phase2-plan.md) (salinity 38.75 ‰, −1.75 ‰ at 19σ;
 turbidity peak 2.18 g/L; ~31 h elevated); the Data Sources table from
-[`data_dictionary.md`](../../data_dictionary.md); the 43 figures from
+[`data_dictionary.md`](../../data_dictionary.md); the 44 figures from
 [`qa_screenshots/manifest.json`](../../qa_screenshots/MANIFEST.md). Invented fixtures produce a UI
 that fits numbers which never arrive.
 
@@ -180,7 +180,7 @@ that fits numbers which never arrive.
 |---|---|---|
 | 3 | Typed endpoints, stubs acceptable | Pulga |
 | 3 | Stable read schema | Nizar |
-| 4 | 43 figures + captions | already in the repo |
+| 4 | 44 figures + captions | already in the repo |
 | 5 | Risk fields + driver list | Mahdi |
 | 6 | Plume layers per timestep | Abd |
 
@@ -201,7 +201,9 @@ Verified in the repo, not assumed:
 - **`overview_01_master_all_layers.png` is excluded from the provenance panel.** Its own burned-in
   caption reads *"CATCHMENTS ARE A LOCAL TEST FIXTURE… 5 latitude bands, not a watershed
   delineation."* Best-looking figure, wrong catchments.
-- **`manifest.json` lists 43 figures; 46 PNGs exist.** The 3 extras are later additions.
+- **`manifest.json` lists 44 figures; 47 PNGs exist.** The 3 extras are later additions.
+  The 44th is `map_01_borders_and_label_hygiene`, added 9 Aug 2026 with the country-border
+  and label-hygiene fix.
   Driving the panel off the manifest is correct and silently omits them — a decision, not an accident.
 - **Satellite validation is a null result.** Concept §15.3 Scene 6 says "reveal the satellite plume";
   that is superseded. The mooring time series is the validation target.

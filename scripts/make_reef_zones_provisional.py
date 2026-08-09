@@ -11,7 +11,7 @@ survive unchanged into reef_zones.gpkg or every stored exposure result silently
 becomes wrong (contract §5, swap-in #3).
 
 GEOGRAPHY: Jordan holds the ~22 km eastern shore of the head of the Gulf of
-Aqaba, from the Israeli border (~29.538 N) to the Saudi border (~29.356 N). The
+Aqaba, from the Palestinian border (~29.538 N) to the Saudi border (~29.356 N). The
 sea lies WEST of the shoreline, so every reef strip extends to LOWER easting
 from the coast. Getting this backwards puts every zone on dry land.
 
@@ -60,7 +60,7 @@ from pulga_config import (
 # genuinely narrow; 250 m is a defensible placeholder, not a measurement.
 REEF_STRIP_M = 250.0
 
-# Jordanian coast limits. North: the Israel/Jordan border meets the sea near
+# Jordanian coast limits. North: the Palestine/Jordan border meets the sea near
 # 29.538 N — north of this is Eilat, not ours. South: the Saudi border at
 # ~29.356 N. Clipping to this range keeps the zones on Jordanian coast.
 JORDAN_LAT_N = 29.5360

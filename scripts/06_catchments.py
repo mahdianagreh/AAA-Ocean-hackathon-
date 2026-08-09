@@ -67,7 +67,7 @@ POSITION_CONFIDENCE = {
 }
 # Natural Earth 10m coastlines are ~1 km generalised, so a discharge point on
 # the real shore can sit up to ~1 km from the polygon. 3 km keeps Jordanian
-# mouths while still excluding the Israeli and Saudi coasts, which are
+# mouths while still excluding the Palestinian and Saudi coasts, which are
 # 10 km+ away from any Jordanian candidate.
 JORDAN_MAX_DIST_M = 3000
 

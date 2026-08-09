@@ -1,24 +1,28 @@
-import { useId } from 'react';
-
 /** The AQABA AQUA AI mark. One component, three finishes — brand guidelines §2
  *  allows the full-colour gradient, navy, and white, and nothing else.
  *
- *  Every colour here is a raw brand hex rather than a theme token, and each is
- *  marked `token-ok:` for the tokens QA. That is deliberate and it is the same
- *  exemption map/style.ts holds: a trademark is fixed artwork. If the mark
- *  tracked --ink it would turn teal in dark theme, which brand guidelines §2
- *  lists under "Never — change colors".
+ *  **This renders the real artwork, not a redrawing of it.** An earlier version of
+ *  this file approximated the mark with hand-authored SVG paths: a triangle, a
+ *  masked inner peak, one swept wave. It was close enough to look deliberate and
+ *  wrong enough to be the wrong logo — the real mark carries two interlocking A
+ *  letterforms and three distinct wave crests in its negative space, which is not
+ *  something four path commands reproduce. The artwork now comes from
+ *  `public/brand/logo-mark.png`, extracted from the brand lockup at its native
+ *  422x371, so what ships is the mark the brand sheet specifies.
  *
- *  The counters are cut with a <mask> rather than painted in the ground colour.
- *  A mark that fills its own negative space is only correct on the one
- *  background it was drawn against; this one has to sit on the white marketing
- *  nav, the navy dashboard rail and the gradient hero, and painting the counters
- *  would show as a pale wedge on two of the three.
+ *  The two monochrome finishes are the same asset used as a CSS `mask-image`
+ *  with a flat background colour behind it. That is why there is one file rather
+ *  than three: the mask keys off the alpha channel, so the counters stay
+ *  genuinely transparent and the ground shows through them. Painting the
+ *  counters instead would show as a pale wedge on any ground the mark was not
+ *  drawn against, and this one has to sit on the white marketing nav, the navy
+ *  dashboard rail and the gradient hero.
  *
- *  Gradient IDs are per-instance via useId(). SVG ids are document-global, so
- *  two logos on one page with a hard-coded id both resolve to whichever mounted
- *  first — which reads as "the footer logo lost its gradient" and is a genuinely
- *  annoying bug to trace. */
+ *  The colours below are raw brand hexes rather than theme tokens, each marked
+ *  `token-ok:` for the tokens QA. That is deliberate and it is the same exemption
+ *  `map/style.ts` holds: a trademark is fixed artwork. A mark that tracked
+ *  `--ink` would turn teal in dark theme, which brand guidelines §2 lists under
+ *  "Never — change colors". */
 
 type LogoVariant = 'gradient' | 'navy' | 'white';
 
@@ -28,7 +32,10 @@ const BRAND = {
   white: '#FFFFFF', // token-ok: fixed brand artwork, must not track the theme
 } as const;
 
-const MARK_ASPECT = 100 / 92;
+/** 422 / 371, the artwork's own proportions. Height is the controlled dimension
+ *  so a logo sits on a text baseline predictably; width follows. */
+const MARK_ASPECT = 422 / 371;
+const MARK_SRC = '/brand/logo-mark.png';
 
 export function LogoMark({
   size = 32,
@@ -39,46 +46,38 @@ export function LogoMark({
   variant?: LogoVariant;
   className?: string;
 }) {
-  const uid = useId();
-  const gradientId = `aq-logo-grad-${uid}`;
-  const maskId = `aq-logo-mask-${uid}`;
+  const width = Math.round(size * MARK_ASPECT);
 
-  const fill =
-    variant === 'gradient'
-      ? `url(#${gradientId})`
-      : variant === 'navy'
-        ? BRAND.navy
-        : BRAND.white;
+  if (variant === 'gradient') {
+    return (
+      <img
+        src={MARK_SRC}
+        width={width}
+        height={size}
+        alt=""
+        aria-hidden="true"
+        decoding="async"
+        className={className}
+        style={{ display: 'block', objectFit: 'contain' }}
+      />
+    );
+  }
 
+  // Monochrome finishes: the artwork as an alpha mask over a flat brand colour.
+  const mask = `url("${MARK_SRC}") no-repeat center / contain`;
   return (
-    <svg
-      width={Math.round(size * MARK_ASPECT)}
-      height={size}
-      viewBox="0 0 100 92"
-      fill="none"
+    <span
       aria-hidden="true"
-      focusable="false"
       className={className}
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={BRAND.aqua} />
-          <stop offset="1" stopColor={BRAND.navy} />
-        </linearGradient>
-        {/* Mask luminance, not colour: white keeps, black cuts. These are
-            greyscale stencil values, not brand colours. */}
-        <mask id={maskId}>
-          <rect x="0" y="0" width="100" height="92" fill="#000" /> {/* token-ok: mask stencil */}
-          <path d="M50 4 L96 88 L4 88 Z" fill="#fff" /> {/* token-ok: mask stencil */}
-          {/* The inner peak — the counter of the second A. */}
-          <path d="M50 44 L66 78 L34 78 Z" fill="#000" /> {/* token-ok: mask stencil */}
-          {/* The wave, cut clean through the mark so it still reads at 32px,
-              which brand guidelines §2 sets as the digital minimum. */}
-          <path d="M14 74 Q32 58 50 74 Q68 90 86 74" stroke="#000" strokeWidth="7" strokeLinecap="round" fill="none" /> {/* token-ok: mask stencil */}
-        </mask>
-      </defs>
-      <rect x="0" y="0" width="100" height="92" fill={fill} mask={`url(#${maskId})`} />
-    </svg>
+      style={{
+        display: 'block',
+        inlineSize: width,
+        blockSize: size,
+        backgroundColor: variant === 'white' ? BRAND.white : BRAND.navy,
+        mask,
+        WebkitMask: mask,
+      }}
+    />
   );
 }
 

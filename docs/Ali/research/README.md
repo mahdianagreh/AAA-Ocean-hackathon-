@@ -52,7 +52,7 @@ afterwards: *who would pay for it*, and *what have you actually built*. Four par
 ### 1 · It is a category, not a one-off — and MENA is the densest cluster on Earth
 
 Six MENA sites score as high as Aqaba on the screening rubric, and **four share one basin
-14–26 km wide**. One storm hits Jordan, Israel, Egypt and Saudi Arabia in 48 hours. Globally,
+14–26 km wide**. One storm hits Jordan, Palestine, Egypt and Saudi Arabia in 48 hours. Globally,
 **more than a quarter of the world's reefs face watershed-based pollution**
 ([WRI](https://www.wri.org/data/reefs-risk-watershed-based-pollution)).
 

@@ -148,7 +148,7 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
         style={{ background: 'var(--brand-navy)' }}
       >
         <Link to="/" className="flex items-center gap-2.5 no-underline">
-          <LogoMark size={26} variant="gradient" />
+          <LogoMark size={26} variant="white" />
           <span
             dir="ltr"
             className="text-xs font-bold"

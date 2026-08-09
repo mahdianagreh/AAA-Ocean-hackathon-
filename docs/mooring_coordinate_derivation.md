@@ -14,18 +14,18 @@ as a number the paper reported. This document is the computation, so anyone can 
 
 ## 0. The correction this derivation surfaces
 
-**The Kinnet Canal discharges on the Eilat (Israel) shoreline, not the Jordan/Aqaba
+**The Kinnet Canal discharges on the Eilat (Palestine) shoreline, not the Jordan/Aqaba
 side.** Direct quote from the paper (page 8 of the extracted text): *"Flash floods
 reaching the sea through the Kinnet Canal (discharge located on Eilat shoreline)."* The
 Kinnet watershed is explicitly **trans-national** — it spans both countries — but the
-canal itself, and therefore the mooring 250 m offshore it, sits on the Israeli side of the
+canal itself, and therefore the mooring 250 m offshore it, sits on the Palestinian side of the
 head of the Gulf, not at Mahdi's Jordanian `AQ-O01` (Wadi Yutum) pour point.
 
 The two are close (1.40 km apart, computed in §3) and almost certainly describe two
 different engineering definitions of the same trans-national drainage system — Mahdi's
 DEM pour point is where flow exits the Jordanian portion of the catchment; the Kinnet
 Canal is the shared channel's actual sea outlet, downstream of both countries' contributing
-area, on the Israeli side of the border. **Do not treat `AQ-O01`'s coordinate as the
+area, on the Palestinian side of the border. **Do not treat `AQ-O01`'s coordinate as the
 mooring's location.** They are related, not identical.
 
 This also matters for the particle engine: the physical release point that generated the
@@ -161,7 +161,7 @@ precision.
 point (§3 step 1) sits **1.40 km** from `AQ-O01` (Wadi Yutum's Jordanian DEM pour point,
 34.97073, 29.54560 — `outlets.gpkg`). That three independent position estimates — the raw
 figure digitization, the coastline-snap, and Mahdi's unrelated DEM-derived pour point —
-all cluster within ~1.5 km of each other at the head of the Gulf near the Israel–Jordan
+all cluster within ~1.5 km of each other at the head of the Gulf near the Palestine–Jordan
 border is a reasonable sanity check that no gross error (wrong watershed, wrong country,
 transposed lat/lon) is present. It is not a claim that any two of them are the same point.
 
@@ -194,7 +194,7 @@ mooring_position_AQ-2016-10-28:
     distance_where_raster_crosses_13m_offshore_m: 214
     note: "50 m nominal grid, ~450 m true resolution per docs/pitch_limitations.md §4 — agreement within one grid-cell step"
   correction_surfaced:
-    finding: "Kinnet Canal discharge is on the Eilat (Israel) shoreline, not the Jordan/Aqaba side"
+    finding: "Kinnet Canal discharge is on the Eilat (Palestine) shoreline, not the Jordan/Aqaba side"
     source: "Kalman et al. 2025, page 8: 'discharge located on Eilat shoreline'"
     distance_to_AQ-O01_m: 1395.7
     implication: "Do not treat AQ-O01 (Wadi Yutum, Jordan pour point) as the mooring location. Related trans-national watershed, different national outlet."

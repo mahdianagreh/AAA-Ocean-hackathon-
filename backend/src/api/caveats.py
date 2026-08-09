@@ -135,7 +135,7 @@ def reef_scope_is_jordan() -> list[Caveat]:
         field="reef_zone_id",
         message=(
             "Scope is Jordan's coast. The Atlas export covers the full padded box, and "
-            "6.09 km² of the 7.32 km² it maps lies in Egyptian, Saudi and Israeli water — "
+            "6.09 km² of the 7.32 km² it maps lies in Egyptian, Saudi and Palestinian water — "
             "deliberately discarded, all of it more than 5 km from the Jordanian zone "
             "chain. Risk shown here is risk to the named Jordanian zones, not to all reef "
             "in the Gulf of Aqaba."

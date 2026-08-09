@@ -43,7 +43,7 @@ but under-weighted.
 **The problem.** In arid channels, a large fraction of flood water infiltrates the wadi bed
 and never reaches the sea. Kalman et al. (2025) cite measured transmission-loss rates of
 **13.2% in an Australian desert stream, up to 98% in parts of Saudi Arabia, and 20–85% in
-Nahal Zin in Israel's Negev** **[sourced, verified verbatim]**.
+Nahal Zin in Palestine's Negev** **[sourced, verified verbatim]**.
 
 **Why it matters.** The pipeline derives rainfall over a catchment and treats it as a runoff
 driver. **Between roughly a fifth and nearly all of that water may never arrive.** The

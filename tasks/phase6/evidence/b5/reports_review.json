@@ -43,7 +43,7 @@
                     "source": "docs/data_dictionary.md \u00a74"
                 },
                 {
-                    "text": "Scope is Jordan's coast. The Atlas export covers the full padded box, and 6.09 km\u00b2 of the 7.32 km\u00b2 it maps lies in Egyptian, Saudi and Israeli water \u2014 deliberately discarded, all of it more than 5 km from the Jordanian zone chain. Risk shown here is risk to the named Jordanian zones, not to all reef in the Gulf of Aqaba.",
+                    "text": "Scope is Jordan's coast. The Atlas export covers the full padded box, and 6.09 km\u00b2 of the 7.32 km\u00b2 it maps lies in Egyptian, Saudi and Palestinian water \u2014 deliberately discarded, all of it more than 5 km from the Jordanian zone chain. Risk shown here is risk to the named Jordanian zones, not to all reef in the Gulf of Aqaba.",
                     "source": "docs/data_dictionary.md \u00a74"
                 }
             ]
@@ -81,7 +81,7 @@
                     "source": "docs/event_dates.md#Canonical event ID"
                 },
                 {
-                    "text": "sea_reaching_flood_record:\n  total_documented: 13\n  record_begins: 1994\n  record_ends: 2016-10-28\n  source_citation: Kalman et al. (2025), quoting Katz et al. (2015) and Kalman et al. (2020b)\n  source_quote: \"The flood was the 13th flood recorded since records began in 1994\"\n  measurement_location: Kinnet Canal outlet, Eilat shoreline\n  location_caveat: >-\n    These are floods documented on the ISRAELI side. Our five catchments are\n    Jordanian. A day absent from this list is NOT a confirmed negative - it may\n    be an Aqaba-side flood that nobody recorded. Precision is therefore not\n    comp",
+                    "text": "sea_reaching_flood_record:\n  total_documented: 13\n  record_begins: 1994\n  record_ends: 2016-10-28\n  source_citation: Kalman et al. (2025), quoting Katz et al. (2015) and Kalman et al. (2020b)\n  source_quote: \"The flood was the 13th flood recorded since records began in 1994\"\n  measurement_location: Kinnet Canal outlet, Eilat shoreline\n  location_caveat: >-\n    These are floods documented on the PALESTINIAN side. Our five catchments are\n    Jordanian. A day absent from this list is NOT a confirmed negative - it may\n    be an Aqaba-side flood that nobody recorded. Precision is therefore not\n    comp",
                     "source": "docs/event_dates.md#---------------------------------------------------------------------------"
                 },
                 {

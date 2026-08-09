@@ -57,7 +57,7 @@ def save_fig(fig, name, caption, source, dpi=150):
 
     fig.text(0.005, 0.004, caption, ha="left", va="bottom", fontsize=7.5,
              color="#222222", wrap=True)
-    fig.text(0.995, 0.004, f"ReefShield Aqaba · Pulga · {stamp}", ha="right",
+    fig.text(0.995, 0.004, f"AQABA AQUA AI · Pulga · {stamp}", ha="right",
              va="bottom", fontsize=6.5, color="#777777")
 
     QA.mkdir(parents=True, exist_ok=True)

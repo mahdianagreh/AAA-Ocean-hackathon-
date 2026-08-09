@@ -50,7 +50,7 @@ though it can never train a model.
 
 ## Precision is not computed, deliberately
 
-These are floods documented on the ISRAELI side. Our five catchments are Jordanian. A day absent from this list is NOT a confirmed negative - it may be an Aqaba-side flood that nobody recorded. Precision is therefore not computable against this set; recall and rank are.
+These are floods documented on the PALESTINIAN side. Our five catchments are Jordanian. A day absent from this list is NOT a confirmed negative - it may be an Aqaba-side flood that nobody recorded. Precision is therefore not computable against this set; recall and rank are.
 
 ## What would make this a real validation
 

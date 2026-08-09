@@ -55,7 +55,7 @@ REMAINING 7 — correct by construction, or not this workstream's
 
   osm_aqaba.gpkg                 Clipped extent starts at 34.957 E. The Geofabrik
                                  Jordan extract itself starts at 34.8689 E, and
-                                 TERRAIN_AOI's western 0.12 deg is Egypt, Israel and
+                                 TERRAIN_AOI's western 0.12 deg is Egypt, Palestine and
                                  open Gulf. A Jordan-only extract cannot contain
                                  features outside Jordan. Property of the source,
                                  not of the clip.

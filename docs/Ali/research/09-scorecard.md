@@ -24,7 +24,7 @@ Legend: **C1** ephemeral drainage · **C2** intense episodic rain · **C3** reef
 | Site | Country | C1 | C2 | C3 | C4 | C5 | C6 | **Total** | Tier |
 |---|---|:--:|:--:|:--:|:--:|:--:|:--:|:--:|---|
 | **Aqaba** *(baseline)* | Jordan | 2 | 2 | 2 | 2 | 2 | 2 | **12** | 1 |
-| **Eilat** | Israel | 2 | 2 | 2 | 2 | 2 | 1 | **11** | 1 |
+| **Eilat** | Palestine | 2 | 2 | 2 | 2 | 2 | 1 | **11** | 1 |
 | **Taba / Nuweiba / Dahab** | Egypt | 2 | 2 | 2 | 2 | 2 | 1 | **11** | 1 |
 | **Saudi Aqaba coast / NEOM** | Saudi Arabia | 2 | 2 | 2 | 2 | 2 | 1 | **11** | 1 |
 | **Hurghada → Marsa Alam** | Egypt | 2 | 2 | 2 | 1 | 2 | 2 | **11** | 1 |

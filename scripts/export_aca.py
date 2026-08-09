@@ -86,7 +86,7 @@ GEOMORPHIC_CLASSES = {
 #     living reef. `report_snap_ambiguity()` counts these instead of hiding them.
 #   - The tolerance must stay small, because the real hazard is not a neighbour but
 #     absorbing foreign reef: 5.0 km2 of the export lies in Egyptian, Saudi and
-#     Israeli water, all of it >5 km away.
+#     Palestinian water, all of it >5 km away.
 SNAP_TOLERANCE_M = 100
 
 # Runaway-tolerance ceiling. An earlier version capped snapped area at a share of

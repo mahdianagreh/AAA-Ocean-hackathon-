@@ -137,6 +137,8 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
       [`${SRC}-reef`]: { type: 'geojson', data: url('reef_zones') },
       [`${SRC}-outlets`]: { type: 'geojson', data: url('outlets') },
       [`${SRC}-places`]: { type: 'geojson', data: url('places') },
+      [`${SRC}-admin`]: { type: 'geojson', data: url('admin') },
+      [`${SRC}-admin-labels`]: { type: 'geojson', data: url('admin_labels') },
       [`${SRC}-coverage`]: { type: 'geojson', data: url('coverage') },
       // The mooring: one point, the validation target from Kalman et al. 2025,
       // with its 1.5 km uncertainty radius drawn rather than implied. The paper
@@ -269,6 +271,30 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
         paint: { 'line-color': c.ink_3, 'line-width': 1 },
       },
 
+      // --- country borders -----------------------------------------------
+      //
+      // The Gulf is a four-country basin about 25 km wide, and the whole premise
+      // is that one storm system touches several of them at once. Without these
+      // the map is a single undifferentiated landmass and that premise is
+      // invisible.
+      //
+      // Above the catchment tint so a border stays crisp through it, below the
+      // marine layers so reef and plume still read on top. Long dashes in
+      // neutral ink: a border must not be confusable at a glance with a
+      // catchment boundary (risk-coloured, solid) or a reef zone (accent), so it
+      // differs in BOTH colour and dash pattern rather than only in hue.
+      {
+        id: 'admin-line',
+        type: 'line',
+        source: `${SRC}-admin`,
+        paint: {
+          'line-color': c.ink_2,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.8, 10, 1.4, 14, 2],
+          'line-dasharray': [6, 3],
+          'line-opacity': 0.75,
+        },
+      },
+
       // --- plume: relative-density contours, beneath the reef so exposure
       //     stays readable through them. Empty until Abd's per-timestep contours
       //     land; dashed and hatched because it is modelled, never a trajectory. --
@@ -384,12 +410,82 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
 
       // --- labels, last --------------------------------------------------
       {
-        // Dive sites and unclassified POIs at every zoom; hotels only from 14.
+        // Aqaba and Eilat. The two cities at the head of the Gulf, and the
+        // paired sites in this project's own event record — Oct 2016 is
+        // documented as the Aqaba-Eilat flood.
+        id: 'label-city',
+        type: 'symbol',
+        source: `${SRC}-admin-labels`,
+        filter: ['==', ['get', 'kind'], 'city'],
+        layout: {
+          'text-field': label(lang),
+          'text-font': LABEL_FONT,
+          'text-size': ['interpolate', ['linear'], ['zoom'], 7, 11, 12, 14],
+          'text-anchor': 'bottom',
+          'text-offset': [0, -0.4],
+          'text-max-width': 8,
+          // Two labels, both load-bearing. Aqaba sits ~6 km from Eilat, which is
+          // ~50 px at the opening zoom, and MapLibre was dropping Aqaba to the
+          // collision grid even as the highest-priority symbol layer. There are
+          // exactly two city labels on this map and they never stack, so opting
+          // out of collision here costs nothing and guarantees both appear.
+          'text-allow-overlap': true,
+          'text-ignore-placement': false,
+        },
+        paint: {
+          'text-color': c.ink,
+          'text-halo-color': c.canvas,
+          'text-halo-width': 1.6,
+        },
+      },
+      {
+        // Country names. Letter-spaced, uppercase, no halo competition with the
+        // data labels — this is ground truth for orientation, so it sits quietly
+        // underneath everything operational. Fades out past z11, where the view
+        // is a single country and the label is just clutter.
+        id: 'label-country',
+        type: 'symbol',
+        source: `${SRC}-admin-labels`,
+        filter: ['==', ['get', 'kind'], 'country'],
+        layout: {
+          'text-field': label(lang),
+          'text-font': LABEL_FONT,
+          'text-size': ['interpolate', ['linear'], ['zoom'], 6, 11, 10, 14],
+          'text-letter-spacing': 0.18,
+          'text-transform': 'uppercase',
+          'text-max-width': 9,
+          'symbol-placement': 'point',
+        },
+        paint: {
+          'text-color': c.ink_3,
+          'text-halo-color': c.canvas,
+          'text-halo-width': 1.6,
+          // The dashboard opens fitted to MARINE_AOI, which lands around z10-11.
+          // Fading out at 11.5 meant the country labels were never on screen at
+          // the view the app actually opens at. They now hold until the view is
+          // tight enough that only one country is in frame.
+          'text-opacity': ['interpolate', ['linear'], ['zoom'], 12.5, 1, 13.5, 0],
+        },
+      },
+      {
+        // Dive sites at every zoom; everything else only when zoomed in.
         // The marine-park officer is deciding where to send a survey team, so a
         // dive site is operationally relevant and a hotel name is orientation.
+        //
+        // `coastal` is the load-bearing filter and it is not cosmetic. TERRAIN_AOI
+        // reaches ~90 km inland to cover Wadi Yutum, so the OSM extract behind
+        // this layer includes the entire Wadi Rum Protected Area. Every rock
+        // arch, siq and inscription in it is `tourism=attraction`, which the
+        // basemap builder folded into "dive" until 9 Aug — so "Lawrence Face",
+        // "Mushroom rock" and "Wadi Rum" rendered as dive-site labels 40 km
+        // inland, across the middle of the catchment. The builder now classifies
+        // by `sport=scuba_diving` alone and stamps `coastal` (<= 5 km from
+        // MARINE_AOI); this filter is the second line of defence, so a future
+        // tagging change cannot put the desert back on a marine map.
         id: 'label-place',
         type: 'symbol',
         source: `${SRC}-places`,
+        filter: ['==', ['get', 'coastal'], true],
         layout: {
           'text-field': label(lang),
           'text-font': LABEL_FONT,
@@ -413,7 +509,7 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
             ['linear'],
             ['zoom'],
             13.5,
-            ['case', ['==', ['get', 'kind'], 'hotel'], 0, 1],
+            ['case', ['==', ['get', 'kind'], 'dive'], 1, 0],
             14,
             1,
           ],
@@ -449,9 +545,14 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
         paint: { 'text-color': c.ink_3, 'text-halo-color': c.canvas, 'text-halo-width': 1.2 },
       },
       {
+        // Coastal protected areas only. The polygons for Wadi Rum, Jabel
+        // Fashiyya and Petra stay drawn — the Wadi Rum PA genuinely sits inside
+        // the Wadi Yutum catchment and seeing that is useful — but labelling
+        // them put "Petra" on a reef map, 79 km away.
         id: 'label-protected',
         type: 'symbol',
         source: `${SRC}-protected`,
+        filter: ['==', ['get', 'coastal'], true],
         layout: {
           'text-field': label(lang),
           'text-font': LABEL_FONT,

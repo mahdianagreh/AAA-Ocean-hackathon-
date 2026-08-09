@@ -276,7 +276,7 @@ and that is what surfaced the **46 culverts**, the **Aqaba Marine Park**, and th
 | **Product/version** | `ACA/reef_habitat/v2_0` — Allen Coral Atlas v2.0, `benthic` + `geomorphic` bands, via Google Earth Engine |
 | **Access date** | 2026-08-03 (Earth Engine batch export to Drive, task `WJKEYOKSLGKFF2VSEIK5RWCD` / full-box predecessor) |
 | **Access method** | `export_aca.py submit` → Drive → `export_aca.py build`. Exported at native **5 m**, CRS EPSG:32636, over the download superset box |
-| **Coverage** | Export covers the full padded box; **only reef within 100 m of the Jordanian zone chain is used**. 6.09 km² of the 7.32 km² exported lies in Egyptian, Saudi and Israeli water and is deliberately discarded |
+| **Coverage** | Export covers the full padded box; **only reef within 100 m of the Jordanian zone chain is used**. 6.09 km² of the 7.32 km² exported lies in Egyptian, Saudi and Palestinian water and is deliberately discarded |
 | **License** | CC BY 4.0 — Allen Coral Atlas (Arizona State University / Planet / Vulcan) |
 | **Reproduce** | `../.venv/bin/python export_aca.py build` (needs the GeoTIFF in `data/raw/aca/` and `process_bathymetry.py` + `extract_osm.sh` already run) |
 | **Output** | `data/processed/vectors/reef_zones.gpkg`, plus `aca_fragments_BEFORE_MERGE.gpkg` (raw polygonized ACA) and `aca_pieces_ASSIGNED.gpkg` (audit trail of which piece went to which zone) |
@@ -1105,7 +1105,7 @@ Level 09 (`hybas_eu_lev09_v1c`) was also pulled for exploration and the `ENDO` f
 | Accessed | 1 Aug 2026 |
 | Licence | Public domain |
 | Script | `scripts/00_fetch_reference_data.py` |
-| **Role** | Assign discharge points to Jordan vs Israel / Egypt / Saudi Arabia |
+| **Role** | Assign discharge points to Jordan vs Palestine / Egypt / Saudi Arabia |
 
 **Limitation:** ~1 km coastline generalisation, so a point on the real shore can sit up to ~1 km from the polygon. Matching uses a 3 km tolerance.
 

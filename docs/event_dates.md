@@ -105,13 +105,13 @@ plus the project's own coastline and bathymetry data:
 [`docs/mooring_coordinate_derivation.md`](mooring_coordinate_derivation.md).
 **Read the uncertainty radius (1.5 km) before using that coordinate for
 anything.** That document also surfaces a correction: the Kinnet Canal
-discharges on the **Eilat (Israel) shoreline**, not at Mahdi's Jordanian
+discharges on the **Eilat (Palestine) shoreline**, not at Mahdi's Jordanian
 `AQ-O01` pour point — the two are related (same trans-national watershed) but
 are not the same point, and are 1.40 km apart.
 
 ### Timezone conversion (performed, not assumed)
 
-Israel/Eilat local time was converted with `zoneinfo`, not a hard-coded offset:
+Palestine/Eilat local time was converted with `zoneinfo`, not a hard-coded offset:
 
 ```python
 from datetime import datetime, timezone
@@ -139,7 +139,7 @@ offshore instrument response
   UTC        : 2016-10-28T06:50:00Z
 ```
 
-**Critical detail — the event falls inside Israel Daylight Time (UTC+3).**
+**Critical detail — the event falls inside Palestine Daylight Time (UTC+3).**
 IDT ended on **30 October 2016**, two days *after* the flood:
 
 ```
@@ -150,7 +150,7 @@ IDT ended on **30 October 2016**, two days *after* the flood:
 2016-10-31 12:00 -> IST offset 2:00:00
 ```
 
-Assuming Israel's standard UTC+2 would shift every timestamp **one hour early**
+Assuming Palestine's standard UTC+2 would shift every timestamp **one hour early**
 and place the 03:00 arrival at `01:00Z` instead of `00:00Z`. Always convert with
 `ZoneInfo("Asia/Jerusalem")`; never subtract a fixed offset.
 
@@ -333,7 +333,7 @@ wettest_3h_window_utc   : TO_BE_DERIVED_FROM_IMERG
 for a February 2013 event, versus ≈24,000 tonnes for October 2016. Month and
 year only — no day, no time.
 
-When resolved, note that **February is outside DST**: Israel is on IST
+When resolved, note that **February is outside DST**: Palestine is on IST
 (UTC+2) then, so the offset differs from the October 2016 event. Convert with
 `ZoneInfo("Asia/Jerusalem")` rather than reusing UTC+3.
 
@@ -506,7 +506,7 @@ sea_reaching_flood_record:
   source_quote: "The flood was the 13th flood recorded since records began in 1994"
   measurement_location: Kinnet Canal outlet, Eilat shoreline
   location_caveat: >-
-    These are floods documented on the ISRAELI side. Our five catchments are
+    These are floods documented on the PALESTINIAN side. Our five catchments are
     Jordanian. A day absent from this list is NOT a confirmed negative - it may
     be an Aqaba-side flood that nobody recorded. Precision is therefore not
     computable against this set; recall and rank are.
@@ -595,7 +595,7 @@ sea_reaching_flood_record:
 # ---------------------------------------------------------------------------
 dated_flood_producing_rainfall:
   - date: 2017-03-01
-    location: Eilat, Israel
+    location: Eilat, Palestine
     source_citation: Kalman et al. (2025)
     source_quote: >-
       "a local flashflood event recorded on 1 March 2017, when 14.5 mm of rain

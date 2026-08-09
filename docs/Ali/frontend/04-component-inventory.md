@@ -36,7 +36,7 @@ Default · hover · focus-visible · active · disabled · **loading** · **empt
 | `Hyetograph` | 3 | Time cursor synced to the slider |
 | `MooringChart` | 6 | Salinity + turbidity, **solid** = measured |
 | `ValidationPanel` | 6 | Modelled vs measured, plus the satellite null result |
-| `ProvenancePanel` | — | 43 figures from `manifest.json` + the Data Sources table |
+| `ProvenancePanel` | — | 44 figures from `manifest.json` + the Data Sources table |
 | `LimitationsPage` | — | From `pitch_limitations.md` and `forcing_limitations.md` |
 | `Assistant` | — | Cited answers only; `no_sourced_answer` is a distinct render |
 | `AlertCard` | 8 | The §15.4 alert, with confidence and caveat |

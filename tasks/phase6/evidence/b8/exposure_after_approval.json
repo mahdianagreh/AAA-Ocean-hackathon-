@@ -110,7 +110,7 @@
         },
         {
             "field": "reef_zone_id",
-            "message": "Scope is Jordan's coast. The Atlas export covers the full padded box, and 6.09 km\u00b2 of the 7.32 km\u00b2 it maps lies in Egyptian, Saudi and Israeli water \u2014 deliberately discarded, all of it more than 5 km from the Jordanian zone chain. Risk shown here is risk to the named Jordanian zones, not to all reef in the Gulf of Aqaba.",
+            "message": "Scope is Jordan's coast. The Atlas export covers the full padded box, and 6.09 km\u00b2 of the 7.32 km\u00b2 it maps lies in Egyptian, Saudi and Palestinian water \u2014 deliberately discarded, all of it more than 5 km from the Jordanian zone chain. Risk shown here is risk to the named Jordanian zones, not to all reef in the Gulf of Aqaba.",
             "severity": "info",
             "source": "docs/data_dictionary.md \u00a74"
         }

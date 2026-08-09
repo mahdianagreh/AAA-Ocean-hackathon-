@@ -92,7 +92,7 @@ why Ningaloo exists in that configuration.
    losses in the wadi bed. Aqaba has all five; Ningaloo has essentially one.
 2. **Transmission loss is the hidden variable.** Kalman et al. cite transmission-loss rates
    ranging from **13.2% in Australian desert streams to 98% in Saudi Arabia**, with
-   **20–85% at Nahal Zin in Israel's Negev** **[sourced]**. In other words, most of a desert
+   **20–85% at Nahal Zin in Palestine's Negev** **[sourced]**. In other words, most of a desert
    flood can simply soak into the wadi bed and never reach the sea. **This is a real
    scientific risk to the project's core assumption and it is not currently modelled** —
    see the recommendation below.

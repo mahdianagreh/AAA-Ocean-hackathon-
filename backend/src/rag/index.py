@@ -233,13 +233,13 @@ def build_index() -> tuple[list[Chunk], dict[str, float], float]:
 MIN_TERM_COVERAGE = 0.4
 
 # This corpus's OWN documented scope boundary (caveats.reef_scope_is_jordan:
-# "Egyptian, Saudi and Israeli water... deliberately discarded"), not an invented
+# "Egyptian, Saudi and Palestinian water... deliberately discarded"), not an invented
 # geography heuristic. A question naming one of these must be answered from a
 # chunk that itself mentions that country, or refused — see retrieve()'s
 # docstring for the failure this closes. "eilat" is deliberately NOT here: it is
 # legitimate corpus vocabulary (the documented event is the "Aqaba-Eilat flood"),
 # not a scope exclusion.
-_SCOPE_EXCLUSIVE_TERMS = {"egypt", "egyptian", "israel", "israeli", "saudi"}
+_SCOPE_EXCLUSIVE_TERMS = {"egypt", "egyptian", "palestine", "palestinian", "saudi"}
 
 
 def retrieve(
@@ -273,7 +273,7 @@ def retrieve(
     contradicted. `_SCOPE_EXCLUSIVE_TERMS` closes exactly that gap: it is not an
     invented heuristic, it is this corpus's OWN documented boundary
     (`reef_scope_is_jordan()` in caveats.py states outright that Egyptian, Saudi
-    and Israeli water is "deliberately discarded"). If a question names one of
+    and Palestinian water is "deliberately discarded"). If a question names one of
     these countries, a chunk that does not itself mention that same country is
     rejected outright, regardless of how well it scores on everything else.
     Deliberately excludes "Eilat": that is legitimate corpus vocabulary (the

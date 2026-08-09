@@ -36,7 +36,7 @@ Is the sea narrow enough to trap the mud? Is there a city or port at the mouth? 
 currently unmonitored?
 
 **Six places in the Middle East score as high as Aqaba. Four of them sit on the same stretch of
-water** — a gulf only 14 to 26 km wide, shared by Jordan, Israel, Egypt and Saudi Arabia.
+water** — a gulf only 14 to 26 km wide, shared by Jordan, Palestine, Egypt and Saudi Arabia.
 
 **One storm floods all four countries within two days.** No single government can fix that alone,
 which is exactly why shared regional funding makes sense here.

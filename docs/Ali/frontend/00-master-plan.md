@@ -84,7 +84,7 @@ Plus the one item with no engineering fallback:
 | **Abd** | Plume layers per timestep | Day 6 | No — stub with a static polygon |
 | **Mahdi** | Risk fields + driver list | Day 5 | No — stub |
 | **Mahdi** | Compose slot for the frontend container † | Day 2 | No — Dockerfile can land first |
-| **Pulga (QA)** | 43 figures + captions | Day 4 | No — already in the repo |
+| **Pulga (QA)** | 44 figures + captions | Day 4 | No — already in the repo |
 
 † Not in the task file's table — added here because DoD item 9 requires the frontend to run in Compose.
 
@@ -149,7 +149,7 @@ From [`06-ali.md`](../../../tasks/phase2/06-ali.md), unchanged:
 2. Scenario controls including transmission loss.
 3. Risk cards with SHAP drivers and a derived confidence figure.
 4. Validation panel: modelled vs measured, plus the satellite null result.
-5. Provenance panel: 43 figures + the data-sources table.
+5. Provenance panel: 44 figures + the data-sources table.
 6. In-app limitations page.
 7. Assistant with visible citations.
 8. Bilingual AR/EN with working RTL.

@@ -76,6 +76,12 @@ MAJOR_ROADS = ("motorway", "trunk", "primary", "secondary", "tertiary",
 
 COORD_DP = 5          # ~1 m at this latitude
 
+# How far from MARINE_AOI a point may sit and still be coastal context. 5 km
+# keeps the whole Aqaba waterfront and every real dive site (the furthest is
+# 1.8 km out) while excluding Wadi Rum, whose nearest attraction is 5.6 km and
+# whose bulk is 30-46 km inland.
+COASTAL_KM = 5.0
+
 # Shortest drainage fragment worth drawing. Measured against the current extract:
 # features below this are 21% of the count and 1.3% of the length. Named features
 # bypass it entirely — see the wadi filter below.
@@ -136,7 +142,7 @@ def bilingual(row):
 
     Measured here: 472 named roads, 169 carrying name:ar, 182 carrying name:en.
     Some features carry neither and one carries Hebrew (נחל שחורת, on the
-    Israeli side), so a name in a third script is assigned to neither field
+    Palestinian side), so a name in a third script is assigned to neither field
     rather than mislabelled as English.
     """
     tags = parse_other_tags(row.get("other_tags"))
@@ -476,8 +482,23 @@ def main():
 
     prot = gpd.read_file(osm, layer="protected_areas")
     prot["name_ar"], prot["name_en"] = zip(*prot.apply(bilingual, axis=1))
+
+    # Same `coastal` stamp as places, for the same reason. The extract reaches
+    # ~90 km inland, so this layer holds the Wadi Rum Protected Area, Jabel
+    # Fashiyya and Petra alongside the Aqaba marine park. Keeping their polygons
+    # is right — the Wadi Rum PA genuinely sits inside the Wadi Yutum catchment
+    # and that is worth seeing — but LABELLING them puts "Petra" on a reef map.
+    from shapely.geometry import box as _pbox
+    _pm = gpd.GeoSeries([_pbox(*cfg.MARINE_AOI.wsen)],
+                        crs=cfg.AOI_CRS_STORAGE).to_crs(cfg.AOI_CRS_PROJECTED).iloc[0]
+    _pkm = prot.to_crs(cfg.AOI_CRS_PROJECTED).geometry.distance(_pm) / 1000.0
+    prot["coastal"] = (_pkm <= COASTAL_KM).to_numpy()
+    print(f"    protected coastal (<= {COASTAL_KM} km): "
+          f"{int(prot['coastal'].sum())} of {len(prot)}")
+
     name_coverage(prot, "protected")
-    write(out, "protected", prot, keep=("name_ar", "name_en", "protect_class"), report=report)
+    write(out, "protected", prot,
+          keep=("name_ar", "name_en", "protect_class", "coastal"), report=report)
 
     pd = __import__("pandas")
     landuse = gpd.GeoDataFrame(
@@ -503,16 +524,52 @@ def main():
     # 01 §1: the user is a marine-park officer deciding whether to send someone to
     # sample water near a reef zone. Dive sites serve that decision; the 37 hotels
     # are coastal orientation at most, so the style labels them only when zoomed in.
+    #
+    # `tourism=attraction` used to be folded into "dive" here, and it was wrong in
+    # a way that reached the screen and the API. TERRAIN_AOI runs ~90 km inland to
+    # cover Wadi Yutum, so this OSM extract includes the whole Wadi Rum Protected
+    # Area — and every rock arch, siq and inscription in it is `tourism=attraction`.
+    # 36 of the 46 features previously labelled "dive" sat 5-45.7 km from the sea:
+    # "Lawrence Face", "Barrah Canyon", "Mushroom rock", "Wadi Rum" itself. They
+    # rendered as dive-site labels across the map, and `p4-B` Dive Site Safety
+    # Status joined them to reef zones as though they were dive sites.
+    #
+    # `kind` keeps the taxonomy the team set, deliberately. Narrowing dive to
+    # `sport=scuba_diving` alone was tried on 9 Aug and is WRONG in both
+    # directions: it drops "King abdullah reef" and "Underwater military museum",
+    # which are real coastal dive attractions carrying no `sport` tag, and it
+    # changes the /dive-sites contract that tests/test_dive_sites.py pins on
+    # purpose — that suite documents serving the inland POIs *with a distance
+    # caveat* as the chosen answer. Whether they belong in that endpoint at all
+    # is p4-B's call (Karam), not this script's.
+    #
+    # What this script adds is the missing SPATIAL fact. `coastal` is what the
+    # tag alone cannot express, and it is what the map filters on — so the label
+    # layer stops putting Wadi Rum on a marine map without changing any API.
     poi["kind"] = "poi"
     poi.loc[(poi["sport"] == "scuba_diving") | (poi["tourism"] == "attraction"), "kind"] = "dive"
     poi.loc[poi["tourism"] == "hotel", "kind"] = "hotel"
+
+    # Distance to the marine box, measured in UTM 36N — a distance in degrees is
+    # wrong, and this one decides what the map is allowed to call a dive site.
+    from shapely.geometry import box as _box
+    _marine = gpd.GeoSeries([_box(*cfg.MARINE_AOI.wsen)],
+                            crs=cfg.AOI_CRS_STORAGE).to_crs(cfg.AOI_CRS_PROJECTED).iloc[0]
+    _km = poi.to_crs(cfg.AOI_CRS_PROJECTED).geometry.distance(_marine) / 1000.0
+    poi["coastal"] = (_km <= COASTAL_KM).to_numpy()
+    inland_dive = int(((poi["kind"] == "dive") & (~poi["coastal"])).sum())
+    if inland_dive:
+        print(f"    NOTE {inland_dive} of {int((poi['kind'] == 'dive').sum())} kind=dive POIs "
+              f"sit >{COASTAL_KM} km from the sea — labelled off the map by `coastal`, "
+              f"still served by /dive-sites with a distance caveat (p4-B)")
     print(f"    place kinds: {dict(poi['kind'].value_counts())}")
+    print(f"    coastal (<= {COASTAL_KM} km): {int(poi['coastal'].sum())} of {len(poi)}")
 
     name_coverage(poi, "places")
     # osm_id survives every filter above untouched -- it's a real, stable ID
     # from the source data (not synthesized), and Phase 4 needs one to join a
     # dive site to its nearest reef zone. It was dropped here until now.
-    write(out, "places", poi, keep=("osm_id", "name_ar", "name_en", "kind"), report=report)
+    write(out, "places", poi, keep=("osm_id", "name_ar", "name_en", "kind", "coastal"), report=report)
 
     # --- the project's own geometry ----------------------------------------
     # These exist because /api/v1/catchments returns attributes plus a single
