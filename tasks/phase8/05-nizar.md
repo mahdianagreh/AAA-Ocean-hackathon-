@@ -489,3 +489,89 @@ not do that.
   not a reason to round up.
 
 **A Suggestions section** for anything you noticed and deliberately did not act on.
+
+---
+
+## Filled in, 2026-08-09
+
+### Page 11
+
+**Correction first: `SystemHealthPage.tsx` and the `/system` route don't exist yet** —
+checked the current repo, not assumed from this file. No file, no route registered in
+`useRoute.ts`, no `fetchCacheStats` anywhere. This file's "root cause, located" section
+is accurate about what the *backend* returns; the frontend bug it warns about hasn't
+been written yet. So what follows is a contract for Ali to build against, not a fix.
+
+- **Field list, confirmed exactly three**: `hits`, `misses`, `size`
+  (`TTLCache.stats()`, `data_access.py:853-855`). Neither cache overrides it.
+- **Labels**: "Cache hits" / "Cache misses" / **"Entries"** — `size` is `len(self._store)`,
+  an entry count, not bytes. Do not label it "Size" on a page titled "Memory & Cache
+  Stats," it will be read as memory.
+- **Genuinely absent, confirmed**: no `last_updated`, no stored `hit_rate` anywhere on
+  the object or the endpoint. A hit rate is `hits / (hits + misses)`, computed in the
+  component, labelled derived (source-vs-derived is a project rule, not just an API
+  concern). When `hits + misses === 0`, render a gap — never `0%`, since zero traffic
+  is not a measured zero hit rate.
+- **TTL**: both `PLUME_CACHE` and `EXPOSURE_CACHE` are `TTLCache(ttl_seconds=1800)`
+  (`data_access.py:859-860`) — recommend showing "30 min TTL" next to the entry count
+  so it doesn't read as a permanent total.
+- **Frontend type, added**: `CacheStats`/`CacheStatsResponse` + a typed
+  `fetchCacheStats()` now exist in `frontend/src/api/live.ts` (replacing the
+  `Record<string, unknown>` gap that would have let `String(value)` through
+  silently). Ali should import these rather than re-typing the response.
+- **Root cause in one sentence**: `/api/v1/cache-stats` returns one nested dict per
+  cache (`{hits, misses, size}`), and rendering a dict through `String(value)` (or any
+  bare interpolation) prints `[object Object]` — the fix is destructuring the three
+  fields, not stringifying the object.
+- **Same pattern elsewhere**: checked. Only one other `String(v)`-in-iteration exists,
+  `ReefZonePage.tsx:238` (`Object.entries(modelVersions)`), and it's a deliberate
+  stringify of heterogeneous model-version values (already scalars/strings in
+  practice) — not the same bug, left alone.
+- **Independent finding, not fixed (Phase 8 rule: report, don't act)**: reading the
+  health-check logic (`main.py:264-289`) to confirm the grouping, found that a missing
+  `bathymetry` artifact produces **no `degraded_reason` and no effect on `status`**,
+  unlike `reef_zones`/`landcover`/`soil`/`urban`/`catchments`, which all do. If that's
+  unintentional, it's a real gap — a missing bathymetry file currently reads as "ok."
+
+**Artifact → group mapping, all 18 keys assigned:**
+
+| group | keys |
+|---|---|
+| Terrain & Hydrology | `catchments`, `outlets`, `coastline` |
+| Marine | `reef_zones`, `reef_zones_provisional`, `bathymetry` |
+| Catchment features | `landcover`, `soil`, `urban` |
+| Rainfall & Events | `rainfall_climatology`, `rainfall_daily`, `seasonal_risk_calendar`, `event_catalogue`, `event_dates` |
+| Forecast | `forecast_snapshot` |
+| Reference & OSM | `data_dictionary`, `osm_buildings`, `osm_drainage` |
+
+Matches the task's own starting shape — checked against `ARTIFACTS`
+(`data_access.py:31-65`) and found no better fit for any key, so no changes needed.
+
+- **`osm_buildings`/`osm_drainage`**: confirmed same file (`osm_aqaba.gpkg`). Recommend
+  **one row**, not two — two rows for one file implies two independent checks that
+  don't exist.
+- **Three status buckets**: **present** (`artifacts_present[key] === true`);
+  **absent, degrading** (`false` AND the key is one of `reef_zones`/`landcover`/
+  `soil`/`urban`/`catchments` — i.e. it has a matching string in `degraded_reason[]`);
+  **absent, expected** (`false` for any other key — git-ignored raw data a normal dev
+  checkout was never meant to have, matching the 47 skipped tests). `bathymetry`
+  currently falls in this third bucket by omission, which is exactly the finding
+  above — worth deciding on purpose rather than by accident.
+- `reef_zones`'s exact degraded-reason string (for the redesigned card, verbatim,
+  PROVISIONAL suffix intact): *"reef_zones.gpkg absent — serving
+  reef_zones_PROVISIONAL.gpkg. The Allen Coral Atlas export is blocked on Earth
+  Engine browser authentication."*
+
+### Pages 13 & 14 — in progress, see commits for Track A/B status as they land.
+
+### Suggestions (noticed, not acted on)
+
+- No shared `Button`/`Input` component exists anywhere in the frontend before this
+  phase — every page hand-rolls inputs/buttons (`SiteScorePage.tsx`, `Assistant.tsx`,
+  now Login/Signup). The `premium-button` CSS utility class is the closest thing to a
+  standard. Worth a real component pass beyond just auth, in a later phase — not done
+  here, out of scope for these two pages.
+- `CaveatList.tsx` (dynamic `caveats[]` renderer) and the new static auth notice card
+  are visually related but structurally different (array vs. single fixed message) —
+  flagging in case a future pass wants to unify them; not done here since forcing one
+  shape onto the other would be worse than two small, correct components.

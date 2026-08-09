@@ -193,7 +193,7 @@ export function AssistantPage() {
                     composes the answer out of the sections it retrieved. */}
                 <blockquote
                   dir="auto"
-                  className="m-0 max-w-prose whitespace-pre-line border-s-4 border-accent bg-accent/5 p-5 rounded-r-xl text-sm leading-relaxed text-ink shadow-inner"
+                  className="m-0 max-w-prose whitespace-pre-line border-s-4 border-accent bg-accent/5 p-5 rounded-e-xl text-sm leading-relaxed text-ink shadow-inner"
                 >
                   {state.response.answer}
                 </blockquote>

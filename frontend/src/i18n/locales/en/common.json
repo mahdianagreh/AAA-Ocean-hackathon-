@@ -493,6 +493,7 @@
       "submit": "Submit Request",
       "receivedTitle": "Request received",
       "receivedBody": "Once the platform is live, our team will review requests and follow up by email within a few business days.",
+      "notTransmittedTitle": "This request was not transmitted",
       "notTransmitted": "This confirmation is local to your browser. The request was NOT transmitted: no intake service exists yet, so no one has received it and no email will follow. Nothing you typed left this page.",
       "haveAccess": "Already have access?",
       "signIn": "Sign In"

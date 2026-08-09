@@ -2,6 +2,9 @@ import { useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from '../components/Link';
 import { Logo } from '../components/Logo';
+import { Button } from '../components/Button';
+import { Field, FIELD_CLASS, fieldBorder } from '../components/Field';
+import { NoticeCard } from '../components/NoticeCard';
 import { AuthAside } from '../shell/MarketingChrome';
 
 /** Sign in — transcribed from the design canvas `isLogin` block.
@@ -55,9 +58,6 @@ function EyeIcon({ open }: { open: boolean }) {
     </svg>
   );
 }
-
-const FIELD =
-  'h-12 w-full rounded-md border bg-surface px-4 text-sm text-ink placeholder:text-ink-3';
 
 export function Login() {
   const { t } = useTranslation();
@@ -116,25 +116,20 @@ export function Login() {
           </div>
 
           {/* Permanent, not dismissible. See the file docstring. */}
-          <section
-            id={noticeId}
-            aria-labelledby={`${noticeId}-title`}
-            className="flex flex-col gap-2 rounded-md border border-hairline-2 bg-surface-2 p-4"
-          >
-            <h2 id={`${noticeId}-title`} className="m-0 text-xs font-bold text-ink">
-              {t('auth.notice.title')}
-            </h2>
-            <p className="m-0 text-xs leading-[1.6] text-ink-2">{t('auth.notice.body')}</p>
+          <NoticeCard id={noticeId} title={t('auth.notice.title')}>
+            <p className="m-0">{t('auth.notice.body')}</p>
             <Link to="/dashboard" className="text-xs font-semibold text-accent underline">
               {t('auth.notice.openDashboard')}
             </Link>
-          </section>
+          </NoticeCard>
 
           <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={emailId} className="text-xs font-semibold">
-                {t('auth.login.email')}
-              </label>
+            <Field
+              id={emailId}
+              label={t('auth.login.email')}
+              error={emailError}
+              errorPrefix={t('auth.errors.prefix')}
+            >
               <input
                 id={emailId}
                 name="email"
@@ -146,21 +141,16 @@ export function Login() {
                 placeholder={t('auth.login.emailPlaceholder')}
                 aria-invalid={emailError ? true : undefined}
                 aria-describedby={emailError ? emailErrorId : undefined}
-                className={`${FIELD} ${emailError ? 'border-risk-critical' : 'border-hairline'}`}
+                className={`${FIELD_CLASS} ${fieldBorder(!!emailError)}`}
               />
-              {emailError ? (
-                <p id={emailErrorId} className="m-0 text-xs font-semibold text-ink">
-                  {/* Text, not colour alone — 09 rule: an error a colour-blind
-                      or greyscale reader cannot see is not an error message. */}
-                  {t('auth.errors.prefix')} {emailError}
-                </p>
-              ) : null}
-            </div>
+            </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={passwordId} className="text-xs font-semibold">
-                {t('auth.login.password')}
-              </label>
+            <Field
+              id={passwordId}
+              label={t('auth.login.password')}
+              error={passwordError}
+              errorPrefix={t('auth.errors.prefix')}
+            >
               <div className="relative flex items-center">
                 <input
                   id={passwordId}
@@ -173,9 +163,7 @@ export function Login() {
                   placeholder="••••••••"
                   aria-invalid={passwordError ? true : undefined}
                   aria-describedby={passwordError ? passwordErrorId : undefined}
-                  className={`${FIELD} pe-12 ${
-                    passwordError ? 'border-risk-critical' : 'border-hairline'
-                  }`}
+                  className={`${FIELD_CLASS} pe-12 ${fieldBorder(!!passwordError)}`}
                 />
                 <button
                   type="button"
@@ -185,30 +173,21 @@ export function Login() {
                   }
                   aria-pressed={showPassword}
                   aria-controls={passwordId}
-                  className="absolute end-1 flex size-9 items-center justify-center rounded-sm text-ink-2 hover:text-ink"
+                  className="absolute end-1 flex size-11 items-center justify-center rounded-sm text-ink-2 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   <EyeIcon open={showPassword} />
                 </button>
               </div>
-              {passwordError ? (
-                <p id={passwordErrorId} className="m-0 text-xs font-semibold text-ink">
-                  {t('auth.errors.prefix')} {passwordError}
-                </p>
-              ) : null}
-            </div>
+            </Field>
 
             {/* The canvas links this to "#". There is no password to reset
                 because there are no accounts, so it states that instead of
-                being a link to nowhere. */}
+                being a link to nowhere. Styled as text, not a broken link. */}
             <p className="m-0 text-end text-xs text-ink-3">{t('auth.login.forgotPassword')}</p>
 
-            <button
-              type="submit"
-              className="h-12 w-full rounded-md bg-ink text-sm font-bold text-ink-inverse"
-              aria-describedby={noticeId}
-            >
+            <Button type="submit" aria-describedby={noticeId}>
               {t('auth.login.submit')}
-            </button>
+            </Button>
 
             <p
               id={statusId}
@@ -225,12 +204,7 @@ export function Login() {
               <span aria-hidden="true" className="h-px flex-1 bg-hairline" />
             </div>
 
-            <button
-              type="button"
-              disabled
-              aria-describedby={noticeId}
-              className="flex h-12 w-full items-center justify-center gap-3 rounded-md border-[1.5px] border-hairline-2 bg-surface text-sm font-semibold text-ink-3"
-            >
+            <Button type="button" variant="secondary" disabled aria-describedby={noticeId}>
               <svg
                 width="18"
                 height="18"
@@ -244,7 +218,7 @@ export function Login() {
                 <line x1="6" y1="2" x2="12" y2="2" stroke="currentColor" strokeWidth="1.6" />
               </svg>
               {t('auth.login.sso')}
-            </button>
+            </Button>
             <p className="m-0 text-center text-xs text-ink-3">{t('auth.login.ssoUnavailable')}</p>
           </form>
 

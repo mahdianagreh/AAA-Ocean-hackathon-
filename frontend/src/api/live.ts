@@ -495,6 +495,29 @@ export const fetchForecastLatest = () =>
  *  point falls outside a resolved cell -- render "not available", never 0. */
 export const fetchCurrentsAgreement = () =>
   tryJson<CurrentsAgreement>(`${API_BASE}/api/v1/currents/agreement`);
+
+/** `TTLCache.stats()` (backend/src/api/data_access.py) -- exactly these three
+ *  fields, nothing else. `size` is an ENTRY COUNT, not bytes -- label it
+ *  "Entries" on screen, not "Size", or it reads as memory on a page titled
+ *  "Memory & Cache Stats". No `last_updated`/`hit_rate` is stored server-side;
+ *  a hit rate is `hits / (hits + misses)`, computed here and labelled derived,
+ *  never shown as `0%` when `hits + misses === 0` (that's "no traffic yet", a
+ *  gap, not a measured zero). Both caches share a 30-minute TTL
+ *  (`ttl_seconds=1800`) -- show it next to the count so an entry count doesn't
+ *  read as a permanent total. */
+export interface CacheStats {
+  hits: number;
+  misses: number;
+  size: number;
+}
+
+export interface CacheStatsResponse {
+  plume: CacheStats;
+  exposure: CacheStats;
+}
+
+export const fetchCacheStats = () =>
+  tryJson<CacheStatsResponse>(`${API_BASE}/api/v1/cache-stats`);
 /** A dive-site POI joined to its nearest reef zone. `osm_id` is the stable join
  *  key (115/115 unique) — never join on name. `distance_m` is a real EPSG:32636
  *  measurement; a large one means an inland OSM `kind: dive` POI (Wadi Rum desert
