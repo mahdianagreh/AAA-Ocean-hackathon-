@@ -223,6 +223,12 @@ class EventOut(BaseModel):
     is_exhaustive: bool | None = Field(
         default=None, description="True once the full ~28-year daily record has been "
                                    "screened and ranked (build_event_catalogue.py).")
+    intensity_top_percent: float | None = Field(
+        default=None, description='Empirical "top N%": this event\'s max_daily_mm '
+                                   "is in the top N% of all days in wettest_catchment's "
+                                   "~28-year record. A real percentile of the record, "
+                                   "NOT max_anomaly_ratio. None if the daily record or "
+                                   "the wettest catchment is absent.")
 
 
 class MooringMarker(BaseModel):
@@ -269,6 +275,21 @@ class DiveSiteOut(BaseModel):
     nearest_reef_zone_id: str | None = None
     distance_m: float | None = None
     caveats: list[Caveat] = []
+
+
+class SeasonalMonthOut(BaseModel):
+    """One calendar month of the seasonal rainfall-intensity calendar
+    (scripts/29_seasonal_risk_calendar.py). Buckets by RAINFALL INTENSITY, not
+    exposure score — the frontend must frame it that way, since the sediment model
+    is anchored to a single October event and an exposure calendar would read flat
+    everywhere else. `worst_event_id` links the month to its heaviest storm."""
+
+    month: int = Field(description="1 = January … 12 = December")
+    month_name: str
+    event_count: int
+    max_daily_mm: float | None = None
+    mean_daily_mm: float | None = None
+    worst_event_id: str | None = None
 
 
 # -------------------------------------------------------------------- runoff

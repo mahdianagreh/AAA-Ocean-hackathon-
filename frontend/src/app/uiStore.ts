@@ -14,6 +14,7 @@ export type LayerKey =
   | 'reef'
   | 'outlets'
   | 'mooring'
+  | 'divesites'
   | 'modelGrid'
   | 'coverage'
   | 'labels';
@@ -144,6 +145,10 @@ export const useUi = create<UiState>((set) => ({
     reef: true,
     outlets: true,
     mooring: true,
+    // Dive sites are a reference layer, off by default: turned ON when the officer
+    // is siting a survey. The honest coastal-vs-inland distinction lives on the
+    // reef-zone page (with the distance caveat); here it is a plain POI overlay.
+    divesites: false,
     // The honesty device is off by default — it is a thing you turn ON to make a
     // point about resolution, not permanent chrome.
     modelGrid: false,

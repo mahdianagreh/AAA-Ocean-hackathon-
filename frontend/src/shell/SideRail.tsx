@@ -5,6 +5,7 @@ import type { LiveExposure } from '../app/useLiveExposure';
 import type { RiskCardData } from '../components/RiskCard';
 import { RiskCard } from '../components/RiskCard';
 import { Hyetograph } from '../components/Hyetograph';
+import { SubDailyWindows } from '../components/SubDailyWindows';
 import { Legend } from '../components/Legend';
 import { LayerToggle } from '../components/LayerToggle';
 import { ScenarioDrawer } from '../components/ScenarioDrawer';
@@ -90,6 +91,10 @@ export function SideRail({
               label: t(`mooring.${m.key}`),
             }))}
           />
+
+          {/* The heaviest sub-daily totals, as the honest scalar extrema they are —
+              never a rolling series the repo does not have (p4-16). */}
+          <SubDailyWindows subdaily={data.series.subdaily} />
 
           {/* Scene 8: the recommendation. One card leads — the worst catchment at
               this step — and the rest follow, because there is one decision to

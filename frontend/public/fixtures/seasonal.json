@@ -1,0 +1,98 @@
+[
+  {
+    "month": 1,
+    "month_name": "January",
+    "event_count": 121,
+    "max_daily_mm": 21.526798923897037,
+    "mean_daily_mm": 2.2267976181476836,
+    "worst_event_id": "AQ-2022-01-01"
+  },
+  {
+    "month": 2,
+    "month_name": "February",
+    "event_count": 106,
+    "max_daily_mm": 14.419513975811563,
+    "mean_daily_mm": 1.936290955699958,
+    "worst_event_id": "AQ-2010-02-25"
+  },
+  {
+    "month": 3,
+    "month_name": "March",
+    "event_count": 82,
+    "max_daily_mm": 21.5472560368737,
+    "mean_daily_mm": 2.0180323360523644,
+    "worst_event_id": "AQ-2014-03-09"
+  },
+  {
+    "month": 4,
+    "month_name": "April",
+    "event_count": 74,
+    "max_daily_mm": 10.131320159199298,
+    "mean_daily_mm": 1.2396539610822308,
+    "worst_event_id": "AQ-2001-04-04"
+  },
+  {
+    "month": 5,
+    "month_name": "May",
+    "event_count": 44,
+    "max_daily_mm": 4.339607711257755,
+    "mean_daily_mm": 1.0531664650445083,
+    "worst_event_id": "AQ-2003-05-30"
+  },
+  {
+    "month": 6,
+    "month_name": "June",
+    "event_count": 6,
+    "max_daily_mm": 2.2921002258849983,
+    "mean_daily_mm": 0.7465957599269452,
+    "worst_event_id": "AQ-2023-06-09"
+  },
+  {
+    "month": 7,
+    "month_name": "July",
+    "event_count": 6,
+    "max_daily_mm": 5.8285173159047945,
+    "mean_daily_mm": 1.3319462898494137,
+    "worst_event_id": "AQ-2000-07-28"
+  },
+  {
+    "month": 8,
+    "month_name": "August",
+    "event_count": 6,
+    "max_daily_mm": 1.6056456039257103,
+    "mean_daily_mm": 0.743429831571154,
+    "worst_event_id": "AQ-2023-08-13"
+  },
+  {
+    "month": 9,
+    "month_name": "September",
+    "event_count": 8,
+    "max_daily_mm": 3.537969719058566,
+    "mean_daily_mm": 1.4320447094933004,
+    "worst_event_id": "AQ-2010-09-22"
+  },
+  {
+    "month": 10,
+    "month_name": "October",
+    "event_count": 38,
+    "max_daily_mm": 10.20196726829546,
+    "mean_daily_mm": 1.7475484729984914,
+    "worst_event_id": "AQ-2016-10-28"
+  },
+  {
+    "month": 11,
+    "month_name": "November",
+    "event_count": 77,
+    "max_daily_mm": 10.633790875842196,
+    "mean_daily_mm": 1.3126696431843532,
+    "worst_event_id": "AQ-2002-11-09"
+  },
+  {
+    "month": 12,
+    "month_name": "December",
+    "event_count": 107,
+    "max_daily_mm": 11.671723867094954,
+    "mean_daily_mm": 1.4604455929187037,
+    "worst_event_id": "AQ-2018-12-05"
+  }
+]

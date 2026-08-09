@@ -200,6 +200,7 @@ export function MapView({ risk }: { risk?: Array<{ catchment_id: string; band: s
       labels: LABEL_LAYERS,
       plume: ['plume-fill', 'plume-line'],
       mooring: ['mooring'],
+      divesites: ['divesites'],
       modelGrid: ['model-grid'],
       rainfall: [],
     };
