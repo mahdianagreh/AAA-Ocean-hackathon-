@@ -1,0 +1,35 @@
+=== b1 evidence: no automated segmentation model exists ===
+
+1. plume_segmentation.py docstring — explicitly NOT a segmentation model:
+"""Sediment plume detection from Sentinel-2 L2A — spectral anomaly approach.
+
+Per tasks/abd.md Section 4 (concept doc Section 10.5): baseline composite ->
+water mask -> spectral indices -> anomaly detection -> artifact removal ->
+probability raster -> manual QC. Deliberately not a segmentation model — the
+Aqaba-specific labeled set is far too small for that to mean anything in a
+two-week MVP, and a spectral anomaly is what can actually be checked by eye.
+
+All bands are read at the 20 m grid (SCL's native resolution): the 10 m bands
+(B02/B03/B04/B08) are area-averaged down to it on read. This trades resolution
+for having every band on one aligned grid without a separate resampling step.
+
+Pixel access: Microsoft Planetary Computer (public, no credentials). Chosen
+because the AWS Earth Search mirror has no scenes for this tile before
+2017-01-01, and Copernicus Data Space needs a login for actual pixel bytes
+(only metadata search is anonymous there). See docs/event_audit.md Section 0.
+
+2. No API endpoint wires this module in — grep of main.py for 'segment':
+(no matches — confirmed absent from API surface)
+
+3. No human-review flag / agreement_score field anywhere in the module:
+(no matches)
+
+4. No B1 detector file exists anywhere in backend/src or scripts:
+backend/src/models/plume_segmentation.py
+
+5. tasks/mahdis-features-handoff/README.md status for B1:
+| 1 | B1 — Plume segmentation | Flagged, still open — no satellite ever saw a plume, confirmed physically impossible for the anchor event | Abd | [`HANDOFF_abd_b1_plume_masks.md`](HANDOFF_abd_b1_plume_masks.md) |
+| 2 | B2 — Learned transmission loss | **Closed — real data found, tested, learned model rejected** (negative skill vs. the flat borrowed range) | Karam | [`HANDOFF_karam_b2_transmission_loss_data.md`](HANDOFF_karam_b2_transmission_loss_data.md) → [`RESPONSE_karam_b2_transmission_loss_data.md`](RESPONSE_karam_b2_transmission_loss_data.md) → [`RESULT_b2_learned_model_tested_and_rejected.md`](RESULT_b2_learned_model_tested_and_rejected.md) |
+
+6. Handoff never got a RESPONSE file (unlike B2/B3):
+HANDOFF_abd_b1_plume_masks.md

@@ -1,0 +1,4 @@
+225:| [osm_04_culverts_all_numbered.png](qa_screenshots/osm_04_culverts_all_numbered.png) | all 46 culverts, numbered to match the handoff table |
+238:| drainage_features | 200 | **outlet correction** — 46 culverts |
+252:and that is what surfaced the **46 culverts**, the **Aqaba Marine Park**, and the
+1210:| OpenStreetMap | clipped to old box; 3,845 roads / 200 drainage / 27 culverts | **clipped to `terrain_aoi.geojson`; 8,289 roads / 1,402 drainage / 46 culverts** | 2026-08-02 |

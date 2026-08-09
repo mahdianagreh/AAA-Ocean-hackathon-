@@ -1,0 +1,19 @@
+=== p4-J evidence: no tonnage figure reachable for a non-anchor event ===
+
+1. POST /runoff/predict, AQ-C01, event_id=AQ-2014-03-09 (non-anchor, rain 30mm/3h):
+   sediment_class: extreme, relative_sediment_intensity: 0.957, predicted_runoff_m3: null
+   NO tonnage/mass field anywhere in the response. See runoff_predict_nonanchor_2014.json.
+
+2. POST /exposure/calculate for the same non-anchor event: real 4xx rejection,
+   not a fabricated tonnage:
+{"detail":"AQ-2014-03-09 has no converted.flood_arrival_utc in docs/event_dates.md -- the particle engine needs a real release time and will not guess one"}
+3. Schema search found one tonnage-shaped field anywhere in the API surface:
+   MooringOut.sediment_mass_total (schemas.py:256) -- but this belongs to the
+   REAL MEASURED Kalman et al. 2025 mooring record (p4-10), not the model's
+   own sediment formula, and it is unreachable for a non-anchor event:
+{"detail":"no mooring record for AQ-2014-03-09"}
+4. grep of schemas.py for any other tonnage-shaped field (mass_t/tonnes/damage_t):
+256:    sediment_mass_total: Value
+   -- only sediment_mass_total (mooring, real measurement) and internal
+   sediment_proxy.py bookkeeping (index-to-tonnes calibration, never returned
+   raw by the API for an arbitrary event).

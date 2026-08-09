@@ -36,6 +36,7 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 import geopandas as gpd
+from shapely.ops import unary_union
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend" / "src"))
@@ -47,6 +48,19 @@ FIXTURES_DIR = ROOT / "frontend" / "public" / "fixtures"
 #: not degrees -- a degree-based tolerance would mean a different real distance
 #: depending on latitude, which this project's own CRS rule exists to prevent.
 RUNOFF_SIMPLIFY_M = 300.0
+
+#: A legibility-sized real wadi channel width for the flood phase's water-fill
+#: visual, not a measured cross-section -- `runoff_lines` are centrelines with
+#: no width at all. Scaled per catchment by that catchment's own real
+#: `drainage_density_km_km2` (catchment_terrain.parquet, already a real
+#: feature the trained runoff model uses), same "documented assumption
+#: applied to real per-catchment data" pattern as HOTEL_DEFAULT_LEVELS
+#: (scripts/frontend_basemap.py) and REEF_HIGHLIGHT_HEIGHT_M (constants.ts).
+BASE_CHANNEL_WIDTH_M = 45.0
+#: Roughly the middle of these five catchments' real range (0.71-1.29
+#: km/km2, catchment_terrain.parquet) -- a catchment at this density gets
+#: the base width unscaled; denser/sparser catchments scale up/down from it.
+REFERENCE_DRAINAGE_DENSITY_KM_KM2 = 1.0
 
 EVENT_ID = "AQ-2016-10-28"
 #: The one outlet with a cached historical HYCOM archive for this event (05-abd.md
@@ -183,6 +197,62 @@ def _real_runoff_lines(catchment_id: str) -> list[list[list[float]]]:
     ]
 
 
+def _real_channel_width_m(catchment_id: str) -> float:
+    """See BASE_CHANNEL_WIDTH_M's own docstring -- a legibility width, scaled
+    by this catchment's real drainage density, not a measured channel."""
+    path = ROOT / "data" / "processed" / "features" / "catchment_terrain.parquet"
+    if not path.exists():
+        return BASE_CHANNEL_WIDTH_M
+    import pandas as pd
+    df = pd.read_parquet(path)
+    row = df[df["catchment_id"] == catchment_id]
+    if row.empty:
+        return BASE_CHANNEL_WIDTH_M
+    density = float(row.iloc[0]["drainage_density_km_km2"])
+    return BASE_CHANNEL_WIDTH_M * (1 + density / REFERENCE_DRAINAGE_DENSITY_KM_KM2)
+
+
+def _real_runoff_polygon(catchment_id: str) -> list[list[list[float]]]:
+    """The same real wadi centrelines `_real_runoff_lines` returns, buffered
+    into a polygon for the flood phase's water-fill visual -- the lines
+    themselves carry no width, so this is a legibility step on real geometry,
+    not a second real dataset. Buffered and unioned in EPSG:32636 (never
+    degrees, per the project's CRS rule), then reprojected back to 4326.
+
+    Returns one exterior ring per disjoint polygon the union produced (holes,
+    if the union ever created one, are dropped -- acceptable for a water-fill
+    visual, not analysed geometry).
+    """
+    catchments_path = BASEMAP_DIR / "catchments.geojson"
+    wadis_path = BASEMAP_DIR / "wadis.geojson"
+    if not catchments_path.exists() or not wadis_path.exists():
+        return []
+    catchments = gpd.read_file(catchments_path)
+    wadis = gpd.read_file(wadis_path)
+    match = catchments[catchments["catchment_id"] == catchment_id]
+    if match.empty:
+        return []
+    poly = match.geometry.iloc[0]
+    within = wadis[wadis.intersects(poly)].copy()
+    if within.empty:
+        return []
+    within = within.set_crs("EPSG:4326") if within.crs is None else within
+    projected = within.to_crs(_spatial.CRS_MEASURE)
+    width_m = _real_channel_width_m(catchment_id)
+    simplified = projected.geometry.simplify(RUNOFF_SIMPLIFY_M, preserve_topology=True)
+    buffered = simplified.buffer(width_m / 2)
+    merged = unary_union(list(buffered.values))
+    if merged.is_empty:
+        return []
+    polys = list(merged.geoms) if merged.geom_type == "MultiPolygon" else [merged]
+    back = gpd.GeoSeries(polys, crs=_spatial.CRS_MEASURE).to_crs("EPSG:4326")
+    return [
+        [[round(x, 5), round(y, 5)] for x, y in ring.exterior.coords]
+        for ring in back
+        if ring is not None and not ring.is_empty
+    ]
+
+
 def build(api_base: str) -> dict:
     plume = _post(
         api_base, "/api/v1/plume/simulate",
@@ -253,6 +323,7 @@ def build(api_base: str) -> dict:
         "rainfall_by_catchment": {cid: _real_rainfall(cid) for cid in _all_catchment_ids()},
         "rainfall_p99_by_catchment": {cid: _real_climatology_p99(cid) for cid in _all_catchment_ids()},
         "runoff_lines": _real_runoff_lines(catchment_id),
+        "runoff_polygon": _real_runoff_polygon(catchment_id),
         "source": (
             f"POST /api/v1/plume/simulate + /api/v1/exposure/calculate against a "
             f"live run of backend/src/api/main.py, plus frontend/public/fixtures/event.json "
@@ -286,6 +357,8 @@ def main() -> int:
     for cid, r in data["rainfall_by_catchment"].items():
         print(f"    {cid}: {r['peak_mm']} mm" if r else f"    {cid}: no real value that day")
     print(f"  real runoff wadi lines within the release catchment: {len(data['runoff_lines'])}")
+    print(f"  runoff water-fill polygon(s): {len(data['runoff_polygon'])} "
+          f"(channel width {_real_channel_width_m(data['release']['catchment_id']):.1f} m)")
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

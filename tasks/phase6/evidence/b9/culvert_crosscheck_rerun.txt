@@ -1,0 +1,14 @@
+5 outlets · 46 mapped culverts
+112,600 modelled channel cells (≥10 km² upstream)
+5 culverts within 500 m of the coast, of which 3 carry no modelled channel
+
+outlet_id  culverts_2500m  nearest_m  unmodelled_coastal                                                action
+   AQ-O01               2       2138                   0 none needed — DEM and OSM agree on the drainage lines
+   AQ-O02               3        312                   2     CANDIDATE CORRECTION — unmodelled path to the sea
+   AQ-O03               1        829                   1     CANDIDATE CORRECTION — unmodelled path to the sea
+   AQ-O04               2        793                   0 none needed — DEM and OSM agree on the drainage lines
+   AQ-O05               2        243                   0 none needed — DEM and OSM agree on the drainage lines
+
+wrote data/processed/vectors/outlets.gpkg  (+caveat, +culvert columns)
+wrote data/processed/vectors/outlets.geojson  (read by the API)
+wrote reports/outlets/culvert_crosscheck.md

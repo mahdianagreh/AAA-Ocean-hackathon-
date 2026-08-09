@@ -1,0 +1,39 @@
+=== p4-09 evidence: 'AI Never Saw This Storm' claim traced to real data ===
+
+1. Live re-check of temporal_holdout_anchor_check in model_versions.jsonl (current ledger entry):
+model id: runoff_weighted_gbm_6de325c_20260806T105403Z
+temporal_holdout_AP: 0.5923
+temporal_holdout_anchor_check: {
+  "anchor_catchment": "AQ-C01",
+  "anchor_rank_among_catchment_only": 76,
+  "anchor_n_days_in_catchment_test_set": 1102,
+  "anchor_percentile": 93.1
+}
+
+2. Matches docs/model_card.md's quoted claim verbatim (76th of 1,102, 93.1st percentile):
+"the model never saw this storm during training."
+
+| | rows | positive rate |
+|---|---:|---:|
+| train (≤2014) | 6,300 | 8.0% |
+| test (≥2015) | 5,510 | 7.7% |
+
+**Pooled AP 0.5923** vs. baseline 0.2083 · ROC_AUC 0.9158 · Brier 0.0482.
+
+**The headline claim, measured rather than assumed:** trained only on data
+
+3. Confirms the storm is a real ERA5-blind-spot row, not arbitrarily chosen —
+   reports/model/label_leakage.md line 44:
+| IMERG-wet (> 1 mm) | 779 | 398 (51.1%) |
+| ...of those, **ERA5 dry (< 0.1 mm)** | 276 | **1 (0.4%)** |
+
+**276 catchment-days on which IMERG observed real rain are labelled
+non-events, because ERA5 did not see the storm.** October 2016 is one of those
+rows. This is not a threshold to be tuned — the label is blind wherever its source
+product is.
+
+## Four models, LOCO, identical apart from the columns they see
+
+4. This is a documented/ledger claim, NOT wired into a live API endpoint —
+   no field in backend/src/api/main.py or model outputs references it:
+(no matches — confirmed static-doc claim only, matches tasks/phase4's own partial/yellow status for this item)
