@@ -113,7 +113,13 @@ data/processed/basemap/
 # committing the baked tiles is the only way other machines see real terrain at all.
 
 # Second, browser-reachable copy of the same baked Esri imagery data/processed/basemap/
-# already holds (see layers/imagery.ts) -- a `cp`, not a second fetch. Same reasoning:
-# derived, regenerable by scripts/fetch_basemap_raster.py, not committed.
-frontend/public/basemap-raster/
+# already holds (see layers/imagery.ts) -- a `cp`, not a second fetch.
+#
+# Committed (as of 9 Aug 2026), unlike the basemap raster above: Journey3D.tsx's
+# loadImageryCorners() degrades honestly when this is absent (no drape, real
+# terrain still shows), so the failure mode isn't broken -- it's silently
+# different, every teammate who hasn't run both fetch scripts sees plain
+# color-relief terrain with no photographic texture and no way to tell anything
+# is missing. Same reasoning as the terrain-RGB tile pyramid: small (~5MB) and
+# worth guaranteeing everyone sees the same scene over keeping the repo lean.
 
