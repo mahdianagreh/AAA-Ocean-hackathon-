@@ -1,13 +1,13 @@
 {
  "event_id": "AQ-2016-10-28",
  "model": {
-  "version_id": "runoff_weighted_gbm_2194b48_20260803T214757Z",
+  "version_id": "runoff_weighted_gbm_6de325c_20260806T105403Z",
   "algorithm": "weighted_gbm",
   "is_synthetic": false,
   "cv_scheme": "leave_one_catchment_out",
   "mean_AP": 0.7474,
   "baseline_mean_AP": 0.2004,
-  "trained_at": "2026-08-03T21:47:57.883249+00:00",
+  "trained_at": "2026-08-06T10:54:03.126384+00:00",
   "n_training_events": 2362,
   "features": [
    "precipitation_mm_day",
@@ -40,6 +40,7 @@
     "t": "2016-10-26T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.8281,
+    "predicted_runoff_m3": null,
     "severity": "extreme",
     "confidence": 0.61,
     "confidence_terms": {
@@ -48,9 +49,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -79,6 +80,7 @@
     "t": "2016-10-27T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.904,
+    "predicted_runoff_m3": null,
     "severity": "extreme",
     "confidence": 0.61,
     "confidence_terms": {
@@ -87,9 +89,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Extreme",
     "sediment_index": 671554.583057,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -118,6 +120,7 @@
     "t": "2016-10-28T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.723,
+    "predicted_runoff_m3": null,
     "severity": "high",
     "confidence": 0.61,
     "confidence_terms": {
@@ -126,9 +129,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "High",
     "sediment_index": 145434.918649,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -157,6 +160,7 @@
     "t": "2016-10-29T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0318,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.61,
     "confidence_terms": {
@@ -165,9 +169,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -196,6 +200,7 @@
     "t": "2016-10-30T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0019,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.61,
     "confidence_terms": {
@@ -204,9 +209,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -237,6 +242,7 @@
     "t": "2016-10-26T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.5273,
+    "predicted_runoff_m3": null,
     "severity": "high",
     "confidence": 0.752,
     "confidence_terms": {
@@ -245,9 +251,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -276,6 +282,7 @@
     "t": "2016-10-27T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.7766,
+    "predicted_runoff_m3": null,
     "severity": "extreme",
     "confidence": 0.752,
     "confidence_terms": {
@@ -284,9 +291,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 18408.030612,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -315,6 +322,7 @@
     "t": "2016-10-28T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.1072,
+    "predicted_runoff_m3": null,
     "severity": "low",
     "confidence": 0.752,
     "confidence_terms": {
@@ -323,9 +331,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 13312.901153,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -354,6 +362,7 @@
     "t": "2016-10-29T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0388,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.752,
     "confidence_terms": {
@@ -362,9 +371,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -393,6 +402,7 @@
     "t": "2016-10-30T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0038,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.752,
     "confidence_terms": {
@@ -401,9 +411,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -434,6 +444,7 @@
     "t": "2016-10-26T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.5394,
+    "predicted_runoff_m3": null,
     "severity": "high",
     "confidence": 0.769,
     "confidence_terms": {
@@ -442,9 +453,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -473,6 +484,7 @@
     "t": "2016-10-27T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.7908,
+    "predicted_runoff_m3": null,
     "severity": "extreme",
     "confidence": 0.769,
     "confidence_terms": {
@@ -481,9 +493,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 24006.421086,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -512,6 +524,7 @@
     "t": "2016-10-28T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.1285,
+    "predicted_runoff_m3": null,
     "severity": "low",
     "confidence": 0.769,
     "confidence_terms": {
@@ -520,9 +533,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 5212.666588,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -551,6 +564,7 @@
     "t": "2016-10-29T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0699,
+    "predicted_runoff_m3": null,
     "severity": "low",
     "confidence": 0.769,
     "confidence_terms": {
@@ -559,9 +573,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -590,6 +604,7 @@
     "t": "2016-10-30T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0007,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.769,
     "confidence_terms": {
@@ -598,9 +613,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -631,6 +646,7 @@
     "t": "2016-10-26T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0131,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.802,
     "confidence_terms": {
@@ -639,9 +655,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -670,6 +686,7 @@
     "t": "2016-10-27T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0413,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.802,
     "confidence_terms": {
@@ -678,9 +695,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 4802.974153,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -709,6 +726,7 @@
     "t": "2016-10-28T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0223,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.802,
     "confidence_terms": {
@@ -717,9 +735,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 2608.367398,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -748,6 +766,7 @@
     "t": "2016-10-29T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0219,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.802,
     "confidence_terms": {
@@ -756,9 +775,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -787,6 +806,7 @@
     "t": "2016-10-30T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0014,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.802,
     "confidence_terms": {
@@ -795,9 +815,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -828,6 +848,7 @@
     "t": "2016-10-26T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0116,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.803,
     "confidence_terms": {
@@ -836,9 +857,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -867,6 +888,7 @@
     "t": "2016-10-27T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0368,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.803,
     "confidence_terms": {
@@ -875,9 +897,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 4025.121265,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -906,6 +928,7 @@
     "t": "2016-10-28T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0237,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.803,
     "confidence_terms": {
@@ -914,9 +937,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 1799.403375,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -945,6 +968,7 @@
     "t": "2016-10-29T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.0239,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.803,
     "confidence_terms": {
@@ -953,9 +977,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {
@@ -984,6 +1008,7 @@
     "t": "2016-10-30T00:00:00Z",
     "is_stub": false,
     "runoff_probability": 0.001,
+    "predicted_runoff_m3": null,
     "severity": "none",
     "confidence": 0.803,
     "confidence_terms": {
@@ -992,9 +1017,9 @@
      "features_out_of_range": [],
      "calibrated": true
     },
-    "sediment_class": null,
+    "sediment_class": "Low",
     "sediment_index": 0.0,
-    "sediment_basis": "UNANCHORED - index is comparable between requests, but no absolute class exists. Anchor the proxy at training time on AQ-2016-10-28 / AQ-C01 (~24,400 t).",
+    "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)",
     "transmission_loss": 0.525,
     "drivers": [
      {

@@ -6,11 +6,14 @@ So nothing here is authored: the provenance figures come from the QA manifest, t
 limitations from the limitation documents, the data sources from the data
 dictionary, and the assistant corpus from the technical docs themselves.
 
-Four outputs:
+Six outputs (the docstring said "four" before this pass and had already fallen
+behind validation.json; corrected while models.json was added):
   provenance.json  34 figures with captions, plus WebP thumbnails
   limitations.json the numbered limitations, parsed from their own headings
+  validation.json  the measured mooring target vs. the modelled/null comparison
   sources.json     the data-source table with licences
   corpus.json      a searchable index for the assistant, with real citations
+  models.json      the served model's own record, for the model-honesty panel
 
 Thumbnails use `sips`, which is a macOS built-in — so this script runs on the
 host rather than in the worker container. It needs no geospatial stack.
@@ -27,6 +30,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 SHOTS = DOCS / "qa_screenshots"
+
+# For models() only — the honest panels below it read repo documents directly and
+# need no import. tests/conftest.py does the same insert for the same reason
+# (config import root, root CLAUDE.md's gotcha table).
+sys.path.insert(0, str(ROOT / "backend" / "src"))
 
 # 07 §6: overview_01 is excluded from the provenance panel. Its own burned-in
 # caption reads "CATCHMENTS ARE A LOCAL TEST FIXTURE… 5 latitude bands, not a
@@ -133,9 +141,10 @@ def split_sections(text: str, level: int = 2) -> list[dict]:
 def limitations() -> dict:
     """The limitations page — 04's LimitationsPage, from its own sources.
 
-    pitch_limitations.md is numbered 1..9 with a one-line version at the top.
-    forcing_limitations.md is the ~9 km ocean-model statement, which the map shows
-    as the grid overlay — so the text and the honesty device say the same thing.
+    pitch_limitations.md is numbered (13 as of this pass) with a one-line version
+    at the top. forcing_limitations.md is the ~9 km ocean-model statement, which
+    the map shows as the grid overlay — so the text and the honesty device say the
+    same thing.
     """
     pitch = (DOCS / "pitch_limitations.md").read_text()
     forcing = (DOCS / "forcing_limitations.md").read_text()
@@ -160,6 +169,33 @@ def limitations() -> dict:
         "forcing": {
             "statement": forcing_stmt,
             "source": "docs/forcing_limitations.md",
+        },
+        # p4-17's chart. Frozen historical findings from a one-off analysis
+        # (reports/model/label_problem.md SS1 and SS3), not live-computed here --
+        # same category as sediment_proxy.py's ANCHOR_MASS_T. Item 13 above states
+        # the same numbers in prose; this is the structured form the chart needs.
+        # No total day count is invented for the 3.21%/0.156% shares -- the source
+        # states shares directly, not a raw denominator.
+        "label_frequency_gap": {
+            "target_fires_pct": 3.21,
+            "target_fires_days": 288,
+            "target_fires_per_year": 11.7,
+            "documented_floods_pct": 0.156,
+            "documented_floods_count": 13,
+            "documented_floods_per_year": 0.57,
+            "gap_multiple_optimistic": 21,
+            "gap_multiple_sampled": 78,
+            "era5_dry_pct_of_imerg_wet_days": 35,
+            "era5_dry_pct_of_heaviest_imerg_days": 20,
+            "checked_catchment_days": 276,
+            "checked_catchment_days_positive": 1,
+            "anchor_event": {
+                "era5_mm": 0.77,
+                "era5_percentile": 92.6,
+                "imerg_mm": 9.58,
+                "imerg_percentile": 99.5,
+            },
+            "source": "reports/model/label_problem.md; root CLAUDE.md label rule section",
         },
         "sources": ["docs/pitch_limitations.md", "docs/forcing_limitations.md"],
     }
@@ -231,6 +267,48 @@ def validation() -> dict:
         "modelled": None,
         "modelled_blocked_on": "no registered simulation run (data/outputs/<run_id>/ has never been created)",
         "calibration_fit": calibration_fit,
+    }
+
+
+def models() -> dict:
+    """The model-honesty panel (p4-09 / p4-11): what is served, and which number
+    answers which claim.
+
+    Same derive-and-commit pattern as scripts/frontend_predictions.py, for the
+    same reason: DoD item 9 ("works with wifi off") means the panel cannot make a
+    live call, so the served model's own record is baked into a fixture instead.
+
+    Three numbers, three different claims — root CLAUDE.md and
+    docs/model_card.md are both explicit that none of these substitute for each
+    other:
+      mean_AP                 (LOCO)             generalises to an unseen CATCHMENT
+      temporal_holdout_AP     (train <=2014)     generalises to an unseen TIME PERIOD
+      label_leakage_ablation  (a DIFFERENT model) predicts from independent inputs
+    Trimmed here to what the panel needs: training_event_ids (2,362 entries) and
+    hyperparams are real but irrelevant to a reader asking "can I trust this
+    number", so they are left out of the fixture rather than shipped unread.
+    """
+    from models.runoff_model import model_info
+
+    info = model_info()
+    m = info["metrics"]
+    return {
+        "id": info["id"],
+        "algorithm": info["algorithm"],
+        "trained_at": info["trained_at"],
+        "n_training_events": info["n_training_events"],
+        "features": info["features"],
+        "metrics": {
+            "mean_AP": m["mean_AP"],
+            "baseline_mean_AP": m["baseline_mean_AP"],
+            "pooled_AP": m["pooled_AP"],
+            "temporal_holdout_AP": m["temporal_holdout_AP"],
+            "temporal_holdout_baseline_AP": m["temporal_holdout_baseline_AP"],
+            "temporal_holdout_split": m["temporal_holdout_split"],
+            "temporal_holdout_anchor_check": m["temporal_holdout_anchor_check"],
+            "_note": m["_note"],
+        },
+        "label_leakage_ablation": info["label_leakage_ablation"],
     }
 
 
@@ -359,6 +437,16 @@ def main():
               f" ({cf['n_trials']} trials)")
     else:
         print("    calibration fit: not computed — no data/models/plume_calibration.json")
+
+    print("  models")
+    mdl = models()
+    (out / "models.json").write_text(json.dumps(mdl, ensure_ascii=False, indent=1))
+    print(f"    {mdl['id']}")
+    print(f"    LOCO mean_AP {mdl['metrics']['mean_AP']} vs baseline {mdl['metrics']['baseline_mean_AP']}"
+          f"  |  temporal_holdout_AP {mdl['metrics']['temporal_holdout_AP']}"
+          f" vs baseline {mdl['metrics']['temporal_holdout_baseline_AP']}")
+    print(f"    independent-inputs claim: {mdl['label_leakage_ablation']['defensible_mean_AP']}"
+          f" (not {mdl['label_leakage_ablation']['shipped_mean_AP']})")
 
     print("  sources")
     src = sources()

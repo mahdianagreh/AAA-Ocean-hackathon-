@@ -1,15 +1,19 @@
 /** Real satellite imagery drape — the same real, never-generated Esri World
  *  Imagery this project's 2D plume map uses (`docs/plume_imagery_decision.md`).
- *  Two bakes, not one: `fetch_journey_imagery.py` covers the full
+ *  Three bakes, not one: `fetch_journey_imagery.py` covers the full
  *  `TERRAIN_AOI` at zoom 12 (~38 m/px) so it survives as one WebGL texture —
  *  a zoom-13 attempt at that extent decoded to 7168x8192px and the browser
  *  refused to load it, a real failure this session hit, not a hypothetical
  *  one. `fetch_journey_corridor_imagery.py` covers just the release outlet's
  *  real area at zoom 14 (~9.5 m/px), sharp for the journey's closer camera
- *  phases (flood, transport, accumulation, impact), and stacked *above* the
- *  full-AOI image in `journeyStyle.ts` — wherever it covers, it simply draws
- *  over the coarser image beneath, no per-phase source-swapping needed.
- *  Never a live Mapbox/Google tile fetch (DoD item 9, "works with wifi off").
+ *  phases (flood, transport, accumulation, impact). `fetch_journey_wide_imagery.py`
+ *  covers a padded box around `TERRAIN_AOI` at zoom 9 (~300 m/px), coarse but
+ *  real ground for whatever a free-roaming camera can see beyond the sharp
+ *  AOI edge — see `layers/terrain.ts`'s `TERRAIN_MIN_ZOOM` doc for the glitch
+ *  this replaces. Stacked bottom to top wide -> full-AOI -> corridor in
+ *  `Journey3D.tsx` — each simply draws over the coarser one wherever it
+ *  covers, no per-phase source-swapping needed. Never a live Mapbox/Google
+ *  tile fetch (DoD item 9, "works with wifi off").
  *
  *  A single `image` source per bake, not a tile scheme: each is one JPEG
  *  covering its own real extent (see each sidecar JSON's own
@@ -17,21 +21,23 @@
  *  scale, no reason to re-tile an image this project already treats as one
  *  asset per bake.
  *
- *  NOTE ON WHERE THE FILES ACTUALLY LIVE: both fetch scripts write to
+ *  NOTE ON WHERE THE FILES ACTUALLY LIVE: all three fetch scripts write to
  *  `data/processed/basemap/`, same convention as `fetch_basemap_raster.py`.
  *  This scene needs the raw files reachable by the browser directly, so they
  *  must also be copied to `frontend/public/basemap-raster/` — a plain `cp`,
  *  not a second fetch:
  *      cp data/processed/basemap/aqaba_terrain_esri.{jpg,json} \
  *         data/processed/basemap/aqaba_journey_corridor_esri.{jpg,json} \
+ *         data/processed/basemap/aqaba_journey_wide_esri.{jpg,json} \
  *         frontend/public/basemap-raster/
- *  All four files are git-ignored/regenerable; this is not a new data
+ *  All six files are git-ignored/regenerable; this is not a new data
  *  source, just a second, browser-reachable serving location for the same
- *  two bakes.
+ *  three bakes.
  */
 
 export const TERRAIN_STEM = 'aqaba_terrain_esri';
 export const CORRIDOR_STEM = 'aqaba_journey_corridor_esri';
+export const WIDE_STEM = 'aqaba_journey_wide_esri';
 
 const jsonUrl = (stem: string) => `${import.meta.env.BASE_URL}basemap-raster/${stem}.json`;
 const imageUrl = (stem: string) => `${import.meta.env.BASE_URL}basemap-raster/${stem}.jpg`;

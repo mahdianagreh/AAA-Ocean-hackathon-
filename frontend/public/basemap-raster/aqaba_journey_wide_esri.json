@@ -1,0 +1,19 @@
+{
+  "stem": "aqaba_journey_wide_esri",
+  "image": "aqaba_journey_wide_esri.jpg",
+  "crs": "EPSG:3857",
+  "extent_note": "left/right/bottom/top in EPSG:3857 metres, matplotlib order",
+  "left": 3678761.297308963,
+  "right": 4226661.916057105,
+  "bottom": 3209132.1955248388,
+  "top": 3757032.814272982,
+  "width_px": 1792,
+  "height_px": 1792,
+  "zoom": 9,
+  "pad_fraction": 1.2,
+  "aoi_source": "config.spatial.TERRAIN_AOI, padded (not draped on any terrain mesh)",
+  "provider": "Esri WorldImagery",
+  "attribution": "Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+  "fetched_utc": "2026-08-09T13:27:49Z",
+  "why": "Real ground for the area a free-roaming camera can reach beyond the sharp TERRAIN_AOI bake, replacing a flat colour mask there. Baked once so rendering needs no network. Regenerate rather than commit."
+}

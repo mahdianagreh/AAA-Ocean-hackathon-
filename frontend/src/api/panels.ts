@@ -33,6 +33,29 @@ export interface Limitations {
   one_line: string;
   items: Array<{ n: number; title: string; body: string }>;
   forcing: { statement: string; source: string };
+  /** p4-17's gap chart. Frozen historical findings (reports/model/label_problem.md),
+   *  not live-computed — same category as sediment_proxy.py's ANCHOR_MASS_T. */
+  label_frequency_gap: {
+    target_fires_pct: number;
+    target_fires_days: number;
+    target_fires_per_year: number;
+    documented_floods_pct: number;
+    documented_floods_count: number;
+    documented_floods_per_year: number;
+    gap_multiple_optimistic: number;
+    gap_multiple_sampled: number;
+    era5_dry_pct_of_imerg_wet_days: number;
+    era5_dry_pct_of_heaviest_imerg_days: number;
+    checked_catchment_days: number;
+    checked_catchment_days_positive: number;
+    anchor_event: {
+      era5_mm: number;
+      era5_percentile: number;
+      imerg_mm: number;
+      imerg_percentile: number;
+    };
+    source: string;
+  };
   sources: string[];
 }
 
@@ -78,6 +101,57 @@ export interface Validation {
   };
 }
 
+/** The model-honesty panel (p4-09 / p4-11).
+ *
+ *  Three numbers, three different claims — root CLAUDE.md and docs/model_card.md
+ *  are both explicit none of these substitute for each other:
+ *    metrics.mean_AP                  (LOCO)          unseen CATCHMENT
+ *    metrics.temporal_holdout_AP      (train <=2014)  unseen TIME PERIOD
+ *    label_leakage_ablation.defensible_mean_AP  a DIFFERENT, never-shipped model —
+ *      the only defensible number for "predicts from independent inputs"; this
+ *      artefact's own mean_AP/temporal_holdout_AP both use ERA5 features that
+ *      leak the label and must never be quoted for that specific claim.
+ */
+export interface ModelInfo {
+  id: string;
+  algorithm: string;
+  trained_at: string;
+  n_training_events: number;
+  features: string[];
+  metrics: {
+    mean_AP: number;
+    baseline_mean_AP: number;
+    pooled_AP: number;
+    temporal_holdout_AP: number;
+    temporal_holdout_baseline_AP: number;
+    temporal_holdout_split: {
+      cutoff_year: number;
+      train_rows: number;
+      test_rows: number;
+      train_pos_rate: number;
+      test_pos_rate: number;
+    };
+    temporal_holdout_anchor_check: {
+      anchor_catchment: string;
+      anchor_rank_among_catchment_only: number;
+      anchor_n_days_in_catchment_test_set: number;
+      anchor_percentile: number;
+    };
+    _note: string;
+  };
+  label_leakage_ablation: {
+    claim: string;
+    defensible_model: string;
+    defensible_n_features: number;
+    defensible_mean_AP: number;
+    shipped_model: string;
+    shipped_n_features: number;
+    shipped_mean_AP: number;
+    why_shipped_is_not_defensible: string;
+    source: string;
+  };
+}
+
 export interface Sources {
   rows: string[][];
   source: string;
@@ -102,6 +176,7 @@ async function load<T>(name: string): Promise<T> {
 export const loadProvenance = () => load<Provenance>('provenance');
 export const loadLimitations = () => load<Limitations>('limitations');
 export const loadValidation = () => load<Validation>('validation');
+export const loadModelInfo = () => load<ModelInfo>('models');
 export const loadSources = () => load<Sources>('sources');
 export const loadCorpus = () => load<Corpus>('corpus');
 

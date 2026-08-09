@@ -399,7 +399,6 @@ export const fetchReefZonesLive = (includeGeometry = false) =>
   tryJson<ReefZoneRow[]>(`${API_BASE}/api/v1/reef-zones?include_geometry=${includeGeometry}`);
 
 export const fetchDataSources = () => tryJson<DataSourceRow[]>(`${API_BASE}/api/v1/data-sources`);
-export const fetchModels = () => tryJson<Record<string, unknown>>(`${API_BASE}/api/v1/models`);
 export const fetchForecastLatest = () =>
   tryJson<ForecastLatest>(`${API_BASE}/api/v1/forecast/latest`);
 

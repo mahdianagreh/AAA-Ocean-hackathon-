@@ -45,6 +45,25 @@ CONFIDENCE_WORD = {
 # Feature name -> the clause this project actually uses for it. Unknown features
 # fall back to their raw name rather than being dropped: a driver we cannot phrase
 # is still a driver, and hiding it would misrepresent the model.
+#
+# DECISION (p4-04, 9 Aug 2026 — recorded per tasks/phase7/02-mahdi.md's checklist,
+# since Pulga was not reachable to decide live): the vocabulary bridge lives HERE,
+# not in the frontend's `driver.*` i18n keys. Those 24 keys are short noun-phrase
+# axis labels for DriverBars.tsx's bar chart ("Rainfall, previous day") — they are
+# not built to sit grammatically after "because" in a sentence, and reusing them
+# unchanged there just produces a different-shaped noun-pile than the raw-name
+# fallback did. DRIVER_PHRASE needs a verb-bearing clause instead. What IS taken
+# from `driver.*`: the terminology itself — each entry below names the same
+# concept with the same words the bar chart already uses in both languages
+# (`أمطار اليوم السابق`, `الأمطار مقابل المئين 90`, ...), so a reader never sees a
+# driver called one thing in the chart and another thing in the sentence.
+#
+# The four entries below (rain_self_percentile, rain_over_p90, precip_prior_1d_mm,
+# precip_prior_3d_mm) are the runoff model's actual top SHAP drivers for the anchor
+# event (tasks/phase6/04-pulga.md, evidence/p4-04/runoff_predict_real_drivers.json).
+# Before this, none of the four had an entry, so every real prediction fell through
+# to `feature.replace("_", " ")` — grammatically dead: "...because rain self
+# percentile, rain over p90, precip prior 1d mm and precip prior 3d mm."
 DRIVER_PHRASE = {
     "en": {
         "rainfall_3h_mm": "forecast 3-hour rainfall exceeds the catchment's historical {pct} percentile",
@@ -54,6 +73,10 @@ DRIVER_PHRASE = {
         "frac_bare_sparse_vegetation": "the catchment surface is almost entirely bare ground",
         "road_density_km_per_km2": "road density adds impervious surface",
         "clay_0_5cm_mean": "surface soil texture favours runoff over infiltration",
+        "rain_self_percentile": "the day's rainfall ranks far above what this catchment typically sees",
+        "rain_over_p90": "rainfall exceeded the catchment's 90th-percentile threshold",
+        "precip_prior_1d_mm": "the previous day already carried substantial rainfall",
+        "precip_prior_3d_mm": "rainfall built up over the three days beforehand",
     },
     "ar": {
         "rainfall_3h_mm": "الأمطار المتوقعة خلال 3 ساعات تتجاوز النسبة المئوية {pct} التاريخية للحوض",
@@ -63,6 +86,12 @@ DRIVER_PHRASE = {
         "frac_bare_sparse_vegetation": "سطح الحوض شبه خالٍ من الغطاء النباتي",
         "road_density_km_per_km2": "كثافة الطرق تزيد الأسطح غير المنفذة",
         "clay_0_5cm_mean": "قوام التربة السطحية يرجّح الجريان على الترشيح",
+        # Noun-initial, same requirement as every entry above — see
+        # test_arabic_driver_clause_is_noun_initial, which iterates this dict.
+        "rain_self_percentile": "أمطار هذا اليوم تتجاوز ما يشهده هذا الحوض عادة",
+        "rain_over_p90": "الأمطار تجاوزت عتبة المئين 90 لهذا الحوض",
+        "precip_prior_1d_mm": "أمطار اليوم السابق كانت غزيرة بالفعل",
+        "precip_prior_3d_mm": "أمطار الأيام الثلاثة السابقة تراكمت",
     },
 }
 
@@ -114,11 +143,30 @@ def to_percent(probability) -> Decimal:
     return Decimal(str(probability)) * Decimal(100)
 
 
-def _driver_clause(drivers: list[dict], language: str, rainfall_percentile) -> str:
+def _feature_name(d: dict) -> str:
+    """The driver's feature name, under either field name callers actually use.
+
+    `/explain`'s own schema calls this `feature`. `/runoff/predict` calls the same
+    thing `key` (`backend/src/api/main.py`'s `DriverOut`, renamed there to match
+    the frontend's `PredictionDriver` type). A caller who forwards a real
+    prediction's `drivers` list into `/explain` unmodified used to get every
+    phrase silently dropped to "" (feature.get("feature") is missing), the
+    driver_clause empty, and a spurious `rainfall_percentile` HTTPException 500 —
+    exactly Phase 6's p4-04 FAIL reproduction. Accepting `key` as a synonym means
+    the two endpoints' native output/input shapes actually compose.
+    """
+    return d.get("feature") or d.get("key") or ""
+
+
+def _driver_clause(drivers: list[dict], language: str, rainfall_percentile) -> tuple[str, bool]:
+    """(clause, pct_rendered). `pct_rendered` is True only if `{pct}` actually made
+    it into the clause — see build_explanation for why the caller needs to know.
+    """
     lang = language if language in DRIVER_PHRASE else "en"
     phrases = []
+    pct_rendered = False
     for d in drivers:
-        feature = d.get("feature", "")
+        feature = _feature_name(d)
         template = DRIVER_PHRASE[lang].get(feature)
         if template is None:
             phrases.append(feature.replace("_", " ") if feature else "")
@@ -128,6 +176,7 @@ def _driver_clause(drivers: list[dict], language: str, rainfall_percentile) -> s
             if pct.isdigit():
                 pct = f"{pct}th" if lang == "en" else pct
             phrases.append(template.format(pct=pct))
+            pct_rendered = True
         else:
             phrases.append(template)
 
@@ -138,12 +187,12 @@ def _driver_clause(drivers: list[dict], language: str, rainfall_percentile) -> s
         # "لم تُوفَّر عوامل النموذج" yields "لأن لم تُوفَّر" — ungrammatical. All seven
         # DRIVER_PHRASE["ar"] entries happen to start with a noun, so only this
         # fallback was exposed, and only when a caller supplies no drivers at all.
-        return ("the model's drivers were not supplied" if lang == "en"
-                else "عوامل النموذج لم تُوفَّر")
+        return (("the model's drivers were not supplied" if lang == "en"
+                 else "عوامل النموذج لم تُوفَّر"), False)
     sep, final = JOIN[lang]
     if len(phrases) == 1:
-        return phrases[0]
-    return sep.join(phrases[:-1]) + final + phrases[-1]
+        return phrases[0], pct_rendered
+    return sep.join(phrases[:-1]) + final + phrases[-1], pct_rendered
 
 
 def build_explanation(
@@ -168,7 +217,7 @@ def build_explanation(
 
     label = catchment_label or catchment_id
     risk_phrase = RISK_PHRASE[lang].get(risk_level, risk_level)
-    driver_clause = _driver_clause(drivers, lang, rainfall_percentile)
+    driver_clause, pct_rendered = _driver_clause(drivers, lang, rainfall_percentile)
 
     source_numbers: dict = {}
 
@@ -194,11 +243,20 @@ def build_explanation(
         tmpl = CONF_EN if lang == "en" else CONF_AR
         confidence_clause = tmpl.format(conf=CONFIDENCE_WORD[lang].get(confidence, confidence))
 
-    if rainfall_percentile is not None:
+    # Only tracked when {pct} actually made it into driver_clause. rainfall_percentile
+    # is an argument to the rainfall_3h_mm/rainfall_mm_3h phrase specifically, not a
+    # number the sentence always shows — a caller supplying it alongside drivers that
+    # don't use it (e.g. the model's real rain_self_percentile/rain_over_p90/... set)
+    # would otherwise get a fidelity-check 500 for a number the text never claimed to
+    # render. This was Phase 6's exact p4-04 reproduction (evidence/p4-04/
+    # explain_with_unrenamed_key_field_500.json), not a coincidence of the key/feature
+    # rename bug alone.
+    if rainfall_percentile is not None and pct_rendered:
         source_numbers["rainfall_percentile"] = rainfall_percentile
     for d in drivers:
-        if "value" in d and d.get("feature"):
-            source_numbers[f"driver_{d['feature']}"] = d["value"]
+        name = _feature_name(d)
+        if "value" in d and name:
+            source_numbers[f"driver_{name}"] = d["value"]
 
     template = TEMPLATE_EN if lang == "en" else TEMPLATE_AR
     text = template.format(

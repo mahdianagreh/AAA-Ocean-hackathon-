@@ -50,7 +50,7 @@
     "mooring": "Mooring record",
     "area": "Catchment area",
     "exposureTitle": "Exposure score {{score}} of 100 — {{range}} band",
-    "exposureNote": "Sediment intensity term for R-01 (0–1, squashed against the Oct 2016 anchor so it never saturates): {{sediment}}.",
+    "exposureNote": "Sediment intensity term for R-01 (0–1, squashed against the documented ≈24,400 t October 2016 anchor so it never saturates): {{sediment}}. A deterministic formula, not a fitted model — nothing here is trained.",
     "alerts": "Alerts",
     "alertsEmpty": "No zone is currently above the minimal band — expected while the plume transport model is a placeholder; every score is capped near the bottom of the scale until it lands.",
     "liveUnreachable": "Not available — the live backend could not be reached. Historical figures on this screen are unaffected; they come from the committed record, not from this connection."
@@ -117,6 +117,8 @@
   "risk": {
     "score": "Exposure score",
     "runoffProbability": "Runoff probability",
+    "predictedVolume": "Predicted runoff volume",
+    "predictedVolumeCaveat": "Not modelled — the registered model is a risk classifier, not a volume regressor.",
     "drivers": "What is driving it",
     "confidenceLabel": "Confidence",
     "confidence": "{{n}} of {{total}} days exceed {{threshold}}",
@@ -207,6 +209,7 @@
   "overlay": {
     "label": "Panels",
     "validation": "Validation",
+    "model": "Model honesty",
     "provenance": "Provenance",
     "limitations": "Limitations",
     "assistant": "Assistant",
@@ -214,6 +217,7 @@
   },
   "journey": {
     "phaseNav": "Journey phase",
+    "frameNav": "Plume timestep",
     "phase": {
       "normal": "Normal",
       "rain": "Heavy rain",
@@ -226,9 +230,9 @@
       "normal": "Aqaba's coastline, terrain and developed waterfront before the storm — no rain, no floodwater, no sediment yet.",
       "rain": "Heavy rainfall: {{mm}} mm measured for this catchment on {{date}}, the storm's real recorded peak day — not an invented ramp.",
       "flood": "Water fills the real wadi channel toward the coastal outlet — the channel width is sized for legibility, scaled by this catchment's own real drainage density, and how fast it fills tracks its real recorded rainfall.",
-      "transport": "The calibrated particle engine's real simulated plume, one real timestep at a time.",
+      "transport": "The calibrated particle engine's real simulated plume, one real timestep at a time. This catchment's real sediment-proxy formula rates it {{sedimentClass}} — {{sedimentPct}}% of the October 2016 anchor catchment's own intensity — and that real number sets how strongly it renders.",
       "transportEmpty": "No sediment left the outlet this timestep — the real simulation produced no plume to show, not a hidden one.",
-      "accumulation": "The plume's final timestep, shown as settling sediment rather than a moving cloud — a visual convention over the same real shape, not a second simulated signal.",
+      "accumulation": "The plume's final timestep, shown as settling sediment rather than a moving cloud — a visual convention over the same real shape, not a second simulated signal. Same real sediment-proxy rating as Transport: {{sedimentClass}}, {{sedimentPct}}% of the anchor catchment.",
       "accumulationEmpty": "No sediment reached open water for this event — nothing settled, so nothing is shown.",
       "impact": "Reef zones take on their real modelled exposure risk for this event.",
       "impactEmpty": "No reef zone recorded exposure for this event — every zone stays at its neutral tone, not a zero risk score standing in for missing data."
@@ -267,6 +271,26 @@
     "peakTimingError": "Peak timing error",
     "regimeVerdict": "Selected regime"
   },
+  "modelHonesty": {
+    "servedModel": "Model being served",
+    "trainedOn": "Trained on {{n}} events, run on {{date}}, {{features}} features.",
+    "guessTitle": "Simple guess vs. smart guess",
+    "guessIntro": "Leave-one-catchment-out mean average precision — how well the model transfers to a catchment it never trained on, against a naive baseline that always predicts the base rate.",
+    "naiveBaseline": "Naive baseline",
+    "thisModel": "This model",
+    "locoLabel": "Leave-one-catchment-out — tests generalisation to an unseen catchment, not an unseen time period.",
+    "stormTitle": "AI never saw this storm",
+    "stormIntro": "A separate split: trained only on data before {{year}}, then tested on {{year}} onward — a time period, and every storm in it, the model never saw during training.",
+    "temporalLabel": "{{trainRows}} training rows before {{year}}, {{testRows}} held-out rows from {{year}} onward.",
+    "anchorNote": "The documented {{catchment}} flood of October 2016 — the demo event — ranked at the {{pct}}th percentile of risk among {{n}} unseen days for its own catchment in this held-out set, despite the model never training on it.",
+    "reconcileTitle": "Which number answers which claim",
+    "reconcileWarning": "These three numbers test three different things. None stands in for another, and none should be averaged with another.",
+    "claimCatchment": "Generalises across catchments",
+    "claimTime": "Generalises across time (never saw this storm)",
+    "claimIndependent": "Predicts from independent inputs",
+    "independentNote": "This is a different, never-shipped model, not this artefact's own score — the served model's own number for this claim would be {{shipped}} AP, which root CLAUDE.md is explicit must not be quoted here:",
+    "source": "Source:"
+  },
   "provenancePanel": {
     "figures": "QA figures",
     "counts": "{{shown}} shown, of {{manifest}} in the manifest and {{disk}} PNGs on disk.",
@@ -280,7 +304,14 @@
     "forcing": "Ocean current resolution",
     "forcingSeeGrid": "Turn on the ocean-model grid layer to see this rather than read it.",
     "items": "{{n}} things our data cannot tell you",
-    "arabicPending": "The detail below is shown in its source language. Machine-translating scientific caveats is a scientific-integrity risk, so these bodies await review by a human Arabic reader rather than being translated automatically."
+    "arabicPending": "The detail below is shown in its source language. Machine-translating scientific caveats is a scientific-integrity risk, so these bodies await review by a human Arabic reader rather than being translated automatically.",
+    "gapTitle": "The label-frequency gap",
+    "gapIntro": "Our runoff classifier's target fires far more often than sea-reaching floods actually occur, over the same population of days.",
+    "gapOurs": "Our label fires",
+    "gapDocumented": "Documented sea-reaching floods",
+    "gapMultiple": "A {{optimistic}}× gap — and that is the optimistic case, assuming every day we did not individually check is a genuine non-event. On the days we actually checked, the gap is {{sampled}}×.",
+    "gapDetection": "Not fixable by moving a threshold: ERA5-Land is essentially dry on {{wetPct}}% of the days IMERG satellite data calls wet, and on {{heavyPct}}% of the heaviest IMERG days on record. Of {{checked}} catchment-days where IMERG saw real rain and ERA5 saw none, our label is positive on exactly {{positive}}.",
+    "gapAnchor": "The October 2016 anchor storm is among the misses: {{era5mm}} mm ({{era5pct}}th percentile) in ERA5, against {{imergmm}} mm ({{imergpct}}th percentile) in IMERG — the same storm the sediment proxy is anchored to reads as an unremarkable day to the label that trains this classifier."
   },
   "assistant": {
     "label": "Ask about the pipeline, the data or the limitations",
@@ -299,7 +330,7 @@
     "reset": "Reset",
     "notActive": "Moving any control switches to Scenario mode.",
     "transmissionLoss": "Transmission loss",
-    "transmissionLossNote": "Share of the flood that infiltrates the wadi bed and never reaches the sea. Measured range is 20–85% and the pipeline does not model it, so this is the project's largest single uncertainty.",
+    "transmissionLossNote": "Share of the flood that infiltrates the wadi bed and never reaches the sea. The 20–85% range is borrowed from Negev desert catchments — not measured for these wadis — and the pipeline does not model the physical process itself, so this is the project's largest single uncertainty.",
     "rainfallScale": "Rainfall",
     "rainfallScaleNote": "Scales the measured rainfall for this event. 100% is what actually fell.",
     "antecedentWetness": "Antecedent wetness",

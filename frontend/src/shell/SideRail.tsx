@@ -13,8 +13,27 @@ import { ValueWithUnit } from '../components/ValueWithUnit';
 import { PlumeMapPanel } from '../components/PlumeMapPanel';
 import { ForecastPanel } from '../panels/ForecastPanel';
 import { HARBOUR_BASIN_OUTLETS } from '../api/types';
-import type { HazardBand } from '../api/types';
+import type { HazardBand, Outlet } from '../api/types';
 import { BAND_CLASS, HAZARD_RANGES } from '../api/types';
+
+/** p4-D: appends the real culvert numbers behind AQ-O02/AQ-O03's map flag, so
+ *  the tooltip a reader gets here says the same thing the coloured dot does —
+ *  never a per-culvert count implying a dataset `/outlets` cannot serve (there
+ *  is no per-culvert endpoint), only this outlet's own aggregate fields.
+ *  `nearest_culvert_m` is already computed in EPSG:32636 server-side; this
+ *  never re-derives a distance from `lon`/`lat`, which is exactly the mistake
+ *  that once overstated every culvert distance by 14.8% (measuring in
+ *  degrees/Web Mercator instead of UTM 36N). */
+function culvertCaveat(o: Outlet): string {
+  if (!o.culvert_verdict?.includes('CANDIDATE CORRECTION')) return o.caveat;
+  const nearest =
+    o.nearest_culvert_m != null ? `${o.nearest_culvert_m.toFixed(0)} m` : 'an unknown distance';
+  const unmodelled = o.unmodelled_coastal_culverts ?? 0;
+  return (
+    `${o.caveat} ${o.culvert_verdict}: nearest real culvert ${nearest} away ` +
+    `(EPSG:32636), ${unmodelled} unmodelled coastal culvert${unmodelled === 1 ? '' : 's'} nearby.`
+  );
+}
 
 /** Side rail: risk cards, layer toggles, legend — 03 §3.
  *
@@ -162,7 +181,11 @@ export function SideRail({
             <p className="text-2xs text-ink-3">{t('mooring.noSeries')}</p>
           </section>
 
-          {/* Outlets, with AQ-O04's caveat travelling with it — 01 §6.7. */}
+          {/* Outlets, with AQ-O04's caveat travelling with it — 01 §6.7.
+              p4-D: the map flags AQ-O02/AQ-O03 with a coloured dot and a label;
+              09 rule 7 requires the same fact reach a reader who never looks at
+              the map, with the real numbers behind it, not just a repeated
+              badge. */}
           <section className="flex flex-col gap-1">
             <h2 className="border-b border-hairline pb-1 text-xs font-semibold text-ink-2">
               {t('rail.outlets')}
@@ -171,8 +194,11 @@ export function SideRail({
               <Row
                 key={o.outlet_id}
                 label={o.outlet_id}
-                caveat={o.caveat}
-                warn={HARBOUR_BASIN_OUTLETS.has(o.outlet_id)}
+                caveat={culvertCaveat(o)}
+                warn={
+                  HARBOUR_BASIN_OUTLETS.has(o.outlet_id) ||
+                  Boolean(o.culvert_verdict?.includes('CANDIDATE CORRECTION'))
+                }
               >
                 <ValueWithUnit
                   value={o.upstream_km2 ?? null}

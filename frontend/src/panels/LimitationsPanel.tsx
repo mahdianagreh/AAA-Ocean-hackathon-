@@ -2,6 +2,43 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { loadLimitations, type Limitations } from '../api/panels';
 import { useUi } from '../app/uiStore';
+import { ValueWithUnit } from '../components/ValueWithUnit';
+
+/** p4-17's two bars: our label's own fire rate against the literature's documented
+ *  rate, same catchment-days population. Single-direction, not diverging like
+ *  DriverBars — there is no sign here, only magnitude — scaled to the LARGER value
+ *  so the smaller bar reads as what it is: a sliver next to it, not a rounding
+ *  difference. `dir="ltr"` for the same reason DriverBars' axis is: a physical bar
+ *  length must not mirror with reading direction. */
+function GapBars({ gap }: { gap: Limitations['label_frequency_gap'] }) {
+  const { t } = useTranslation();
+  const max = gap.target_fires_pct;
+  // digits matches each number's own source precision (3.21, 0.156) — forcing
+  // both to the same decimal count would render 3.21 as "3.210", a third decimal
+  // digit the source never claimed.
+  const rows: Array<{ key: string; label: string; pct: number; digits: number }> = [
+    { key: 'ours', label: t('limitations.gapOurs'), pct: gap.target_fires_pct, digits: 2 },
+    { key: 'documented', label: t('limitations.gapDocumented'), pct: gap.documented_floods_pct, digits: 3 },
+  ];
+  return (
+    <ul className="flex flex-col gap-1.5">
+      {rows.map((r) => (
+        <li key={r.key} className="flex items-center gap-2 text-2xs">
+          <span className="w-40 shrink-0 text-ink-2">{r.label}</span>
+          <span dir="ltr" className="relative h-3 min-w-0 flex-1 bg-surface-2">
+            <span
+              className="absolute inset-y-0.5 start-0 bg-ink-2"
+              style={{ width: `${Math.max(0.5, (r.pct / max) * 100)}%` }}
+            />
+          </span>
+          <span className="w-16 shrink-0 text-end">
+            <ValueWithUnit value={r.pct} unit="%" digits={r.digits} provenance="reported" />
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /** DoD item 6: the in-app limitations page.
  *
@@ -63,6 +100,44 @@ export function LimitationsPanel() {
         <p className="text-2xs text-ink-2">{t('limitations.forcingSeeGrid')}</p>
         <p className="text-2xs text-ink-2">
           <code className="font-mono num">{l.forcing.source}</code>
+        </p>
+      </section>
+
+      {/* p4-17: the label-frequency gap, as a chart — item 13 above states the same
+          numbers in prose. A linear bar makes the 0.156% bar nearly invisible next
+          to 3.21%'s — left that way deliberately, since the tiny bar next to the
+          real one IS the finding, not a rendering problem to fix. Both ends carry
+          the exact number in text regardless, so nothing depends on reading a
+          five-pixel width. */}
+      <section className="flex flex-col gap-2 rule bg-surface-2 p-3" data-panel-section="gap-chart">
+        <h3 className="text-sm font-semibold">{t('limitations.gapTitle')}</h3>
+        <p className="text-xs text-ink-2">{t('limitations.gapIntro')}</p>
+        <GapBars gap={l.label_frequency_gap} />
+        <p className="text-2xs text-ink-2">
+          {t('limitations.gapMultiple', {
+            optimistic: l.label_frequency_gap.gap_multiple_optimistic,
+            sampled: l.label_frequency_gap.gap_multiple_sampled,
+          })}
+        </p>
+        <p className="text-2xs text-ink-2">
+          {t('limitations.gapDetection', {
+            wetPct: l.label_frequency_gap.era5_dry_pct_of_imerg_wet_days,
+            heavyPct: l.label_frequency_gap.era5_dry_pct_of_heaviest_imerg_days,
+            checked: l.label_frequency_gap.checked_catchment_days,
+            positive: l.label_frequency_gap.checked_catchment_days_positive,
+          })}
+        </p>
+        <p className="text-2xs text-ink-2">
+          {t('limitations.gapAnchor', {
+            era5mm: l.label_frequency_gap.anchor_event.era5_mm,
+            era5pct: l.label_frequency_gap.anchor_event.era5_percentile,
+            imergmm: l.label_frequency_gap.anchor_event.imerg_mm,
+            imergpct: l.label_frequency_gap.anchor_event.imerg_percentile,
+          })}
+        </p>
+        <p className="text-2xs text-ink-3">
+          {t('validation.source')}{' '}
+          <code className="font-mono num">{l.label_frequency_gap.source}</code>
         </p>
       </section>
 

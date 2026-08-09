@@ -11,6 +11,10 @@ export interface RiskCardData {
   band: HazardBand;
   score: number;
   runoff_probability: number | null;
+  /** Always null on every current path — the registered model is a classifier,
+   *  not a volume regressor. Rendered as a stated gap rather than left off the
+   *  card, so absence reads as "not modelled" rather than "forgotten". */
+  predicted_runoff_m3: number | null;
   /** The catchment's own area, always shown.
    *
    *  Not a driver. It reached the screen only as a stand-in driver until a real
@@ -100,7 +104,21 @@ export function RiskCard({ data }: { data: RiskCardData }) {
             <ValueWithUnit value={data.area_km2} unit="km²" digits={2} provenance="modelled" />
           </dd>
         </div>
+        <div className="flex items-baseline justify-between gap-2">
+          <dt className="text-ink-2">{t('risk.predictedVolume')}</dt>
+          <dd>
+            {/* Always null: core-A, "predicted_runoff_m3 is deliberately null
+                (classifier, not regressor). Render the gap; do not compute a
+                substitute." A gap here says the model was asked and had no
+                volume to give — never absent, which would read as never asked. */}
+            <ValueWithUnit value={data.predicted_runoff_m3} unit="m³" digits={0} provenance="modelled" />
+          </dd>
+        </div>
       </dl>
+
+      {data.predicted_runoff_m3 === null ? (
+        <p className="text-2xs text-ink-3">{t('risk.predictedVolumeCaveat')}</p>
+      ) : null}
 
       <DriverBars drivers={data.drivers} />
       <ConfidenceMeter c={data.confidence} />

@@ -27,6 +27,12 @@ export interface Prediction {
   /** Travels through so a stub can never be mistaken for a trained prediction. */
   is_stub: boolean;
   runoff_probability: number;
+  /** Always null: `predict_one()` never returns this key. The registered model is
+   *  a runoff CLASSIFIER, not a volume regressor — there is no m3 figure to give,
+   *  and rendering one would be a fabrication (task file: "render the gap; do not
+   *  compute a substitute"). Carried as an explicit field rather than left absent
+   *  so the card states the gap instead of silently never mentioning volume. */
+  predicted_runoff_m3: number | null;
   /** The model's own vocabulary: none | low | medium | high | extreme. */
   severity: string;
   confidence: number;

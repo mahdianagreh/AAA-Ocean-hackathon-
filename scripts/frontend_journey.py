@@ -148,6 +148,44 @@ def _real_climatology_p99(catchment_id: str) -> float | None:
     return float(row.iloc[0]["p99_all_mm"])
 
 
+def _real_sediment_intensity(event_id: str, catchment_id: str) -> dict | None:
+    """This catchment's real sediment-proxy result for this real event —
+    calling `backend.models` directly rather than a live HTTP round-trip
+    (same documented trade `scripts/frontend_predictions.py` already makes:
+    reimplementing `sediment_proxy`'s formula by hand here risks a silent
+    divergence from what `POST /api/v1/exposure/calculate` actually computes,
+    so this calls the exact same functions the API route calls,
+    `da.training_row` + `predict_one`, byte-faithful by construction).
+
+    `sediment_index` is unbounded (m3 of real runoff volume times
+    dimensionless real terrain/soil terms); `anchor_index_for_normalisation`
+    is the same real formula evaluated at the one point this project has a
+    real published mass for (AQ-C01/AQ-2016-10-28, ≈24,400 t, Kalman et al.
+    2025). Dividing gives a real 0-1-ish ratio ("how much of the anchor
+    catchment's own intensity does this catchment's real geometry/soil/
+    runoff produce"), not an invented scale.
+    """
+    try:
+        from api import data_access as da
+        from models.runoff_model import predict_one
+    except ImportError:
+        return None
+    row = da.training_row(event_id, catchment_id)
+    if row is None:
+        return None
+    result = predict_one(row)
+    anchor = result.get("anchor_index_for_normalisation")
+    index = result.get("sediment_index")
+    if index is None or not anchor:
+        return None
+    return {
+        "sediment_index": index,
+        "sediment_index_normalized": round(float(index) / float(anchor), 6),
+        "sediment_class": result.get("sediment_class"),
+        "sediment_basis": result.get("sediment_basis"),
+    }
+
+
 def _all_catchment_ids() -> list[str]:
     """Read straight from the committed basemap layer rather than a
     hardcoded list — `AQ-C01`..`AQ-C05` is frozen (tasks/00-contracts.md §2),
@@ -324,6 +362,7 @@ def build(api_base: str) -> dict:
         "rainfall_p99_by_catchment": {cid: _real_climatology_p99(cid) for cid in _all_catchment_ids()},
         "runoff_lines": _real_runoff_lines(catchment_id),
         "runoff_polygon": _real_runoff_polygon(catchment_id),
+        "sediment": _real_sediment_intensity(EVENT_ID, catchment_id),
         "source": (
             f"POST /api/v1/plume/simulate + /api/v1/exposure/calculate against a "
             f"live run of backend/src/api/main.py, plus frontend/public/fixtures/event.json "

@@ -136,6 +136,47 @@ def test_no_drivers_says_so():
           "drivers were not supplied" in text, f"text: {text}")
 
 
+REAL_MODEL_DRIVERS = [
+    {"feature": "rain_self_percentile", "value": 0.97, "contribution": 0.41},
+    {"feature": "rain_over_p90", "value": 1.0, "contribution": 0.27},
+    {"feature": "precip_prior_1d_mm", "value": 18.3, "contribution": 0.15},
+    {"feature": "precip_prior_3d_mm", "value": 34.6, "contribution": 0.09},
+]
+
+
+def test_real_model_drivers_produce_grammatical_phrases():
+    """p4-04's FAIL: the runoff model's actual top-4 drivers had no DRIVER_PHRASE
+    entry and fell through to `feature.replace("_", " ")` — a noun-pile with no
+    verb ("...because rain self percentile, rain over p90, ..."). Locks in the
+    fix so this can't silently regress the way it did undetected since Phase 3
+    (every existing fixture used hand-picked names that already matched).
+    """
+    for lang in ("en", "ar"):
+        text, _ = _build(lang, shap_drivers=REAL_MODEL_DRIVERS)
+        for d in REAL_MODEL_DRIVERS:
+            raw_fallback = d["feature"].replace("_", " ")
+            check(f"[{lang}] {d['feature']} is phrased, not raw-name fallback",
+                  raw_fallback not in text, f"text: {text}")
+
+
+def test_runoff_predict_driver_shape_is_accepted():
+    """`/runoff/predict` names this field `key`, not `feature` (DriverOut in
+    main.py). Feeding that shape into /explain unmodified used to silently drop
+    every phrase to "" and then 500 on a stray `rainfall_percentile` fidelity
+    mismatch — Phase 6's exact p4-04 reproduction. `key` must now work the same
+    as `feature`.
+    """
+    key_shaped = [{"key": d["feature"], "value": d["value"], "contribution": d["contribution"]}
+                  for d in REAL_MODEL_DRIVERS]
+    text_key, nums_key = _build("en", shap_drivers=key_shaped)
+    text_feature, nums_feature = _build("en", shap_drivers=REAL_MODEL_DRIVERS)
+    check("key-shaped drivers render the same clause as feature-shaped drivers",
+          text_key == text_feature, f"key: {text_key}\nfeature: {text_feature}")
+    missing = explain.numbers_present(text_key, nums_key)
+    check("key-shaped drivers still pass the number-fidelity check", not missing,
+          f"missing {missing}")
+
+
 def test_arabic_driver_clause_is_noun_initial():
     """TEMPLATE_AR puts the clause after لأن, which cannot govern a verb directly.
 
@@ -170,6 +211,8 @@ if __name__ == "__main__":
     test_matches_the_calibration_example()
     test_unknown_driver_is_shown_not_dropped()
     test_no_drivers_says_so()
+    test_real_model_drivers_produce_grammatical_phrases()
+    test_runoff_predict_driver_shape_is_accepted()
     test_arabic_driver_clause_is_noun_initial()
 
     print()
