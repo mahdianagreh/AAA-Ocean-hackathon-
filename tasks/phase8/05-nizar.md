@@ -562,7 +562,67 @@ Matches the task's own starting shape — checked against `ARTIFACTS`
   reef_zones_PROVISIONAL.gpkg. The Allen Coral Atlas export is blocked on Earth
   Engine browser authentication."*
 
-### Pages 13 & 14 — in progress, see commits for Track A/B status as they land.
+### Pages 13 & 14
+
+**Track A — done.** Built the two shared pieces the task assumed existed
+(`Button`, `Field`, `NoticeCard` — none did before this) and applied them to
+both screens, replacing the duplicated local `FIELD` constant. Fixed the
+`text-ink-3`-on-`bg-surface-2` contrast rule was already respected (checked,
+not assumed). Every honesty-critical string confirmed present before Track B
+touched anything. Screenshots: `evidence/auth/{login,signup}-{en,ar}-{light,dark}.png`,
+keyboard-only pass: 22/22 interactive elements have a visible focus ring
+(Playwright tab-order check, not eyeballed).
+
+**Track B — attempted, and it cleared the gate.** All 8 conditions checked
+live, straight answers:
+
+| # | Gate condition | Result |
+|---|---|---|
+| 1 | A real user, created through the real flow, can sign in from a clean browser | **YES** — verified through the actual Login UI (Playwright), navigates to `/dashboard` |
+| 2 | The session survives a page reload and refreshes before expiry | **YES** — reload keeps `/dashboard`, confirmed a real `sb-<ref>-auth-token` entry in `localStorage` with an `access_token` |
+| 3 | `GET /api/v1/users/me` returns that user, verified from the token | **YES** — `{"id": "<sub>", "email": "<email>"}`, read from the verified JWT, not client input |
+| 4 | At least one write endpoint rejects an unauthenticated request; `reviewed_by` set from the verified token | **YES** — tested with a client body claiming `"reviewed_by": "totally-fake-name-i-am-not"`; the stored value was the real verified email |
+| 5 | Sign-out works and actually invalidates the client session | **YES** — `localStorage` session gone after sign-out, confirmed |
+| 6 | Wrong credentials produce a real, indistinguishable error | **YES** — wrong password and wrong email both produce the identical "Incorrect email or password." |
+| 7 | `docker compose up` starts the stack with auth enabled, `test_api_startup.py` passes against the container's import path | **YES** — health 200, `import api.main` succeeds under `/app/backend/src` on `sys.path` (the container's exact layout); the AST-level relative-import check passed locally too (the 3 other local pytest failures are the pre-existing `backend/.venv` Python 3.9/no-fastapi gap, not this) |
+| 8 | RLS is on, service-role key nowhere in `frontend/` | **YES** — `relrowsecurity = t` on `access_requests`; grepped `frontend/` for the literal key value and for `SERVICE_ROLE`/`service_role` — zero hits |
+
+**All 8 true → the notices came down, in the same commit that made the last
+one true**, per this file's own rule. What actually changed:
+
+- Auth model + access model decided and written to `tasks/00-contracts.md`
+  §9: Supabase Auth (JWKS/ES256, no shared secret — this project's key
+  format signs asymmetrically), approval-gated by decoupling Signup (writes
+  `access_requests`, RLS insert-only for `anon`) from real Auth-user
+  provisioning (out-of-band, service-role key, never a public endpoint).
+- Backend: `backend/src/api/auth.py` (new), `GET /api/v1/users/me` (new),
+  `PATCH /reports/{id}/review` and
+  `POST /reef-zones/{id}/sensitivity-weight/approve` now require a verified
+  session and take the reviewer identity from it, not the request body.
+- Frontend: `AuthContext.tsx` (the one place session state lives, per the
+  task's own requirement), real Login/Signup submits with
+  pending/error/success states, sign-out in `DashboardChrome`, real identity
+  on `AccountPage`.
+- Notice/status copy rewritten to match reality: sign-in is real but
+  approval-gated (not "unavailable"), Signup's confirmation says "recorded,
+  pending human review" (not "NOT transmitted" — that's now false), the
+  confirmation icon changed from a checkmark to a document glyph (received
+  and recorded ≠ approved), the forgot-password line no longer claims "there
+  are no accounts" (there are, just no reset flow built).
+- One real bug caught and fixed mid-build: `docker-compose.yml`'s
+  `${SUPABASE_URL:-}` sets the container's env var to an empty **string**
+  (no root `.env` existed), and `load_dotenv()` doesn't override an
+  already-set var by default — `auth.py` read `SUPABASE_URL=""` until
+  `override=True` was added. Also added a root `.env` (gitignored) so the
+  same substitution resolves correctly for the frontend's `VITE_SUPABASE_*`
+  vars too, not just patched around in Python.
+- Test data cleanup: created one real Supabase Auth user for verification —
+  kept, deliberately, as a working demo account
+  (`test-nizar-phase8@example.org` / `Ph4se8-Test-Auth!`) rather than
+  deleted, so the team can show real sign-in live without provisioning
+  anything first. Deleted all throwaway `access_requests` rows created while
+  testing (RLS Test, E2E Test User, etc.) — the table is empty again,
+  nothing but real requests should land there going forward.
 
 ### Suggestions (noticed, not acted on)
 
@@ -575,3 +635,19 @@ Matches the task's own starting shape — checked against `ARTIFACTS`
   are visually related but structurally different (array vs. single fixed message) —
   flagging in case a future pass wants to unify them; not done here since forcing one
   shape onto the other would be worse than two small, correct components.
+- **No password-reset flow was built.** Real accounts now exist, so "there are no
+  accounts to reset" is no longer true and the copy was corrected — but reset itself
+  (a real Supabase Auth flow: request email, confirm token, set new password) is real,
+  separate work not attempted here. Currently the honest fallback is "contact your
+  team." Worth a real look if this ships past the hackathon.
+- `docker-compose.yml`'s `x-supabase` anchor names `SUPABASE_ANON_KEY`/
+  `SUPABASE_SERVICE_KEY`, but `backend/.env` has always used
+  `SUPABASE_SERVICE_ROLE_KEY` (the newer Supabase key-naming convention) — a
+  pre-existing mismatch, not something this session introduced. The new root
+  `.env` (§ above) supplies `SUPABASE_ANON_KEY` under the name compose expects, so
+  Track B works either way, but the service-key naming mismatch itself is still
+  there for whoever eventually needs `SUPABASE_SERVICE_KEY` inside a container.
+- Session refresh **failure** (`sessionExpired` in `AuthContext.tsx`) is tracked but
+  not yet surfaced anywhere in the UI as a visible "your session ended" banner — the
+  state exists, wiring a banner to it is a small follow-up, not done here since no
+  session has actually failed to refresh yet to design against a real case.

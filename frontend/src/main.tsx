@@ -7,9 +7,12 @@ import './i18n';
 // See src/map/rtl.ts — this import order is the fix, not an accident.
 import './map/rtl';
 import { App } from './App';
+import { AuthProvider } from './app/AuthContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AuthProvider>
+      <App />
+    </AuthProvider>
   </StrictMode>,
 );

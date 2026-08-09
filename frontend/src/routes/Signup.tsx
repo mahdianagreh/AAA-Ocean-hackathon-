@@ -6,15 +6,18 @@ import { Button } from '../components/Button';
 import { Field, FIELD_CLASS, fieldBorder } from '../components/Field';
 import { NoticeCard } from '../components/NoticeCard';
 import { AuthAside } from '../shell/MarketingChrome';
+import { supabase } from '../api/supabaseClient';
 
 /** Request access — transcribed from the design canvas `isSignup` block.
  *
- *  Same constraint as Login: there is no auth backend, and there is no intake
- *  endpoint either. Nothing typed here leaves the browser. The canvas's
- *  "Request received" confirmation is kept because it is the designed end of
- *  the flow, but it says plainly that the request was not transmitted — a
- *  confirmation that implies a human will read it, when nothing was sent, is
- *  the same failure as a fake login wearing a friendlier face.
+ *  Phase 8, Track B (tasks/00-contracts.md §9): a real submission now — one
+ *  row into `access_requests` (RLS: anon may INSERT only, never read it
+ *  back). This does NOT create a Supabase Auth user or grant access by
+ *  itself; a person reviews the row and provisions a real account
+ *  out-of-band if approved. The confirmation screen says exactly that —
+ *  recorded and pending, not approved, and no automated email exists yet —
+ *  rather than either the old "nothing was sent" claim (no longer true) or
+ *  implying an automated approval that doesn't exist.
  *
  *  The canvas gates submission on full name and organisation being non-empty
  *  but renders no message for either, so an empty name produced a button that
@@ -61,9 +64,12 @@ export function Signup() {
   const [orgError, setOrgError] = useState<string | null>(null);
   const [agreeError, setAgreeError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (pending) return;
 
     const nextName = fullName.trim() ? null : t('auth.errors.nameRequired');
     const nextEmail = !email.trim()
@@ -78,9 +84,30 @@ export function Signup() {
     setEmailError(nextEmail);
     setOrgError(nextOrg);
     setAgreeError(nextAgree);
+    setServerError(null);
+    if (nextName || nextEmail || nextOrg || nextAgree) return;
 
-    // Local state only. No request is made — see the file docstring.
-    if (!nextName && !nextEmail && !nextOrg && !nextAgree) setSubmitted(true);
+    if (!supabase) {
+      setServerError(t('auth.signup.submitUnavailable'));
+      return;
+    }
+
+    setPending(true);
+    const { error } = await supabase.from('access_requests').insert({
+      full_name: fullName,
+      work_email: email,
+      organization: org,
+      role_title: role || null,
+      org_type: orgType || null,
+      use_case: useCase || null,
+    });
+    setPending(false);
+
+    if (error) {
+      setServerError(t('auth.signup.submitUnavailable'));
+      return;
+    }
+    setSubmitted(true);
   };
 
   const aside = (
@@ -299,9 +326,19 @@ export function Signup() {
               ) : null}
             </div>
 
-            <Button type="submit" aria-describedby={noticeId} className="mt-1">
-              {t('auth.signup.submit')}
+            <Button type="submit" disabled={pending} aria-describedby={noticeId} className="mt-1">
+              {pending ? t('auth.signup.pending') : t('auth.signup.submit')}
             </Button>
+
+            <p
+              role="status"
+              aria-live="polite"
+              className={`m-0 min-h-5 text-center text-xs ${
+                serverError ? 'font-semibold text-risk-critical' : ''
+              }`}
+            >
+              {serverError ?? ''}
+            </p>
           </form>
 
           <p className="m-0 text-center text-xs text-ink-2">

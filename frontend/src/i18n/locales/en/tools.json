@@ -207,6 +207,7 @@
     "title": "Preferences",
     "lede": "Language and theme for this browser.",
     "accessSection": "Access",
+    "signedInTitle": "Signed in",
     "noAuthTitle": "There is no account system",
     "noAuthBody": "This platform has no authentication: no accounts, no sign-in, no sessions. The dashboard is open access to anyone who can reach it.",
     "noAuthConsequence": "So there is no profile to show here, and no permissions to manage. Where the interface asks for a reviewer's name, that name is recorded as typed and is not verified against anything.",

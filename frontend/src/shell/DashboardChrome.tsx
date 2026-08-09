@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { Link } from '../components/Link';
 import { LogoMark } from '../components/Logo';
 import { useRoute, type RouteName } from '../app/useRoute';
+import { useAuth } from '../app/AuthContext';
+import { navigate } from '../app/useRoute';
 
 /** The dashboard navigation rail.
  *
@@ -139,6 +141,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 export function DashboardChrome({ children }: { children: ReactNode }) {
   const { t } = useTranslation('nav');
   const route = useRoute();
+  const { session, signOut } = useAuth();
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-ink lg:flex-row" data-dash-shell="true">
@@ -173,11 +176,19 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
             marginBottom: '-1.75rem'
           }}
         >
-          {/* No account system exists — see Login. Saying "signed in as" here
-              would be the same lie in a quieter place. */}
-          <span className="text-2xs" style={{ color: 'var(--brand-foam)', opacity: 0.7 }}>
-            {t('accessMode')}
-          </span>
+          {/* Phase 8, Track B: only says "signed in as" when a real verified
+              session exists — the same claim would have been a lie before
+              this. Reads (this whole dashboard) stay open either way, per
+              tasks/00-contracts.md §9 — signing out never adds a login wall. */}
+          {session ? (
+            <span className="text-2xs" style={{ color: 'var(--brand-foam)', opacity: 0.7 }}>
+              {t('signedInAs', { email: session.user.email })}
+            </span>
+          ) : (
+            <span className="text-2xs" style={{ color: 'var(--brand-foam)', opacity: 0.7 }}>
+              {t('accessMode')}
+            </span>
+          )}
           <Link
             to="/account"
             className="text-2xs no-underline"
@@ -185,6 +196,22 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
           >
             {t('account')}
           </Link>
+          {session ? (
+            <button
+              type="button"
+              onClick={() => {
+                void signOut().then(() => navigate('/'));
+              }}
+              className="text-2xs no-underline text-start"
+              style={{ color: 'var(--brand-aqua)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+            >
+              {t('signOut')}
+            </button>
+          ) : (
+            <Link to="/login" className="text-2xs no-underline" style={{ color: 'var(--brand-aqua)' }}>
+              {t('signIn')}
+            </Link>
+          )}
           <Link to="/" className="text-2xs no-underline" style={{ color: 'var(--brand-aqua)' }}>
             {t('backToSite')}
           </Link>
