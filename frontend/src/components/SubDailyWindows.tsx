@@ -30,8 +30,8 @@ export function SubDailyWindows({ subdaily }: { subdaily: EventSeries['subdaily'
   const windows = subdaily.wettest_windows ?? {};
 
   return (
-    <section className="flex flex-col gap-2" data-subdaily-windows="true">
-      <h3 className="border-b border-hairline pb-1 text-xs font-semibold text-ink-2">
+    <section className="flex flex-col gap-3 glass-card p-3 hover:glass-card-hover transition-all duration-300 group" data-subdaily-windows="true">
+      <h3 className="border-b border-hairline-2 pb-1 text-sm font-bold premium-gradient-text">
         {t('subdaily.title')}
       </h3>
 
@@ -41,10 +41,10 @@ export function SubDailyWindows({ subdaily }: { subdaily: EventSeries['subdaily'
         {WINDOWS.map(({ key, hours }) => (
           <div
             key={key}
-            className="flex flex-col gap-0.5 border border-hairline bg-surface px-2 py-1.5 text-center"
-            style={{ borderRadius: 'var(--radius-sm)' }}
+            className="flex flex-col gap-0.5 border border-hairline-2 px-2 py-2 text-center transition-all duration-300 hover:scale-105 hover:neon-glow hover:border-accent bg-surface/50"
+            style={{ borderRadius: 'var(--radius-md)' }}
           >
-            <span className="font-mono num text-2xs text-ink-3">
+            <span className="font-mono num text-2xs font-medium text-ink-2">
               {t('subdaily.window', { h: hours })}
             </span>
             <ValueWithUnit

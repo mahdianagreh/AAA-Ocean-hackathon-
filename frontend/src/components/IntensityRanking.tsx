@@ -92,7 +92,14 @@ export function IntensityRanking({ rows, topN = 25 }: { rows: EventRow[]; topN?:
               </span>
               {/* "How unusual, here": top N% of this catchment's own daily record. */}
               <span className="w-20 shrink-0 text-end">
-                {e.intensity_top_percent !== null ? (
+                {/* `!= null`, not `!== null`. GET /api/v1/events does not serve
+                    `intensity_top_percent` at all today — the field is absent from
+                    the payload, so this reads `undefined`, which a strict !== null
+                    check lets straight through into `.toLocaleString()`. That threw
+                    and blanked the whole Intensity view. The loose check catches
+                    both null and undefined, so a field the API has not shipped yet
+                    renders as the honest gap instead of taking the page down. */}
+                {e.intensity_top_percent != null ? (
                   <span
                     className="inline-block border border-hairline bg-surface px-1.5 py-0.5 text-2xs text-ink-2"
                     style={{ borderRadius: 'var(--radius-sm)' }}

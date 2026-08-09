@@ -41,20 +41,33 @@ export function CaveatList({ items, title }: { items: unknown[]; title?: string 
   });
 
   return (
-    <section className="flex flex-col gap-2 rule bg-surface-2 p-3" data-caveats="true">
-      <h3 className="m-0 text-2xs font-semibold text-ink-2">
+    <section className="flex flex-col gap-3" data-caveats="true">
+      <h3 className="m-0 text-xs font-bold premium-gradient-text">
         {title ?? t('formula.caveatsTitle', { defaultValue: 'Caveats' })}
       </h3>
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
+      <ul className="m-0 flex list-none flex-col gap-3 p-0">
         {rows.map((c, i) => (
-          <li key={`${c.field ?? 'caveat'}-${i}`} className="flex flex-col gap-0.5">
-            <span className="text-2xs font-semibold text-ink-2">
-              {c.severity ? c.severity.toUpperCase() : 'INFO'}
-              {c.field ? ` · ${c.field}` : ''}
-            </span>
-            <p className="m-0 max-w-prose text-2xs text-ink-2">{c.message}</p>
+          <li 
+            key={`${c.field ?? 'caveat'}-${i}`} 
+            className="flex flex-col gap-1 glass-panel p-4 transition-all duration-300 hover:glass-panel-hover border-s-4 hover:border-s-accent cursor-default group"
+            style={{ borderInlineStartColor: c.severity === 'critical' ? 'var(--risk-critical)' : c.severity === 'warning' ? 'var(--risk-high)' : 'var(--hairline-2)' }}
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-2xs font-bold tracking-wider" style={{ color: c.severity === 'critical' ? 'var(--risk-critical)' : c.severity === 'warning' ? 'var(--risk-high)' : 'var(--ink-2)' }}>
+                {c.severity ? c.severity.toUpperCase() : 'INFO'}
+              </span>
+              {c.field ? (
+                <>
+                  <span className="text-ink-3 text-2xs">•</span>
+                  <span className="text-2xs font-mono num text-ink-2 group-hover:text-accent transition-colors">{c.field}</span>
+                </>
+              ) : null}
+            </div>
+            <p className="m-0 max-w-prose text-xs text-ink-2">{c.message}</p>
             {c.source ? (
-              <p className="m-0 text-2xs text-ink-3">{c.source}</p>
+              <p className="m-0 mt-1 text-2xs text-ink-3">
+                {t('provenance.source', { defaultValue: 'Source:' })} <span className="font-mono num opacity-80">{c.source}</span>
+              </p>
             ) : null}
           </li>
         ))}

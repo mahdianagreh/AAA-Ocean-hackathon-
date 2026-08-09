@@ -2,20 +2,24 @@
 
 **Status:** scaffold — filled during Phase 5–6 · **Owner:** Ali
 
-The backend has **552 tests across 36 files** and is still growing. A frontend with no tests would be out of step
+The backend has **559 tests across 37 files** and is still growing. A frontend with no tests would be out of step
 with this repo — and the demo runs live in front of judges.
 
-That 552 is a count of `def test_` functions, not a result. Run on 3 Aug 2026 — the first time
+That 559 is a count of `def test_` functions, not a result. Run on 3 Aug 2026 — the first time
 anyone had actually run it — the suite stood at 433 tests and gave **421 passed, 4 failed, 49
 skipped**. The four failures were a real API contract defect
 ([`OPEN-ISSUES.md`](../../OPEN-ISSUES.md) item 24); the 49 skips nobody had looked at. Both numbers
 belong here, because the gap between them is the point: a grep counts a skipped test and a failing
-test as passes, and quoting it is how "the backend has 552 tests" turns into "the backend is fine".
+test as passes, and quoting it is how "the backend has 559 tests" turns into "the backend is fine".
 
-> The headline count was stale at **433 across 20 files** until 8 Aug 2026, when
-> `scripts/qa_frontend_docs.py` measured 552 across 36 and failed the build on the mismatch. The
-> pass/fail/skip split below it is still the 3 Aug run and has **not** been re-measured — it is
-> dated for that reason, and the 119 tests added since are of unknown status.
+> This headline has now gone stale twice and been corrected twice, both times by
+> `scripts/qa_frontend_docs.py` failing the build on the mismatch rather than by anyone noticing:
+> **433 across 20 files** until 8 Aug 2026, then **552 across 36** until 9 Aug. It is 559/37 as of
+> 9 Aug 2026. The pass/fail/skip split above is still the 3 Aug run and has **not** been
+> re-measured — it is dated for that reason, and the **126 tests added since** are of unknown
+> status. The measured figure on 9 Aug was 552 passed / 47 skipped / 1 xfailed, which does not
+> reconcile with 559 collected; nobody has reconciled it, and this note is the honest record of
+> that rather than an average of the two.
 
 ---
 

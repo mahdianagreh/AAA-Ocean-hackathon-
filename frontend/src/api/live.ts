@@ -254,7 +254,11 @@ export interface EventRow {
    *  in wettest_catchment's ~28-year record. A real percentile of the record, NOT
    *  max_anomaly_ratio (stale, never shown). null when the daily record or the
    *  wettest catchment is absent — render a gap, never a fabricated rank. */
-  intensity_top_percent: number | null;
+  /** Optional, not just nullable: GET /api/v1/events omits this key entirely
+   *  today. Typing it `number | null` is what made a strict `!== null` guard
+   *  look safe in IntensityRanking and let `undefined` reach
+   *  `.toLocaleString()`, blanking the view. */
+  intensity_top_percent?: number | null;
   caveats: unknown[];
 }
 

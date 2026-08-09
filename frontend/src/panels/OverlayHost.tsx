@@ -46,29 +46,24 @@ export function OverlayHost() {
   return (
     <Dialog.Root open={Boolean(overlay)} onOpenChange={(o) => !o && setOverlay(null)}>
       <Dialog.Portal>
-        {/* Not a blur. 01 §3 rejects the glassmorphic look, and --blur-* is cleared
-            in theme.css so the utility does not exist. A ground change does the job. */}
-        {/* z-50: MapLibre's own controls (.maplibregl-ctrl) create a stacking context
-            and were rendering THROUGH the overlay — the zoom buttons appeared on top
-            of the validation panel. A portal is later in the DOM but that does not
-            beat a positioned element with its own z-index. */}
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-canvas/85" />
+        {/* A premium glassmorphic blur background replacing the previous flat color. */}
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30 backdrop-blur-md data-[state=open]:animate-overlay-show" />
         <Dialog.Content
           data-overlay={overlay ?? undefined}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
             opener.current?.focus();
           }}
-          className="fixed inset-3 z-50 flex flex-col overflow-hidden rule bg-surface shadow-float lg:inset-x-[12%] lg:inset-y-8"
+          className="fixed inset-3 z-50 flex flex-col overflow-hidden glass-card lg:inset-x-[12%] lg:inset-y-8 data-[state=open]:animate-content-show"
           aria-describedby={undefined}
         >
-          <header className="flex items-baseline justify-between gap-3 border-b border-hairline px-4 py-2">
-            <Dialog.Title className="text-md font-semibold">
+          <header className="flex items-center justify-between gap-3 border-b border-hairline-2 px-5 py-3">
+            <Dialog.Title className="text-lg font-bold premium-gradient-text tracking-wide">
               {overlay ? t(`overlay.${overlay}`) : ''}
             </Dialog.Title>
             <Dialog.Close
               data-overlay-close="true"
-              className="rule px-2 py-1 text-xs text-ink-2"
+              className="rounded-full bg-surface/50 px-4 py-1.5 text-xs font-semibold text-ink-2 border border-hairline-2 transition-all duration-300 hover:bg-surface hover:text-ink hover:scale-105 hover:neon-glow cursor-pointer"
             >
               {t('common.close')}
             </Dialog.Close>

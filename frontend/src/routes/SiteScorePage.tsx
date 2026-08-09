@@ -88,7 +88,7 @@ export function SiteScorePage() {
         dir="ltr"
         value={bbox[key]}
         onChange={(e) => setBbox((b) => ({ ...b, [key]: e.target.value }))}
-        className="h-10 w-28 rounded-md border border-hairline bg-surface px-3 font-mono num text-sm text-ink"
+        className="h-10 w-28 rounded-md border border-hairline bg-surface/50 px-3 font-mono num text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
       />
     </div>
   );
@@ -119,13 +119,13 @@ export function SiteScorePage() {
                   dir="auto"
                   value={siteName}
                   onChange={(e) => setSiteName(e.target.value)}
-                  className="h-10 w-64 rounded-md border border-hairline bg-surface px-3 text-sm text-ink"
+                  className="h-10 w-64 rounded-md border border-hairline bg-surface/50 px-3 text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
                 />
               </div>
               <button
                 type="submit"
                 disabled={state.kind === 'scoring'}
-                className="h-10 rounded-md bg-ink px-4 text-xs font-bold text-ink-inverse disabled:opacity-50"
+                className="h-10 rounded-full px-6 text-sm font-bold premium-button hover:premium-button-hover disabled:opacity-50 cursor-pointer"
               >
                 {state.kind === 'scoring' ? t('sites.scoring') : t('sites.score')}
               </button>

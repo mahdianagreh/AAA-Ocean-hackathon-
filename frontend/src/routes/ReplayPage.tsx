@@ -12,7 +12,7 @@ import { DEMO_OUTLET } from '../api/types';
 import { Link } from '../components/Link';
 import { Empty, ErrorState, Loading } from '../components/States';
 import { ValueWithUnit } from '../components/ValueWithUnit';
-import { Card, PageShell, Section } from '../shell/PageShell';
+import { PageShell, Section } from '../shell/PageShell';
 import { BandChip, Caveats, IdText } from './AlertsPage';
 
 /** Historical replay, at /dashboard/replay/:eventId.
@@ -165,15 +165,16 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
           )
         ) : (
           <>
-            <div className="flex flex-wrap items-baseline gap-3">
-              <p className="m-0 text-2xs text-ink-2">
-                {t('replay.plumeSource')} <IdText>{plume?.plume_source ?? ''}</IdText>
+          <div className="glass-card p-6 flex flex-col gap-5 mt-4">
+            <div className="flex flex-wrap items-baseline gap-4">
+              <p className="m-0 text-xs font-medium text-ink-2">
+                {t('replay.plumeSource')} <IdText className="bg-surface/50 px-1 rounded text-accent">{plume?.plume_source ?? ''}</IdText>
               </p>
-              <p className="m-0 text-2xs text-ink-2">
+              <p className="m-0 text-xs font-medium text-ink-2">
                 {t('replay.frameCount')}{' '}
                 <ValueWithUnit value={frames.length} digits={0} provenance="modelled" />
               </p>
-              <p className="m-0 text-2xs text-ink-2">
+              <p className="m-0 text-xs font-medium text-ink-2">
                 {t('replay.basemap')}{' '}
                 {plume?.basemap_present ? t('replay.basemapReal') : t('replay.basemapAbsent')}
               </p>
@@ -186,7 +187,7 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
                 event: effectiveId,
               })}
               aria-busy={step !== shownStep}
-              className={`w-full border border-hairline transition-opacity ${
+              className={`w-full rounded-xl shadow-2xl border border-hairline-2 transition-opacity ${
                 step !== shownStep ? 'opacity-50' : ''
               }`}
             />
@@ -197,7 +198,7 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
             ) : null}
 
             <div
-              className="flex items-center gap-1 overflow-x-auto"
+              className="flex items-center gap-2 overflow-x-auto pb-2"
               role="group"
               aria-label={t('replay.stepper')}
             >
@@ -207,20 +208,21 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
                   type="button"
                   onClick={() => setStep(i)}
                   aria-pressed={i === step}
-                  className={`min-h-6 shrink-0 border px-2 py-1 font-mono num text-2xs ${
-                    i === step ? 'border-accent bg-surface-2 text-ink' : 'border-hairline-2 text-ink-2'
+                  className={`min-h-8 shrink-0 rounded-full px-4 py-1.5 font-mono num text-sm font-bold transition-all duration-300 cursor-pointer ${
+                    i === step ? 'premium-button text-surface scale-105 shadow-[0_0_15px_var(--accent)]' : 'glass-panel text-ink-2 hover:scale-105 hover:neon-glow hover:border-accent'
                   }`}
                 >
                   {`+${f.t_hours} ${t('units.hours')}`}
                 </button>
               ))}
             </div>
+          </div>
 
             {/* Not a footnote. A direction read off these frames is a direction
                 nothing forced. */}
-            <div className="flex flex-col gap-1 rule bg-surface-2 p-3">
-              <p className="m-0 text-xs font-semibold">{t('replay.forcingTitle')}</p>
-              <p className="m-0 max-w-prose text-2xs text-ink-2">{t('replay.forcingBody')}</p>
+            <div className="flex flex-col gap-2 glass-panel p-5 mt-4 group">
+              <p className="m-0 text-base font-bold premium-gradient-text">{t('replay.forcingTitle')}</p>
+              <p className="m-0 max-w-prose text-sm text-ink-2 leading-relaxed">{t('replay.forcingBody')}</p>
             </div>
           </>
         )}
@@ -234,56 +236,56 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
         ) : results.length === 0 ? (
           <Empty title={t('replay.noZoneReachedTitle')} body={t('replay.noZoneReachedBody')} />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-xs">
+          <div className="overflow-x-auto glass-panel p-5 mt-4">
+            <table className="w-full border-collapse text-sm">
               <caption className="sr-only">{t('replay.tableCaption')}</caption>
               <thead>
-                <tr className="border-b border-hairline text-2xs text-ink-2">
-                  <th scope="col" className="p-2 text-start font-semibold">
+                <tr className="border-b border-hairline-2 text-xs text-ink-2 font-bold premium-gradient-text">
+                  <th scope="col" className="p-3 text-start">
                     {t('replay.col.zone')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
+                  <th scope="col" className="p-3 text-start">
                     {t('replay.col.band')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
+                  <th scope="col" className="p-3 text-start">
                     {t('replay.col.score')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
+                  <th scope="col" className="p-3 text-start">
                     {t('replay.col.probability')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
+                  <th scope="col" className="p-3 text-start">
                     {t('replay.col.fraction')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
+                  <th scope="col" className="p-3 text-start">
                     {t('replay.col.window')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
+                  <th scope="col" className="p-3 text-start">
                     {t('replay.col.confidence')}
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {results.map((r) => (
-                  <tr key={r.reef_zone_id} className="border-b border-hairline align-top">
-                    <th scope="row" className="p-2 text-start font-normal">
+                  <tr key={r.reef_zone_id} className="border-b border-hairline align-top transition-colors hover:bg-surface/50 group/row">
+                    <th scope="row" className="p-3 text-start font-medium group-hover/row:text-accent transition-colors">
                       <Link to={`/reef-zones/${encodeURIComponent(r.reef_zone_id)}`} className="underline">
                         <IdText>{r.reef_zone_id}</IdText>
                       </Link>
                     </th>
-                    <td className="p-2">
+                    <td className="p-3">
                       <BandChip band={r.risk_level} />
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       <ValueWithUnit value={r.risk_score} digits={1} provenance="modelled" />
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       <ValueWithUnit
                         value={r.max_exposure_probability}
                         digits={2}
                         provenance="modelled"
                       />
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       {/* Share of THIS zone, never a bare km²: the zones differ
                           in area by an order of magnitude, so an absolute area
                           affected reads as a comparison it cannot support. */}
@@ -293,11 +295,11 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
                         unit={t('units.pct')}
                         provenance="modelled"
                       />
-                      <span className="block text-2xs text-ink-3">
+                      <span className="block text-xs text-ink-3 mt-1">
                         {t('replay.fractionOf', { zone: r.reef_zone_id })}
                       </span>
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       {r.arrival_window_hours ? (
                         <span className="inline-flex items-baseline gap-1">
                           <ValueWithUnit
@@ -317,7 +319,7 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
                         <ValueWithUnit value={null} />
                       )}
                     </td>
-                    <td className="p-2">{t(`replay.confidenceValue.${r.confidence}`)}</td>
+                    <td className="p-3">{t(`replay.confidenceValue.${r.confidence}`)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -328,24 +330,24 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
 
       {exposure ? (
         <Section label={t('replay.provenanceLabel')}>
-          <Card>
-            <h3 className="m-0 text-sm font-bold">{t('replay.modelVersions')}</h3>
-            <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-2xs">
+          <div className="glass-panel p-5 mt-4">
+            <h3 className="m-0 text-base font-bold text-ink">{t('replay.modelVersions')}</h3>
+            <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 mt-2 text-xs">
               {Object.entries(exposure.model_versions).map(([k, v]) => (
                 <div key={k} className="contents">
                   <dt className="text-ink-2">
                     <IdText>{k}</IdText>
                   </dt>
                   <dd className="m-0">
-                    <IdText>{v}</IdText>
+                    <IdText className="bg-surface/50 px-1 rounded text-accent">{v}</IdText>
                   </dd>
                 </div>
               ))}
             </dl>
-            <p className="m-0 text-2xs text-ink-3">
+            <p className="m-0 text-xs text-ink-3 mt-4">
               {t('replay.runId')} <IdText>{exposure.run_id}</IdText>
             </p>
-          </Card>
+          </div>
         </Section>
       ) : null}
 

@@ -130,28 +130,28 @@ export function ReefZonesPage() {
           <Loading what={t('reefZones.loading')} />
         ) : (
           <>
-            <p className="m-0 text-2xs text-ink-2">
+            <p className="m-0 text-xs font-medium text-ink-2">
               {t('reefZones.count', { n: joined.length })}
             </p>
             {placeholderCount > 0 ? (
-              <p className="m-0 max-w-prose rule bg-surface-2 p-3 text-2xs text-ink-2">
+              <p className="m-0 max-w-prose glass-panel p-4 mt-2 text-sm text-ink-2 border-accent shadow-[0_0_15px_color-mix(in_srgb,var(--accent)_30%,transparent)] font-medium leading-relaxed">
                 {t('reefZones.placeholderSummary', { n: placeholderCount })}
               </p>
             ) : null}
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs">
+            <div className="overflow-x-auto glass-panel p-5 mt-4">
+              <table className="w-full border-collapse text-sm">
                 <caption className="sr-only">{t('reefZones.tableCaption')}</caption>
                 <thead>
-                  <tr className="border-b border-hairline text-2xs text-ink-2">
+                  <tr className="border-b border-hairline-2 text-xs text-ink-2 font-bold premium-gradient-text">
                     <th
                       scope="col"
                       aria-sort={ariaSort('name')}
-                      className="p-2 text-start font-semibold"
+                      className="p-3 text-start"
                     >
                       <button
                         type="button"
                         onClick={() => toggle('name')}
-                        className="text-2xs font-semibold text-ink-2 underline"
+                        className="text-xs font-bold text-ink hover:text-accent transition-all hover:scale-105 cursor-pointer underline decoration-hairline-2 underline-offset-4"
                       >
                         {t('reefZones.col.zone')}
                       </button>
@@ -159,12 +159,12 @@ export function ReefZonesPage() {
                     <th
                       scope="col"
                       aria-sort={ariaSort('score')}
-                      className="p-2 text-start font-semibold"
+                      className="p-3 text-start"
                     >
                       <button
                         type="button"
                         onClick={() => toggle('score')}
-                        className="text-2xs font-semibold text-ink-2 underline"
+                        className="text-xs font-bold text-ink hover:text-accent transition-all hover:scale-105 cursor-pointer underline decoration-hairline-2 underline-offset-4"
                       >
                         {t('reefZones.col.exposure')}
                       </button>
@@ -172,26 +172,26 @@ export function ReefZonesPage() {
                     <th
                       scope="col"
                       aria-sort={ariaSort('area')}
-                      className="p-2 text-start font-semibold"
+                      className="p-3 text-start"
                     >
                       <button
                         type="button"
                         onClick={() => toggle('area')}
-                        className="text-2xs font-semibold text-ink-2 underline"
+                        className="text-xs font-bold text-ink hover:text-accent transition-all hover:scale-105 cursor-pointer underline decoration-hairline-2 underline-offset-4"
                       >
                         {t('reefZones.col.area')}
                       </button>
                     </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
+                    <th scope="col" className="p-3 text-start">
                       {t('reefZones.col.habitat')}
                     </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
+                    <th scope="col" className="p-3 text-start">
                       {t('reefZones.col.depth')}
                     </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
+                    <th scope="col" className="p-3 text-start">
                       {t('reefZones.col.park')}
                     </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
+                    <th scope="col" className="p-3 text-start">
                       {t('reefZones.col.sensitivity')}
                     </th>
                   </tr>
@@ -201,19 +201,19 @@ export function ReefZonesPage() {
                     const placeholder =
                       zone.sensitivity_weight_status === 'PLACEHOLDER_PENDING_MARINE_SCIENTIST';
                     return (
-                      <tr key={zone.reef_zone_id} className="border-b border-hairline align-top">
-                        <th scope="row" className="p-2 text-start font-normal">
+                      <tr key={zone.reef_zone_id} className="border-b border-hairline align-top transition-colors hover:bg-surface/50 group/row">
+                        <th scope="row" className="p-3 text-start font-medium group-hover/row:text-accent transition-colors">
                           <Link
                             to={`/reef-zones/${encodeURIComponent(zone.reef_zone_id)}`}
-                            className="underline"
+                            className="hover:underline"
                           >
                             {zone.zone_name ?? zone.reef_zone_id}
                           </Link>
-                          <span className="block text-2xs text-ink-3">
+                          <span className="block text-xs text-ink-3 mt-1 font-mono">
                             <IdText>{zone.reef_zone_id}</IdText>
                           </span>
                         </th>
-                        <td className="p-2">
+                        <td className="p-3">
                           {alert ? (
                             <span className="flex flex-col items-start gap-1">
                               <BandChip band={alert.risk_level} />
@@ -229,7 +229,7 @@ export function ReefZonesPage() {
                             </span>
                           )}
                         </td>
-                        <td className="p-2">
+                        <td className="p-3">
                           <ValueWithUnit
                             value={zone.area_km2}
                             digits={3}
@@ -237,15 +237,15 @@ export function ReefZonesPage() {
                             provenance="measured"
                           />
                         </td>
-                        <td className="p-2">
+                        <td className="p-3">
                           {zone.habitat_class ?? <ValueWithUnit value={null} />}
                           {zone.geomorphic_class ? (
-                            <span className="block text-2xs text-ink-3">
+                            <span className="block text-xs text-ink-3 mt-1">
                               {zone.geomorphic_class}
                             </span>
                           ) : null}
                         </td>
-                        <td className="p-2">
+                        <td className="p-3">
                           <ValueWithUnit
                             value={zone.depth_median_m}
                             digits={1}
@@ -253,7 +253,7 @@ export function ReefZonesPage() {
                             provenance="measured"
                           />
                         </td>
-                        <td className="p-2">
+                        <td className="p-3">
                           <ValueWithUnit
                             value={zone.marine_park_overlap_pct}
                             digits={1}
@@ -261,18 +261,18 @@ export function ReefZonesPage() {
                             provenance="measured"
                           />
                         </td>
-                        <td className="max-w-prose p-2">
+                        <td className="max-w-prose p-3">
                           <ValueWithUnit
                             value={zone.sensitivity_weight}
                             digits={2}
                             provenance="modelled"
                           />
                           {placeholder ? (
-                            <span className="mt-1 block text-2xs text-ink-2">
+                            <span className="mt-2 block text-xs text-ink-2">
                               {t('reefZones.placeholderWeight')}
                             </span>
                           ) : (
-                            <span className="mt-1 block text-2xs text-ink-3">
+                            <span className="mt-2 block text-xs text-ink-3">
                               {t('reefZones.reviewedWeight')}
                             </span>
                           )}
@@ -283,7 +283,7 @@ export function ReefZonesPage() {
                 </tbody>
               </table>
             </div>
-            <p className="m-0 max-w-prose text-2xs text-ink-3">{t('reefZones.depthNote')}</p>
+            <p className="m-0 max-w-prose text-xs text-ink-3 mt-4">{t('reefZones.depthNote')}</p>
           </>
         )}
       </Section>

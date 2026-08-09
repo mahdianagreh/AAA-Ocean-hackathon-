@@ -42,12 +42,12 @@ export function LimitationsPanel() {
         // Stated, not hidden. A reader in Arabic is told why the detail below is
         // in English rather than being handed a fluent machine translation of a
         // scientific caveat.
-        <p className="rule bg-surface-2 p-2 text-xs text-ink-2">{t('limitations.arabicPending')}</p>
+        <p className="glass-panel p-3 text-sm text-ink-2 font-medium border-risk-high shadow-[0_0_10px_var(--risk-high)]">{t('limitations.arabicPending')}</p>
       ) : null}
 
       <section className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold">{t('limitations.oneLine')}</h3>
-        <p dir="ltr" className="max-w-prose text-xs text-ink-2">
+        <h3 className="text-lg font-bold premium-gradient-text">{t('limitations.oneLine')}</h3>
+        <p dir="ltr" className="max-w-prose text-sm text-ink-2 leading-relaxed">
           {strip(l.one_line)}
         </p>
       </section>
@@ -55,35 +55,35 @@ export function LimitationsPanel() {
       {/* The ~9 km ocean model. The same fact the map draws as the grid overlay, so
           the text and the honesty device agree instead of one contradicting the
           other. */}
-      <section className="flex flex-col gap-2 rule bg-surface-2 p-3">
-        <h3 className="text-sm font-semibold">{t('limitations.forcing')}</h3>
-        <p dir="ltr" className="max-w-prose text-xs text-ink-2">
+      <section className="flex flex-col gap-2 glass-panel p-5 hover:glass-panel-hover group">
+        <h3 className="text-base font-bold text-ink group-hover:neon-glow transition-all w-fit">{t('limitations.forcing')}</h3>
+        <p dir="ltr" className="max-w-prose text-sm text-ink-2 leading-relaxed">
           {strip(l.forcing.statement)}
         </p>
-        <p className="text-2xs text-ink-2">{t('limitations.forcingSeeGrid')}</p>
-        <p className="text-2xs text-ink-2">
-          <code className="font-mono num">{l.forcing.source}</code>
+        <p className="text-xs text-ink-2 mt-2">{t('limitations.forcingSeeGrid')}</p>
+        <p className="text-xs text-ink-2">
+          <code className="font-mono num bg-surface/50 px-1 rounded text-accent">{l.forcing.source}</code>
         </p>
       </section>
 
-      <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold">
+      <section className="flex flex-col gap-4 mt-2">
+        <h3 className="text-lg font-bold premium-gradient-text">
           {t('limitations.items', { n: l.items.length })}
         </h3>
-        <ol className="flex flex-col gap-3">
+        <ol className="flex flex-col gap-4">
           {l.items.map((it) => (
-            <li key={it.n} data-limitation={it.n} className="flex flex-col gap-1">
-              <h4 className="flex items-baseline gap-2 text-xs font-semibold">
+            <li key={it.n} data-limitation={it.n} className="flex flex-col gap-1.5 glass-panel p-4 hover:glass-panel-hover">
+              <h4 className="flex items-baseline gap-2 text-sm font-bold text-ink">
                 <span
                   dir="ltr"
                   style={{ unicodeBidi: 'isolate' }}
-                  className="font-mono num text-2xs text-ink-3"
+                  className="font-mono num text-xs text-accent"
                 >
                   {String(it.n).padStart(2, '0')}
                 </span>
                 <span dir="ltr">{strip(it.title)}</span>
               </h4>
-              <p dir="ltr" className="max-w-prose text-2xs text-ink-2">
+              <p dir="ltr" className="max-w-prose text-sm text-ink-2 leading-relaxed">
                 {strip(it.body).slice(0, 700)}
               </p>
             </li>
