@@ -1,0 +1,19 @@
+{
+  "stem": "aqaba_terrain_esri",
+  "image": "aqaba_terrain_esri.jpg",
+  "crs": "EPSG:3857",
+  "extent_note": "left/right/bottom/top in EPSG:3857 metres, matplotlib order",
+  "left": 3864656.150098511,
+  "right": 4001631.3047855473,
+  "bottom": 3385243.1086938833,
+  "top": 3551570.0822424274,
+  "width_px": 3584,
+  "height_px": 4352,
+  "zoom": 12,
+  "pad_fraction": 0.0,
+  "aoi_source": "config.spatial.TERRAIN_AOI, padded",
+  "provider": "Esri WorldImagery",
+  "attribution": "Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+  "fetched_utc": "2026-08-09T07:42:59Z",
+  "why": "Baked once so rendering needs no network. Regenerate rather than commit; it is derived and large."
+}

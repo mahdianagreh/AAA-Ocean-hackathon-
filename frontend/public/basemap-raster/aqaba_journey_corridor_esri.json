@@ -1,0 +1,18 @@
+{
+  "stem": "aqaba_journey_corridor_esri",
+  "image": "aqaba_journey_corridor_esri.jpg",
+  "crs": "EPSG:3857",
+  "extent_note": "left/right/bottom/top in EPSG:3857 metres, matplotlib order",
+  "left": 3886670.014244642,
+  "right": 3911129.8632958983,
+  "bottom": 3426824.852081021,
+  "top": 3443946.746416898,
+  "width_px": 2560,
+  "height_px": 1792,
+  "zoom": 14,
+  "aoi_source": "outlet AQ-O02 + its catchment's real centroid, padded 0.05 deg",
+  "provider": "Esri WorldImagery",
+  "attribution": "Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+  "fetched_utc": "2026-08-09T08:50:54Z",
+  "why": "Sharper imagery for the journey's closer camera phases. Baked once so rendering needs no network. Regenerate rather than commit."
+}
