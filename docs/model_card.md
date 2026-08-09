@@ -560,11 +560,22 @@ value available and certainly wrong).
 | **`TAU_NEGEV`** | **20%–85%** | **the closest studied desert analog — bound any UI slider to this** |
 | `TAU_DEFAULT` | 52.5% | the Negev midpoint; nearest documented setting, not a local measurement |
 
-**Not yet wired as a request parameter.** `SedimentProxy.with_transmission_loss(tau)`
-already exists and returns a new proxy at a different τ with nothing mutated —
-exactly what a scenario slider needs — but no API endpoint currently accepts τ
-as input; every response reports the fixed default. Full write-up:
-`docs/HANDOFF_transmission_loss_2026-08-06.md`.
+**Wired as a request parameter** (Pulga, A3.4): `transmission_loss_override`
+(`schemas.py`, bounded `[0.20, 0.85]` — the Negev range, not the wider literature
+range) threads through to `SedimentProxy.with_transmission_loss(tau)`. Full
+write-up: `docs/HANDOFF_transmission_loss_2026-08-06.md`.
+
+**A learned, per-catchment alternative was tested and rejected (8 Aug).**
+`transmission_loss_basis: "learned" | "negev_proxy"` (Phase 5, B2) ships
+unconditionally as `"negev_proxy"` — not because no data existed, but because
+real data was found (Cataldo et al. 2010, 12 real systems, 58 usable storm
+events with a genuine 0-1 fractional loss derived from the paper's own
+regression equations) and a learned model built against it scored **worse than
+predicting the mean** under leave-one-system-out validation, for every feature
+combination tried. Transmission loss is dominated by storm-to-storm dynamics
+this dataset doesn't capture, not by static catchment characteristics. Full
+result: `tasks/mahdis-features-handoff/RESULT_b2_learned_model_tested_and_rejected.md`,
+reproducible via `scripts/31_test_learned_transmission_loss.py`.
 
 ### What this formula cannot do
 

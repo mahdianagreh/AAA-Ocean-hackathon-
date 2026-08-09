@@ -1,28 +1,31 @@
-/** Real satellite imagery drape — the same baked Esri World Imagery this
- *  project already uses for the 2D plume map (`scripts/fetch_basemap_raster.py`,
- *  `backend/src/rendering/plume_map.py`), reused here rather than a second
- *  fetch/format. Baked once, offline forever after; never a live Mapbox/Google
- *  tile fetch (that would violate DoD item 9, "works with wifi off", the exact
- *  constraint the team's 3D Journey plan calls a hard gate for this feature).
+/** Real satellite imagery drape — the same real, never-generated Esri World
+ *  Imagery this project's 2D plume map uses (`docs/plume_imagery_decision.md`),
+ *  baked by its own script (`scripts/fetch_journey_imagery.py`) rather than
+ *  reusing the 2D map's file: that one covers only `MARINE_AOI` (the sea
+ *  strip, ~27x33 km), and this scene's terrain mesh covers the full
+ *  `TERRAIN_AOI` (~115x128 km, every mountain in it) — draping the smaller
+ *  image here would leave a visible seam between real photo (near the coast)
+ *  and the colour-relief fallback (`layers/terrain.ts`) everywhere else. Never
+ *  a live Mapbox/Google tile fetch (DoD item 9, "works with wifi off").
  *
- *  A single `image` source, not a tile scheme: the baked file is one JPEG
- *  covering the whole padded marine AOI (see the sidecar JSON's own
- *  `pad_fraction`), which is simpler and sufficient at this scene's scale —
- *  no reason to re-tile an image this project already treats as one asset.
+ *  A single `image` source, not a tile scheme: one JPEG covering the whole
+ *  AOI (see the sidecar JSON's own `width_px`/`height_px`/`zoom`), which is
+ *  simpler and sufficient at this scene's scale — no reason to re-tile an
+ *  image this project already treats as one asset.
  *
- *  NOTE ON WHERE THE FILE ACTUALLY LIVES: `fetch_basemap_raster.py` writes to
- *  `data/processed/basemap/`, consumed server-side by `plume_map.py` (baked
- *  into a rendered PNG, never served raw to a browser). This scene needs the
- *  raw file reachable by the browser directly, so it must also be copied to
- *  `frontend/public/basemap-raster/` — a plain `cp`, not a second fetch:
- *      cp data/processed/basemap/aqaba_marine_esri.{jpg,json} \
+ *  NOTE ON WHERE THE FILE ACTUALLY LIVES: `fetch_journey_imagery.py` writes to
+ *  `data/processed/basemap/`, same convention as `fetch_basemap_raster.py`.
+ *  This scene needs the raw file reachable by the browser directly, so it
+ *  must also be copied to `frontend/public/basemap-raster/` — a plain `cp`,
+ *  not a second fetch:
+ *      cp data/processed/basemap/aqaba_terrain_esri.{jpg,json} \
  *         frontend/public/basemap-raster/
  *  Both copies are git-ignored/regenerable; this is not a new data source,
  *  just a second, browser-reachable serving location for the same one.
  */
 
-const JSON_URL = `${import.meta.env.BASE_URL}basemap-raster/aqaba_marine_esri.json`;
-const IMAGE_URL = `${import.meta.env.BASE_URL}basemap-raster/aqaba_marine_esri.jpg`;
+const JSON_URL = `${import.meta.env.BASE_URL}basemap-raster/aqaba_terrain_esri.json`;
+const IMAGE_URL = `${import.meta.env.BASE_URL}basemap-raster/aqaba_terrain_esri.jpg`;
 
 interface BasemapRasterMeta {
   left: number;

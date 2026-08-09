@@ -1,6 +1,7 @@
 import type { StyleSpecification } from 'maplibre-gl';
 import { palette, type ThemeName } from '../design/palette.generated';
-import { terrainSourceFragment } from './layers/terrain';
+import { terrainSourceFragment, terrainColorFragment } from './layers/terrain';
+import { catchmentsFragment } from './layers/catchments';
 import { buildingsFragment } from './layers/buildings';
 import { reefFragment } from './layers/reef';
 import { plumeFragment } from './layers/plume';
@@ -31,6 +32,8 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
   const isDark = theme === 'dark';
 
   const terrain = terrainSourceFragment();
+  const terrainColor = terrainColorFragment();
+  const catchments = catchmentsFragment(c);
   const buildings = buildingsFragment(c);
   const reef = reefFragment(c);
   const plume = plumeFragment();
@@ -45,6 +48,7 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
     sources: {
       outlets: { type: 'geojson', data: url('outlets') },
       ...terrain.sources,
+      ...catchments.sources,
       ...runoff.sources,
       ...buildings.sources,
       ...reef.sources,
@@ -53,6 +57,7 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
     },
     layers: [
       { id: 'bg', type: 'background', paint: { 'background-color': isDark ? '#020a0d' : c.canvas } }, // token-ok: matches sky, no horizon seam
+      ...terrainColor.layers,
       {
         id: 'terrain-hillshade',
         type: 'hillshade',
@@ -67,6 +72,7 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
           'hillshade-exaggeration': 0.45,
         },
       },
+      ...catchments.layers,
       ...runoff.layers,
       ...buildings.layers,
       ...reef.layers,

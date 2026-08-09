@@ -1,11 +1,20 @@
 import type { Feature, FeatureCollection, Point } from 'geojson';
 import type { Palette } from '../constants';
 
-/** Heavy rainfall, rendered as animated impact ripples at real ground
- *  coordinates — not a screen-space overlay, not literal raindrop physics.
- *  Spatially real (every ripple sits at a real lon/lat within the release
- *  catchment's bounding box); temporally stylised (a repeating grow-and-fade
- *  cycle standing in for "rain is falling here now").
+/** Heavy rainfall's ground signal — animated impact ripples at real ground
+ *  coordinates. The *falling* half of the effect (rain descending from the
+ *  sky) is a separate, deliberately screen-space overlay (`rainOverlay.ts`,
+ *  drawn in `Journey3D.tsx`) rather than real-world 3D geometry: an earlier
+ *  version placed real lon/lat/height "streak" volumes in the scene, but at
+ *  the kilometre-scale zoom this phase's camera holds, a metre-scale object
+ *  is sub-pixel or reads as a static blob, not a falling motion — the
+ *  camera distance defeats the realism before it can be seen. A screen-space
+ *  streak has no such floor.
+ *
+ *  This module keeps only the honest part geography actually buys: a real
+ *  ripple sits at a real lon/lat within the release catchment's bounding
+ *  box, spatially real even though its grow-and-fade timing is a stylised
+ *  stand-in for "rain is landing here now", not measured impact physics.
  *
  *  A fixed-size pool of seeds, generated once, is reused every tick —
  *  `rainFrameFeatures` never allocates a new seed, only a new (small) feature
@@ -17,8 +26,8 @@ import type { Palette } from '../constants';
  */
 
 export const RAIN_POOL_SIZE = 220;
-const RIPPLE_MAX_RADIUS_PX = 7;
-const RIPPLE_LIFETIME_MS = 1400;
+const RIPPLE_MAX_RADIUS_PX = 6;
+const RIPPLE_LIFETIME_MS = 900;
 
 export interface RainSeed {
   lon: number;
@@ -76,8 +85,8 @@ export function rainFragment(c: Palette) {
         source: 'rain',
         paint: {
           'circle-radius': ['get', 'radius'] as unknown as number,
-          'circle-opacity': ['*', ['get', 'opacity'], 0.75] as unknown as number,
-          'circle-color': c.data_measured,
+          'circle-opacity': ['*', ['get', 'opacity'], 0.85] as unknown as number,
+          'circle-color': c.accent,
           // A white edge, not the fill colour again: real satellite imagery
           // (layers/imagery.ts) is a busy, high-frequency backdrop compared to
           // the flat relief bands this was first tuned against, and a same-
