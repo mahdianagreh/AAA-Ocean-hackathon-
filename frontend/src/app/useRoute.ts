@@ -32,6 +32,8 @@ export type RouteName =
   | 'reports'
   | 'sitesScore'
   | 'alerts'
+  | 'systemHealth'
+  | 'dataExplorer'
   | 'account'
   | 'specimen'
   | 'notFound';
@@ -66,6 +68,8 @@ const ROUTES: ReadonlyArray<readonly [string, RouteName]> = [
   ['/reports', 'reports'],
   ['/sites/score', 'sitesScore'],
   ['/alerts', 'alerts'],
+  ['/system-health', 'systemHealth'],
+  ['/data-explorer', 'dataExplorer'],
   ['/account', 'account'],
   ['/specimen', 'specimen'],
 ];

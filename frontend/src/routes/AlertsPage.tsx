@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { API_BASE } from '../api/client';
-import { fetchAlerts, type AlertRow } from '../api/live';
+import { fetchAlerts, fetchReefZonesLive, type AlertRow } from '../api/live';
+import { AlertCard } from '../components/AlertCard';
+import { CaveatList } from '../components/CaveatList';
 import { BAND_CLASS, type HazardBand } from '../api/types';
-import { Link } from '../components/Link';
 import { Empty, Loading } from '../components/States';
-import { ValueWithUnit } from '../components/ValueWithUnit';
 import { PageShell, Section } from '../shell/PageShell';
 
 /** The stored alert feed, at /alerts.
@@ -50,35 +49,15 @@ function asCaveat(x: unknown): Caveat | null {
   };
 }
 
+/** Delegates to the one shared caveat treatment (CaveatCard, via CaveatList), so
+ *  every caveat on every page renders identically — severity icon, accent border,
+ *  source pill — per Phase 8 Global Rule 2, instead of the old flat gray box that
+ *  put a low-contrast source line on --surface-2 and localized severity from a
+ *  second, drifted vocabulary. Kept as a thin wrapper so its three call sites
+ *  (this page, ReplayPage, ReefZonesPage) need no change. */
 export function Caveats({ items, title }: { items: unknown[]; title?: string }) {
   const { t } = useTranslation('pages');
-  const rows = items.map(asCaveat).filter((c): c is Caveat => c !== null);
-  if (rows.length === 0) return null;
-
-  return (
-    <section className="flex flex-col gap-2 rule bg-surface-2 p-3" data-caveats="true">
-      <h3 className="m-0 text-2xs font-semibold text-ink-2">{title ?? t('caveats.title')}</h3>
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
-        {rows.map((c, i) => (
-          <li key={`${c.field ?? 'caveat'}-${i}`} className="flex flex-col gap-0.5">
-            <span className="text-2xs font-semibold text-ink-2">
-              {t(`caveats.severity.${c.severity ?? 'info'}`, {
-                defaultValue: c.severity ?? '',
-              })}
-              {c.field ? ` · ${c.field}` : ''}
-            </span>
-            {/* The message is API text, not UI copy — it is not translated here,
-                because a caveat paraphrased by the frontend is no longer the
-                caveat the backend stands behind. */}
-            <p className="m-0 max-w-prose text-2xs text-ink-2">{c.message}</p>
-            {c.source ? (
-              <p className="m-0 text-2xs text-ink-3">{t('caveats.source', { source: c.source })}</p>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+  return <CaveatList items={items} title={title ?? t('caveats.title')} />;
 }
 
 /** An identifier — `AQ-C01`, `R-08`, `sim_01KZ…`. Isolated the same way
@@ -108,31 +87,26 @@ export function BandChip({ band }: { band: HazardBand }) {
  *  than dropped. */
 type AlertRowFull = AlertRow & { caveats?: unknown[] };
 
-function formatInstant(iso: string, lang: 'en' | 'ar'): string | null {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  // Western digits in both languages (06 §5), and UTC rather than a local zone:
-  // an alert timestamp rendered in whichever zone the browser happens to sit in
-  // cannot be compared with the run it came from.
-  return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-JO-u-nu-latn' : 'en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'UTC',
-  }).format(d);
-}
-
 export function AlertsPage() {
-  const { t, i18n } = useTranslation('pages');
-  const lang = i18n.language.startsWith('ar') ? 'ar' : 'en';
+  const { t } = useTranslation('pages');
 
   // `null` is "still asking", `[]` is "asked, got nothing" — the whole point of
   // this page is that those two render differently.
   const [rows, setRows] = useState<AlertRowFull[] | null>(null);
+  const [zoneNames, setZoneNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let live = true;
     void fetchAlerts().then((a) => {
       if (live) setRows(a as AlertRowFull[]);
+    });
+    // Best-effort zone-name resolution so a card can read "Power Station Reef"
+    // rather than R-03; falls back to the id when unavailable (offline/fixtures).
+    void fetchReefZonesLive().then((z) => {
+      if (!live || !z) return;
+      const map: Record<string, string> = {};
+      for (const zone of z) if (zone.zone_name) map[zone.reef_zone_id] = zone.zone_name;
+      setZoneNames(map);
     });
     return () => {
       live = false;
@@ -162,7 +136,16 @@ export function AlertsPage() {
         {rows === null ? (
           <Loading what={t('alerts.loading')} />
         ) : sorted.length === 0 ? (
-          <Empty title={t('alerts.emptyTitle')} body={t('alerts.emptyBody')} />
+          <Empty
+            icon={
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            }
+            title={t('alerts.emptyTitle')}
+            body={t('alerts.emptyBody')}
+          />
         ) : (
           <>
             <p className="m-0 text-2xs text-ink-2">
@@ -172,99 +155,16 @@ export function AlertsPage() {
                   the parity check forbids. */}
               {t('alerts.count', { n: sorted.length })}
             </p>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs">
-                <caption className="sr-only">{t('alerts.tableCaption')}</caption>
-                <thead>
-                  <tr className="border-b border-hairline text-start text-2xs text-ink-2">
-                    <th scope="col" className="p-2 text-start font-semibold">
-                      {t('alerts.col.zone')}
-                    </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
-                      {t('alerts.col.band')}
-                    </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
-                      {t('alerts.col.score')}
-                    </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
-                      {t('alerts.col.window')}
-                    </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
-                      {t('alerts.col.issued')}
-                    </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
-                      {t('alerts.col.headline')}
-                    </th>
-                    <th scope="col" className="p-2 text-start font-semibold">
-                      {t('alerts.col.run')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sorted.map((a) => {
-                    const issued = formatInstant(a.issued_at, lang);
-                    const win = a.arrival_window_hours;
-                    return (
-                      <tr key={a.alert_id} className="border-b border-hairline align-top">
-                        <th scope="row" className="p-2 text-start font-normal">
-                          <Link to={`/reef-zones/${a.reef_zone_id}`} className="underline">
-                            <IdText>{a.reef_zone_id}</IdText>
-                          </Link>
-                        </th>
-                        <td className="p-2">
-                          <BandChip band={a.risk_level} />
-                        </td>
-                        <td className="p-2">
-                          <ValueWithUnit value={a.risk_score} digits={1} provenance="modelled" />
-                        </td>
-                        <td className="p-2">
-                          {win ? (
-                            <span className="inline-flex items-baseline gap-1">
-                              <ValueWithUnit value={win[0]} digits={0} provenance="modelled" />
-                              <span aria-hidden="true">–</span>
-                              <ValueWithUnit
-                                value={win[1]}
-                                digits={0}
-                                unit={t('units.hours')}
-                                provenance="modelled"
-                              />
-                            </span>
-                          ) : (
-                            <ValueWithUnit value={null} />
-                          )}
-                        </td>
-                        <td className="p-2">
-                          {issued ? (
-                            <time dateTime={a.issued_at} className="text-ink-2">
-                              {t('time.utc', { when: issued })}
-                            </time>
-                          ) : (
-                            <ValueWithUnit value={null} />
-                          )}
-                        </td>
-                        <td className="max-w-prose p-2">
-                          {lang === 'ar' ? a.headline_ar : a.headline_en}
-                        </td>
-                        <td className="p-2">
-                          {/* Not a <Link>: this leaves the app for the stored run
-                              on the API itself, which is the only place the run
-                              behind an alert can actually be inspected. */}
-                          <a
-                            href={`${API_BASE}/api/v1/exposure/runs/${encodeURIComponent(a.source_run_id)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="underline"
-                            title={t('alerts.runLinkHint')}
-                          >
-                            <IdText>{a.source_run_id}</IdText>
-                          </a>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <ul
+              className="m-0 grid list-none gap-3 p-0"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(20rem, 1fr))' }}
+            >
+              {sorted.map((a) => (
+                <li key={a.alert_id}>
+                  <AlertCard alert={a} zoneName={zoneNames[a.reef_zone_id]} />
+                </li>
+              ))}
+            </ul>
           </>
         )}
       </Section>

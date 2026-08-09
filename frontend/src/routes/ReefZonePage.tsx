@@ -57,11 +57,15 @@ function AttrCard({
   icon,
   label,
   note,
+  tooltip,
   children,
 }: {
   icon: ReactNode;
   label: string;
   note?: string;
+  /** A short explanation surfaced as a focusable info icon beside the label,
+   *  instead of taking a line under the value. Keyboard- and SR-reachable. */
+  tooltip?: string;
   children: ReactNode;
 }) {
   return (
@@ -69,6 +73,21 @@ function AttrCard({
       <div className="mb-1.5 flex items-center gap-1.5 text-ink-3">
         {icon}
         <span className="text-2xs font-semibold uppercase tracking-wide">{label}</span>
+        {tooltip ? (
+          <button
+            type="button"
+            title={tooltip}
+            aria-label={tooltip}
+            className="inline-flex cursor-help items-center rounded-full text-ink-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1"
+            style={{ outlineColor: 'var(--accent)' }}
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="8" cy="8" r="6.5" />
+              <path d="M8 7.2v3.6" />
+              <circle cx="8" cy="4.9" r="0.5" fill="currentColor" />
+            </svg>
+          </button>
+        ) : null}
       </div>
       {children}
       {note ? <p className="m-0 mt-1.5 text-2xs text-ink-3">{note}</p> : null}
@@ -403,16 +422,16 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
               digits={3}
               unit={t('units.km2')}
               provenance="measured"
-              className="text-2xl font-semibold"
+              className="text-xl font-semibold"
             />
           </AttrCard>
-          <AttrCard icon={ICON.depth} label={t('reefZones.col.depth')} note={t('reefZones.depthNote')}>
+          <AttrCard icon={ICON.depth} label={t('reefZones.col.depth')} tooltip={t('reefZones.depthNote')}>
             <ValueWithUnit
               value={zone.depth_median_m}
               digits={1}
               unit={t('units.m')}
               provenance="measured"
-              className="text-2xl font-semibold"
+              className="text-xl font-semibold"
             />
           </AttrCard>
           <AttrCard icon={ICON.park} label={t('reefZones.col.park')}>
@@ -421,7 +440,7 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
               digits={1}
               unit={t('units.pct')}
               provenance="measured"
-              className="text-2xl font-semibold"
+              className="text-xl font-semibold"
             />
           </AttrCard>
           <AttrCard
@@ -429,7 +448,7 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
             label={t('reefZones.col.habitat')}
             note={zone.geomorphic_class ?? t('reefZone.noGeomorphic')}
           >
-            <p className="m-0 text-base font-semibold text-ink">
+            <p className="m-0 text-md font-semibold text-ink">
               {zone.habitat_class ?? <ValueWithUnit value={null} />}
             </p>
           </AttrCard>

@@ -1,7 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, PageShell, Section } from '../shell/PageShell';
-import { StatusBadge } from '../components/StatusBadge';
+import { CaveatCard } from '../components/CaveatCard';
 import {
   fetchEvents,
   fetchReport,
@@ -11,6 +11,7 @@ import {
   type ReportOut,
 } from '../api/live';
 import { loadEventSeries } from '../api/event';
+import { downloadReportPdf } from '../app/reportPdf';
 
 /** Forensic event reports, at /reports.
  *
@@ -237,6 +238,45 @@ export function ReportsPage() {
 }
 
 
+/** Is this the "Caveats carried with this run" section? Backend titles are
+ *  English, but we also match Arabic in case they ever localise. */
+function isCaveatsSection(title: string): boolean {
+  return /caveat/i.test(title) || title.includes('تحفظ') || title.includes('تحفّظ');
+}
+
+/** A claim citation, collapsed by default with a Show-full-citation toggle. */
+function Citation({ source }: { source: string | null }) {
+  const { t } = useTranslation('tools');
+  const [open, setOpen] = useState(false);
+  if (!source) {
+    return (
+      <span className="text-2xs text-ink-3">
+        {t('reports.claimSource')}: {t('reports.claimSourceMissing')}
+      </span>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-1">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="inline-flex w-fit cursor-pointer items-center gap-1 text-2xs font-semibold text-accent hover:underline"
+      >
+        {open ? t('reports.hideCitation') : t('reports.showCitation')}
+      </button>
+      {open ? (
+        <span dir="auto" className="text-2xs text-ink-2">
+          {t('reports.claimSource')}:{' '}
+          <span dir="ltr" style={{ unicodeBidi: 'isolate' }} className="num font-mono">
+            {source}
+          </span>
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function ReportCard({
   report,
   canReview,
@@ -248,33 +288,82 @@ function ReportCard({
   busy: boolean;
   onReview: () => void;
 }) {
-  const { t } = useTranslation('tools');
+  const { t, i18n } = useTranslation('tools');
+  const lang = i18n.language.startsWith('ar') ? 'ar' : 'en';
   const drafted = report.status === 'ai_drafted';
+  const [pdfBlocked, setPdfBlocked] = useState(false);
+
+  function onDownload() {
+    const ok = downloadReportPdf(report, {
+      lang,
+      labels: {
+        brand: 'AQABA AQUA AI',
+        docTitle: t('reports.pdfTitle'),
+        statusDrafted: t('reports.statusDrafted'),
+        statusReviewed: t('reports.statusReviewed'),
+        draftedMeaning: t('reports.draftedMeaning'),
+        reviewedMeaning: t('reports.reviewedMeaning'),
+        eventLabel: t('reports.eventLabel'),
+        generatedAt: t('reports.generatedAt'),
+        reviewedAt: t('reports.reviewedAt'),
+        reviewedBy: t('reports.reviewedBy'),
+        notReviewed: t('reports.notReviewed'),
+        source: t('reports.claimSource'),
+        sourceMissing: t('reports.claimSourceMissing'),
+        footer: t('reports.pdfFooter'),
+      },
+    });
+    setPdfBlocked(!ok);
+  }
 
   return (
     <Card>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h3 className="m-0 flex flex-wrap items-center gap-2 text-sm font-semibold">
-            <span dir="ltr" className="font-mono num">
-              {report.event_id}
-            </span>
-            <StatusBadge variant={report.status} />
-          </h3>
+        <div className="flex flex-col gap-1.5">
+          {/* Event id in H2, per the header redesign. */}
+          <h2 dir="ltr" className="m-0 font-mono num text-lg font-bold text-ink">
+            {report.event_id}
+          </h2>
           <code dir="ltr" className="font-mono num text-2xs text-ink-3">
             {report.report_id}
           </code>
         </div>
-        {drafted ? (
+        <div className="flex flex-col items-end gap-2">
+          {/* Prominent, solid status badge — never the thin outline it was. Both
+              variants use an AA-safe solid pairing so it cannot be missed. */}
+          {drafted ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-risk-high px-3 py-1 text-2xs font-bold uppercase tracking-wide text-risk-high-on" data-status-badge="ai_drafted">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M8 2 15 14H1z" />
+                <path d="M8 6.5v3.5" />
+                <circle cx="8" cy="11.8" r="0.5" fill="currentColor" />
+              </svg>
+              {t('reports.statusDrafted')}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-2xs font-bold uppercase tracking-wide text-ink-inverse" data-status-badge="human_reviewed">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 8.5 6.5 12 13 4.5" />
+              </svg>
+              {t('reports.statusReviewed')}
+            </span>
+          )}
           <button
             type="button"
-            onClick={onReview}
-            disabled={!canReview || busy}
-            className="h-9 rounded-full border-2 border-accent px-4 text-xs font-bold text-accent hover:bg-accent/10 transition-colors disabled:opacity-50 cursor-pointer"
+            onClick={onDownload}
+            className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full border-2 border-accent px-4 text-xs font-bold text-accent transition-colors hover:bg-accent/10"
           >
-            {busy ? t('reports.reviewing') : t('reports.markReviewed')}
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10" />
+            </svg>
+            {t('reports.download')}
           </button>
-        ) : null}
+          {pdfBlocked ? (
+            <span role="alert" className="max-w-[12rem] text-end text-2xs text-risk-critical">
+              {t('reports.pdfBlocked')}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <p className="m-0 max-w-prose text-xs text-ink-2">
@@ -294,43 +383,60 @@ function ReportCard({
             {report.reviewed_at ?? t('reports.notReviewed')}
           </dd>
         </div>
-        <div>
-          <dt className="inline">{t('reports.reviewedBy')} </dt>
-          <dd className="m-0 inline" dir="auto">
-            {report.reviewed_by ?? t('reports.notReviewed')}
-          </dd>
-        </div>
       </dl>
 
+      {/* The review action, and its confirmed post-click state. */}
+      {drafted ? (
+        <button
+          type="button"
+          onClick={onReview}
+          disabled={!canReview || busy}
+          className="inline-flex h-10 w-fit cursor-pointer items-center justify-center rounded-md bg-ink px-5 text-sm font-bold text-ink-inverse transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {busy ? t('reports.reviewing') : t('reports.markReviewed')}
+        </button>
+      ) : (
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-2xs font-semibold text-ink-2">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-accent">
+            <path d="M3 8.5 6.5 12 13 4.5" />
+          </svg>
+          {t('reports.reviewedBy')} <span dir="auto" className="text-ink">{report.reviewed_by}</span>
+          {report.reviewed_at ? (
+            <>
+              {' · '}
+              <span dir="ltr" className="num font-mono">{report.reviewed_at}</span>
+            </>
+          ) : null}
+        </span>
+      )}
+
       {report.sections.map((s) => (
-        <section key={s.title} className="flex flex-col gap-2">
-          <h4 dir="auto" className="m-0 text-xs font-bold">
+        <section key={s.title} className="flex flex-col gap-3">
+          <h3 dir="auto" className="m-0 text-sm font-bold text-ink">
             {s.title}
-          </h4>
+          </h3>
           {!s.claims.length ? (
             <p className="m-0 text-2xs text-ink-3">{t('reports.noClaims')}</p>
+          ) : isCaveatsSection(s.title) ? (
+            // The caveats section gets the shared CaveatCard treatment (Page 3).
+            <div className="flex flex-col gap-3">
+              {s.claims.map((c, i) => (
+                <CaveatCard key={`${s.title}-${i}`} severity="note" message={c.text} source={c.source} />
+              ))}
+            </div>
           ) : (
             <ul className="m-0 flex list-none flex-col gap-3 p-0">
               {s.claims.map((c, i) => (
                 <li
                   key={`${s.title}-${i}`}
-                  className="flex flex-col gap-1 border-s-2 border-hairline-2 ps-3"
+                  className="flex flex-col gap-1.5 border-s-2 border-hairline-2 ps-3"
                 >
                   {/* Verbatim. A forensic report that paraphrases its own claims
                       is no longer forensic. */}
                   <p dir="auto" className="m-0 max-w-prose whitespace-pre-line text-xs text-ink-2">
                     {c.text}
                   </p>
-                  <span className="text-2xs text-ink-3">
-                    {t('reports.claimSource')}{' '}
-                    {c.source ? (
-                      <span dir="auto" className="text-ink-2">
-                        {c.source}
-                      </span>
-                    ) : (
-                      <span className="text-ink-3">{t('reports.claimSourceMissing')}</span>
-                    )}
-                  </span>
+                  <Citation source={c.source} />
                 </li>
               ))}
             </ul>
