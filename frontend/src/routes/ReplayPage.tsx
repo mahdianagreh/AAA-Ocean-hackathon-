@@ -312,18 +312,59 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
         ) : (
           <>
           <div className="glass-card p-6 flex flex-col gap-5 mt-4">
-            <div className="flex flex-wrap items-baseline gap-4">
-              <p className="m-0 text-xs font-medium text-ink-2">
-                {t('replay.plumeSource')} <IdText className="bg-surface/50 px-1 rounded text-accent">{plume?.plume_source ?? ''}</IdText>
-              </p>
-              <p className="m-0 text-xs font-medium text-ink-2">
-                {t('replay.frameCount')}{' '}
+            {/* Headline — Montserrat (the app's Latin sans). Event and outlet
+                are bidi-isolated IDs (IdText) so they read correctly in Arabic. */}
+            <h3 className="m-0 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-lg font-bold text-ink">
+              <span>{t('replay.plumeHeadlinePrefix')}</span>
+              <span aria-hidden="true" className="text-ink-3">·</span>
+              <IdText>{effectiveId}</IdText>
+              <span aria-hidden="true" className="text-ink-3">·</span>
+              <span className="font-normal text-ink-2">{t('replay.plumeHeadlineReleasedAt')}</span>
+              <IdText>{DEMO_OUTLET}</IdText>
+            </h3>
+
+            {/* Compact metadata row, one small outline icon per item. plume_source
+                is the live 'stub' | 'particle-engine' discriminator, rendered as
+                the API says. When the basemap is not baked the item is flagged in
+                the hazard colour rather than styled away. */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-ink-2">
+              <span className="inline-flex items-center gap-1.5">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <ellipse cx="8" cy="4" rx="5" ry="2" />
+                  <path d="M3 4v8c0 1.1 2.24 2 5 2s5-.9 5-2V4" />
+                  <path d="M3 8c0 1.1 2.24 2 5 2s5-.9 5-2" />
+                </svg>
+                <span className="font-medium">{t('replay.plumeSource')}</span>
+                <IdText className="text-accent">{plume?.plume_source ?? ''}</IdText>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="2.5" y="2.5" width="11" height="11" rx="1" />
+                  <path d="M2.5 6h11M2.5 10h11M6 2.5v11M10 2.5v11" />
+                </svg>
+                <span className="font-medium">{t('replay.frameCount')}</span>
                 <ValueWithUnit value={frames.length} digits={0} provenance="modelled" />
-              </p>
-              <p className="m-0 text-xs font-medium text-ink-2">
-                {t('replay.basemap')}{' '}
-                {plume?.basemap_present ? t('replay.basemapReal') : t('replay.basemapAbsent')}
-              </p>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                {plume?.basemap_present ? (
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M2 4l4-1.5L10 4l4-1.5v9.5L10 13 6 11.5 2 13z" />
+                    <path d="M6 2.5v9M10 4v9" />
+                  </svg>
+                ) : (
+                  // Only the icon carries the hazard hue (a graphic, 3:1 is enough);
+                  // the text stays --ink-2 so the warning reads at AA in light theme.
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color: 'var(--risk-high)' }}>
+                    <path d="M8 2 15 14H1z" />
+                    <path d="M8 6.5v3.5" />
+                    <circle cx="8" cy="11.6" r="0.5" fill="currentColor" />
+                  </svg>
+                )}
+                <span className="font-medium">{t('replay.basemap')}</span>
+                <span className={plume?.basemap_present ? undefined : 'font-semibold'}>
+                  {plume?.basemap_present ? t('replay.basemapReal') : t('replay.basemapAbsent')}
+                </span>
+              </span>
             </div>
 
             <img
@@ -343,8 +384,12 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
               </p>
             ) : null}
 
+            {/* Equal-width segmented frame selector: an auto-fit grid so every
+                pill is the same size and the row WRAPS instead of clipping the
+                way the old overflow-x-auto strip did. */}
             <div
-              className="flex items-center gap-2 overflow-x-auto pb-2"
+              className="grid gap-2"
+              style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(4.5rem, 1fr))' }}
               role="group"
               aria-label={t('replay.stepper')}
             >
@@ -354,13 +399,29 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
                   type="button"
                   onClick={() => setStep(i)}
                   aria-pressed={i === step}
-                  className={`min-h-8 shrink-0 rounded-full px-4 py-1.5 font-mono num text-sm font-bold transition-all duration-300 cursor-pointer ${
-                    i === step ? 'premium-button text-surface scale-105 shadow-[0_0_15px_var(--accent)]' : 'glass-panel text-ink-2 hover:scale-105 hover:neon-glow hover:border-accent'
+                  className={`min-h-9 w-full rounded-full px-3 py-1.5 text-center font-mono num text-sm font-bold transition-all duration-200 cursor-pointer ${
+                    i === step
+                      ? 'bg-ink text-ink-inverse shadow-md'
+                      : 'glass-panel text-ink-2 hover:border-accent'
                   }`}
                 >
                   {`+${f.t_hours} ${t('units.hours')}`}
                 </button>
               ))}
+            </div>
+
+            {/* How to read the frames — a legend in the card system with an icon
+                swatch (dashed = modelled), not a bare colour block. */}
+            <div className="flex flex-col gap-1.5 rule bg-surface-2 p-3">
+              <p className="m-0 text-2xs font-bold uppercase tracking-wide text-ink-2">
+                {t('replay.framesLegendTitle')}
+              </p>
+              <span className="inline-flex items-center gap-2 text-xs text-ink-2">
+                <svg width="22" height="12" aria-hidden="true" className="shrink-0">
+                  <rect x="1" y="1" width="20" height="10" fill="var(--data-envelope)" stroke="var(--data-modelled)" strokeWidth="1" strokeDasharray="3 2" />
+                </svg>
+                {t('replay.framesLegendExtent')}
+              </span>
             </div>
           </div>
 
@@ -370,7 +431,7 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
                 on why a hardcoded "falls back to zero" claim is wrong exactly
                 when the HYCOM archive is cached for this event. */}
             <div className="flex flex-col gap-2 glass-panel p-5 mt-4 group">
-              <p className="m-0 text-base font-bold premium-gradient-text">{t('replay.forcingTitle')}</p>
+              <p className="m-0 text-md font-bold premium-gradient-text">{t('replay.forcingTitle')}</p>
               {(plume?.provenance ?? []).map((p, i) => (
                 <p key={`${p.kind}-${i}`} className="m-0 max-w-prose text-sm text-ink-2 leading-relaxed">
                   {p.detail}
@@ -495,7 +556,7 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
       {exposure ? (
         <Section label={t('replay.provenanceLabel')}>
           <div className="glass-panel p-5 mt-4">
-            <h3 className="m-0 text-base font-bold text-ink">{t('replay.modelVersions')}</h3>
+            <h3 className="m-0 text-md font-bold text-ink">{t('replay.modelVersions')}</h3>
             <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 mt-2 text-xs">
               {Object.entries(exposure.model_versions).map(([k, v]) => (
                 <div key={k} className="contents">

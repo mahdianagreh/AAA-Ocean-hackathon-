@@ -86,7 +86,11 @@
     "riskCardsNote": "Every band, plus a null runoff probability rendered as a gap and a row with missing rainfall hatched rather than drawn as zero.",
     "sectionLegend": "Legend",
     "sectionStates": "Component states",
-    "statesNote": "Loading, empty, error, stale and a declared gap. A component whose empty, error and stale states were never designed will improvise them on stage."
+    "statesNote": "Loading, empty, error, stale and a declared gap. A component whose empty, error and stale states were never designed will improvise them on stage.",
+    "sectionAlertCard": "Alert card",
+    "sectionCaveatCard": "Caveat card",
+    "sectionDataTable": "Data table",
+    "sectionTimeline": "Timeline"
   },
   "hazard": {
     "minimal": "Minimal",
@@ -281,7 +285,18 @@
     "forcing": "Ocean current resolution",
     "forcingSeeGrid": "Turn on the ocean-model grid layer to see this rather than read it.",
     "items": "{{n}} things our data cannot tell you",
-    "arabicPending": "The detail below is shown in its source language. Machine-translating scientific caveats is a scientific-integrity risk, so these bodies await review by a human Arabic reader rather than being translated automatically."
+    "arabicPending": "The detail below is shown in its source language. Machine-translating scientific caveats is a scientific-integrity risk, so these bodies await review by a human Arabic reader rather than being translated automatically.",
+    "jumpTo": "On this page",
+    "expandHint": "Select a limitation to read it in full.",
+    "missingNote": "The source document (pitch_limitations.md) carries more numbered limitations than are surfaced here. Not yet included: site-scoring validation, adaptive sampling, and the coral-health vision model.",
+    "absentTitle": "Features that are not built",
+    "absentIntro": "Named here on purpose. These were scoped but have no backend, so the app does not pretend they exist.",
+    "absent": {
+      "b1": "Plume auto-segmentation — a model to trace plume masks from imagery — is not built; masks are not machine-segmented.",
+      "b2": "A learned transmission-loss prediction is not built; the scenario slider's transmission-loss control is a neutral default, not a fitted value.",
+      "b3": "Cross-site transfer, and the per-site model-maturity it would need, is not built; the system is tuned to Aqaba alone.",
+      "b9": "Culvert and drainage-conflict detection — flagging where mapped drainage disagrees with the terrain model — is not built."
+    }
   },
   "assistant": {
     "label": "Ask about the pipeline, the data or the limitations",
@@ -412,6 +427,14 @@
       "sensor": "Real sensor validation",
       "openData": "Open data only",
       "limitations": "Every limitation documented"
+    },
+    "coralFact": {
+      "eyebrow": "WHY THIS REEF",
+      "title": "The Gulf of Aqaba is a coral refuge worth defending.",
+      "fact": "Its corals tolerate warming of several degrees above today's summer maximum before they bleach — an unusually wide thermal safety margin that makes the northern Red Sea a rare refuge for reef-building corals as the oceans warm.",
+      "turn": "But heat tolerance is no defence against being buried. A single flood's sediment can smother a reef that would have survived the century's warming — which is exactly the risk this system forecasts.",
+      "sourceLabel": "Source",
+      "source": "Fine, M., Gildor, H. & Genin, A. (2013). A coral reef refuge in the Red Sea. Global Change Biology 19(12), 3640–3647."
     },
     "cta": {
       "title": "Built for the people protecting this coastline.",

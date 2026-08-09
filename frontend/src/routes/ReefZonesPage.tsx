@@ -1,11 +1,47 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { fetchAlerts, fetchReefZonesLive, type AlertRow, type ReefZoneRow } from '../api/live';
+import { CaveatCard } from '../components/CaveatCard';
+import { DataTable, type Column } from '../components/DataTable';
 import { Link } from '../components/Link';
 import { ErrorState, Loading } from '../components/States';
 import { ValueWithUnit } from '../components/ValueWithUnit';
 import { PageShell, Section } from '../shell/PageShell';
 import { BandChip, Caveats, IdText } from './AlertsPage';
+
+/** A sortable column header — a button whose th carries aria-sort. */
+function SortButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="cursor-pointer text-2xs font-bold uppercase tracking-wide text-ink-2 underline decoration-hairline-2 underline-offset-4 transition-colors hover:text-accent"
+    >
+      {label}
+    </button>
+  );
+}
+
+/** Marine-park overlap as a small horizontal bar + the value. A null overlap is
+ *  a gap (rendered by ValueWithUnit), never a 0% bar — "not measured" and
+ *  "measured at zero" are different statements. */
+function ParkOverlap({ pct, unit }: { pct: number | null | undefined; unit: string }) {
+  if (pct === null || pct === undefined || Number.isNaN(pct)) {
+    return <ValueWithUnit value={null} />;
+  }
+  const clamped = Math.max(0, Math.min(100, pct));
+  return (
+    <div className="flex items-center gap-2">
+      <span className="relative block h-1.5 w-16 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
+        <span
+          className="absolute inset-y-0 start-0 rounded-full"
+          style={{ width: `${clamped}%`, background: 'var(--accent)' }}
+        />
+      </span>
+      <ValueWithUnit value={pct} digits={1} unit={unit} provenance="measured" />
+    </div>
+  );
+}
 
 /** The eight named Jordanian reef zones, at /reef-zones.
  *
@@ -92,18 +128,39 @@ export function ReefZonesPage() {
     });
   }, [zones, alerts, sortKey, sortDir]);
 
-  const caveats = useMemo(() => {
+  // Depth caveats repeat near-identically across R-02/R-06/R-07/R-08, so they are
+  // grouped into ONE card with a per-zone line rather than four separate cards.
+  // The zone id comes from the join (not parsed from text) and each message is
+  // rendered verbatim — including R-02's different "no water cell" branch, which
+  // is simply another line — so no fact is dropped or reworded, and no percentage
+  // is invented (Phase 8 discrepancy (b)).
+  const { depthCaveats, restCaveats } = useMemo(() => {
     const seen = new Set<string>();
-    const out: unknown[] = [];
+    const rest: unknown[] = [];
+    const depth: { zoneId: string; message: string; source: string | null; severity: string | null }[] = [];
     for (const { zone } of joined) {
       for (const c of zone.caveats ?? []) {
+        const o = c && typeof c === 'object' ? (c as Record<string, unknown>) : null;
+        const field = o && typeof o.field === 'string' ? o.field : null;
+        const message = o && typeof o.message === 'string' ? o.message : null;
+        if (field && field.includes('depth') && message) {
+          // Every depth caveat becomes its own line (keyed by zone) — none is
+          // dropped, even if a zone ever carried more than one.
+          depth.push({
+            zoneId: zone.reef_zone_id,
+            message,
+            source: o && typeof o.source === 'string' ? o.source : null,
+            severity: o && typeof o.severity === 'string' ? o.severity : null,
+          });
+          continue;
+        }
         const key = JSON.stringify(c);
         if (seen.has(key)) continue;
         seen.add(key);
-        out.push(c);
+        rest.push(c);
       }
     }
-    return out;
+    return { depthCaveats: depth, restCaveats: rest };
   }, [joined]);
 
   const toggle = (key: SortKey) => {
@@ -120,6 +177,111 @@ export function ReefZonesPage() {
   const placeholderCount = joined.filter(
     (j) => j.zone.sensitivity_weight_status === 'PLACEHOLDER_PENDING_MARINE_SCIENTIST',
   ).length;
+
+  const columns: Column<Joined>[] = [
+    {
+      key: 'zone',
+      ariaSort: ariaSort('name'),
+      cardLabel: t('reefZones.col.zone'),
+      header: <SortButton onClick={() => toggle('name')} label={t('reefZones.col.zone')} />,
+      cell: ({ zone }) => (
+        <div className="flex flex-col gap-0.5">
+          <Link
+            to={`/reef-zones/${encodeURIComponent(zone.reef_zone_id)}`}
+            className="font-medium hover:underline"
+          >
+            {zone.zone_name ?? zone.reef_zone_id}
+          </Link>
+          <IdText className="text-2xs text-ink-2">{zone.reef_zone_id}</IdText>
+        </div>
+      ),
+    },
+    {
+      key: 'exposure',
+      ariaSort: ariaSort('score'),
+      cardLabel: t('reefZones.col.exposure'),
+      header: <SortButton onClick={() => toggle('score')} label={t('reefZones.col.exposure')} />,
+      cell: ({ alert }) =>
+        alert ? (
+          <span className="flex flex-col items-start gap-1">
+            <BandChip band={alert.risk_level} />
+            <ValueWithUnit value={alert.risk_score} digits={1} provenance="modelled" />
+          </span>
+        ) : (
+          // Neutral badge, not a hazard colour: "no run" is an absence of data,
+          // not a low risk. The hint explains the distinction.
+          <span
+            title={t('reefZones.noRunHint')}
+            className="inline-flex items-center rounded-full border border-hairline bg-surface-2 px-2 py-0.5 text-2xs text-ink-2"
+          >
+            {t('reefZones.noRun')}
+          </span>
+        ),
+    },
+    {
+      key: 'area',
+      align: 'end',
+      ariaSort: ariaSort('area'),
+      cardLabel: t('reefZones.col.area'),
+      header: <SortButton onClick={() => toggle('area')} label={t('reefZones.col.area')} />,
+      cell: ({ zone }) => (
+        <ValueWithUnit value={zone.area_km2} digits={3} unit={t('units.km2')} provenance="measured" />
+      ),
+    },
+    {
+      key: 'habitat',
+      header: t('reefZones.col.habitat'),
+      cell: ({ zone }) => (
+        <div className="flex flex-col gap-0.5">
+          {zone.habitat_class ?? <ValueWithUnit value={null} />}
+          {zone.geomorphic_class ? (
+            <span className="text-2xs text-ink-2">{zone.geomorphic_class}</span>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      key: 'depth',
+      align: 'end',
+      header: t('reefZones.col.depth'),
+      cell: ({ zone }) => (
+        <ValueWithUnit value={zone.depth_median_m} digits={1} unit={t('units.m')} provenance="measured" />
+      ),
+    },
+    {
+      key: 'park',
+      header: t('reefZones.col.park'),
+      cell: ({ zone }) => <ParkOverlap pct={zone.marine_park_overlap_pct} unit={t('units.pct')} />,
+    },
+    {
+      key: 'sensitivity',
+      header: t('reefZones.col.sensitivity'),
+      cell: ({ zone }) => {
+        const placeholder =
+          zone.sensitivity_weight_status === 'PLACEHOLDER_PENDING_MARINE_SCIENTIST';
+        return (
+          <div className="flex flex-col items-start gap-1.5">
+            <ValueWithUnit value={zone.sensitivity_weight} digits={2} provenance="modelled" />
+            {placeholder ? (
+              // Amber pill from the hazard ramp's own AA-safe pairing; the full
+              // explanation lives in the tooltip, not inline gray text.
+              <span
+                title={t('reefZones.placeholderWeight')}
+                className="inline-flex items-center gap-1.5 rounded-full border border-hairline bg-surface px-2 py-0.5 text-2xs font-bold text-ink-2"
+              >
+                {/* An amber dot rather than a filled amber chip, so a status pill
+                    is not misread as a "Low" hazard band. */}
+                <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full" style={{ background: 'var(--risk-moderate)' }} />
+                {t('reefZones.placeholderPill')}
+              </span>
+            ) : (
+              <span className="text-2xs text-ink-2">{t('reefZones.reviewedWeight')}</span>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
 
   return (
     <PageShell title={t('reefZones.title')} lede={t('reefZones.lede')}>
@@ -138,159 +300,40 @@ export function ReefZonesPage() {
                 {t('reefZones.placeholderSummary', { n: placeholderCount })}
               </p>
             ) : null}
-            <div className="overflow-x-auto glass-panel p-5 mt-4">
-              <table className="w-full border-collapse text-sm">
-                <caption className="sr-only">{t('reefZones.tableCaption')}</caption>
-                <thead>
-                  <tr className="border-b border-hairline-2 text-xs text-ink-2 font-bold premium-gradient-text">
-                    <th
-                      scope="col"
-                      aria-sort={ariaSort('name')}
-                      className="p-3 text-start"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggle('name')}
-                        className="text-xs font-bold text-ink hover:text-accent transition-all hover:scale-105 cursor-pointer underline decoration-hairline-2 underline-offset-4"
-                      >
-                        {t('reefZones.col.zone')}
-                      </button>
-                    </th>
-                    <th
-                      scope="col"
-                      aria-sort={ariaSort('score')}
-                      className="p-3 text-start"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggle('score')}
-                        className="text-xs font-bold text-ink hover:text-accent transition-all hover:scale-105 cursor-pointer underline decoration-hairline-2 underline-offset-4"
-                      >
-                        {t('reefZones.col.exposure')}
-                      </button>
-                    </th>
-                    <th
-                      scope="col"
-                      aria-sort={ariaSort('area')}
-                      className="p-3 text-start"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => toggle('area')}
-                        className="text-xs font-bold text-ink hover:text-accent transition-all hover:scale-105 cursor-pointer underline decoration-hairline-2 underline-offset-4"
-                      >
-                        {t('reefZones.col.area')}
-                      </button>
-                    </th>
-                    <th scope="col" className="p-3 text-start">
-                      {t('reefZones.col.habitat')}
-                    </th>
-                    <th scope="col" className="p-3 text-start">
-                      {t('reefZones.col.depth')}
-                    </th>
-                    <th scope="col" className="p-3 text-start">
-                      {t('reefZones.col.park')}
-                    </th>
-                    <th scope="col" className="p-3 text-start">
-                      {t('reefZones.col.sensitivity')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {joined.map(({ zone, alert }) => {
-                    const placeholder =
-                      zone.sensitivity_weight_status === 'PLACEHOLDER_PENDING_MARINE_SCIENTIST';
-                    return (
-                      <tr key={zone.reef_zone_id} className="border-b border-hairline align-top transition-colors hover:bg-surface/50 group/row">
-                        <th scope="row" className="p-3 text-start font-medium group-hover/row:text-accent transition-colors">
-                          <Link
-                            to={`/reef-zones/${encodeURIComponent(zone.reef_zone_id)}`}
-                            className="hover:underline"
-                          >
-                            {zone.zone_name ?? zone.reef_zone_id}
-                          </Link>
-                          <span className="block text-xs text-ink-3 mt-1 font-mono">
-                            <IdText>{zone.reef_zone_id}</IdText>
-                          </span>
-                        </th>
-                        <td className="p-3">
-                          {alert ? (
-                            <span className="flex flex-col items-start gap-1">
-                              <BandChip band={alert.risk_level} />
-                              <ValueWithUnit
-                                value={alert.risk_score}
-                                digits={1}
-                                provenance="modelled"
-                              />
-                            </span>
-                          ) : (
-                            <span className="text-ink-3" title={t('reefZones.noRunHint')}>
-                              {t('reefZones.noRun')}
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <ValueWithUnit
-                            value={zone.area_km2}
-                            digits={3}
-                            unit={t('units.km2')}
-                            provenance="measured"
-                          />
-                        </td>
-                        <td className="p-3">
-                          {zone.habitat_class ?? <ValueWithUnit value={null} />}
-                          {zone.geomorphic_class ? (
-                            <span className="block text-xs text-ink-3 mt-1">
-                              {zone.geomorphic_class}
-                            </span>
-                          ) : null}
-                        </td>
-                        <td className="p-3">
-                          <ValueWithUnit
-                            value={zone.depth_median_m}
-                            digits={1}
-                            unit={t('units.m')}
-                            provenance="measured"
-                          />
-                        </td>
-                        <td className="p-3">
-                          <ValueWithUnit
-                            value={zone.marine_park_overlap_pct}
-                            digits={1}
-                            unit={t('units.pct')}
-                            provenance="measured"
-                          />
-                        </td>
-                        <td className="max-w-prose p-3">
-                          <ValueWithUnit
-                            value={zone.sensitivity_weight}
-                            digits={2}
-                            provenance="modelled"
-                          />
-                          {placeholder ? (
-                            <span className="mt-2 block text-xs text-ink-2">
-                              {t('reefZones.placeholderWeight')}
-                            </span>
-                          ) : (
-                            <span className="mt-2 block text-xs text-ink-3">
-                              {t('reefZones.reviewedWeight')}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="mt-4">
+              <DataTable
+                columns={columns}
+                rows={joined}
+                getRowKey={({ zone }) => zone.reef_zone_id}
+                ariaLabel={t('reefZones.tableCaption')}
+              />
             </div>
             <p className="m-0 max-w-prose text-xs text-ink-3 mt-4">{t('reefZones.depthNote')}</p>
           </>
         )}
       </Section>
 
-      {caveats.length > 0 ? (
+      {restCaveats.length > 0 || depthCaveats.length > 0 ? (
         <Section label={t('caveats.sectionLabel')}>
-          <Caveats items={caveats} />
+          <div className="flex flex-col gap-3">
+            {depthCaveats.length > 0 ? (
+              <CaveatCard
+                severity={depthCaveats[0].severity ?? 'warning'}
+                headline={t('reefZones.depthGroupHeadline')}
+                source={depthCaveats[0].source}
+              >
+                <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+                  {depthCaveats.map((d) => (
+                    <li key={d.zoneId} className="flex flex-col gap-0.5">
+                      <IdText className="text-2xs font-bold text-ink-2">{d.zoneId}</IdText>
+                      <span className="max-w-prose text-xs text-ink-2">{d.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CaveatCard>
+            ) : null}
+            {restCaveats.length > 0 ? <Caveats items={restCaveats} /> : null}
+          </div>
         </Section>
       ) : null}
     </PageShell>

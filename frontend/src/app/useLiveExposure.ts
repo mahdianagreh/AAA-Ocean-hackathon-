@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fetchAlerts, fetchExposure, fetchPlumeFrames } from '../api/live';
 import type { AlertRow, ExposureRun, PlumeFrames } from '../api/live';
+import { DATA_SOURCE } from '../api';
 import type { Scenario } from './uiStore';
 import { SCENARIO_DEFAULTS } from './uiStore';
 
@@ -61,6 +62,18 @@ export function useLiveExposure(
       scenario.transmissionLoss === SCENARIO_DEFAULTS.transmissionLoss);
 
   useEffect(() => {
+    // Fixtures mode is the offline / deterministic demo path, and it must make
+    // NO request off our own origin — offline-arabic's "no external requests"
+    // gate (p4-H). These three calls have no fixture (there is no stored "what
+    // the model computed"), so in fixtures mode they resolve to their honest
+    // empty values without ever touching the network. Live exposure/plume/alerts
+    // are a deliberate VITE_DATA_SOURCE=http choice, not the default.
+    if (DATA_SOURCE !== 'http') {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setState({ exposure: null, plume: null, alerts: [], loading: false });
+      return;
+    }
+
     if (!eventId) return;
 
     // Cancel any pending debounce
