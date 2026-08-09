@@ -18,6 +18,7 @@ import { FormulaChain, type Factor } from '../components/FormulaChain';
 import { StatusBadge } from '../components/StatusBadge';
 import { PlaceholderNote } from '../components/PlaceholderNote';
 import { CaveatList } from '../components/CaveatList';
+import { DiveSitesNearZone } from '../components/DiveSitesNearZone';
 import { Card, CardGrid, PageShell, Section } from '../shell/PageShell';
 import { IdText } from './AlertsPage';
 
@@ -396,6 +397,11 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
             </p>
           </Card>
         </CardGrid>
+      </Section>
+
+      {/* p4-B — dive sites whose nearest zone is this one, with the inland caveat */}
+      <Section label={t('reefZone.diveSites.label')}>
+        <DiveSitesNearZone zoneId={zoneId} />
       </Section>
 
       {/* WP2 — Click-to-See-Why: formula inspector */}

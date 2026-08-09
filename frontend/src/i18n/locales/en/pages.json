@@ -61,6 +61,29 @@
     "noLabelHint": "Only events documented in the literature carry a label. The rest were mined, not named.",
     "replayLink": "Open the replay for this event",
     "rankingNote": "Ranking uses rank and maximum daily depth. The catalogue's anomaly-ratio column is stale and is deliberately not shown here.",
+    "viewLabel": "Choose a view of the event record",
+    "view": {
+      "catalogue": "Catalogue",
+      "intensity": "Intensity",
+      "calendar": "Calendar"
+    },
+    "intensity": {
+      "title": "Rain intensity ranking",
+      "note": "Storms ranked on rank and maximum daily depth — the canonical columns, never the stale anomaly ratio. Bar length is depth on one shared scale; “top N%” is where that depth sits in the wettest catchment's own 28-year daily record.",
+      "topPercent": "top {{pct}}%",
+      "hidden": "{{n}} further ranked events are not shown. The top of the ranking is here; open the catalogue for the full record.",
+      "empty": "No ranked events to show yet."
+    },
+    "calendar": {
+      "title": "Seasonal calendar",
+      "loading": "Loading the seasonal calendar…",
+      "framingNote": "Months coloured by rainfall intensity — the peak daily storm depth on record for each month, relative to the wettest month. This is a rainfall record, not a reef-exposure forecast: the sediment model is anchored to one October event, so this says nothing about coral impact by month.",
+      "storms": "{{n}} storms on record",
+      "noEvents": "No storms on record",
+      "worstLink": "Open the replay for {{id}}, this month's heaviest storm",
+      "snapshotNote": "Committed snapshot: the live endpoint was unreachable, so this reads the shipped export of the seasonal calendar.",
+      "liveNote": "Live from GET /api/v1/seasonal-risk-calendar."
+    },
     "col": {
       "id": "Event",
       "start": "Start",
@@ -107,6 +130,17 @@
     "backToList": "All reef zones",
     "attributesLabel": "Zone attributes",
     "noGeomorphic": "No geomorphic class recorded",
+    "diveSites": {
+      "label": "Dive sites near this zone",
+      "note": "Sites whose nearest reef zone is this one, joined by osm_id — never by name. Distance is a real EPSG:32636 measurement. Only sites within ~2 km are a trustworthy safety association; a far-inland site is a Wadi Rum attraction the OSM category also carries, and carries the caveat below.",
+      "distance": "distance",
+      "osmId": "OSM id",
+      "loading": "Loading dive sites…",
+      "errorTitle": "The dive-site list did not load",
+      "errorBody": "GET /api/v1/dive-sites returned nothing. The API may not be running.",
+      "emptyTitle": "No dive sites map to this zone",
+      "emptyBody": "None of the 46 dive-site POIs have this zone as their nearest reef zone."
+    },
     "weightsLabel": "Sensitivity weight",
     "weightsIntro": "The two numbers below look alike and mean opposite things. The first is what the exposure engine multiplies by today. The second is a proposal derived from contributed photos, awaiting marine-scientist review, and is used nowhere.",
     "chipInUse": "IN USE",

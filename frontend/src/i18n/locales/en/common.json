@@ -168,6 +168,7 @@
     "reef": "Reef zones",
     "outlets": "Coastal outlets",
     "mooring": "Mooring",
+    "divesites": "Dive sites",
     "modelGrid": "Ocean-model grid (~9 km)",
     "coverage": "Basemap coverage",
     "labels": "Labels",
@@ -191,6 +192,14 @@
   },
   "series": {
     "noSubDaily": "No sub-daily rainfall series is available for this event."
+  },
+  "units": {
+    "mm": "mm"
+  },
+  "subdaily": {
+    "title": "Peak accumulation windows",
+    "window": "{{h}} h",
+    "caveat": "Heaviest 1/3/6/24-hour totals recorded anywhere in the Aqaba grid during the storm — maxima over the AOI cells, not the catchment daily series above and not a rolling accumulation. Derived from IMERG, not reported by the paper; this is why the 3 h peak can exceed the daily mean."
   },
   "common": {
     "close": "Close"

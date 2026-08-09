@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { fetchEvents, type EventRow } from '../api/live';
+import {
+  fetchEvents,
+  fetchSeasonalCalendar,
+  type EventRow,
+  type SeasonalCalendar as SeasonalCalendarData,
+} from '../api/live';
+import { IntensityRanking } from '../components/IntensityRanking';
 import { Link } from '../components/Link';
+import { SeasonalCalendar } from '../components/SeasonalCalendar';
+import { Segmented } from '../components/Segmented';
 import { Empty, ErrorState, Loading } from '../components/States';
 import { ValueWithUnit } from '../components/ValueWithUnit';
 import { PageShell, Section } from '../shell/PageShell';
 import { Caveats, IdText } from './AlertsPage';
+
+/** Three views of the one events domain, on one page: the searchable catalogue
+ *  (p4-G), the rain-intensity ranking (p4-08), and the seasonal calendar (p4-K). */
+type EventsView = 'catalogue' | 'intensity' | 'calendar';
 
 /** The event catalogue, at /events.
  *
@@ -72,6 +84,8 @@ export function EventsPage() {
   const [query, setQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('rank');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [view, setView] = useState<EventsView>('catalogue');
+  const [calendar, setCalendar] = useState<SeasonalCalendarData | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -79,6 +93,9 @@ export function EventsPage() {
       if (!live) return;
       if (r === null) setFailed(true);
       else setRows(r);
+    });
+    void fetchSeasonalCalendar().then((c) => {
+      if (live) setCalendar(c);
     });
     return () => {
       live = false;
@@ -133,6 +150,43 @@ export function EventsPage() {
 
   return (
     <PageShell title={t('events.title')} lede={t('events.lede')}>
+      <div data-events-view={view}>
+        <Segmented<EventsView>
+          label={t('events.viewLabel')}
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'catalogue', label: t('events.view.catalogue') },
+            { value: 'intensity', label: t('events.view.intensity') },
+            { value: 'calendar', label: t('events.view.calendar') },
+          ]}
+        />
+      </div>
+
+      {view === 'intensity' ? (
+        <Section label={t('events.intensity.title')}>
+          {failed ? (
+            <ErrorState what={t('events.errorTitle')} message={t('events.errorBody')} />
+          ) : rows === null ? (
+            <Loading what={t('events.loading')} />
+          ) : (
+            <IntensityRanking rows={rows} />
+          )}
+        </Section>
+      ) : null}
+
+      {view === 'calendar' ? (
+        <Section label={t('events.calendar.title')}>
+          {calendar === null ? (
+            <Loading what={t('events.calendar.loading')} />
+          ) : (
+            <SeasonalCalendar data={calendar} />
+          )}
+        </Section>
+      ) : null}
+
+      {view === 'catalogue' ? (
+        <>
       <Section label={t('events.filterLabel')}>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
@@ -280,6 +334,8 @@ export function EventsPage() {
         <Section label={t('caveats.sectionLabel')}>
           <Caveats items={caveats} />
         </Section>
+      ) : null}
+        </>
       ) : null}
     </PageShell>
   );

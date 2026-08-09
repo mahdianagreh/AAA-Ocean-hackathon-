@@ -108,6 +108,7 @@ function ControlsDemo() {
     reef: true,
     outlets: true,
     mooring: true,
+    divesites: false,
     modelGrid: false,
     coverage: true,
     labels: true,

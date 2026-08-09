@@ -54,6 +54,14 @@ ARTIFACTS: dict[str, Path] = {
     "osm_buildings": VECTORS / "osm_aqaba.gpkg",
     "osm_drainage": VECTORS / "osm_aqaba.gpkg",
     "rainfall_climatology": FEATURES / "catchment_rainfall_climatology.parquet",
+    # The full ~28-year daily rainfall record per catchment (10,135 days each).
+    # Backs the empirical "top N%" an event sits at within its wettest catchment's
+    # own history — a real percentile of the record, not max_anomaly_ratio (stale,
+    # never exposed) and not a typed-in figure.
+    "rainfall_daily": FEATURES / "catchment_rainfall_daily.parquet",
+    # 12 rows, one per calendar month, bucketed by RAINFALL INTENSITY (not exposure
+    # score) — scripts/29_seasonal_risk_calendar.py. See that script's framing note.
+    "seasonal_risk_calendar": FEATURES / "seasonal_risk_calendar.parquet",
     "bathymetry": DATA / "processed" / "bathymetry" / "depth_utm36n.tif",
 }
 
@@ -563,6 +571,71 @@ def event_catalogue() -> list[dict]:
     ]).sort_values("rank")
     df["date"] = df["date"].dt.strftime("%Y-%m-%d")
     return df.to_dict("records")
+
+
+@lru_cache(maxsize=1)
+def _daily_rainfall_by_catchment() -> dict[str, list[float]]:
+    """Sorted per-catchment daily-depth series from the ~28-year record, used to
+    place an event's `max_daily_mm` as an empirical percentile of that catchment's
+    own history. Sorted once so `intensity_top_percent` is a bisect, not a scan.
+
+    Empty dict if the artifact is absent — missing is missing, and the caller then
+    reports the percentile as None rather than fabricating one.
+    """
+    import pandas as pd
+
+    path = ARTIFACTS["rainfall_daily"]
+    if not path.exists():
+        return {}
+    df = pd.read_parquet(path, columns=["catchment_id", "precipitation_mm_day"])
+    out: dict[str, list[float]] = {}
+    for cid, group in df.groupby("catchment_id"):
+        series = group["precipitation_mm_day"].dropna().sort_values().tolist()
+        if series:
+            out[str(cid)] = series
+    return out
+
+
+def intensity_top_percent(catchment_id: str | None, max_daily_mm: float | None) -> float | None:
+    """Where an event's daily depth sits in its wettest catchment's own 28-year
+    record, as "top N%": N = 100 * (# days with depth >= this) / total days.
+
+    A real empirical percentile of the record — the honest answer to "how unusual
+    was this storm here", and explicitly NOT max_anomaly_ratio (stale, ranks storms
+    differently, never exposed). Returns None when either input is missing or the
+    catchment has no daily record, so the UI shows a gap, never a fabricated rank.
+    """
+    import bisect
+
+    if catchment_id is None or max_daily_mm is None:
+        return None
+    series = _daily_rainfall_by_catchment().get(catchment_id)
+    if not series:
+        return None
+    n = len(series)
+    # Days with depth >= value = everything at or right of the leftmost insertion
+    # point for `value`. bisect_left gives that index against the ascending series.
+    at_or_above = n - bisect.bisect_left(series, max_daily_mm)
+    return round(100.0 * at_or_above / n, 2)
+
+
+@lru_cache(maxsize=1)
+def seasonal_risk_calendar() -> list[dict]:
+    """The 12-month rainfall-intensity calendar
+    (scripts/29_seasonal_risk_calendar.py) as plain dicts, month 1..12 in order.
+
+    Buckets by RAINFALL INTENSITY, not exposure score — the sediment model is
+    anchored to one October event, so an exposure-scored calendar would read flat
+    everywhere but October and misrepresent the seasonality the rainfall record
+    actually shows. Empty list if the artifact is absent — missing is missing.
+    """
+    import pandas as pd
+
+    path = ARTIFACTS["seasonal_risk_calendar"]
+    if not path.exists():
+        return []
+    df = pd.read_parquet(path).sort_values("month")
+    return [{k: _clean(v) for k, v in row.items()} for _, row in df.iterrows()]
 
 
 @lru_cache(maxsize=8)

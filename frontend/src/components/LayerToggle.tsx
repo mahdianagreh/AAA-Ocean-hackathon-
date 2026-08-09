@@ -12,7 +12,7 @@ import type { LayerKey } from '../app/uiStore';
 const FAMILIES: Array<{ key: string; layers: LayerKey[] }> = [
   { key: 'base', layers: ['isobaths', 'labels', 'coverage'] },
   { key: 'land', layers: ['catchments', 'rainfall', 'outlets'] },
-  { key: 'marine', layers: ['plume', 'reef', 'mooring'] },
+  { key: 'marine', layers: ['plume', 'reef', 'mooring', 'divesites'] },
   { key: 'honesty', layers: ['modelGrid'] },
 ];
 
