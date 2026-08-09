@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;-webkit-font-smoothing:antialiased}
+a{color:#00B7C3;text-decoration:none}
+a:hover{color:#007A99;text-decoration:underline}
+button{font-family:inherit;cursor:pointer}
+input,select,textarea{font-family:inherit}
+input:focus,select:focus,textarea:focus,button:focus{outline:2px solid #00B7C3;outline-offset:2px}
+@media (min-width:860px){.aq-side-panel{display:flex !important}}
+@media (min-width:860px){.aq-dash-grid{flex-direction:row !important}.aq-dash-sidebar{width:240px !important;flex-shrink:0}}
+@keyframes aqPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(1.3)}}
+.aq-card:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(10,31,77,.12) !important}
+</style>
+</helmet>
+
+<div style="font-family:Montserrat,Inter,system-ui,sans-serif;color:#0A1F4D;background:#FFFFFF;width:100%">
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<div>
+
+<nav style="{{ navStyle }}">
+  <div style="max-width:1240px;margin:0 auto;padding:16px clamp(20px,5vw,48px);display:flex;align-items:center;justify-content:space-between;gap:16px">
+    <div style="display:flex;align-items:center;gap:14px;cursor:pointer" onClick="{{ goHome }}">
+      <svg width="34" height="31" viewBox="0 0 100 92" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="lgHomeNav" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00B7C3"/><stop offset="1" stop-color="#0A1F4D"/></linearGradient></defs>
+        <path d="M50 4 L96 88 L4 88 Z" fill="url(#lgHomeNav)"/>
+        <path d="M50 44 L66 78 L34 78 Z" fill="#F4F7FA"/>
+        <path d="M20 78 Q50 58 80 78" stroke="#00B7C3" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div style="width:1px;height:22px;background:linear-gradient(180deg,#00B7C3,#0A1F4D)"></div>
+      <div style="font-weight:700;letter-spacing:0.06em;font-size:16px;white-space:nowrap"><span style="color:{{ navTextColor }}">AQABA AQUA </span><span style="color:#00B7C3">AI</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:clamp(12px,2vw,28px)">
+      <a href="#how-it-works" style="color:{{ navTextColor }};font-size:14px;font-weight:600">How it works</a>
+      <a href="#data-sources" style="color:{{ navTextColor }};font-size:14px;font-weight:600">Data Sources</a>
+      <a onClick="{{ goDashboard }}" href="javascript:void(0)" style="color:{{ navTextColor }};font-size:14px;font-weight:600">Platform Preview</a>
+      <button onClick="{{ goLogin }}" style="height:40px;padding:0 18px;border-radius:12px;border:1.5px solid {{ navTextColor }};background:transparent;color:{{ navTextColor }};font-size:14px;font-weight:600">Login</button>
+      <button onClick="{{ goSignup }}" style="height:40px;padding:0 20px;border-radius:12px;border:none;background:linear-gradient(135deg,#0A1F4D 0%,#0D3D7A 35%,#007A99 65%,#00B7C3 100%);color:#FFFFFF;font-size:14px;font-weight:600;box-shadow:0 4px 12px rgba(10,31,77,.08)">Get Access</button>
+    </div>
+  </div>
+</nav>
+
+<header style="background:linear-gradient(135deg,#0A1F4D 0%,#0D3D7A 35%,#007A99 65%,#00B7C3 100%);padding:clamp(64px,10vw,128px) clamp(20px,5vw,48px) 64px;color:#FFFFFF">
+  <div style="max-width:820px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:24px">
+    <div style="font-size:13px;font-weight:700;letter-spacing:0.14em;color:#00B7C3">MARINE INTELLIGENCE FOR THE GULF OF AQABA</div>
+    <h1 style="font-size:clamp(32px,6vw,64px);font-weight:700;line-height:1.08;margin:0">See the flood before it reaches the reef.</h1>
+    <p style="font-size:18px;line-height:1.6;color:#E6F7FA;max-width:620px;margin:0">AQABA AQUA AI forecasts flash-flood sediment risk to Gulf of Aqaba coral reefs — connecting rainfall, terrain, and ocean currents into one early-warning system, hours before the sediment arrives.</p>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:8px">
+      <button onClick="{{ goSignup }}" style="height:48px;padding:0 28px;border-radius:12px;border:none;background:#FFFFFF;color:#0A1F4D;font-size:16px;font-weight:700">Get Access</button>
+      <a href="#how-it-works" style="height:48px;padding:0 28px;border-radius:12px;border:1.5px solid #FFFFFF;color:#FFFFFF;font-size:16px;font-weight:600;display:flex;align-items:center;text-decoration:none">See How It Works</a>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:32px;width:100%">
+      <div style="flex:1;min-width:190px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:16px 20px;backdrop-filter:blur(8px)">
+        <div style="font-size:22px;font-weight:700">27mm</div><div style="font-size:13px;color:#E6F7FA">mean annual rainfall</div>
+      </div>
+      <div style="flex:1;min-width:190px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:16px 20px;backdrop-filter:blur(8px)">
+        <div style="font-size:22px;font-weight:700">24,400t</div><div style="font-size:13px;color:#E6F7FA">sediment moved in a single 2016 event</div>
+      </div>
+      <div style="flex:1;min-width:190px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:16px 20px;backdrop-filter:blur(8px)">
+        <div style="font-size:22px;font-weight:700">8</div><div style="font-size:13px;color:#E6F7FA">reef zones tracked</div>
+      </div>
+      <div style="flex:1;min-width:190px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:16px 20px;backdrop-filter:blur(8px)">
+        <div style="font-size:22px;font-weight:700">Live</div><div style="font-size:13px;color:#E6F7FA">GFS + GEFS forecasting</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section style="padding:96px clamp(20px,5vw,48px);background:#FFFFFF">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:48px;align-items:center">
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <h2 style="font-size:clamp(24px,4vw,36px);font-weight:700;margin:0;line-height:1.2">A flood in the desert is a marine event. Nothing treats it as one.</h2>
+      <p style="font-size:16px;line-height:1.7;color:#46566D;margin:0">Rain over the mountains doesn't soak into the desert — the ground is too hard, too dry. It becomes a fast-moving flood within hours. That flood carries a huge sediment load down the wadis and straight into the sea. The sediment smothers the reef before anyone on the coast knows it's coming.</p>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:0;flex-wrap:wrap;background:#F4F7FA;border-radius:20px;padding:32px">
+      <div style="display:flex;align-items:center;gap:0">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;width:84px">
+          <svg width="32" height="32" viewBox="0 0 32 32"><path d="M4 26 L16 6 L28 26 Z" fill="none" stroke="#0A1F4D" stroke-width="2"/></svg>
+          <div style="font-size:12px;color:#46566D;text-align:center">Rainfall</div>
+        </div>
+        <div style="width:28px;height:2px;background:linear-gradient(90deg,#0A1F4D,#00B7C3)"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;width:84px">
+          <svg width="32" height="32" viewBox="0 0 32 32"><path d="M4 10 L14 20 L20 14 L28 22" fill="none" stroke="#0D3D7A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div style="font-size:12px;color:#46566D;text-align:center">Wadi Flow</div>
+        </div>
+        <div style="width:28px;height:2px;background:linear-gradient(90deg,#0D3D7A,#00B7C3)"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;width:84px">
+          <svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="4" fill="none" stroke="#007A99" stroke-width="2"/><circle cx="16" cy="16" r="10" fill="none" stroke="#007A99" stroke-width="2" opacity="0.5"/></svg>
+          <div style="font-size:12px;color:#46566D;text-align:center">Sea Entry</div>
+        </div>
+        <div style="width:28px;height:2px;background:linear-gradient(90deg,#007A99,#00B7C3)"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;width:84px">
+          <svg width="32" height="32" viewBox="0 0 32 32"><path d="M16 4 L28 28 L4 28 Z" fill="none" stroke="#00B7C3" stroke-width="2"/></svg>
+          <div style="font-size:12px;color:#46566D;text-align:center">Reef</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works" style="padding:96px clamp(20px,5vw,48px);background:#E6F7FA">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:48px">
+    <h2 style="font-size:clamp(24px,4vw,36px);font-weight:700;margin:0;text-align:center">Five real signals, one prediction.</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:24px">
+      <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:12px">
+        <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="10" cy="10" r="6" fill="none" stroke="#0A1F4D" stroke-width="2"/><circle cx="17" cy="12" r="5" fill="none" stroke="#0A1F4D" stroke-width="2"/><line x1="9" y1="21" x2="9" y2="25" stroke="#00B7C3" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="21" x2="16" y2="25" stroke="#00B7C3" stroke-width="2" stroke-linecap="round"/></svg>
+        <div style="font-size:16px;font-weight:600">Rainfall Forecasting</div>
+        <div style="font-size:14px;color:#46566D;line-height:1.5">Live satellite and ensemble weather data, tracked per catchment.</div>
+      </div>
+      <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:12px">
+        <svg width="28" height="28" viewBox="0 0 28 28"><path d="M2 22 L11 8 L17 16 L26 4" fill="none" stroke="#0D3D7A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div style="font-size:16px;font-weight:600">Runoff Modeling</div>
+        <div style="font-size:14px;color:#46566D;line-height:1.5">Trained on real terrain, soil, and historical storm data.</div>
+      </div>
+      <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:12px">
+        <svg width="28" height="28" viewBox="0 0 28 28"><circle cx="6" cy="20" r="2.5" fill="#007A99"/><circle cx="14" cy="14" r="2.5" fill="#007A99"/><circle cx="21" cy="21" r="2.5" fill="#007A99"/><circle cx="20" cy="9" r="2.5" fill="#007A99"/></svg>
+        <div style="font-size:16px;font-weight:600">Sediment Estimation</div>
+        <div style="font-size:14px;color:#46566D;line-height:1.5">Anchored to a real, documented flood event.</div>
+      </div>
+      <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:12px">
+        <svg width="28" height="28" viewBox="0 0 28 28"><path d="M2 10 Q7 4 12 10 Q17 16 22 10 Q25 7 26 10" fill="none" stroke="#00B7C3" stroke-width="2" stroke-linecap="round"/><path d="M2 18 Q7 12 12 18 Q17 24 22 18 Q25 15 26 18" fill="none" stroke="#00B7C3" stroke-width="2" stroke-linecap="round" opacity="0.5"/></svg>
+        <div style="font-size:16px;font-weight:600">Plume Transport</div>
+        <div style="font-size:14px;color:#46566D;line-height:1.5">Ocean current and particle modeling shows where sediment spreads.</div>
+      </div>
+      <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:12px">
+        <svg width="28" height="28" viewBox="0 0 28 28"><path d="M14 2 L24 14 L14 26 L4 14 Z" fill="none" stroke="#0A1F4D" stroke-width="2"/></svg>
+        <div style="font-size:16px;font-weight:600">Reef Exposure</div>
+        <div style="font-size:14px;color:#46566D;line-height:1.5">Named reef zones scored by real, explainable risk.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:96px clamp(20px,5vw,48px);background:#FFFFFF">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:40px">
+    <h2 style="font-size:clamp(24px,4vw,36px);font-weight:700;margin:0;text-align:center">Validated against real, measured data — not assumptions.</h2>
+    <div style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;box-shadow:0 4px 12px rgba(10,31,77,.08);padding:clamp(24px,4vw,48px);display:flex;gap:32px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+      <div style="flex:2;min-width:280px;font-size:20px;font-weight:600;line-height:1.5">Model correctly ranked the real October 2016 flood as the highest-risk storm in 26 years — without ever training on it.</div>
+      <div style="flex:1;min-width:240px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#46566D"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="#00B7C3" stroke-width="2"/></svg>Real sensor validation</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#46566D"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="#00B7C3" stroke-width="2"/></svg>Open data only</div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:#46566D"><svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="#00B7C3" stroke-width="2"/></svg>Every limitation documented</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding:80px clamp(20px,5vw,48px);background:linear-gradient(135deg,#0A1F4D 0%,#0D3D7A 35%,#007A99 65%,#00B7C3 100%);color:#FFFFFF;text-align:center">
+  <div style="max-width:680px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:20px">
+    <h2 style="font-size:clamp(24px,4vw,36px);font-weight:700;margin:0">Built for the people protecting this coastline.</h2>
+    <p style="font-size:16px;color:#E6F7FA;margin:0">Coastal authorities, researchers, and dive operators — request access to the live dashboard.</p>
+    <button onClick="{{ goSignup }}" style="height:52px;padding:0 32px;border-radius:12px;border:none;background:#FFFFFF;color:#0A1F4D;font-size:16px;font-weight:700;margin-top:8px">Request Access</button>
+  </div>
+</section>
+
+<footer style="background:#09111F;color:#E6F7FA;padding:64px clamp(20px,5vw,48px) 32px">
+  <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:48px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <svg width="30" height="27" viewBox="0 0 100 92" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M50 4 L96 88 L4 88 Z" fill="#FFFFFF"/><path d="M50 44 L66 78 L34 78 Z" fill="#09111F"/></svg>
+      <div style="font-weight:700;letter-spacing:0.06em;font-size:15px;color:#FFFFFF">AQABA AQUA AI</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;color:#FFFFFF">PLATFORM</div>
+      <a href="#how-it-works" style="color:#E6F7FA;font-size:14px">How it works</a>
+      <a href="#data-sources" style="color:#E6F7FA;font-size:14px">Data Sources</a>
+      <a onClick="{{ goDashboard }}" href="javascript:void(0)" style="color:#E6F7FA;font-size:14px">Platform Preview</a>
+      <a onClick="{{ goLogin }}" href="javascript:void(0)" style="color:#E6F7FA;font-size:14px">Login</a>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;color:#FFFFFF">PROJECT</div>
+      <a href="#" style="color:#E6F7FA;font-size:14px">About</a>
+      <a href="#" style="color:#E6F7FA;font-size:14px">Data Dictionary</a>
+      <a href="#" style="color:#E6F7FA;font-size:14px">Limitations</a>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;color:#FFFFFF">CONTACT</div>
+      <a href="mailto:contact@aqabaaqua.ai" style="color:#E6F7FA;font-size:14px">contact@aqabaaqua.ai</a>
+    </div>
+  </div>
+  <div style="max-width:1200px;margin:48px auto 0;border-top:1px solid #46566D;padding-top:24px;font-size:13px;color:#46566D">AQABA AQUA AI — Marine Intelligence, Environmental AI, Ocean Technology</div>
+</footer>
+
+</div>
+</sc-if>
+
+<sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;display:flex;background:#F4F7FA">
+  <div style="flex:1;min-width:340px;display:none;background:linear-gradient(160deg,#0A1F4D 0%,#0D3D7A 40%,#007A99 75%,#00B7C3 100%);position:relative;overflow:hidden;padding:56px 48px;color:#FFFFFF;flex-direction:column;justify-content:space-between" class="aq-side-panel">
+    <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onClick="{{ goHome }}">
+      <svg width="30" height="27" viewBox="0 0 100 92" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M50 4 L96 88 L4 88 Z" fill="#FFFFFF"/><path d="M50 44 L66 78 L34 78 Z" fill="#0D3D7A"/></svg>
+      <div style="font-weight:700;letter-spacing:0.06em;font-size:15px;color:#FFFFFF">AQABA AQUA AI</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px;max-width:380px">
+      <svg width="120" height="90" viewBox="0 0 120 90" style="opacity:0.9">
+        <path d="M4 78 Q22 64 40 78 Q58 92 76 78 Q94 64 116 78" fill="none" stroke="#00B7C3" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M4 62 Q22 48 40 62 Q58 76 76 62 Q94 48 116 62" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+        <path d="M20 40 L40 4 L60 40 Z" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.55"/>
+        <path d="M55 46 L75 18 L95 46 Z" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.35"/>
+      </svg>
+      <div style="font-size:22px;font-weight:700;line-height:1.35">Forecasting flash-flood sediment risk before it reaches the reef.</div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div><div style="font-size:24px;font-weight:700;color:#00B7C3">8</div><div style="font-size:13px;color:#E6F7FA">reef zones tracked</div></div>
+        <div><div style="font-size:24px;font-weight:700;color:#00B7C3">Live</div><div style="font-size:13px;color:#E6F7FA">GFS + GEFS forecasting</div></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:#E6F7FA;opacity:0.85">Validated against the real October 2016 flood event — ranked highest-risk in 26 years.</div>
+  </div>
+  <div style="flex:1;min-width:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:24px">
+  <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onClick="{{ goHome }}">
+    <svg width="30" height="27" viewBox="0 0 100 92" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="lgLogin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00B7C3"/><stop offset="1" stop-color="#0A1F4D"/></linearGradient></defs>
+      <path d="M50 4 L96 88 L4 88 Z" fill="url(#lgLogin)"/><path d="M50 44 L66 78 L34 78 Z" fill="#F4F7FA"/><path d="M20 78 Q50 58 80 78" stroke="#00B7C3" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div style="font-weight:700;letter-spacing:0.06em;font-size:15px"><span style="color:#0A1F4D">AQABA AQUA </span><span style="color:#00B7C3">AI</span></div>
+  </div>
+  <div style="width:100%;max-width:420px;background:#FFFFFF;border-radius:20px;box-shadow:0 10px 30px rgba(10,31,77,.12);padding:40px 32px;display:flex;flex-direction:column;gap:24px">
+    <div style="display:flex;flex-direction:column;gap:6px;text-align:center">
+      <h2 style="font-size:28px;font-weight:700;margin:0">Welcome back</h2>
+      <div style="font-size:14px;color:#46566D">Sign in to your AQABA AQUA AI dashboard</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:14px;font-weight:600" for="login-email">Email</label>
+        <input id="login-email" type="text" value="{{ loginEmail }}" onChange="{{ onLoginEmailChange }}" placeholder="you@organization.org" style="height:48px;border-radius:12px;border:1px solid {{ loginEmailBorder }};padding:0 14px;font-size:16px" />
+        <sc-if value="{{ loginEmailError }}" hint-placeholder-val="{{ null }}"><div style="font-size:13px;color:#C0392B">{{ loginEmailError }}</div></sc-if>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <label style="font-size:14px;font-weight:600" for="login-password">Password</label>
+        <div style="position:relative;display:flex;align-items:center">
+          <input id="login-password" type="{{ loginPasswordFieldType }}" value="{{ loginPassword }}" onChange="{{ onLoginPasswordChange }}" placeholder="••••••••" style="height:48px;border-radius:12px;border:1px solid {{ loginPasswordBorder }};padding:0 44px 0 14px;font-size:16px;width:100%" />
+          <button onClick="{{ toggleShowPassword }}" aria-label="Toggle password visibility" style="position:absolute;right:12px;background:none;border:none;padding:4px;display:flex">
+            <sc-if value="{{ showPassword }}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3" fill="none" stroke="#46566D" stroke-width="1.6"/><path d="M1 10 Q10 2 19 10 Q10 18 1 10 Z" fill="none" stroke="#46566D" stroke-width="1.6"/></svg></sc-if>
+            <sc-if value="{{ notShowPassword }}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M1 10 Q10 2 19 10 Q10 18 1 10 Z" fill="none" stroke="#46566D" stroke-width="1.6"/><line x1="2" y1="18" x2="18" y2="2" stroke="#46566D" stroke-width="1.6"/></svg></sc-if>
+          </button>
+        </div>
+        <sc-if value="{{ loginPasswordError }}" hint-placeholder-val="{{ null }}"><div style="font-size:13px;color:#C0392B">{{ loginPasswordError }}</div></sc-if>
+      </div>
+      <div style="display:flex;justify-content:flex-end"><a href="#" style="font-size:13px;color:#00B7C3;font-weight:600">Forgot password?</a></div>
+      <button onClick="{{ handleLoginSubmit }}" style="height:48px;border-radius:12px;border:none;background:#0A1F4D;color:#FFFFFF;font-size:16px;font-weight:700;width:100%">Sign In</button>
+      <sc-if value="{{ ssoEnabled }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:12px;margin:4px 0">
+          <div style="flex:1;height:1px;background:#DCE5EC"></div><div style="font-size:13px;color:#46566D">or</div><div style="flex:1;height:1px;background:#DCE5EC"></div>
+        </div>
+        <button style="height:48px;border-radius:12px;border:1.5px solid #0A1F4D;background:#FFFFFF;color:#0A1F4D;font-size:15px;font-weight:600;width:100%;display:flex;align-items:center;justify-content:center;gap:10px">
+          <svg width="18" height="18" viewBox="0 0 18 18"><rect x="4" y="7" width="10" height="8" fill="none" stroke="#0A1F4D" stroke-width="1.6"/><line x1="9" y1="7" x2="9" y2="2" stroke="#0A1F4D" stroke-width="1.6"/><line x1="6" y1="2" x2="12" y2="2" stroke="#0A1F4D" stroke-width="1.6"/></svg>
+          Continue with organization SSO
+        </button>
+      </sc-if>
+    </div>
+    <div style="text-align:center;font-size:14px;color:#46566D">Don't have access yet? <a onClick="{{ goSignup }}" href="javascript:void(0)" style="color:#00B7C3;font-weight:600">Request Access</a></div>
+  </div>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSignup }}" hint-placeholder-val="{{ false }}">
+<div style="min-height:100vh;display:flex;background:#F4F7FA">
+  <div style="flex:1;min-width:340px;display:none;background:linear-gradient(160deg,#0A1F4D 0%,#0D3D7A 40%,#007A99 75%,#00B7C3 100%);position:relative;overflow:hidden;padding:56px 48px;color:#FFFFFF;flex-direction:column;justify-content:space-between" class="aq-side-panel">
+    <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onClick="{{ goHome }}">
+      <svg width="30" height="27" viewBox="0 0 100 92" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M50 4 L96 88 L4 88 Z" fill="#FFFFFF"/><path d="M50 44 L66 78 L34 78 Z" fill="#0D3D7A"/></svg>
+      <div style="font-weight:700;letter-spacing:0.06em;font-size:15px;color:#FFFFFF">AQABA AQUA AI</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px;max-width:380px">
+      <svg width="120" height="90" viewBox="0 0 120 90" style="opacity:0.9">
+        <path d="M20 40 L40 4 L60 40 Z" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.55"/>
+        <path d="M55 46 L75 18 L95 46 Z" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.35"/>
+        <path d="M4 62 Q22 48 40 62 Q58 76 76 62 Q94 48 116 62" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+        <path d="M4 78 Q22 64 40 78 Q58 92 76 78 Q94 64 116 78" fill="none" stroke="#00B7C3" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <div style="font-size:22px;font-weight:700;line-height:1.35">Join the coastal authorities, researchers, and dive operators protecting the Gulf.</div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div><div style="font-size:24px;font-weight:700;color:#00B7C3">27mm</div><div style="font-size:13px;color:#E6F7FA">mean annual rainfall</div></div>
+        <div><div style="font-size:24px;font-weight:700;color:#00B7C3">24,400t</div><div style="font-size:13px;color:#E6F7FA">sediment moved in 2016</div></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:#E6F7FA;opacity:0.85">Real sensor validation · Open data only · Every limitation documented</div>
+  </div>
+  <div style="flex:1;min-width:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:24px">
+  <div style="display:flex;align-items:center;gap:12px;cursor:pointer" onClick="{{ goHome }}">
+    <svg width="30" height="27" viewBox="0 0 100 92" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs><linearGradient id="lgSignup" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#00B7C3"/><stop offset="1" stop-color="#0A1F4D"/></linearGradient></defs>
+      <path d="M50 4 L96 88 L4 88 Z" fill="url(#lgSignup)"/><path d="M50 44 L66 78 L34 78 Z" fill="#F4F7FA"/><path d="M20 78 Q50 58 80 78" stroke="#00B7C3" stroke-width="3" fill="none" stroke-linecap="round"/>
+    </svg>
+    <div style="font-weight:700;letter-spacing:0.06em;font-size:15px"><span style="color:#0A1F4D">AQABA AQUA </span><span style="color:#00B7C3">AI</span></div>
+  </div>
+
+  <sc-if value="{{ signupSubmitted }}" hint-placeholder-val="{{ false }}">
+    <div style="width:100%;max-width:420px;background:#FFFFFF;border-radius:20px;box-shadow:0 10px 30px rgba(10,31,77,.12);padding:48px 32px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center">
+      <svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="21" fill="none" stroke="#00B7C3" stroke-width="2.5"/><path d="M14 25 L21 32 L35 16" fill="none" stroke="#00B7C3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h2 style="font-size:24px;font-weight:700;margin:0">Request received</h2>
+      <p style="font-size:15px;color:#46566D;line-height:1.6;margin:0">Our team will review your request and follow up by email within a few business days.</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ signupNotSubmitted }}" hint-placeholder-val="{{ true }}">
+    <div style="width:100%;max-width:460px;background:#FFFFFF;border-radius:20px;box-shadow:0 10px 30px rgba(10,31,77,.12);padding:40px 32px;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:6px;text-align:center">
+        <h2 style="font-size:28px;font-weight:700;margin:0">Request Access</h2>
+        <div style="font-size:14px;color:#46566D;line-height:1.5">AQABA AQUA AI is currently available to coastal authorities, research institutions, and development partners. Tell us about your organization.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:14px;font-weight:600">Full name</label>
+          <input type="text" value="{{ suFullName }}" onChange="{{ onSuFullNameChange }}" style="height:48px;border-radius:12px;border:1px solid #DCE5EC;padding:0 14px;font-size:16px" />
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:14px;font-weight:600">Work email</label>
+          <input type="text" value="{{ suEmail }}" onChange="{{ onSuEmailChange }}" style="height:48px;border-radius:12px;border:1px solid {{ suEmailBorder }};padding:0 14px;font-size:16px" />
+          <sc-if value="{{ suEmailError }}" hint-placeholder-val="{{ null }}"><div style="font-size:13px;color:#C0392B">{{ suEmailError }}</div></sc-if>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:14px;font-weight:600">Organization name</label>
+          <input type="text" value="{{ suOrg }}" onChange="{{ onSuOrgChange }}" style="height:48px;border-radius:12px;border:1px solid #DCE5EC;padding:0 14px;font-size:16px" />
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:14px;font-weight:600">Role / title</label>
+          <input type="text" value="{{ suRole }}" onChange="{{ onSuRoleChange }}" style="height:48px;border-radius:12px;border:1px solid #DCE5EC;padding:0 14px;font-size:16px" />
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:14px;font-weight:600">Organization type</label>
+          <select value="{{ suOrgType }}" onChange="{{ onSuOrgTypeChange }}" style="height:48px;border-radius:12px;border:1px solid #DCE5EC;padding:0 14px;font-size:16px;background:#FFFFFF">
+            <option value="">Select one</option>
+            <option value="Coastal/Marine Authority">Coastal/Marine Authority</option>
+            <option value="Research Institution">Research Institution</option>
+            <option value="Development / Environmental Team">Development / Environmental Team</option>
+            <option value="NGO / Non-profit">NGO / Non-profit</option>
+            <option value="Dive Operator / Tourism">Dive Operator / Tourism</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <label style="font-size:14px;font-weight:600">What would you like to use the platform for? <span style="color:#46566D;font-weight:400">(optional)</span></label>
+          <textarea value="{{ suUseCase }}" onChange="{{ onSuUseCaseChange }}" rows="3" style="border-radius:12px;border:1px solid #DCE5EC;padding:12px 14px;font-size:16px;resize:vertical"></textarea>
+        </div>
+        <label style="display:flex;align-items:flex-start;gap:10px;font-size:14px;color:#46566D;cursor:pointer">
+          <input type="checkbox" checked="{{ suAgree }}" onChange="{{ onSuAgreeChange }}" style="margin-top:3px;width:16px;height:16px" />
+          I agree to the Terms of Use and Data Policy
+        </label>
+        <sc-if value="{{ suAgreeError }}" hint-placeholder-val="{{ null }}"><div style="font-size:13px;color:#C0392B">{{ suAgreeError }}</div></sc-if>
+        <button onClick="{{ handleSignupSubmit }}" style="height:48px;border-radius:12px;border:none;background:#0A1F4D;color:#FFFFFF;font-size:16px;font-weight:700;width:100%;margin-top:4px">Submit Request</button>
+      </div>
+      <div style="text-align:center;font-size:14px;color:#46566D">Already have access? <a onClick="{{ goLogin }}" href="javascript:void(0)" style="color:#00B7C3;font-weight:600">Sign In</a></div>
+    </div>
+  </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDashboard }}" hint-placeholder-val="{{ false }}">
+<div class="aq-dash-grid" style="display:flex;flex-direction:column;min-height:100vh;background:#F4F7FA">
+  <div style="width:100%;background:#0A1F4D;color:#FFFFFF;padding:28px 20px;display:flex;flex-direction:column;gap:28px" class="aq-dash-sidebar">
+    <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onClick="{{ goHome }}">
+      <svg width="26" height="24" viewBox="0 0 100 92" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M50 4 L96 88 L4 88 Z" fill="#00B7C3"/><path d="M50 44 L66 78 L34 78 Z" fill="#0A1F4D"/></svg>
+      <div style="font-weight:700;letter-spacing:0.06em;font-size:14px">AQABA AQUA AI</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.12);font-size:14px;font-weight:600"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" fill="#00B7C3"/><rect x="9" y="2" width="5" height="5" fill="#00B7C3" opacity="0.5"/><rect x="2" y="9" width="5" height="5" fill="#00B7C3" opacity="0.5"/><rect x="9" y="9" width="5" height="5" fill="#00B7C3" opacity="0.3"/></svg>Overview</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;color:#E6F7FA"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#E6F7FA" stroke-width="1.6"/><path d="M8 4 L8 8 L11 10" fill="none" stroke="#E6F7FA" stroke-width="1.6" stroke-linecap="round"/></svg>Live Forecast</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;color:#E6F7FA"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 12 Q5 6 8 12 Q11 18 14 12" fill="none" stroke="#E6F7FA" stroke-width="1.6"/></svg>Storm Replay</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;color:#E6F7FA"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 2 L14 14 L2 14 Z" fill="none" stroke="#E6F7FA" stroke-width="1.6"/></svg>Reef Zones</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;color:#E6F7FA"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#E6F7FA" stroke-width="1.6"/></svg>Dive Sites</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;color:#E6F7FA"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="3" y="2" width="10" height="12" fill="none" stroke="#E6F7FA" stroke-width="1.6"/><line x1="5" y1="6" x2="11" y2="6" stroke="#E6F7FA" stroke-width="1.4"/><line x1="5" y1="9" x2="11" y2="9" stroke="#E6F7FA" stroke-width="1.4"/></svg>Reports</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;color:#E6F7FA"><svg width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6" fill="none" stroke="#E6F7FA" stroke-width="1.6"/><line x1="8" y1="6" x2="8" y2="9" stroke="#E6F7FA" stroke-width="1.6"/><circle cx="8" cy="11.2" r="0.6" fill="#E6F7FA"/></svg>Explain / Ask</div>
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:14px;color:#E6F7FA"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M2 14 L2 9 L8 4 L14 9 L14 14 Z" fill="none" stroke="#E6F7FA" stroke-width="1.6"/></svg>Honest Limits</div>
+    </div>
+    <div style="margin-top:auto;display:flex;flex-direction:column;gap:10px;padding-top:16px;border-top:1px solid rgba(255,255,255,.15)">
+      <div style="font-size:12px;color:#E6F7FA;opacity:0.7">Signed in as</div>
+      <div style="font-size:14px;font-weight:600">Coastal Authority Demo</div>
+      <a onClick="{{ goHome }}" href="javascript:void(0)" style="font-size:13px;color:#00B7C3">← Back to site</a>
+    </div>
+  </div>
+
+  <div style="flex:1;padding:clamp(20px,4vw,40px);display:flex;flex-direction:column;gap:32px;max-width:1320px;width:100%;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
+      <div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <h1 style="font-size:28px;font-weight:700;margin:0">Overview</h1>
+          <div style="display:flex;align-items:center;gap:6px;background:#E6F7FA;border-radius:999px;padding:4px 12px 4px 8px">
+            <span style="width:6px;height:6px;border-radius:50%;background:#00B7C3;display:inline-block;animation:aqPulse 1.6s ease-in-out infinite"></span>
+            <span style="font-size:12px;font-weight:700;color:#007A99;letter-spacing:0.04em">LIVE</span>
+          </div>
+        </div>
+        <div style="font-size:14px;color:#46566D;margin-top:4px">Platform preview — built from the current feature set. 25 live, 15 in progress.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;background:#FFFFFF;border:1px solid #DCE5EC;border-radius:10px;padding:4px">
+        <button onClick="{{ setDashLangEN }}" style="height:32px;padding:0 14px;border-radius:8px;border:none;font-size:13px;font-weight:600;background:{{ langEnBg }};color:{{ langEnColor }}">EN</button>
+        <button onClick="{{ setDashLangAR }}" style="height:32px;padding:0 14px;border-radius:8px;border:none;font-size:13px;font-weight:600;background:{{ langArBg }};color:{{ langArColor }}">AR</button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;color:#46566D">LIVE STATUS</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px">
+        <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#0A1F4D 0%,#0D3D7A 45%,#007A99 100%);border-radius:20px;padding:24px;color:#FFFFFF;display:flex;flex-direction:column;gap:8px;box-shadow:0 12px 32px rgba(0,183,195,.28),0 4px 16px rgba(10,31,77,.2)">
+          <svg width="140" height="140" viewBox="0 0 140 140" style="position:absolute;right:-30px;top:-40px;opacity:0.5"><circle cx="70" cy="70" r="70" fill="none" stroke="#00B7C3" stroke-width="1.5" opacity="0.5"/><circle cx="70" cy="70" r="52" fill="none" stroke="#00B7C3" stroke-width="1.5" opacity="0.3"/></svg>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:7px;height:7px;border-radius:50%;background:#00B7C3;display:inline-block;box-shadow:0 0 0 4px rgba(0,183,195,.25);animation:aqPulse 1.6s ease-in-out infinite"></span>
+            <div style="font-size:13px;font-weight:700;letter-spacing:0.06em;color:#00B7C3">8-HOUR COUNTDOWN</div>
+          </div>
+          <div style="font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:0.02em">{{ countdownDisplay }}</div>
+          <div style="font-size:13px;color:#E6F7FA">until estimated sediment arrival</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">Live Forecast Mode</div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#46566D"><span style="width:7px;height:7px;border-radius:50%;border:1.5px dashed #46566D;display:inline-block"></span>In progress</div></div>
+          <div style="font-size:13px;color:#46566D">Cache chain real; full-pipeline survival unconfirmed.</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">Confidence Meter</div><div style="font-size:20px;font-weight:700;color:#007A99">78%</div></div>
+          <div style="width:100%;height:8px;background:#E6F7FA;border-radius:4px;overflow:hidden"><div style="width:78%;height:100%;background:#00B7C3"></div></div>
+          <div style="font-size:12px;color:#46566D">Formula real; definition pending sign-off</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">Storm Replay Mode</div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#46566D"><span style="width:7px;height:7px;border-radius:50%;border:1.5px dashed #46566D;display:inline-block"></span>In progress</div></div>
+          <div style="font-size:13px;color:#46566D">Forcing fully real; replay composition unconfirmed.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;color:#46566D">FORECAST INTELLIGENCE</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px">
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Top Weather Drivers</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#46566D"><span style="width:70px">Rainfall</span><div style="flex:1;height:6px;background:#E6F7FA;border-radius:3px"><div style="width:88%;height:100%;background:#0A1F4D;border-radius:3px"></div></div></div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#46566D"><span style="width:70px">Soil sat.</span><div style="flex:1;height:6px;background:#E6F7FA;border-radius:3px"><div style="width:64%;height:100%;background:#0D3D7A;border-radius:3px"></div></div></div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#46566D"><span style="width:70px">Tide</span><div style="flex:1;height:6px;background:#E6F7FA;border-radius:3px"><div style="width:41%;height:100%;background:#007A99;border-radius:3px"></div></div></div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#46566D"><span style="width:70px">Wind</span><div style="flex:1;height:6px;background:#E6F7FA;border-radius:3px"><div style="width:22%;height:100%;background:#00B7C3;border-radius:3px"></div></div></div>
+          </div>
+          <div style="font-size:12px;color:#46566D">Real SHAP drivers, live</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Rain Intensity Ranking</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+            <div style="display:flex;justify-content:space-between"><span>Wadi Kamar</span><span style="color:#0A1F4D;font-weight:700">1</span></div>
+            <div style="display:flex;justify-content:space-between"><span>Wadi Yutum</span><span style="color:#0A1F4D;font-weight:700">2</span></div>
+            <div style="display:flex;justify-content:space-between"><span>Wadi Ghadian</span><span style="color:#0A1F4D;font-weight:700">3</span></div>
+          </div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Multi-Source Weather Agreement</div>
+          <div style="display:flex;gap:8px"><span style="width:14px;height:14px;border-radius:50%;background:#00B7C3;display:inline-block"></span><span style="width:14px;height:14px;border-radius:50%;background:#00B7C3;display:inline-block"></span><span style="width:14px;height:14px;border-radius:50%;background:#00B7C3;display:inline-block"></span></div>
+          <div style="font-size:12px;color:#46566D">GFS, GEFS and HYCOM in agreement</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Rainfall Accumulation</div>
+          <div style="display:flex;align-items:flex-end;gap:4px;height:44px">
+            <div style="width:10px;height:30%;background:#00B7C3;border-radius:2px"></div><div style="width:10px;height:50%;background:#00B7C3;border-radius:2px"></div><div style="width:10px;height:75%;background:#007A99;border-radius:2px"></div><div style="width:10px;height:100%;background:#0D3D7A;border-radius:2px"></div><div style="width:10px;height:60%;background:#007A99;border-radius:2px"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;color:#46566D">REEF &amp; COASTAL RISK</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px">
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Named Reef Zone Priority</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#46566D">
+            <div style="display:flex;justify-content:space-between;align-items:center">Ras Al Khan <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#0A1F4D;display:inline-block"></span>High</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center">Al Mamlah <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#007A99;display:inline-block"></span>Medium</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center">Tala Bay <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#00B7C3;display:inline-block"></span>Low</span></div>
+          </div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Dive Site Safety Status</div>
+          <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#46566D">
+            <div style="display:flex;justify-content:space-between">Japanese Garden <span style="color:#007A99;font-weight:600">Caution</span></div>
+            <div style="display:flex;justify-content:space-between">Cedar Pride <span style="color:#00B7C3;font-weight:600">Open</span></div>
+          </div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Enclosed Harbor Warning</div>
+          <div style="display:flex;align-items:center;gap:10px"><svg width="20" height="20" viewBox="0 0 20 20"><rect x="4" y="3" width="2" height="14" fill="#0A1F4D"/><path d="M6 4 L16 6 L6 9 Z" fill="#00B7C3"/></svg><span style="font-size:13px;color:#46566D">1 zone flagged for reduced flushing</span></div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Culvert &amp; Drainage Map</div>
+          <div style="font-size:13px;color:#46566D">Corrected routing applied for 6 crossings</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;color:#46566D">TRUST &amp; EXPLAINABILITY</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px">
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:8px">
+          <div style="font-size:15px;font-weight:600">"AI Never Saw This Storm"</div>
+          <div style="font-size:28px;font-weight:700;color:#007A99">AP 0.5923</div>
+          <div style="font-size:12px;color:#46566D">Temporal-holdout validation, Oct-2016 event</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Simple Guess vs Smart Guess</div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:#46566D">
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:80px">Simple</span><div style="flex:1;height:6px;background:#E6F7FA;border-radius:3px"><div style="width:35%;height:100%;background:#DCE5EC;border-radius:3px"></div></div></div>
+            <div style="display:flex;align-items:center;gap:8px"><span style="width:80px">Smart</span><div style="flex:1;height:6px;background:#E6F7FA;border-radius:3px"><div style="width:82%;height:100%;background:#00B7C3;border-radius:3px"></div></div></div>
+          </div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">Real Sensor Proof Overlay</div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#46566D"><span style="width:7px;height:7px;border-radius:50%;border:1.5px dashed #46566D;display:inline-block"></span>In progress</div></div>
+          <div style="font-size:13px;color:#46566D">Mooring endpoint live; UI wiring pending.</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">Transmission Loss Check</div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#46566D"><span style="width:7px;height:7px;border-radius:50%;border:1.5px dashed #46566D;display:inline-block"></span>In progress</div></div>
+          <div style="font-size:13px;color:#46566D">Backend override done; UI pending.</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px;justify-content:space-between">
+          <div style="font-size:15px;font-weight:600">Honest Limits Page</div>
+          <a href="#" style="font-size:13px;color:#00B7C3;font-weight:600">View documented limitations →</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div style="font-size:13px;font-weight:700;letter-spacing:0.08em;color:#46566D">TOOLS &amp; ACCESS</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:20px">
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">What-If Scenario Presets</div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#46566D"><span style="width:7px;height:7px;border-radius:50%;border:1.5px dashed #46566D;display:inline-block"></span>In progress</div></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:12px;padding:5px 10px;border-radius:8px;background:#F4F7FA;color:#46566D">Heavy rain</span><span style="font-size:12px;padding:5px 10px;border-radius:8px;background:#F4F7FA;color:#46566D">Dry season</span><span style="font-size:12px;padding:5px 10px;border-radius:8px;background:#F4F7FA;color:#46566D">Worst case</span></div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">3D Journey</div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#46566D"><span style="width:7px;height:7px;border-radius:50%;border:1.5px dashed #46566D;display:inline-block"></span>In progress</div></div>
+          <div style="font-size:13px;color:#46566D">Real DEM + bathymetry + Esri terrain live</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Historical Event Search</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="font-size:12px;padding:5px 10px;border-radius:8px;background:#E6F7FA;color:#007A99">Oct 2016</span><span style="font-size:12px;padding:5px 10px;border-radius:8px;background:#E6F7FA;color:#007A99">2004 storm</span></div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Seasonal Risk Calendar</div>
+          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:4px">
+            <div style="height:8px;border-radius:2px;background:#DCE5EC"></div><div style="height:8px;border-radius:2px;background:#DCE5EC"></div><div style="height:8px;border-radius:2px;background:#00B7C3"></div><div style="height:8px;border-radius:2px;background:#007A99"></div><div style="height:8px;border-radius:2px;background:#0D3D7A"></div><div style="height:8px;border-radius:2px;background:#DCE5EC"></div>
+          </div>
+          <div style="font-size:12px;color:#46566D">Risk builds through autumn storm season</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:15px;font-weight:600">Offline Emergency Mode</div><div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#46566D"><span style="width:7px;height:7px;border-radius:50%;border:1.5px dashed #46566D;display:inline-block"></span>In progress</div></div>
+          <div style="font-size:13px;color:#46566D">Physical wifi-off checks unconfirmed</div>
+        </div>
+        <div class="aq-card" style="background:#FFFFFF;border:1px solid #DCE5EC;border-radius:20px;padding:24px;box-shadow:0 4px 16px rgba(10,31,77,.06);transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:15px;font-weight:600">Bilingual Assistant</div>
+          <div style="font-size:13px;color:#46566D">Ask questions in {{ dashLangLabel }} — answers are deterministic, no LLM</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;ssoEnabled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Login&quot;}}">
+class Component extends DCLogic {
+  state = {
+    page: 'home',
+    navScrolled: false,
+    loginEmail: '', loginPassword: '', showPassword: false,
+    loginEmailError: null, loginPasswordError: null,
+    suFullName: '', suEmail: '', suOrg: '', suRole: '', suOrgType: '', suUseCase: '',
+    suAgree: false, suEmailError: null, suAgreeError: null,
+    signupSubmitted: false,
+    countdownSeconds: 8 * 3600 - 1065,
+    dashLang: 'EN'
+  };
+
+  componentDidMount() {
+    this._onScroll = () => this.setState({ navScrolled: window.scrollY > 8 });
+    window.addEventListener('scroll', this._onScroll);
+    this._countdownTimer = setInterval(() => {
+      this.setState(s => ({ countdownSeconds: s.countdownSeconds > 0 ? s.countdownSeconds - 1 : 8 * 3600 }));
+    }, 1000);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this._onScroll);
+    clearInterval(this._countdownTimer);
+  }
+
+  emailLooksValid(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+
+  handleLoginSubmit = () => {
+    let emailError = null, passwordError = null;
+    if (!this.state.loginEmail.trim()) emailError = 'Email is required.';
+    else if (!this.emailLooksValid(this.state.loginEmail)) emailError = 'Enter a valid email address.';
+    if (!this.state.loginPassword) passwordError = 'Password is required.';
+    this.setState({ loginEmailError: emailError, loginPasswordError: passwordError });
+  };
+
+  handleSignupSubmit = () => {
+    let emailError = null, agreeError = null;
+    if (!this.state.suEmail.trim()) emailError = 'Work email is required.';
+    else if (!this.emailLooksValid(this.state.suEmail)) emailError = 'Enter a valid email address.';
+    if (!this.state.suAgree) agreeError = 'You must agree to continue.';
+    this.setState({ suEmailError: emailError, suAgreeError: agreeError });
+    if (!emailError && !agreeError && this.state.suFullName.trim() && this.state.suOrg.trim()) {
+      this.setState({ signupSubmitted: true });
+    }
+  };
+
+  renderVals() {
+    const s = this.state;
+    // Error color per brand guide gap: guideline doesn't specify an error color.
+    // Using #C0392B (sufficient AA contrast on white/surface) — confirm with design system owner.
+    return {
+      isHome: s.page === 'home',
+      isLogin: s.page === 'login',
+      isSignup: s.page === 'signup',
+      isDashboard: s.page === 'dashboard',
+      goHome: () => this.setState({ page: 'home' }),
+      goLogin: () => this.setState({ page: 'login', loginEmailError: null, loginPasswordError: null }),
+      goSignup: () => this.setState({ page: 'signup', signupSubmitted: false, suEmailError: null, suAgreeError: null }),
+      goDashboard: () => this.setState({ page: 'dashboard' }),
+      countdownDisplay: (() => {
+        const t = s.countdownSeconds;
+        const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), sec = t % 60;
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+      })(),
+      setDashLangEN: () => this.setState({ dashLang: 'EN' }),
+      setDashLangAR: () => this.setState({ dashLang: 'AR' }),
+      dashLangLabel: s.dashLang === 'EN' ? 'English' : 'Arabic',
+      langEnBg: s.dashLang === 'EN' ? '#0A1F4D' : 'transparent',
+      langEnColor: s.dashLang === 'EN' ? '#FFFFFF' : '#46566D',
+      langArBg: s.dashLang === 'AR' ? '#0A1F4D' : 'transparent',
+      langArColor: s.dashLang === 'AR' ? '#FFFFFF' : '#46566D',
+      navStyle: 'position:sticky;top:0;z-index:50;transition:box-shadow .2s;background:#FFFFFF;box-shadow:' +
+        (s.navScrolled ? '0 4px 12px rgba(10,31,77,.08)' : 'none'),
+      navTextColor: '#0A1F4D',
+
+      loginEmail: s.loginEmail,
+      onLoginEmailChange: (e) => this.setState({ loginEmail: e.target.value }),
+      loginEmailBorder: s.loginEmailError ? '#C0392B' : '#DCE5EC',
+      loginEmailError: s.loginEmailError,
+      loginPassword: s.loginPassword,
+      onLoginPasswordChange: (e) => this.setState({ loginPassword: e.target.value }),
+      loginPasswordBorder: s.loginPasswordError ? '#C0392B' : '#DCE5EC',
+      loginPasswordError: s.loginPasswordError,
+      loginPasswordFieldType: s.showPassword ? 'text' : 'password',
+      showPassword: s.showPassword,
+      notShowPassword: !s.showPassword,
+      toggleShowPassword: () => this.setState({ showPassword: !s.showPassword }),
+      ssoEnabled: this.props.ssoEnabled ?? true,
+
+      suFullName: s.suFullName, onSuFullNameChange: (e) => this.setState({ suFullName: e.target.value }),
+      suEmail: s.suEmail, onSuEmailChange: (e) => this.setState({ suEmail: e.target.value }),
+      suEmailBorder: s.suEmailError ? '#C0392B' : '#DCE5EC', suEmailError: s.suEmailError,
+      suOrg: s.suOrg, onSuOrgChange: (e) => this.setState({ suOrg: e.target.value }),
+      suRole: s.suRole, onSuRoleChange: (e) => this.setState({ suRole: e.target.value }),
+      suOrgType: s.suOrgType, onSuOrgTypeChange: (e) => this.setState({ suOrgType: e.target.value }),
+      suUseCase: s.suUseCase, onSuUseCaseChange: (e) => this.setState({ suUseCase: e.target.value }),
+      suAgree: s.suAgree, onSuAgreeChange: (e) => this.setState({ suAgree: e.target.checked }),
+      suAgreeError: s.suAgreeError,
+      handleLoginSubmit: this.handleLoginSubmit,
+      handleSignupSubmit: this.handleSignupSubmit,
+      signupSubmitted: s.signupSubmitted,
+      signupNotSubmitted: !s.signupSubmitted
+    };
+  }
+}
+</script>
+</body>
+</html>

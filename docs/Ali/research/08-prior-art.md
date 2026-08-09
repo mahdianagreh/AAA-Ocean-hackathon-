@@ -167,7 +167,7 @@ should we sample tomorrow morning?" That question is unowned everywhere I looked
 
 ### The defensible novelty statement
 
-Replacing the placeholder in [`reefshield_aqaba_concept.md`](../../../reefshield_aqaba_concept.md)
+Replacing the placeholder in [`aqaba_aqua_ai_concept.md`](../../../aqaba_aqua_ai_concept.md)
 §5.2, this is what the search supports:
 
 > **Every component of ReefShield exists somewhere.** Flood forecasting, plume transport

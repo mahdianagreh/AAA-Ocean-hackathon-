@@ -16,7 +16,7 @@ type JourneyMapHandle = {
 };
 
 async function openJourney(page: Page) {
-  await page.goto('/?theme=light&lang=en');
+  await page.goto('/dashboard?theme=light&lang=en');
   await page.waitForSelector('[data-map="true"] canvas', { timeout: 30_000 });
   await page.locator('[data-open-overlay="journey"]').click();
   const panel = page.locator('[data-overlay="journey"]');

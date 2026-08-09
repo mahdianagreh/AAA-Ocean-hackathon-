@@ -1,4 +1,4 @@
-# ReefShield Pipeline Capability Report
+# AQABA AQUA AI Pipeline Capability Report
 
 What the rainfall and land-reanalysis pipeline can do, what it has been proven
 to do, and what remains. Written against the generic (event-agnostic) pipeline.

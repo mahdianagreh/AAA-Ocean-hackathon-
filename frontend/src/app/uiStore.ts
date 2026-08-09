@@ -70,11 +70,57 @@ interface UiState {
   resetScenario: () => void;
 }
 
+/** Language and theme survive a reload; mode does not.
+ *
+ *  The Account page offers a language preference, and a preference that resets
+ *  on navigation is not a preference. Mode is deliberately excluded — it is a
+ *  property of what you are currently looking at, not of who you are.
+ *
+ *  Wrapped because localStorage throws outright in Safari private mode and
+ *  under some embedded webviews, and a preference is never worth a blank page.
+ *  The Playwright specs drive language through ?lang=, so the URL must still
+ *  win over the stored value or every spec would inherit the previous run's
+ *  choice — hence the read order in fromUrl(). */
+const STORE_KEY = 'aq.prefs';
+
+function readStored(): { lang?: Lang; theme?: ThemeChoice } {
+  try {
+    const raw = window.localStorage.getItem(STORE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as { lang?: string; theme?: string };
+    return {
+      lang: parsed.lang === 'ar' || parsed.lang === 'en' ? parsed.lang : undefined,
+      theme:
+        parsed.theme === 'dark' || parsed.theme === 'light' || parsed.theme === 'system'
+          ? parsed.theme
+          : undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function persist(patch: { lang?: Lang; theme?: ThemeChoice }) {
+  try {
+    window.localStorage.setItem(STORE_KEY, JSON.stringify({ ...readStored(), ...patch }));
+  } catch {
+    // Storage unavailable or full. The in-memory choice still applies for this
+    // session, which is the part the user can actually see.
+  }
+}
+
 function fromUrl(): { lang: Lang; theme: ThemeChoice; mode: Mode } {
   const p = new URLSearchParams(window.location.search);
-  const lang = p.get('lang') === 'ar' ? 'ar' : 'en';
+  const stored = readStored();
+
+  // URL beats storage beats default, so a shared link always shows what it says.
+  const urlLang = p.get('lang');
+  const lang: Lang = urlLang === 'ar' ? 'ar' : urlLang === 'en' ? 'en' : (stored.lang ?? 'en');
+
   const t = p.get('theme');
-  const theme: ThemeChoice = t === 'dark' || t === 'light' ? t : 'system';
+  const theme: ThemeChoice =
+    t === 'dark' || t === 'light' ? t : (stored.theme ?? 'system');
+
   const m = p.get('mode');
   const mode: Mode =
     m === 'forecast' || m === 'scenario' || m === 'historical' ? m : 'historical';
@@ -105,8 +151,14 @@ export const useUi = create<UiState>((set) => ({
     labels: true,
   },
 
-  setTheme: (theme) => set({ theme }),
-  setLang: (lang) => set({ lang }),
+  setTheme: (theme) => {
+    persist({ theme });
+    set({ theme });
+  },
+  setLang: (lang) => {
+    persist({ lang });
+    set({ lang });
+  },
 
   /** 03 §2: "Mode switching preserves the time cursor where the ranges overlap
    *  and clamps otherwise, rather than resetting to zero. Resetting loses the

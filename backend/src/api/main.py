@@ -778,16 +778,25 @@ def currents_agreement(
         raise HTTPException(
             503, f"No cached current data at {hycom_path} for this window."
         )
+    if not copernicus_path.exists():
+        raise HTTPException(
+            503, f"No cached current data at {copernicus_path} for this window."
+        )
 
     try:
         parsed_time = np.datetime64(time)
     except ValueError as exc:
         raise HTTPException(422, f"unparseable time {time!r}: {exc}") from exc
 
-    comparison = oc.compare_hycom_vs_copernicus(
-        lon=lon, lat=lat, time=parsed_time,
-        hycom_path=hycom_path, copernicus_path=copernicus_path,
-    )
+    try:
+        comparison = oc.compare_hycom_vs_copernicus(
+            lon=lon, lat=lat, time=parsed_time,
+            hycom_path=hycom_path, copernicus_path=copernicus_path,
+        )
+    except OSError as exc:
+        # A truncated/corrupt .nc file passes the .exists() guard above but
+        # still fails to open -- same "degrade honestly" contract, not a 500.
+        raise HTTPException(503, f"Cached current data unreadable: {exc}") from exc
     # NaN, not None, when a point/time falls outside a cached grid's resolved
     # cells or its time range (e.g. the "recent" cache aging past its fetch
     # window). A gap is a gap, per the project's standing rule -- and it's what

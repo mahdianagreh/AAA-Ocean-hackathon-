@@ -46,6 +46,10 @@ data/raw/srtm/
 data/processed/dem/*.tif
 data/processed/**/*.tif
 
+# GDAL statistics sidecars. Derived from the raster on first read, regenerated
+# automatically, and they churn whenever anyone opens the file in QGIS.
+*.aux.xml
+
 # OS
 .DS_Store
 

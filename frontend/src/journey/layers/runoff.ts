@@ -53,7 +53,7 @@ export function runoffFragment(c: Palette) {
         source: 'runoff',
         layout: { 'line-cap': 'round' as const },
         paint: {
-          'line-color': '#ffffff',
+          'line-color': '#ffffff', // token-ok: reads against satellite photo, not app chrome
           'line-width': 6,
           'line-opacity': 0.55,
         },

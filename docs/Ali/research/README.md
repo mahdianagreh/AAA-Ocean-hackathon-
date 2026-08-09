@@ -27,7 +27,7 @@
 
 ## Why this exists
 
-The concept doc, [`reefshield_aqaba_concept.md`](../../../reefshield_aqaba_concept.md) §5.2,
+The concept doc, [`aqaba_aqua_ai_concept.md`](../../../aqaba_aqua_ai_concept.md) §5.2,
 forbids claiming novelty without doing the search:
 
 > The team should **not** claim global uniqueness unless a formal patent and literature

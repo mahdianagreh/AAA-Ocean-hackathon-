@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "ReefShield",
+    "name": "AQABA AQUA AI",
     "place": "Aqaba",
     "tagline": "Wadi-to-reef sediment forecasting"
   },
@@ -314,5 +314,200 @@
     "stepper": "Prediction timestep",
     "rendering": "Rendering the next frame…",
     "caveat": "Real Esri satellite imagery and real Allen Coral Atlas reef outlines. The plume contours are the model's own output — nothing in this image is generated."
+  },
+  "landing": {
+    "nav": {
+      "label": "Primary",
+      "home": "AQABA AQUA AI — home",
+      "howItWorks": "How it works",
+      "dataSources": "Data Sources",
+      "platformPreview": "Platform Preview",
+      "login": "Login",
+      "getAccess": "Get Access"
+    },
+    "hero": {
+      "eyebrow": "MARINE INTELLIGENCE FOR THE GULF OF AQABA",
+      "title": "See the flood before it reaches the reef.",
+      "body": "AQABA AQUA AI forecasts flash-flood sediment risk to Gulf of Aqaba coral reefs — connecting rainfall, terrain, and ocean currents into one early-warning system, hours before the sediment arrives.",
+      "getAccess": "Get Access",
+      "seeHow": "See How It Works",
+      "stats": {
+        "rainfall": {
+          "value": "27mm",
+          "label": "mean annual rainfall"
+        },
+        "sediment": {
+          "value": "24,400t",
+          "label": "sediment moved in a single 2016 event"
+        },
+        "reefZones": {
+          "value": "8",
+          "label": "reef zones tracked"
+        },
+        "forecasting": {
+          "value": "Live",
+          "label": "GFS + GEFS forecasting"
+        }
+      }
+    },
+    "problem": {
+      "title": "A flood in the desert is a marine event. Nothing treats it as one.",
+      "body": "Rain over the mountains doesn't soak into the desert — the ground is too hard, too dry. It becomes a fast-moving flood within hours. That flood carries a huge sediment load down the wadis and straight into the sea. The sediment smothers the reef before anyone on the coast knows it's coming.",
+      "chainLabel": "From rainfall to reef",
+      "chain": {
+        "rainfall": "Rainfall",
+        "wadiFlow": "Wadi Flow",
+        "seaEntry": "Sea Entry",
+        "reef": "Reef"
+      }
+    },
+    "how": {
+      "title": "Five real signals, one prediction.",
+      "rainfall": {
+        "title": "Rainfall Forecasting",
+        "body": "Live satellite and ensemble weather data, tracked per catchment."
+      },
+      "runoff": {
+        "title": "Runoff Modeling",
+        "body": "Trained on real terrain, soil, and historical storm data."
+      },
+      "sediment": {
+        "title": "Sediment Estimation",
+        "body": "Anchored to a real, documented flood event."
+      },
+      "plume": {
+        "title": "Plume Transport",
+        "body": "Ocean current and particle modeling shows where sediment spreads."
+      },
+      "exposure": {
+        "title": "Reef Exposure",
+        "body": "Named reef zones scored by real, explainable risk."
+      }
+    },
+    "validation": {
+      "title": "Validated against real, measured data — not assumptions.",
+      "claim": "Model correctly ranked the real October 2016 flood as the highest-risk storm in 26 years — without ever training on it.",
+      "sensor": "Real sensor validation",
+      "openData": "Open data only",
+      "limitations": "Every limitation documented"
+    },
+    "cta": {
+      "title": "Built for the people protecting this coastline.",
+      "body": "Coastal authorities, researchers, and dive operators — request access to the live dashboard.",
+      "button": "Request Access"
+    },
+    "footer": {
+      "platform": "PLATFORM",
+      "project": "PROJECT",
+      "contact": "CONTACT",
+      "dataDictionary": "Data Dictionary",
+      "limitations": "Limitations",
+      "validation": "Validation",
+      "legal": "AQABA AQUA AI — Marine Intelligence, Environmental AI, Ocean Technology"
+    }
+  },
+  "auth": {
+    "backToSite": "Back to site",
+    "notice": {
+      "title": "Account sign-in is not available yet",
+      "body": "This platform has no authentication backend — no accounts, no sessions, and no credential is ever checked. The form below validates what you type and stops there: nothing is sent anywhere, and signing in does not open anything. The dashboard is currently open access and needs no account.",
+      "openDashboard": "Open the dashboard — no account needed"
+    },
+    "aside": {
+      "loginHeadline": "Forecasting flash-flood sediment risk before it reaches the reef.",
+      "loginFoot": "Validated against the real October 2016 flood event — ranked highest-risk in 26 years.",
+      "signupHeadline": "Join the coastal authorities, researchers, and dive operators protecting the Gulf.",
+      "signupFoot": "Real sensor validation · Open data only · Every limitation documented",
+      "sedimentLabel": "sediment moved in 2016"
+    },
+    "errors": {
+      "prefix": "Error:",
+      "emailRequired": "Email is required.",
+      "workEmailRequired": "Work email is required.",
+      "emailInvalid": "Enter a valid email address.",
+      "passwordRequired": "Password is required.",
+      "nameRequired": "Full name is required.",
+      "orgRequired": "Organization name is required.",
+      "agreeRequired": "You must agree to continue."
+    },
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your AQABA AQUA AI dashboard",
+      "email": "Email",
+      "emailPlaceholder": "you@organization.org",
+      "password": "Password",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "forgotPassword": "Password reset is unavailable — there are no accounts to reset.",
+      "submit": "Sign In",
+      "unavailableStatus": "Your details are well-formed, but nothing was submitted: there is no sign-in service behind this form.",
+      "or": "or",
+      "sso": "Continue with organization SSO",
+      "ssoUnavailable": "Organization SSO is not connected to any identity provider.",
+      "noAccess": "Don't have access yet?",
+      "requestAccess": "Request Access"
+    },
+    "signup": {
+      "title": "Request Access",
+      "subtitle": "AQABA AQUA AI is currently available to coastal authorities, research institutions, and development partners. Tell us about your organization.",
+      "noticeBody": "There is no backend to receive this request yet. Everything you type stays in this browser tab and is lost when you close it — nothing is emailed, stored, or sent to the team.",
+      "fullName": "Full name",
+      "email": "Work email",
+      "org": "Organization name",
+      "role": "Role / title",
+      "orgType": "Organization type",
+      "orgTypeSelect": "Select one",
+      "orgTypes": {
+        "authority": "Coastal/Marine Authority",
+        "research": "Research Institution",
+        "development": "Development / Environmental Team",
+        "ngo": "NGO / Non-profit",
+        "dive": "Dive Operator / Tourism",
+        "other": "Other"
+      },
+      "useCase": "What would you like to use the platform for?",
+      "optional": "(optional)",
+      "agree": "I agree to the Terms of Use and Data Policy",
+      "submit": "Submit Request",
+      "receivedTitle": "Request received",
+      "receivedBody": "Once the platform is live, our team will review requests and follow up by email within a few business days.",
+      "notTransmitted": "This confirmation is local to your browser. The request was NOT transmitted: no intake service exists yet, so no one has received it and no email will follow. Nothing you typed left this page.",
+      "haveAccess": "Already have access?",
+      "signIn": "Sign In"
+    }
+  },
+  "forecast": {
+    "title": "Forecast (cached)",
+    "model": {
+      "gfs": "GFS",
+      "gefs": "GEFS (30-member)"
+    },
+    "noScoreYet": "This mode shows the cached forecast — rainfall, wind and ensemble exceedance. It does not yet produce a reef exposure score.",
+    "rainfall": "Rainfall per catchment",
+    "exceedance": "{{n}} of {{total}} members exceed the threshold",
+    "unreachable": "Forecast data is not available right now.",
+    "anomalyTitle": "Anomaly signal",
+    "anomalyDetected": "Unusual pattern detected in {{count}} catchment(s)",
+    "anomalyQuiet": "No unusual pattern detected in the current forecast.",
+    "sparklineLabel": "Rolling forecast anomaly score by catchment",
+    "percentileBand": {
+      "below_p50": "below the median",
+      "above_p50": "above the median",
+      "above_p90": "above the 90th percentile",
+      "above_p95": "above the 95th percentile",
+      "above_p99": "above the 99th percentile",
+      "above_p99_9": "above the 99.9th percentile"
+    },
+    "currentsTitle": "Multi-source current agreement",
+    "currentsDisagreement": "HYCOM vs. Copernicus Marine direction difference",
+    "currentsAgreementScore": "Agreement (0–1)",
+    "currentsUnavailable": "Currents comparison is not available right now."
+  },
+  "countdown": {
+    "title": "Estimated arrival",
+    "label": "Time to plume arrival",
+    "arrived": "The estimated arrival window has passed.",
+    "noWindow": "No arrival window is available for this view.",
+    "localArrival": "≈ {{time}} local time"
   }
 }

@@ -53,8 +53,8 @@ export function transportPaint(c?: Palette) {
   return {
     'fill-extrusion-color': [
       'interpolate', ['linear'], ['get', 'probability'],
-      0.1, c?.data_modelled ?? '#8a9a7a',
-      0.75, c?.accent ?? '#3a8a6a',
+      0.1, c?.data_modelled ?? '#8a9a7a', // token-ok: unreachable fallback, palette is always supplied
+      0.75, c?.accent ?? '#3a8a6a', // token-ok: unreachable fallback, palette is always supplied
     ] as unknown as string,
     'fill-extrusion-base': 0,
     'fill-extrusion-height': [

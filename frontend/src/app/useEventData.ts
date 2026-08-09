@@ -70,6 +70,17 @@ export function useRiskCards(data: EventData | null) {
   return useMemo(() => {
     if (!data) return [];
 
+    // Belt and braces after the 8 Aug blank-dashboard bug: the http client
+    // unwrapped an envelope the API does not send, so `catchments` arrived
+    // undefined and the .map() below threw inside a useMemo — which unmounts the
+    // whole tree and leaves a bare background, with a stack pointing here rather
+    // than at the client that produced the bad value. The client is fixed; this
+    // makes the same class of mistake render an empty rail instead of nothing.
+    if (!Array.isArray(data.catchments)) {
+      console.error('[risk] catchments is not an array; rendering no cards.', data.catchments);
+      return [];
+    }
+
     // Real model output wherever it exists — it is strictly better evidence than
     // the proxy, and the proxy only ever existed because data/models/ was empty.
     //

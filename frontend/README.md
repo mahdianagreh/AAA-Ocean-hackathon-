@@ -1,4 +1,4 @@
-# ReefShield frontend
+# AQABA AQUA AI frontend
 
 The map is the product. One screen, three modes, built toward the eight-scene
 storyboard. Design documents live in [`../docs/Ali/frontend/`](../docs/Ali/frontend/) —

@@ -1,26 +1,39 @@
-/* Self-hosted IBM Plex. Six woff2 faces, 378,040 B total, committed under
- * public/fonts/ and licensed OFL-1.1 (public/fonts/OFL.txt).
+/* Self-hosted brand and script faces, committed under public/fonts/ and all
+ * licensed OFL-1.1 (public/fonts/OFL.txt, public/fonts/OFL-Montserrat.txt).
  *
  * Self-hosting is not a preference. DoD item 9 is "works with wifi off", and a
- * font CDN violates it. The files are committed rather than installed because
- * @ibm/plex-sans, @ibm/plex-sans-arabic and @ibm/plex-mono all declare
- * `postinstall: ibmtelemetry` — an install-time network call, in a project whose
- * whole point is running without one. They were fetched with `npm pack`, which
- * does not run scripts.
+ * font CDN violates it — so the Google Fonts <link> the brand foundation page
+ * used cannot ship. Montserrat was fetched with `npm pack @fontsource/montserrat`,
+ * which does not run scripts; the IBM Plex faces were fetched the same way
+ * because @ibm/plex-* all declare `postinstall: ibmtelemetry`, an install-time
+ * network call in a project whose whole point is running without one.
+ *
+ * Montserrat carries Latin only — it has no Arabic coverage at any weight. So
+ * Arabic keeps IBM Plex Sans Arabic rather than falling back to a system face,
+ * which would change shaping and vertical rhythm mid-sentence. The brand's
+ * Montserrat identity is therefore Latin-only by construction, not by choice.
  */
 
 @font-face {
-  font-family: "IBM Plex Sans";
-  src: url("/fonts/IBMPlexSans-Regular.woff2") format("woff2");
+  font-family: Montserrat;
+  src: url("/fonts/Montserrat-400.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: "IBM Plex Sans";
-  src: url("/fonts/IBMPlexSans-SemiBold.woff2") format("woff2");
+  font-family: Montserrat;
+  src: url("/fonts/Montserrat-600.woff2") format("woff2");
   font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Montserrat;
+  src: url("/fonts/Montserrat-700.woff2") format("woff2");
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }

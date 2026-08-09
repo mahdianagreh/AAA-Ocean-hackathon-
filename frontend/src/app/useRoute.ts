@@ -1,25 +1,151 @@
 import { useEffect, useState } from 'react';
 
-/** Two routes do not justify a router.
+/** The router.
  *
- *  03 §1 locks the information architecture to one screen: `/` is the map, and
- *  the limitations text and provenance panel are overlays rather than routes.
- *  `/specimen` is the dev-only component gallery. That is the whole surface, so
- *  react-router-dom would be ~15 KB and a dependency to keep current in exchange
- *  for nothing. Revisit only if a phase genuinely adds a third destination.
+ *  This used to be two routes and a ternary, on the reasoning that one screen
+ *  does not justify a router dependency. The brand rebuild adds a marketing
+ *  home, an auth pair and eleven dashboard destinations, so that reasoning has
+ *  expired — but the conclusion has not. react-router is ~15 KB and a
+ *  dependency to keep current; a table of patterns and a segment match is ~50
+ *  lines and cannot break offline, which is the constraint that actually binds
+ *  here (DoD item 9 — the app must run with wifi off, and every byte it needs
+ *  has to be in the bundle already).
+ *
+ *  Note `/` is now the marketing home, NOT the map. The operational screen
+ *  moved to `/dashboard`. Every Playwright spec that used to open `/` and expect
+ *  a map was repointed in the same change.
  */
-export type Route = '/' | '/specimen';
 
-export function useRoute(): Route {
+export type RouteName =
+  | 'home'
+  | 'login'
+  | 'signup'
+  | 'dashboard'
+  | 'replay'
+  | 'validation'
+  | 'provenance'
+  | 'limitations'
+  | 'assistant'
+  | 'reefZones'
+  | 'reefZone'
+  | 'events'
+  | 'reports'
+  | 'sitesScore'
+  | 'alerts'
+  | 'account'
+  | 'specimen'
+  | 'notFound';
+
+export interface RouteMatch {
+  name: RouteName;
+  params: Record<string, string>;
+  path: string;
+}
+
+/** Order matters: the first match wins, so literal segments are listed before
+ *  the patterns that would also swallow them. `/reef-zones` must precede
+ *  `/reef-zones/:id` for that reason, and `:id` never matches an empty segment. */
+const ROUTES: ReadonlyArray<readonly [string, RouteName]> = [
+  ['/', 'home'],
+  ['/login', 'login'],
+  ['/signup', 'signup'],
+  ['/dashboard', 'dashboard'],
+  ['/dashboard/validation', 'validation'],
+  ['/dashboard/provenance', 'provenance'],
+  // Both forms resolve to the same page. The bare form is what the nav rail
+  // links to, because the rail cannot know which event you want and the project
+  // rule is that no component hard-codes an event date — ReplayPage resolves the
+  // default itself from the event catalogue.
+  ['/dashboard/replay', 'replay'],
+  ['/dashboard/replay/:eventId', 'replay'],
+  ['/limitations', 'limitations'],
+  ['/assistant', 'assistant'],
+  ['/reef-zones', 'reefZones'],
+  ['/reef-zones/:id', 'reefZone'],
+  ['/events', 'events'],
+  ['/reports', 'reports'],
+  ['/sites/score', 'sitesScore'],
+  ['/alerts', 'alerts'],
+  ['/account', 'account'],
+  ['/specimen', 'specimen'],
+];
+
+/** Strip trailing slashes, but keep the root as "/" rather than "". */
+function normalise(pathname: string): string {
+  const p = pathname.replace(/\/+$/, '');
+  return p === '' ? '/' : p;
+}
+
+export function matchRoute(pathname: string): RouteMatch {
+  const path = normalise(pathname);
+  const parts = path.split('/').filter(Boolean);
+
+  for (const [pattern, name] of ROUTES) {
+    const pp = pattern.split('/').filter(Boolean);
+    if (pp.length !== parts.length) continue;
+
+    const params: Record<string, string> = {};
+    let ok = true;
+    for (let i = 0; i < pp.length; i++) {
+      const seg = pp[i];
+      if (seg.startsWith(':')) {
+        if (!parts[i]) {
+          ok = false;
+          break;
+        }
+        params[seg.slice(1)] = decodeURIComponent(parts[i]);
+      } else if (seg !== parts[i]) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) return { name, params, path };
+  }
+
+  return { name: 'notFound', params: {}, path };
+}
+
+/** pushState does not fire popstate — that event is for the back/forward button
+ *  only. Without a custom event of our own, a programmatic navigation would
+ *  change the URL and leave the view on the previous screen, which looks like a
+ *  dead link and is maddening to debug. */
+const NAV_EVENT = 'aq:navigate';
+
+export function navigate(to: string, opts: { replace?: boolean } = {}) {
+  const current = window.location.pathname + window.location.search;
+  if (to === current) return;
+
+  if (opts.replace) window.history.replaceState({}, '', to);
+  else window.history.pushState({}, '', to);
+
+  window.dispatchEvent(new Event(NAV_EVENT));
+}
+
+export function useRoute(): RouteMatch {
   const [path, setPath] = useState(() => window.location.pathname);
 
   useEffect(() => {
-    const onPop = () => setPath(window.location.pathname);
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
+    const sync = () => setPath(window.location.pathname);
+    window.addEventListener('popstate', sync);
+    window.addEventListener(NAV_EVENT, sync);
+    return () => {
+      window.removeEventListener('popstate', sync);
+      window.removeEventListener(NAV_EVENT, sync);
+    };
   }, []);
 
-  return path.replace(/\/+$/, '') === '/specimen' ? '/specimen' : '/';
+  return matchRoute(path);
+}
+
+/** Preserves the query string across an in-app navigation.
+ *
+ *  ?lang / ?theme / ?mode seed the UI store on load, and the Playwright specs
+ *  and the specimen route both drive the app through them. A link that dropped
+ *  the search would silently reset an Arabic dark session to English light on
+ *  the first click. */
+export function hrefWithSearch(to: string): string {
+  const search = window.location.search;
+  return search ? `${to}${search}` : to;
 }
 
 /** True when the specimen route should be reachable. Dev always; a built image

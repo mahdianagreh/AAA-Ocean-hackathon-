@@ -1,6 +1,6 @@
 # Data dictionary — Workstream A+B (land cover, soil, urban, marine habitat)
 
-**Owner:** Pulga · **Project:** ReefShield Aqaba · **Last verified:** 2026-08-01
+**Owner:** Pulga · **Project:** AQABA AQUA AI · **Last verified:** 2026-08-01
 
 **Spatial contract:** download box `34.80, 29.25, 35.15, 29.70` (W, S, E, N, EPSG:4326).
 Storage CRS **EPSG:4326**, all area/distance maths in **EPSG:32636** (UTM 36N).
@@ -579,7 +579,7 @@ Five so far. Each has a figure or a test, because a fix without evidence is a cl
 | 5 | Culvert distances measured in **EPSG:3857** | every distance overstated by 14.8% | [osm_04](qa_screenshots/osm_04_culverts_all_numbered.png) now matches the report |
 
 Bugs 4 and 5 were both found *by building the figure*, not by reading the code.
-# ReefShield Data Dictionary
+# AQABA AQUA AI Data Dictionary
 
 One row per source variable, from provider to processed output. Every entry
 reflects what was actually retrieved and verified in this workstream.
@@ -1021,7 +1021,7 @@ excluded before any commit touches this repo).
 
 # Terrain & Hydrology — Mahdi
 
-Provenance ledger for ReefShield Aqaba. **One row per external product**: what it is, where it came from, when, under what licence, and what it is used for.
+Provenance ledger for AQABA AQUA AI. **One row per external product**: what it is, where it came from, when, under what licence, and what it is used for.
 
 > **Why this exists.** Concept doc §22.4 requires every number on the dashboard to trace back to a registered source. A judge asking "where did 4,453 km² come from?" should get a file path, not a recollection.
 

@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test';
  */
 
 async function ready(page: import('@playwright/test').Page, lang = 'en') {
-  await page.goto(`/?theme=light&lang=${lang}`);
+  await page.goto(`/dashboard?theme=light&lang=${lang}`);
   await page.waitForSelector('[data-risk-card]', { timeout: 30_000 });
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(1200);

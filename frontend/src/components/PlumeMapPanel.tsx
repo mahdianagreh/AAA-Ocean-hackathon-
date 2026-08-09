@@ -8,8 +8,10 @@ import type { PlumeFrames } from '../api/live';
  *
  *  Every pixel in the image has a provenance (a real Esri basemap, the plume the
  *  model actually predicted, real Allen Coral Atlas reef outlines), stated in a
- *  footer burned into the PNG itself and in `X-ReefShield-Generated-Imagery: none`
- *  on the response. This panel adds one more place that provenance is stated:
+ *  footer burned into the PNG itself and in the `…-Generated-Imagery: none`
+ *  response header. (That header still carries the pre-rebrand product name as
+ *  its vendor prefix, because it is emitted by the backend and renaming it is a
+ *  backend change.) This panel adds one more place that provenance is stated:
  *  `plume.plume_source`, which is `'stub'` today and flips to `'particle-engine'`
  *  by itself once the real transport model lands — no change needed here. A stub
  *  labelled as a stub is honest; a stub shown as a forecast is not, so the badge

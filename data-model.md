@@ -2,7 +2,7 @@
 
 **What this document answers:** for every data stream in the project — what data, *why the system cannot work without it*, the numbered steps that turn it into a database row, and where it ends up on disk or in Postgres.
 
-**Sources:** `reefshield_aqaba_concept.md` §10 (components), §11 (sources), §12 (dataset), §18 (tables) · `tasks/00-contracts.md` (IDs, paths, CRS)
+**Sources:** `aqaba_aqua_ai_concept.md` §10 (components), §11 (sources), §12 (dataset), §18 (tables) · `tasks/00-contracts.md` (IDs, paths, CRS)
 
 This document supersedes concept §18, which lists column *names* but no types, no keys, and is missing several tables the pipeline needs. Additions and changes are listed in §8.
 

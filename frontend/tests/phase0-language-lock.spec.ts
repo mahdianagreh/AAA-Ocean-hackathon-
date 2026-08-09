@@ -32,7 +32,7 @@ test.describe('document chrome', () => {
   test('language is reachable by URL alone', async ({ page }) => {
     // The demo must be able to open straight into Arabic, and a bug report has
     // to be reproducible by pasting a link.
-    await page.goto('/?lang=ar');
+    await page.goto('/dashboard?lang=ar');
     await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
   });
@@ -40,7 +40,7 @@ test.describe('document chrome', () => {
   test('theme=system leaves data-theme off so the media query decides', async ({ page }) => {
     // Writing data-theme="system" would match neither selector and silently pin
     // the page to the :root light values.
-    await page.goto('/');
+    await page.goto('/dashboard');
     await expect(page.locator('html')).not.toHaveAttribute('data-theme', /.*/);
   });
 });
@@ -198,7 +198,7 @@ test.describe('no CDN anywhere', () => {
   });
 
   test('the Arabic face actually loads and is used', async ({ page }) => {
-    await page.goto('/?lang=ar');
+    await page.goto('/dashboard?lang=ar');
     await page.evaluate(() => document.fonts.ready);
     const loaded = await page.evaluate(() =>
       [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family),

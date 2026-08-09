@@ -121,7 +121,7 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
 
   return {
     version: 8,
-    name: 'ReefShield hydrographic',
+    name: 'Aqaba Aqua AI hydrographic',
     // explicit, so a future MapLibre default of globe cannot change the view
     projection: { type: 'mercator' },
     // no `glyphs` (see above) and no `sprite` — Phase 1 puts no icons on the map

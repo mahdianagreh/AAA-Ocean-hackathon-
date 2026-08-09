@@ -67,7 +67,7 @@ al. 2025) **[sourced]**.
 
 The plume has to be able to reach the habitat before it disperses. Aqaba's reefs sit close
 to shore and close to urban activity, roads, drainage outlets and ports
-([concept doc §3.3](../../../reefshield_aqaba_concept.md)) **[sourced]**.
+([concept doc §3.3](../../../aqaba_aqua_ai_concept.md)) **[sourced]**.
 
 | Score | Condition |
 |---|---|

@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test';
  */
 
 async function ready(page: import('@playwright/test').Page, lang = 'en', theme = 'light') {
-  await page.goto(`/?theme=${theme}&lang=${lang}`);
+  await page.goto(`/dashboard?theme=${theme}&lang=${lang}`);
   await page.waitForSelector('[data-risk-card]', { timeout: 30_000 });
   await page.waitForSelector('[data-map="true"] canvas', { timeout: 30_000 });
   await page.evaluate(() => document.fonts.ready);

@@ -48,7 +48,7 @@
   }
  ],
  "forcing": {
-  "statement": "> The best free global ocean current models — Copernicus Marine and HYCOM — run at\n> roughly 1/12 degree, about 9 km per grid cell. The Gulf of Aqaba is only 15–25 km wide.\n> That means the entire gulf is spanned by two or three grid cells, so the nearshore\n> circulation — precisely where the reefs are — is not resolved. We saw this directly: our\n> own provisional wadi outlet coordinate lands on a grid cell the model treats as masked\n> land, not water. This is exactly why ReefShield does not output a single plume\n> trajectory. It outputs a probabilistic exposure zone, built from many particles run\n> under stochastic diffusion, with an explicit confidence figure attached. Higher-resolution\n> local current measurements are a Phase 2 item, not a hackathon MVP requirement.",
+  "statement": "> The best free global ocean current models — Copernicus Marine and HYCOM — run at\n> roughly 1/12 degree, about 9 km per grid cell. The Gulf of Aqaba is only 15–25 km wide.\n> That means the entire gulf is spanned by two or three grid cells, so the nearshore\n> circulation — precisely where the reefs are — is not resolved. We saw this directly: our\n> own provisional wadi outlet coordinate lands on a grid cell the model treats as masked\n> land, not water. This is exactly why AQABA AQUA AI does not output a single plume\n> trajectory. It outputs a probabilistic exposure zone, built from many particles run\n> under stochastic diffusion, with an explicit confidence figure attached. Higher-resolution\n> local current measurements are a Phase 2 item, not a hackathon MVP requirement.",
   "source": "docs/forcing_limitations.md"
  },
  "sources": [

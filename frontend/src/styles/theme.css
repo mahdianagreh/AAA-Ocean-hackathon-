@@ -29,10 +29,12 @@
      typeface. Clearing it only removed max-w-md and friends, which silently made
      a constrained chart render full-bleed. Over-clearing is its own bug. */
 
-  /* Type — 01 §5. One superfamily, so Arabic and Latin share weight, rhythm
-     and vertical proportion instead of being two typefaces bolted together. */
-  --font-sans: "IBM Plex Sans", "IBM Plex Sans Arabic", system-ui, sans-serif;
-  --font-arabic: "IBM Plex Sans Arabic", "IBM Plex Sans", system-ui, sans-serif;
+  /* Type — brand guidelines §5: Montserrat, falling back to Inter/system-ui.
+     Inter is not self-hosted, so it is named for environments that already have
+     it and IBM Plex Sans Arabic carries the real fallback — see fonts.css for
+     why Arabic cannot use Montserrat at all. */
+  --font-sans: "Montserrat", "Inter", "IBM Plex Sans Arabic", system-ui, sans-serif;
+  --font-arabic: "IBM Plex Sans Arabic", "Montserrat", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
   /* Numeric behaviour is set by the `num` utility below, not here.
@@ -68,13 +70,24 @@
        --space-4 16px = p-4      --space-8 64px = p-16 */
   --spacing: 4px;
 
-  /* Radii stay small — a chart is drawn with a pen, not moulded in plastic. */
-  --radius-sm: 2px;
-  --radius-md: 3px;
+  /* Brand guidelines §7. The instrument surfaces (map chrome, chart furniture,
+     the risk bands) keep the 2px hairline radius they were drawn with — a chart
+     is drawn with a pen, not moulded in plastic — so `hairline` stays available
+     under its own name rather than being widened to match the brand cards. */
+  --radius-hairline: 2px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-card: 20px;
 
-  /* Elevation is a ground change, not a shadow. This exists only for genuinely
-     floating layers: popover, dialog, map tooltip. Never an inline panel. */
-  --shadow-float: 0 2px 8px oklch(0.18 0.024 215 / 0.16);
+  /* Brand guidelines §8, three steps, all keyed to Deep Navy #0A1F4D. The old
+     single --shadow-float is kept pointing at the small step: it is referenced
+     by the dialog and map-tooltip layers, and elevation there is still a ground
+     change rather than a drop shadow. */
+  --shadow-sm: 0 4px 12px rgb(10 31 77 / 0.08);
+  --shadow-md: 0 10px 30px rgb(10 31 77 / 0.12);
+  --shadow-lg: 0 20px 60px rgb(10 31 77 / 0.18);
+  --shadow-float: var(--shadow-sm);
 }
 
 /* THE LOAD-BEARING BLOCK.
@@ -133,11 +146,30 @@
 @custom-variant rtl (&:where([dir="rtl"], [dir="rtl"] *));
 @custom-variant ltr (&:where([dir="ltr"], [dir="ltr"] *));
 
-/* The transform escape hatch from 06-bilingual-rtl.md §2. Logical properties
-   cover layout; transforms have no logical equivalent, so a direction-aware
-   translate multiplies by this instead of hard-coding a sign. */
+/* Brand guidelines §4. Reserved for hero sections, the logo, CTAs and visual
+   highlights — never behind a number, a chart or a map layer, because a value
+   read against a moving ground cannot be compared to the value beside it.
+   Held as a raw literal rather than composed from the tokens: this is fixed
+   brand artwork and must not drift when a token is retuned, and it does not
+   invert for dark theme for the same reason. */
 :root {
+  --brand-gradient: linear-gradient(135deg, #0a1f4d 0%, #0d3d7a 35%, #007a99 65%, #00b7c3 100%); /* token-ok: fixed brand artwork */
+
+  /* The navigation rail is brand furniture, not a data surface, so it stays
+     Deep Navy in both themes rather than tracking --surface. Its contents are
+     therefore always light-on-dark and cannot use --ink, which inverts. */
+  --brand-navy: #0a1f4d; /* token-ok: fixed brand artwork */
+  --brand-aqua: #00b7c3; /* token-ok: fixed brand artwork */
+  --brand-foam: #e6f7fa; /* token-ok: fixed brand artwork */
+
+  /* The transform escape hatch from 06-bilingual-rtl.md §2. Logical properties
+     cover layout; transforms have no logical equivalent, so a direction-aware
+     translate multiplies by this instead of hard-coding a sign. */
   --dir: 1;
+}
+
+@utility brand-gradient {
+  background-image: var(--brand-gradient);
 }
 
 :root[dir="rtl"] {

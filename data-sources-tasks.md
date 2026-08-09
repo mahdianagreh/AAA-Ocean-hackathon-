@@ -1,6 +1,6 @@
 # ReefShield Aqaba — Data Source Assignments
 
-**Source:** `reefshield_aqaba_concept.md` (Section 11 + Section 31)
+**Source:** `aqaba_aqua_ai_concept.md` (Section 11 + Section 31)
 **Team:** Mahdi · Karam · Pulga · Abd · Nizar
 
 Every data source named in the concept doc, assigned to one owner.

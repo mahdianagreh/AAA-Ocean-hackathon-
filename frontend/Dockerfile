@@ -1,4 +1,4 @@
-# ReefShield Aqaba — frontend dev container.
+# AQABA AQUA AI — frontend dev container.
 #
 # The compose build context is ./frontend, so nothing outside this directory is
 # reachable at build time. That is why the derived basemap, the six woff2 faces
