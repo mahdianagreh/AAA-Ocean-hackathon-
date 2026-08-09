@@ -14,7 +14,18 @@ import { buildJourneyStyle } from './journeyStyle';
 import { usePhaseTimeline } from './usePhaseTimeline';
 import { transportPaint, accumulationPaint } from './layers/plume';
 import { reefRiskColorExpression, reefStrokeExpression } from './layers/reef';
+import { catchmentOpacity } from './layers/catchments';
 import { makeRainSeeds, rainFrameFeatures, RAIN_POOL_SIZE, type RainSeed } from './layers/rain';
+import {
+  createRainStreaks,
+  stepRainStreaks,
+  clearRainCanvas,
+  paintRainInClip,
+  geometryToScreenPath,
+  drawClouds,
+  type RainStreak,
+  type CloudAnchor,
+} from './layers/rainOverlay';
 import { runoffFeatures, runoffDashArray } from './layers/runoff';
 import { TERRAIN_EXAGGERATION } from './layers/terrain';
 import { loadImageryCorners, IMAGE_URL } from './layers/imagery';
@@ -57,6 +68,14 @@ interface JourneyFixture {
   reef_exposure: Array<{ reef_zone_id: string; risk_score: number; risk_level: string }>;
   current_masking_caveat: string | null;
   rainfall: { peak_date_utc: string; peak_mm: number; unit: string; source: string; note: string } | null;
+  //: All five real catchments' own measured peak for the event day (2016-10-27
+  //: was a regional storm, not a single-catchment cell) -- `null` for any
+  //: catchment with no real value that day, never a borrowed/zero stand-in.
+  rainfall_by_catchment: Record<string, { peak_mm: number } | null>;
+  //: This catchment's own real 99th-percentile day, from its whole real
+  //: record -- see JourneyAlert.tsx's docstring for why this is the honest
+  //: comparison point, not a bare mm figure.
+  rainfall_p99_by_catchment: Record<string, number | null>;
   runoff_lines: number[][][];
   source: string;
 }
@@ -93,6 +112,10 @@ function roughCentroid(geom: Geometry): [number, number] {
 const RAIN_INTENSITY_REFERENCE_MM = 15;
 const RAIN_TICK_MS = 90;
 const RUNOFF_TICK_MS = 220;
+//: The overlay's own pool, independent of RAIN_POOL_SIZE (the ripple pool) --
+//: a full-canvas storm sheet reads right at a higher count than the small
+//: real-lon/lat ripple field does.
+const RAIN_STREAK_POOL_SIZE = 260;
 
 export function Journey3D() {
   const { t } = useTranslation();
@@ -106,9 +129,11 @@ export function Journey3D() {
   const c = palette[resolved];
 
   const container = useRef<HTMLDivElement>(null);
+  const rainCanvasRef = useRef<HTMLCanvasElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const [fixture, setFixture] = useState<JourneyFixture | null>(null);
   const [wadiCenter, setWadiCenter] = useState<[number, number] | null>(null);
+  const [catchmentFeatures, setCatchmentFeatures] = useState<CatchmentFeature[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
@@ -116,6 +141,8 @@ export function Journey3D() {
   const { phase, playing, frameIndex } = timeline;
 
   const rainSeedsRef = useRef<RainSeed[] | null>(null);
+  const rainStreaksRef = useRef<RainStreak[] | null>(null);
+  const lastOverlayTsRef = useRef<number | null>(null);
   const effectRafRef = useRef<number | null>(null);
   const lastRainTickRef = useRef(0);
   const lastRunoffTickRef = useRef(0);
@@ -133,9 +160,9 @@ export function Journey3D() {
       .then(([j, catchmentsFc]) => {
         if (!live) return;
         setFixture(j);
-        const feat = (catchmentsFc.features as CatchmentFeature[]).find(
-          (f) => f.properties.catchment_id === j.release.catchment_id,
-        );
+        const features = catchmentsFc.features as CatchmentFeature[];
+        setCatchmentFeatures(features);
+        const feat = features.find((f) => f.properties.catchment_id === j.release.catchment_id);
         if (feat) setWadiCenter(roughCentroid(feat.geometry));
       })
       .catch((e: Error) => {
@@ -207,6 +234,32 @@ export function Journey3D() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fixture]);
 
+  // Keep the rain overlay canvas pixel-matched to the map container,
+  // including devicePixelRatio, so streaks stay crisp rather than
+  // blurred/upscaled the way a stale canvas.width would leave them.
+  useEffect(() => {
+    const el = container.current;
+    const canvas = rainCanvasRef.current;
+    if (!el || !canvas) return;
+    const resize = () => {
+      const rect = el.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
+      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+      const ctx = canvas.getContext('2d');
+      ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(el);
+    return () => observer.disconnect();
+    // `fixture` gates the JSX below (the container/canvas refs are null
+    // until it loads, per the early `if (!fixture) return <p>...` above) --
+    // an empty dep array here would run once against those nulls and never
+    // fire again once the real elements mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fixture]);
+
   // Camera follows the phase automatically during Play; also reachable by
   // clicking a phase directly (goToPhase) for manual exploration.
   useEffect(() => {
@@ -270,6 +323,18 @@ export function Journey3D() {
     m.setPaintProperty('reef-outline', 'line-color', strokeColor as never);
   }, [phase, mapReady, fixture, c]);
 
+  // Catchment boundaries: full strength while the story is upstream (normal/
+  // rain/flood), faded once it moves to the plume/reef so they read as
+  // context rather than competing with the sediment cloud.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !mapReady) return;
+    const op = catchmentOpacity(phase);
+    m.setPaintProperty('catchment-fill', 'fill-opacity', op.fill);
+    m.setPaintProperty('catchment-outline', 'line-opacity', op.line);
+    m.setPaintProperty('catchment-label', 'text-opacity', op.text);
+  }, [phase, mapReady]);
+
   // Rain + runoff: one shared rAF loop, active only while its phase is live.
   useEffect(() => {
     const m = map.current;
@@ -278,11 +343,17 @@ export function Journey3D() {
     if (phase !== 'rain' && phase !== 'flood') {
       (m.getSource('rain') as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
       (m.getSource('runoff') as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
+      const canvas = rainCanvasRef.current;
+      const ctx = canvas?.getContext('2d');
+      const dpr0 = window.devicePixelRatio || 1;
+      if (canvas && ctx) clearRainCanvas(ctx, canvas.width / dpr0, canvas.height / dpr0);
+      rainStreaksRef.current = null;
+      lastOverlayTsRef.current = null;
       return;
     }
 
+    const pad = 0.02;
     if (phase === 'rain' && !rainSeedsRef.current) {
-      const pad = 0.02;
       rainSeedsRef.current = makeRainSeeds([
         fixture.release.lon - pad, fixture.release.lat - pad,
         fixture.release.lon + pad, fixture.release.lat + pad,
@@ -295,14 +366,58 @@ export function Journey3D() {
     let cancelled = false;
     const loop = (now: number) => {
       if (cancelled) return;
+      const mm = fixture.rainfall?.peak_mm ?? RAIN_INTENSITY_REFERENCE_MM;
+      const intensity = Math.min(1, mm / RAIN_INTENSITY_REFERENCE_MM);
       if (phase === 'rain' && rainSeedsRef.current) {
         if (now - lastRainTickRef.current >= RAIN_TICK_MS) {
           lastRainTickRef.current = now;
-          const mm = fixture.rainfall?.peak_mm ?? RAIN_INTENSITY_REFERENCE_MM;
-          const intensity = Math.min(1, mm / RAIN_INTENSITY_REFERENCE_MM);
           const active = Math.round(RAIN_POOL_SIZE * intensity);
           const fc = rainFrameFeatures(rainSeedsRef.current, now, active);
           (m.getSource('rain') as GeoJSONSource | undefined)?.setData(fc);
+        }
+        // Every rAF frame, not throttled like the ripple tick above -- the
+        // falling motion needs to read as continuous, not stepped. One
+        // shared streak pool falls across the whole canvas (cheap, and a
+        // streak doesn't know which catchment it's over); what actually
+        // confines the *visible* rain to real ground is the per-catchment
+        // clip below, not the streaks' own spawn range.
+        const canvas = rainCanvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (canvas && ctx && catchmentFeatures) {
+          const dpr = window.devicePixelRatio || 1;
+          const w = canvas.width / dpr;
+          const h = canvas.height / dpr;
+          if (!rainStreaksRef.current) rainStreaksRef.current = createRainStreaks(w, h, RAIN_STREAK_POOL_SIZE);
+          const dt = lastOverlayTsRef.current === null ? 0 : (now - lastOverlayTsRef.current) / 1000;
+          lastOverlayTsRef.current = now;
+          stepRainStreaks(rainStreaksRef.current, w, h, Math.min(dt, 0.05));
+
+          clearRainCanvas(ctx, w, h);
+          const project = (lon: number, lat: number) => m.project([lon, lat]);
+          const cloudAnchors: CloudAnchor[] = [];
+          for (const feat of catchmentFeatures) {
+            const real = fixture.rainfall_by_catchment[feat.properties.catchment_id];
+            // Missing is never zero (Standing Law rule 1) -- a catchment with
+            // no real measured value for this event day gets no rendered
+            // rain at all, not a borrowed/zero intensity.
+            if (!real) continue;
+            const catchIntensity = Math.min(1, real.peak_mm / RAIN_INTENSITY_REFERENCE_MM);
+            const { path, bounds } = geometryToScreenPath(feat.geometry, project);
+            paintRainInClip(ctx, w, h, rainStreaksRef.current, path, catchIntensity);
+            // AQ-C01 alone is 4,453 km2 -- most of the terrain AOI -- so its
+            // real topmost point often projects well above the visible
+            // canvas at this camera distance. Clamping keeps every
+            // catchment's cloud somewhere on screen rather than silently
+            // rendering off the top edge for the one catchment big enough
+            // to need it.
+            cloudAnchors.push({
+              centerX: Math.min(w, Math.max(0, (bounds.x0 + bounds.x1) / 2)),
+              topY: Math.max(40, bounds.y0),
+              widthPx: Math.min(w, bounds.x1 - bounds.x0),
+              intensity: catchIntensity,
+            });
+          }
+          drawClouds(ctx, cloudAnchors, now / 1000);
         }
       }
       if (phase === 'flood') {
@@ -311,6 +426,14 @@ export function Journey3D() {
           runoffTickCountRef.current += 1;
           if (m.getLayer('runoff-flow')) {
             m.setPaintProperty('runoff-flow', 'line-dasharray', runoffDashArray(runoffTickCountRef.current) as never);
+            // Real flow strength, not a fixed line regardless of how much
+            // rain actually fell -- the same release-catchment intensity the
+            // rain phase already uses. No floor: a catchment with almost no
+            // real rain shows almost no visible flow, not a full dashed line
+            // at reduced opacity.
+            m.setPaintProperty('runoff-flow', 'line-opacity', 0.9 * intensity);
+            m.setPaintProperty('runoff-flow', 'line-width', 1.5 + 2 * intensity);
+            m.setPaintProperty('runoff-casing', 'line-opacity', 0.5 * intensity);
           }
         }
       }
@@ -321,7 +444,7 @@ export function Journey3D() {
       cancelled = true;
       if (effectRafRef.current !== null) cancelAnimationFrame(effectRafRef.current);
     };
-  }, [phase, mapReady, fixture]);
+  }, [phase, mapReady, fixture, catchmentFeatures]);
 
   const handlePhaseClick = useCallback((p: JourneyPhase) => {
     timeline.goToPhase(p);
@@ -383,12 +506,33 @@ export function Journey3D() {
       </div>
 
       <div
-        ref={container}
         data-journey-map="true"
-        className="relative min-h-0 flex-1 rule"
+        className="relative grid min-h-0 flex-1 rule"
         dir="ltr"
         aria-label={t('journey.mapLabel')}
-      />
+      >
+        {/* A shared grid cell, not absolute+inset-0: MapLibre reads its
+            container's laid-out size to set its own canvas dimensions, and
+            an absolutely positioned container measured before the browser
+            settled its inset-derived height was handing MapLibre a stale
+            (default-canvas-sized) height. Both children stacking in one
+            grid cell size against the grid track instead, which is settled
+            before either child's own layout runs. */}
+        <div ref={container} className="col-start-1 row-start-1 h-full w-full" />
+        {/* Screen-space rain overlay (layers/rainOverlay.ts) -- sits above the
+            map's own WebGL canvas, never intercepts pointer events so map
+            drag/zoom/click still reach the map underneath it.
+            `relative` is load-bearing, not decoration: MapLibre's own
+            internal canvas is `position:absolute` (its own stylesheet), and
+            a positioned element always paints above a plain `static`
+            sibling regardless of DOM order -- without this the overlay drew
+            correctly (confirmed via direct canvas pixel sampling) but was
+            invisible, composited entirely behind the map. */}
+        <canvas
+          ref={rainCanvasRef}
+          className="pointer-events-none relative col-start-1 row-start-1 h-full w-full"
+        />
+      </div>
 
       <div className="flex flex-col gap-1 text-2xs text-ink-3">
         <p className="font-semibold text-ink-2">{t(`journey.phaseBody.${phase}`, {

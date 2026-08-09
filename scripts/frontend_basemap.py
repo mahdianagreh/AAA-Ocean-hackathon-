@@ -312,6 +312,12 @@ def relief_bands(report):
 #: actual immediate urban context, not the desert or empty shore between them.
 BUILDINGS_AOI_BUFFER_DEG = 0.025
 DEFAULT_BUILDING_LEVELS = 2.0     # median residential building height region-wide, not measured per-roof
+HOTEL_DEFAULT_LEVELS = 8.0        # mid-rise default for real building=hotel/tourism=hotel tags --
+                                   # still an assumption (no per-hotel measurement), but the same
+                                   # single flat default as every other building was visibly wrong
+                                   # against a skyline that is mostly hotel towers on the coast strip
+HISTORIC_DEFAULT_LEVELS = 1.0     # historic=* (Aqaba Fort/Mamluk Castle, city gates) -- low, flat,
+                                   # real single-storey profile, never the generic default
 LEVEL_HEIGHT_M = 3.0              # standard storey height assumption, documented not measured
 MIN_BUILDING_AREA_M2 = 20.0       # drops shed/noise-scale footprints, same threshold everywhere
 
@@ -322,9 +328,16 @@ def buildings(report):
     `building:levels` lives in the same `other_tags` hstore `bilingual()` already
     parses for road/wadi names -- reused here via `parse_other_tags`, not a new
     parser. Only ~16% of buildings in this extract carry it (measured against the
-    outlet-cluster clip); the rest get `DEFAULT_BUILDING_LEVELS`, an explicit,
-    documented assumption -- shown in the 3D scene as real footprint + assumed
-    height, never as a claimed per-building measurement.
+    outlet-cluster clip).
+
+    Everything else falls back to a category default, not one flat number for
+    every building regardless of type -- a single default made the coastal hotel
+    strip (real `building=hotel`/`tourism=hotel` tags, both real OSM columns, not
+    invented) render at the same height as a garden shed, which looked wrong
+    against the real skyline it's supposed to stand in for. The category and the
+    fallback height are both still assumptions where OSM has no `building:levels`
+    tag -- shown in the 3D scene as real footprint + assumed height, never as a
+    claimed per-building measurement.
     """
     src_path = cfg.VECTORS / "osm_aqaba.gpkg"
     if not src_path.exists():
@@ -363,7 +376,16 @@ def buildings(report):
     b = b[b["area_m2"] >= MIN_BUILDING_AREA_M2]
     print(f"    buildings kept (>= {MIN_BUILDING_AREA_M2:.0f} m² footprint): {len(b)}")
 
-    b["levels"] = b["levels"].fillna(DEFAULT_BUILDING_LEVELS)
+    is_hotel = (b["building"] == "hotel") | (b["tourism"] == "hotel")
+    is_historic = b["historic"].notna()
+    fallback = np.select(
+        [is_historic, is_hotel],
+        [HISTORIC_DEFAULT_LEVELS, HOTEL_DEFAULT_LEVELS],
+        default=DEFAULT_BUILDING_LEVELS,
+    )
+    print(f"    building height categories: {int(is_historic.sum())} historic (flat), "
+          f"{int(is_hotel.sum())} hotel (tall), rest default")
+    b["levels"] = np.where(b["levels"].isna(), fallback, b["levels"])
     b["height_m"] = b["levels"] * LEVEL_HEIGHT_M
     b["name"] = b["name"].where(b["name"].apply(lambda v: isinstance(v, str)), None)
     return b
@@ -519,8 +541,36 @@ def main():
     # lon/lat point and no polygon at all, and /api/v1/reef-zones is not
     # implemented. Raised as Day-1 ask #8; committed here so the map is not
     # blocked on it, and so the offline pack has them either way.
-    write(out, "catchments", gpd.read_file(V / "catchments.gpkg", layer="catchments"),
-          keep=("catchment_id", "outlet_id", "area_km2", "provisional"), report=report)
+    #
+    # The 3D Journey's "normal" phase drew catchments as an unlabelled outline
+    # with no distinguishing property, so all five looked identical regardless
+    # of how different they really are. `soil_by_catchment.parquet` (real
+    # SoilGrids texture) and `catchment_terrain.parquet` (real DEM-derived
+    # relief/slope/drainage) were already computed per catchment for the
+    # runoff model — joined in here rather than re-derived, so the map shows
+    # the same real numbers the model trains on, not a second estimate.
+    F = ROOT / "data" / "processed" / "features"
+    catchments_gdf = gpd.read_file(V / "catchments.gpkg", layer="catchments")
+    soil = pd.read_parquet(F / "soil_by_catchment.parquet")[
+        ["catchment_id", "sand_0_5cm_mean", "clay_0_5cm_mean", "silt_0_5cm_mean"]
+    ].rename(columns={
+        "sand_0_5cm_mean": "sand_pct",
+        "clay_0_5cm_mean": "clay_pct",
+        "silt_0_5cm_mean": "silt_pct",
+    })
+    terrain_stats = pd.read_parquet(F / "catchment_terrain.parquet")[
+        ["catchment_id", "relief_m", "slope_mean_deg", "drainage_density_km_km2"]
+    ]
+    catchments_gdf = catchments_gdf.merge(soil, on="catchment_id", how="left").merge(
+        terrain_stats, on="catchment_id", how="left")
+    for col in ("sand_pct", "clay_pct", "silt_pct", "relief_m", "slope_mean_deg",
+                "drainage_density_km_km2"):
+        catchments_gdf[col] = catchments_gdf[col].round(1)
+    write(out, "catchments", catchments_gdf,
+          keep=("catchment_id", "outlet_id", "area_km2", "provisional", "sand_pct",
+                "clay_pct", "silt_pct", "relief_m", "slope_mean_deg",
+                "drainage_density_km_km2"),
+          report=report)
 
     # reef_zones.gpkg, not reef_zones_PROVISIONAL.gpkg. Contract swap-in #3 landed
     # while this frontend was being built: source is now `ACA/reef_habitat/v2_0`,

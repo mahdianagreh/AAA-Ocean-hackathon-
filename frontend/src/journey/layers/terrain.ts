@@ -60,3 +60,47 @@ export function terrainSourceFragment() {
     layers: [] as const,
   };
 }
+
+//: The merged mesh's own real range (scripts/merge_terrain_bathymetry.py's
+//: printed output: "-926 .. 1847 m") -- these are this run's actual data
+//: bounds, not a generic hypsometric scale invented for the occasion. Colour
+//: only, no elevation displacement: MapLibre's `color-relief` layer samples
+//: the same raster-dem `terrain` source `map.setTerrain()` already reads for
+//: mesh displacement -- this just textures it, on top of (not instead of)
+//: that real 3D shape.
+const ELEVATION_COLOR_STOPS: Array<[number, string]> = [
+  [-926, '#0a2f4d'], // deepest real bathymetry cell in the merge
+  [-200, '#0f5c8a'],
+  [-30, '#3fa7c9'], // shallow reef-depth water, Gulf's own turquoise cast
+  [-2, '#8fd6d9'],
+  [0, '#e8dcb0'], // the real coastline seam -- sea/land boundary itself
+  [40, '#d9c48a'], // coastal plain, sand/desert
+  [250, '#c2a06a'],
+  [700, '#a67c52'], // wadi flanks, bare rock and scree
+  [1200, '#8a7160'],
+  [1847, '#e8e4de'], // the merge's highest real cell, pale exposed rock
+];
+
+//: Fixed rather than theme-derived, same reasoning as rain.ts's white
+//: ripple stroke: this is real-world ground colour, not app chrome, so it
+//: does not repaint on the light/dark toggle -- only the sky and hillshade
+//: tint around it do (journeyStyle.ts).
+export function terrainColorFragment() {
+  return {
+    layers: [
+      {
+        id: 'terrain-color-relief',
+        type: 'color-relief' as const,
+        source: 'terrain',
+        paint: {
+          'color-relief-color': [
+            'interpolate',
+            ['linear'],
+            ['elevation'],
+            ...ELEVATION_COLOR_STOPS.flat(),
+          ] as unknown as string,
+        },
+      },
+    ],
+  };
+}

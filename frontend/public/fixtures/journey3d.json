@@ -5655,5 +5655,49 @@
    ]
   ]
  ],
- "source": "POST /api/v1/plume/simulate + /api/v1/exposure/calculate against a live run of backend/src/api/main.py, plus frontend/public/fixtures/event.json (rainfall) and basemap catchments+wadis (runoff paths) (scripts/frontend_journey.py)"
+ "source": "POST /api/v1/plume/simulate + /api/v1/exposure/calculate against a live run of backend/src/api/main.py, plus frontend/public/fixtures/event.json (rainfall) and basemap catchments+wadis (runoff paths) (scripts/frontend_journey.py)",
+ "rainfall_by_catchment": {
+  "AQ-C01": {
+   "peak_date_utc": "2016-10-27T00:00:00Z",
+   "peak_mm": 9.5766,
+   "unit": "mm/day",
+   "source": "data/processed/features/catchment_rainfall_daily.parquet",
+   "note": "NASA GPM IMERG V07, aggregated per catchment. Daily resolution."
+  },
+  "AQ-C02": {
+   "peak_date_utc": "2016-10-27T00:00:00Z",
+   "peak_mm": 9.2053,
+   "unit": "mm/day",
+   "source": "data/processed/features/catchment_rainfall_daily.parquet",
+   "note": "NASA GPM IMERG V07, aggregated per catchment. Daily resolution."
+  },
+  "AQ-C03": {
+   "peak_date_utc": "2016-10-27T00:00:00Z",
+   "peak_mm": 10.202,
+   "unit": "mm/day",
+   "source": "data/processed/features/catchment_rainfall_daily.parquet",
+   "note": "NASA GPM IMERG V07, aggregated per catchment. Daily resolution."
+  },
+  "AQ-C04": {
+   "peak_date_utc": "2016-10-27T00:00:00Z",
+   "peak_mm": 9.4742,
+   "unit": "mm/day",
+   "source": "data/processed/features/catchment_rainfall_daily.parquet",
+   "note": "NASA GPM IMERG V07, aggregated per catchment. Daily resolution."
+  },
+  "AQ-C05": {
+   "peak_date_utc": "2016-10-27T00:00:00Z",
+   "peak_mm": 9.7271,
+   "unit": "mm/day",
+   "source": "data/processed/features/catchment_rainfall_daily.parquet",
+   "note": "NASA GPM IMERG V07, aggregated per catchment. Daily resolution."
+  }
+ },
+ "rainfall_p99_by_catchment": {
+  "AQ-C01": 2.9613,
+  "AQ-C02": 2.3467,
+  "AQ-C03": 2.3243,
+  "AQ-C04": 2.4195,
+  "AQ-C05": 2.3406
+ }
 }

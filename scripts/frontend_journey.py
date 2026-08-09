@@ -112,6 +112,41 @@ def _real_rainfall(catchment_id: str) -> dict | None:
     }
 
 
+def _real_climatology_p99(catchment_id: str) -> float | None:
+    """This catchment's own real 99th-percentile daily rainfall, from its
+    whole real record (`catchment_rainfall_climatology.parquet`, 10,135 days,
+    the same file `rain_over_p99` -- one of the trained runoff model's real
+    features -- is built from). Not a meteorological warning threshold
+    invented for this feature; it is the exact real number the model itself
+    already treats as "an unusually wet day for this specific catchment".
+    Used to give the 3D scene's runoff-warning banner one real comparison
+    ("today's real total vs. this catchment's own real 99th-percentile day")
+    instead of a bare, context-free mm figure.
+    """
+    path = ROOT / "data" / "processed" / "features" / "catchment_rainfall_climatology.parquet"
+    if not path.exists():
+        return None
+    import pandas as pd
+    df = pd.read_parquet(path)
+    row = df[df["catchment_id"] == catchment_id]
+    if row.empty:
+        return None
+    return float(row.iloc[0]["p99_all_mm"])
+
+
+def _all_catchment_ids() -> list[str]:
+    """Read straight from the committed basemap layer rather than a
+    hardcoded list — `AQ-C01`..`AQ-C05` is frozen (tasks/00-contracts.md §2),
+    but retyping it here would be exactly the kind of second literal the
+    project's own "ask the geometry, don't retype it" discipline exists to
+    avoid (backend/src/config/spatial.py's own docstring)."""
+    catchments_path = BASEMAP_DIR / "catchments.geojson"
+    if not catchments_path.exists():
+        return []
+    fc = json.loads(catchments_path.read_text())
+    return sorted(f["properties"]["catchment_id"] for f in fc["features"])
+
+
 def _real_runoff_lines(catchment_id: str) -> list[list[list[float]]]:
     """Real wadi drainage LineStrings physically inside this catchment's real
     polygon (spatial join against catchments.geojson/wadis.geojson, both
@@ -208,6 +243,15 @@ def build(api_base: str) -> dict:
         "reef_exposure": reef_exposure,
         "current_masking_caveat": masking_caveat,
         "rainfall": _real_rainfall(catchment_id),
+        # All five real catchments, not just the release one -- 2016-10-27 was a
+        # regional storm (real per-catchment peaks range 9.2-10.2 mm/day, all
+        # `quality_flag: GOOD`, all `coverage: 1.0`), so a scene that only ever
+        # shows rain over AQ-O02's own catchment was actually UNDER-representing
+        # the real event, not over-representing it. `None` for any catchment with
+        # no real measured value that day is preserved as `None`, never a
+        # borrowed/interpolated number (Standing Law rule 1).
+        "rainfall_by_catchment": {cid: _real_rainfall(cid) for cid in _all_catchment_ids()},
+        "rainfall_p99_by_catchment": {cid: _real_climatology_p99(cid) for cid in _all_catchment_ids()},
         "runoff_lines": _real_runoff_lines(catchment_id),
         "source": (
             f"POST /api/v1/plume/simulate + /api/v1/exposure/calculate against a "
@@ -239,6 +283,8 @@ def main() -> int:
               f"on {data['rainfall']['peak_date_utc'][:10]}")
     else:
         print("  real rainfall: none found for this catchment")
+    for cid, r in data["rainfall_by_catchment"].items():
+        print(f"    {cid}: {r['peak_mm']} mm" if r else f"    {cid}: no real value that day")
     print(f"  real runoff wadi lines within the release catchment: {len(data['runoff_lines'])}")
 
     out = Path(args.out)
