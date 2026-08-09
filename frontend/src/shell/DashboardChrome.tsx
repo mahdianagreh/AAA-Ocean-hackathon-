@@ -144,7 +144,7 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen flex-col bg-canvas text-ink lg:flex-row" data-dash-shell="true">
       <nav
         aria-label={t('primary')}
-        className="flex shrink-0 flex-col gap-7 px-5 py-7 lg:w-60"
+        className="flex shrink-0 flex-col gap-7 px-5 py-7 lg:w-60 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto"
         style={{ background: 'var(--brand-navy)' }}
       >
         <Link to="/" className="flex items-center gap-2.5 no-underline">
@@ -165,8 +165,13 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
         </div>
 
         <div
-          className="mt-auto flex flex-col gap-2 pt-4"
-          style={{ borderBlockStart: '1px solid rgb(255 255 255 / 0.15)' }}
+          className="mt-auto flex flex-col gap-2 pt-4 sticky bottom-0 z-10"
+          style={{ 
+            borderBlockStart: '1px solid rgb(255 255 255 / 0.15)',
+            background: 'var(--brand-navy)',
+            paddingBottom: '1.75rem',
+            marginBottom: '-1.75rem'
+          }}
         >
           {/* No account system exists — see Login. Saying "signed in as" here
               would be the same lie in a quieter place. */}

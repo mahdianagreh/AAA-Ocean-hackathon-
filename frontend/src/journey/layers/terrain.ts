@@ -68,6 +68,14 @@ export function terrainSourceFragment() {
 //: the same raster-dem `terrain` source `map.setTerrain()` already reads for
 //: mesh displacement -- this just textures it, on top of (not instead of)
 //: that real 3D shape.
+// A hypsometric tint, not UI chrome — which is why these are raw hex and carry
+// `token-ok`. The ramp depicts real physical ground: measured bathymetry from the
+// deepest cell in the merge, through the Gulf's own turquoise shelf cast, across
+// the coastline seam, into sand, scree and bare rock. Mapping it onto the
+// interface tokens would tie the shape of the seabed to the app's text palette
+// and would change the terrain's appearance whenever the theme is retuned. Same
+// exemption the neighbouring journey layers already hold for sky lighting and
+// relief shading.
 const ELEVATION_COLOR_STOPS: Array<[number, string]> = [
   [-926, '#0a2f4d'], // deepest real bathymetry cell in the merge -- token-ok: real-world elevation colour, not app chrome
   [-200, '#0f5c8a'], // token-ok: real-world elevation colour, not app chrome

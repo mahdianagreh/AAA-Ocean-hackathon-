@@ -59,8 +59,8 @@ export function ValidationPanel() {
   return (
     <div className="flex flex-col gap-5" data-panel="validation">
       {/* The comparison. Two columns, and the empty one is the point. */}
-      <section className="flex flex-col gap-2">
-        <h3 className="text-sm font-semibold">{t('validation.comparison')}</h3>
+      <section className="flex flex-col gap-3">
+        <h3 className="text-lg font-bold premium-gradient-text">{t('validation.comparison')}</h3>
         <table className="w-full border-collapse text-xs">
           <thead>
             <tr className="border-b border-hairline-2 text-2xs text-ink-3">
@@ -84,8 +84,8 @@ export function ValidationPanel() {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.key} className="border-b border-hairline">
-                <th scope="row" className="py-1 text-start font-normal text-ink-2">
+              <tr key={r.key} className="border-b border-hairline transition-colors hover:bg-surface/50 group/row">
+                <th scope="row" className="py-2 text-start font-medium text-ink-2 group-hover/row:text-accent transition-colors">
                   {t(`mooring.${r.key}`)}
                 </th>
                 <td className="py-1 text-end">
@@ -116,9 +116,9 @@ export function ValidationPanel() {
           the engine never computes sediment g/L or salinity PSU, so filling
           those cells from this data would be a fabricated match. */}
       {v.calibration_fit ? (
-        <section className="flex flex-col gap-2 rule bg-surface-2 p-3">
-          <h3 className="text-sm font-semibold">{t('validation.calibrationTitle')}</h3>
-          <p className="text-xs text-ink-2">
+        <section className="flex flex-col gap-4 glass-panel p-5 hover:glass-panel-hover group mt-2">
+          <h3 className="text-lg font-bold premium-gradient-text">{t('validation.calibrationTitle')}</h3>
+          <p className="text-sm text-ink-2 leading-relaxed">
             {t('validation.calibrationIntro', { n: v.calibration_fit.n_trials })}
           </p>
           <table className="w-full border-collapse text-xs">
@@ -186,8 +186,8 @@ export function ValidationPanel() {
       ) : null}
 
       {/* The null result, stated as a finding rather than omitted. */}
-      <section className="flex flex-col gap-2 rule bg-surface-2 p-3">
-        <h3 className="flex items-baseline gap-2 text-sm font-semibold">
+      <section className="flex flex-col gap-4 glass-panel p-5 hover:glass-panel-hover group mt-2">
+        <h3 className="flex items-center gap-3 text-lg font-bold premium-gradient-text">
           {t('validation.satelliteTitle')}
           <span className="border border-risk-high-stroke bg-risk-high px-1.5 text-2xs text-risk-high-on">
             {v.satellite.verdict}
@@ -208,9 +208,9 @@ export function ValidationPanel() {
 
       {/* Where the measured numbers come from, in full. A validation panel whose
           own source is vague is not a validation panel. */}
-      <section className="flex flex-col gap-1">
-        <h3 className="text-sm font-semibold">{t('validation.target')}</h3>
-        <p className="text-2xs text-ink-2">{v.mooring_target.citation}</p>
+      <section className="flex flex-col gap-1.5 mt-2">
+        <h3 className="text-base font-bold text-ink">{t('validation.target')}</h3>
+        <p className="text-xs text-ink-2 leading-relaxed">{v.mooring_target.citation}</p>
         <p className="text-2xs text-ink-3">
           <span dir="ltr" style={{ unicodeBidi: 'isolate' }} className="font-mono num">
             doi:{v.mooring_target.doi}

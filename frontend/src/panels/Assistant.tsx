@@ -13,13 +13,13 @@ export function Assistant() {
 
   return (
     <div className="flex flex-col gap-4" data-panel="assistant">
-      <p className="text-xs text-ink-2">
+      <p className="text-sm text-ink-2 leading-relaxed">
         The assistant has moved to its own page to support deep-linking and sharing.
       </p>
       <Link
         to="/assistant"
         onClick={() => setOverlay(null)}
-        className="rule self-start bg-ink px-4 py-2 text-xs font-bold text-ink-inverse"
+        className="premium-button self-start px-6 py-3 text-sm font-bold hover:premium-button-hover cursor-pointer"
       >
         {t('assistant.title', { defaultValue: 'Open Assistant' })}
       </Link>

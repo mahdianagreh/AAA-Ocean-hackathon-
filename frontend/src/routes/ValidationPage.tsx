@@ -161,7 +161,7 @@ export function ValidationPage() {
           </label>
           <select
             id={selectId}
-            className="w-full max-w-xs rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-ink"
+            className="w-full max-w-xs rounded-md border border-hairline bg-surface/50 px-3 py-2 text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
             value={eventId ?? ''}
             onChange={(e) => setEventId(e.target.value)}
             disabled={!options.length}
@@ -217,11 +217,11 @@ export function ValidationPage() {
             <table className="w-full border-collapse text-xs">
               <caption className="sr-only">{t('validation.calibrationTitle')}</caption>
               <thead>
-                <tr className="border-b border-hairline-2 text-2xs text-ink-3">
-                  <th scope="col" className="py-1 text-start font-normal">
+                <tr className="border-b border-hairline-2 text-xs premium-gradient-text pb-2">
+                  <th scope="col" className="py-2 text-start font-bold">
                     {t('validation.quantity')}
                   </th>
-                  <th scope="col" className="py-1 text-end font-normal">
+                  <th scope="col" className="py-2 text-end font-bold">
                     {t('validation.error')}
                   </th>
                 </tr>
@@ -234,8 +234,8 @@ export function ValidationPage() {
                     ['peak', record.calibration_fit.peak_timing_error_hours],
                   ] as const
                 ).map(([key, value]) => (
-                  <tr key={key} className="border-b border-hairline">
-                    <th scope="row" className="py-1 text-start font-normal text-ink-2">
+                  <tr key={key} className="border-b border-hairline hover:bg-surface/50 transition-colors group/row cursor-default">
+                    <th scope="row" className="py-2 text-start font-normal text-ink-2 group-hover/row:text-accent transition-colors">
                       {t(`validation.calibration.${key}`)}
                     </th>
                     <td className="py-1 text-end">
@@ -377,17 +377,17 @@ function MeasuredRecord({ record }: { record: MooringLive }) {
           <table className="w-full border-collapse text-xs">
             <caption className="sr-only">{t('validation.fieldsTitle')}</caption>
             <thead>
-              <tr className="border-b border-hairline-2 text-2xs text-ink-3">
-                <th scope="col" className="py-1 pe-3 text-start font-normal">
+              <tr className="border-b border-hairline-2 text-xs premium-gradient-text pb-2">
+                <th scope="col" className="py-2 pe-3 text-start font-bold">
                   {t('validation.quantity')}
                 </th>
-                <th scope="col" className="py-1 pe-3 text-end font-normal">
+                <th scope="col" className="py-2 pe-3 text-end font-bold">
                   {t('validation.measured')}
                 </th>
-                <th scope="col" className="py-1 pe-3 text-start font-normal">
+                <th scope="col" className="py-2 pe-3 text-start font-bold">
                   {t('validation.provenanceLabel')}
                 </th>
-                <th scope="col" className="py-1 text-start font-normal">
+                <th scope="col" className="py-2 text-start font-bold">
                   {t('validation.uncertaintyLabel')}
                 </th>
               </tr>
@@ -396,8 +396,8 @@ function MeasuredRecord({ record }: { record: MooringLive }) {
               {FIELDS.map((key) => {
                 const v = record[key];
                 return (
-                  <tr key={key} className="border-b border-hairline">
-                    <th scope="row" className="py-1 pe-3 text-start font-normal text-ink-2">
+                  <tr key={key} className="border-b border-hairline hover:bg-surface/50 transition-colors group/row cursor-default">
+                    <th scope="row" className="py-2 pe-3 text-start font-normal text-ink-2 group-hover/row:text-accent transition-colors">
                       {t(`validation.field.${key}`)}
                     </th>
                     <td className="py-1 pe-3 text-end">

@@ -80,7 +80,7 @@ export function ProvenancePage() {
                     type="button"
                     onClick={() => setOpen(f.file)}
                     data-figure={f.file}
-                    className="flex w-full flex-col gap-1 rounded-md border border-hairline bg-surface p-1 text-start hover:border-accent"
+                    className="flex w-full flex-col gap-2 p-2 text-start glass-panel glass-card-hover cursor-pointer"
                   >
                     {f.thumb ? (
                       <span className="flex aspect-4/3 w-full items-center justify-center overflow-hidden rounded-sm bg-surface-2">
@@ -131,34 +131,34 @@ export function ProvenancePage() {
               role="region"
               aria-label={t('provenance.sourcesSection')}
             >
-              <table className="w-full border-collapse text-2xs">
+              <table className="w-full border-collapse text-xs mt-2">
                 <caption className="sr-only">{t('provenance.sourcesSection')}</caption>
                 <thead>
-                  <tr className="border-b border-hairline-2 text-ink-3">
-                    <th scope="col" className="py-1 pe-3 text-start font-normal">
+                  <tr className="border-b border-hairline-2 text-xs premium-gradient-text pb-2">
+                    <th scope="col" className="py-2 pe-3 text-start font-bold">
                       {t('provenance.colProduct')}
                     </th>
-                    <th scope="col" className="py-1 pe-3 text-start font-normal">
+                    <th scope="col" className="py-2 pe-3 text-start font-bold">
                       {t('provenance.colVersion')}
                     </th>
-                    <th scope="col" className="py-1 pe-3 text-start font-normal">
+                    <th scope="col" className="py-2 pe-3 text-start font-bold">
                       {t('provenance.colResolution')}
                     </th>
-                    <th scope="col" className="py-1 pe-3 text-start font-normal">
+                    <th scope="col" className="py-2 pe-3 text-start font-bold">
                       {t('provenance.colAccessDate')}
                     </th>
-                    <th scope="col" className="py-1 pe-3 text-start font-normal">
+                    <th scope="col" className="py-2 pe-3 text-start font-bold">
                       {t('provenance.colLicence')}
                     </th>
-                    <th scope="col" className="py-1 text-start font-normal">
+                    <th scope="col" className="py-2 text-start font-bold">
                       {t('provenance.colLimitations')}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {sources.map((r) => (
-                    <tr key={r.name} className="border-b border-hairline align-top">
-                      <th scope="row" className="py-2 pe-3 text-start font-semibold text-ink">
+                    <tr key={r.name} className="border-b border-hairline align-top hover:bg-surface/50 transition-colors group/row cursor-default">
+                      <th scope="row" className="py-3 pe-3 text-start font-semibold text-ink group-hover/row:text-accent transition-colors">
                         <span dir="auto">{r.name}</span>
                         {r.substituted ? (
                           <span className="ms-2 rounded-sm border border-hairline-2 bg-surface-2 px-1 py-0.5 text-ink-2">
@@ -227,12 +227,12 @@ export function ProvenancePage() {
           from a primitive rather than being approximated. */}
       <Dialog.Root open={Boolean(open)} onOpenChange={(o) => !o && setOpen(null)}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-60 bg-canvas/80" />
+          <Dialog.Overlay className="fixed inset-0 z-60 bg-canvas/80 backdrop-blur-sm" />
           <Dialog.Content
-            className="fixed inset-4 z-60 flex flex-col gap-2 overflow-auto rounded-card border border-hairline bg-surface p-4 shadow-float lg:inset-12"
+            className="fixed inset-4 z-60 flex flex-col gap-3 overflow-auto p-6 glass-card lg:inset-12"
             aria-describedby={undefined}
           >
-            <Dialog.Title dir="ltr" className="m-0 font-mono num text-sm font-semibold">
+            <Dialog.Title dir="ltr" className="m-0 font-mono num text-lg font-bold premium-gradient-text">
               {shown?.file}
             </Dialog.Title>
             {shown?.thumb ? (
@@ -263,7 +263,7 @@ export function ProvenancePage() {
                 </dd>
               </div>
             </dl>
-            <Dialog.Close className="self-start rounded-md border border-hairline px-2 py-1 text-xs">
+            <Dialog.Close className="self-start mt-4 px-6 py-2 text-sm font-bold premium-button hover:premium-button-hover cursor-pointer">
               {t('provenance.close')}
             </Dialog.Close>
           </Dialog.Content>

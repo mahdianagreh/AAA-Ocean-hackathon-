@@ -45,7 +45,6 @@ export function Section({ label, children }: { label: string; children: ReactNod
   );
 }
 
-/** The brand card: white surface, 20px radius, hairline border, 24px padding. */
 export function Card({
   children,
   className = '',
@@ -55,8 +54,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`flex flex-col gap-3 rounded-card border border-hairline bg-surface p-6 ${className}`}
-      style={{ boxShadow: 'var(--shadow-sm)' }}
+      className={`flex flex-col gap-3 p-6 glass-card ${className}`}
     >
       {children}
     </div>

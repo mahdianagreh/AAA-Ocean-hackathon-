@@ -125,7 +125,7 @@ export function ReportsPage() {
               </label>
               <select
                 id={eventSelectId}
-                className="h-10 rounded-md border border-hairline bg-surface px-3 text-sm text-ink"
+                className="h-10 rounded-md border border-hairline bg-surface/50 px-3 text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
                 value={eventId ?? ''}
                 onChange={(e) => setEventId(e.target.value)}
                 disabled={!options.length}
@@ -141,7 +141,7 @@ export function ReportsPage() {
               type="button"
               onClick={() => void onGenerate()}
               disabled={!eventId || notice.kind === 'generating'}
-              className="h-10 rounded-md bg-ink px-4 text-xs font-bold text-ink-inverse disabled:opacity-50"
+              className="h-10 rounded-full px-5 text-sm font-bold premium-button hover:premium-button-hover disabled:opacity-50"
             >
               {notice.kind === 'generating' ? t('reports.generating') : t('reports.generate')}
             </button>
@@ -159,14 +159,14 @@ export function ReportsPage() {
                 value={lookup}
                 onChange={(e) => setLookup(e.target.value)}
                 placeholder="report_…"
-                className="h-10 w-64 rounded-md border border-hairline bg-surface px-3 font-mono num text-xs text-ink placeholder:text-ink-3"
+                className="h-10 w-64 rounded-md border border-hairline bg-surface/50 px-3 font-mono num text-sm text-ink placeholder:text-ink-3 hover:border-accent focus:border-accent outline-none transition-colors"
               />
             </div>
             <button
               type="button"
               onClick={() => void onLookup()}
               disabled={!lookup.trim()}
-              className="h-10 rounded-md border border-hairline px-4 text-xs font-semibold text-ink disabled:opacity-50"
+              className="h-10 rounded-full border-2 border-accent px-5 text-sm font-bold text-accent hover:bg-accent/10 transition-colors disabled:opacity-50 cursor-pointer"
             >
               {t('reports.lookup')}
             </button>
@@ -213,7 +213,7 @@ export function ReportsPage() {
                     dir="auto"
                     value={reviewer}
                     onChange={(e) => setReviewer(e.target.value)}
-                    className="h-10 w-64 rounded-md border border-hairline bg-surface px-3 text-sm text-ink"
+                    className="h-10 w-64 rounded-md border border-hairline bg-surface/50 px-3 text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
                   />
                 </div>
                 <p className="m-0 max-w-prose text-2xs text-ink-2">{t('reports.reviewerHint')}</p>
@@ -270,7 +270,7 @@ function ReportCard({
             type="button"
             onClick={onReview}
             disabled={!canReview || busy}
-            className="h-9 rounded-md border border-hairline px-3 text-xs font-semibold text-ink disabled:opacity-50"
+            className="h-9 rounded-full border-2 border-accent px-4 text-xs font-bold text-accent hover:bg-accent/10 transition-colors disabled:opacity-50 cursor-pointer"
           >
             {busy ? t('reports.reviewing') : t('reports.markReviewed')}
           </button>
