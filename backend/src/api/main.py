@@ -1365,6 +1365,14 @@ def plume_map_frames(event_id: str, outlet_id: str,
 
     Returned rather than assumed so the client never guesses a `upto_hours` the
     simulation did not produce.
+
+    Also carries the run's `provenance`/`caveats` verbatim from `plume_simulate` --
+    the currents source (real HYCOM where cached, the documented PLACEHOLDER
+    otherwise) and the permanent wind/windage caveats live only there today, and
+    the 05-abd.md rule is to render that provenance on screen rather than have the
+    UI assert its own copy of it. `windage_*` is added separately because the
+    72-trial calibration result lives in its own sidecar file, not in the plume
+    run itself -- see `data/models/plume_calibration.json`'s own `windage_caveat`.
     """
     from rendering import plume_map as renderer
 
@@ -1373,6 +1381,8 @@ def plume_map_frames(event_id: str, outlet_id: str,
     times = renderer.frame_times(c.model_dump() for c in plume.contours)
     base = (f"{PREFIX}/plume/map?event_id={event_id}&outlet_id={outlet_id}"
             f"&horizon_hours={horizon_hours}")
+    calibration = _load_plume_calibration()
+    calibrated_here = bool(calibration) and calibration.get("event_id") == event_id
     return {
         "event_id": event_id,
         "outlet_id": outlet_id,
@@ -1380,6 +1390,18 @@ def plume_map_frames(event_id: str, outlet_id: str,
         "frames": [{"t_hours": t, "url": f"{base}&upto_hours={t:g}"} for t in times],
         "basemap_present": renderer.load_basemap() is not None,
         "plume_source": "stub" if plume.is_stub else "particle-engine",
+        "provenance": plume.provenance,
+        "caveats": plume.caveats,
+        # windage_fraction "won" a calibration grid search in which wind was
+        # identically zero, so every candidate's windage term contributed the same
+        # zero drift -- the winner is a tie-break artefact, not a fitted value.
+        # None (not 0.0) when no calibration ran for this event, so the UI can
+        # tell "no calibration" from "calibrated to exactly zero".
+        "windage_fraction": (
+            calibration["params"]["windage_fraction"] if calibrated_here else None
+        ),
+        "windage_is_tiebreak": calibrated_here,
+        "windage_caveat": calibration.get("windage_caveat") if calibrated_here else None,
     }
 
 

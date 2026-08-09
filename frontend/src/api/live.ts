@@ -50,11 +50,26 @@ export interface ExposureRun {
   created_at: string;
   results: ExposureResult[];
   model_versions: Record<string, string>;
+  /** `unknown[]`, narrowed at the render boundary — same convention as every
+   *  other live endpoint's caveats (see AlertsPage.tsx). Declared here rather
+   *  than cast at each call site: `run.caveats` is a real response field
+   *  (backend/src/api/main.py's exposure_calculate), not an extension. */
+  caveats: unknown[];
 }
 
 export interface PlumeFrame {
   t_hours: number;
   url: string;
+}
+
+/** Source vs derived, made explicit — backend `schemas.Provenance`. Currents
+ *  read "HYCOM GLBu0.08/expt_91.2 historical archive, cached …" where the
+ *  archive exists for this event, or begin `PLACEHOLDER:` otherwise — rendered
+ *  verbatim rather than paraphrased, because whichever it is on a given
+ *  checkout is itself the fact the panel exists to show. */
+export interface PlumeProvenanceEntry {
+  kind: 'source' | 'derived' | 'assumed' | 'stub';
+  detail: string;
 }
 
 export interface PlumeFrames {
@@ -67,6 +82,20 @@ export interface PlumeFrames {
    *  no change needed here — the point of asking the API rather than hard-coding
    *  it. A stub labelled as a stub is honest; shown as a forecast, it is not. */
   plume_source: 'stub' | 'particle-engine';
+  /** The run's own provenance/caveats, carrying the currents source and the
+   *  permanent wind-is-zero statement. `caveats` is `unknown[]`, narrowed at the
+   *  render boundary by `Caveats`/`CaveatList` — same convention as every other
+   *  live endpoint's caveats, per AlertsPage.tsx's own note on why. */
+  provenance: PlumeProvenanceEntry[];
+  caveats: unknown[];
+  /** From `data/models/plume_calibration.json`, only when it was fit against
+   *  THIS event — null (not 0), never invented, when no calibration ran here.
+   *  `windage_is_tiebreak` is true exactly when a fit exists: the wind field is
+   *  identically zero in every trial, so any windage_fraction that "wins" a
+   *  72-trial grid search is a tie-break artefact, not a calibrated value. */
+  windage_fraction: number | null;
+  windage_is_tiebreak: boolean;
+  windage_caveat: string | null;
 }
 
 export interface AlertRow {
@@ -207,6 +236,48 @@ export function fetchExposure(eventId: string, params: ExposureParams = {}) {
 export function fetchPlumeFrames(eventId: string, outletId = DEMO_OUTLET) {
   const q = new URLSearchParams({ event_id: eventId, outlet_id: outletId });
   return tryJson<PlumeFrames>(`${API_BASE}/api/v1/plume/map/frames?${q}`);
+}
+
+export interface RunoffDriver {
+  key: string;
+  contribution: number;
+  value: number | null;
+}
+
+/** Component A (runoff occurrence) and Component B (the sediment proxy), one
+ *  call — the backend scores both from the same real feature row. Unlike the
+ *  plume/mooring, this has no `flood_arrival_utc` dependency: it resolves for
+ *  ANY event with a real row in `training_set_full.parquet`, not the anchor
+ *  event alone. `rainfall_mm_3h` is required by the schema but is ignored
+ *  whenever a real historical row exists for `(event_id, catchment_id)` — it
+ *  only matters for a what-if scenario with no matching row, which Replay does
+ *  not use. */
+export interface RunoffPrediction {
+  catchment_id: string;
+  predicted_runoff_m3: number | null;
+  relative_sediment_intensity: number;
+  runoff_probability: number | null;
+  severity: string | null;
+  confidence: number | null;
+  sediment_class: 'low' | 'medium' | 'high' | 'extreme' | null;
+  model_version: string;
+  is_stub: boolean;
+  drivers: RunoffDriver[];
+  transmission_loss: number | null;
+  transmission_loss_basis?: string | null;
+  provenance: PlumeProvenanceEntry[];
+  caveats: unknown[];
+}
+
+export function fetchRunoffPredict(eventId: string, catchmentId: string) {
+  return tryJson<RunoffPrediction>(`${API_BASE}/api/v1/runoff/predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    // rainfall_mm_3h is a required field the endpoint does not use for a real
+    // historical (event_id, catchment_id) row (see the interface docstring) —
+    // 0 rather than a fabricated depth, since it is discarded either way.
+    body: JSON.stringify({ catchment_id: catchmentId, rainfall_mm_3h: 0, event_id: eventId }),
+  });
 }
 
 /** Real stored alerts. `[]` is a legitimate answer — `min_level` defaults to

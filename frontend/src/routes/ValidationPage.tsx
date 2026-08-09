@@ -409,7 +409,7 @@ function MeasuredRecord({ record }: { record: MooringLive }) {
                       />
                     </td>
                     <td className="py-1 pe-3 text-ink-2">
-                      {t(`validation.provenance.${v.provenance}`)}
+                      {t(`common:provenance.${v.provenance}`)}
                     </td>
                     <td className="py-1 text-ink-2">
                       {v.uncertainty?.sigma !== undefined && v.uncertainty.sigma !== null ? (
@@ -449,7 +449,7 @@ function MeasuredRecord({ record }: { record: MooringLive }) {
                   {m.t}
                 </code>
                 <span className="text-2xs text-ink-3">
-                  {t(`validation.provenance.${m.provenance}`)}
+                  {t(`common:provenance.${m.provenance}`)}
                 </span>
               </dd>
             </div>

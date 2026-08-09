@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../api/client';
 import type { PlumeFrames } from '../api/live';
+import { CaveatList } from './CaveatList';
 
 /** The prediction as a picture — "where does the mud go", answered without
  *  generating anything.
@@ -12,10 +13,22 @@ import type { PlumeFrames } from '../api/live';
  *  response header. (That header still carries the pre-rebrand product name as
  *  its vendor prefix, because it is emitted by the backend and renaming it is a
  *  backend change.) This panel adds one more place that provenance is stated:
- *  `plume.plume_source`, which is `'stub'` today and flips to `'particle-engine'`
- *  by itself once the real transport model lands — no change needed here. A stub
- *  labelled as a stub is honest; a stub shown as a forecast is not, so the badge
- *  is not decorative.
+ *  `plume.plume_source`, which flips from `'stub'` to `'particle-engine'` on its
+ *  own the moment the real transport model is what actually ran — no change
+ *  needed here when it does. A stub labelled as a stub is honest; a stub shown
+ *  as a forecast is not, so the badge is not decorative. The engine is real as
+ *  of Phase 7: `plume_source` now reads `'particle-engine'` for the anchor event.
+ *
+ *  The forcing note below renders `plume.provenance`/`plume.caveats` verbatim
+ *  rather than asserting a fixed sentence about what the currents field is,
+ *  because that is conditional on the checkout: it is real cached HYCOM data
+ *  for the anchor event where `data/raw/currents/` happens to hold the archive,
+ *  and the documented `PLACEHOLDER: ConstantCurrentField(0, 0)` otherwise. A
+ *  hardcoded claim of "falls back to zero" would be simply wrong on a checkout
+ *  where the archive is cached — this is not hypothetical, it is what Phase 7's
+ *  own baseline check found on this repo. Wind has no such conditional: it is
+ *  `ConstantWindField(0, 0)` unconditionally, because no historical marine wind
+ *  source exists in this project at all.
  */
 export function PlumeMapPanel({ plume }: { plume: PlumeFrames | null }) {
   const { t } = useTranslation();
@@ -138,6 +151,32 @@ export function PlumeMapPanel({ plume }: { plume: PlumeFrames | null }) {
       </div>
 
       <p className="text-2xs text-ink-3">{t('plumeMap.caveat')}</p>
+
+      {/* 05-abd.md core-C: the three qualifications a judge must be able to read
+          without asking — currents provenance (real HYCOM where cached, the
+          documented placeholder otherwise), wind's permanent zero, and what that
+          combination means for reading direction off these frames.
+          `?? []` rather than a direct `.map`: an older cached response or a build
+          skew between frontend and backend can still carry the pre-Phase-7 shape,
+          and a missing field must degrade to "nothing to show" here, never to an
+          uncaught render crash that takes out the whole side rail. */}
+      <div className="flex flex-col gap-1 rule bg-surface-2 p-2">
+        <p className="m-0 text-2xs font-semibold text-ink">{t('plumeMap.forcingTitle')}</p>
+        {(plume.provenance ?? []).map((p, i) => (
+          <p key={`${p.kind}-${i}`} className="m-0 text-2xs text-ink-2">
+            {p.detail}
+          </p>
+        ))}
+        <p className="m-0 text-2xs text-ink-2">{t('plumeMap.forcingWindStatement')}</p>
+        {/* windage_fraction only ever appears alongside this caveat — the tie-break
+            note travels WITH the parameter, never separately (design system §6.4). */}
+        {plume.windage_is_tiebreak && plume.windage_caveat ? (
+          <p className="m-0 text-2xs text-ink-2">{plume.windage_caveat}</p>
+        ) : null}
+        <p className="m-0 text-2xs text-ink-2">{t('plumeMap.forcingDiffusionBody')}</p>
+      </div>
+
+      <CaveatList items={plume.caveats ?? []} />
     </section>
   );
 }

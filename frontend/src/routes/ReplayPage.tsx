@@ -1,41 +1,51 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API_BASE } from '../api/client';
-import { loadEventSeries } from '../api/event';
+import { loadEventSeries, type EventSeries } from '../api/event';
 import {
   fetchExposure,
   fetchPlumeFrames,
+  fetchRunoffPredict,
   type ExposureRun,
   type PlumeFrames,
+  type RunoffPrediction,
 } from '../api/live';
+import { bandForSeverity } from '../api/predictions';
 import { DEMO_OUTLET } from '../api/types';
+import { CaveatList } from '../components/CaveatList';
 import { Link } from '../components/Link';
 import { Empty, ErrorState, Loading } from '../components/States';
 import { ValueWithUnit } from '../components/ValueWithUnit';
 import { Card, PageShell, Section } from '../shell/PageShell';
 import { BandChip, Caveats, IdText } from './AlertsPage';
 
-/** Historical replay, at /dashboard/replay/:eventId.
+/** Historical replay, at /dashboard/replay/:eventId — the full chain, in order:
+ *  rainfall → runoff → sediment → plume → exposure, each from a real endpoint.
  *
- *  The plume engine behind this is real — `plume_source` comes back
- *  `particle-engine`, not `stub`. Three things about it are not, and all three
- *  are stated on the page rather than in a commit message:
+ *  The chain does not fail uniformly. Rainfall (a build-time fixture keyed to
+ *  the anchor event only) and the plume/exposure pair (needs a real
+ *  `flood_arrival_utc`) are anchor-only. Runoff and sediment are NOT: Component
+ *  A/B score any event with a real row in `training_set_full.parquet`, no
+ *  flood-arrival dependency — so a non-anchor event shows a genuinely partial
+ *  chain (runoff/sediment real, rainfall/plume/exposure absent-and-stated)
+ *  rather than nothing at all. Rendering that distinction honestly is the point
+ *  of keeping the stages separate rather than gating the whole page on one flag.
  *
- *   1. Ocean currents fall back to `ConstantCurrentField(0, 0)` on this
- *      checkout, and wind forcing is zero. So the cloud's SHAPE is advection
- *      by nothing plus diffusion — a spreading blob, not a drifting plume. The
- *      timing and the mass are meaningful; a direction read off the image is
- *      not.
- *   2. Only the anchor event simulates at all. Every other event_id answers
- *      HTTP 422: the particle engine needs a real `flood_arrival_utc` from
- *      docs/event_dates.md and refuses to guess one. That refusal is correct
- *      behaviour, so it is reported as a stated limit rather than swallowed
- *      into an empty animation — an empty animation would imply a plume shape
- *      that was never computed.
- *   3. The exposure run for the anchor event currently returns NO results, and
- *      its own caveat says why: the nearest reef zone is 1923 m from AQ-O01 and
- *      the plume's largest modelled extent is 418 m. "Not reached" is rendered
- *      as not reached, never as zero-risk exposure.
+ *  The plume engine itself is real — `plume_source` comes back
+ *  `particle-engine`, not `stub`. Two things about its forcing are not fully
+ *  real, and both are rendered from `plume.provenance`/`plume.caveats`
+ *  verbatim rather than asserted as fixed prose: which one is true (real cached
+ *  HYCOM currents vs. the documented placeholder) depends on whether
+ *  `data/raw/currents/` happens to hold the archive on a given checkout, so a
+ *  hardcoded claim would be wrong exactly when the archive IS cached — which is
+ *  what this project's own Phase 7 baseline check found here. Wind is the one
+ *  unconditional part: `ConstantWindField(0, 0)`, no historical marine wind
+ *  source exists in this project at all.
+ *
+ *  The exposure run for the anchor event currently returns NO results, and its
+ *  own caveat says why: the nearest reef zone is 1923 m from AQ-O01 and the
+ *  plume's largest modelled extent is 418 m. "Not reached" is rendered as not
+ *  reached, never as zero-risk exposure.
  *
  *  The anchor event id is read from the committed event fixture rather than
  *  typed in, because no event date is hard-coded anywhere in this project.
@@ -43,13 +53,22 @@ import { BandChip, Caveats, IdText } from './AlertsPage';
 
 const STEP_MS_HINT = 5; // seconds, documented in the copy — frames render server-side
 
+// AQ-O01 <-> AQ-C01 is fixed, settled geometry (CLAUDE.md's ID contract: 5
+// catchments, 5 outlets, never renamed) — not a computation, so not worth a
+// second network fetch of basemap geometry on a page that has no other reason
+// to load it. If DEMO_OUTLET ever changes, this must change with it.
+const CATCHMENT_FOR_OUTLET: Record<string, string> = { 'AQ-O01': 'AQ-C01' };
+
 export function ReplayPage({ eventId }: { eventId?: string }) {
   const { t } = useTranslation('pages');
 
   const [anchorId, setAnchorId] = useState<string | null>(null);
+  const [anchorSeries, setAnchorSeries] = useState<EventSeries | null>(null);
   const [anchorResolved, setAnchorResolved] = useState(false);
   const [plume, setPlume] = useState<PlumeFrames | null>(null);
   const [exposure, setExposure] = useState<ExposureRun | null>(null);
+  const [runoff, setRunoff] = useState<RunoffPrediction | null>(null);
+  const [runoffLoaded, setRunoffLoaded] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   // `step` is the frame the last click asked for; `shownStep` is the frame whose
@@ -65,7 +84,9 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
     let live = true;
     void loadEventSeries()
       .then((s) => {
-        if (live) setAnchorId(s.event_id);
+        if (!live) return;
+        setAnchorId(s.event_id);
+        setAnchorSeries(s);
       })
       .catch(() => {
         // The fixture is bundled, so this only fails if the build is broken.
@@ -80,6 +101,7 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
   }, []);
 
   const effectiveId = eventId ?? anchorId;
+  const catchmentId = CATCHMENT_FOR_OUTLET[DEMO_OUTLET];
 
   useEffect(() => {
     if (!effectiveId) return;
@@ -104,6 +126,40 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
     };
   }, [effectiveId]);
 
+  // Runoff/sediment (Component A/B) has no flood-arrival dependency, unlike
+  // plume/exposure — it resolves for any event with a real feature row, so it
+  // is fetched independently rather than gated on the anchor-only Promise.all
+  // above. A non-anchor event can legitimately show real runoff/sediment next
+  // to an absent-and-stated plume/exposure; that partial chain is more honest
+  // than hiding what DID compute because something else on the page did not.
+  useEffect(() => {
+    if (!effectiveId) return;
+    let live = true;
+    setRunoffLoaded(false);
+    setRunoff(null);
+    void fetchRunoffPredict(effectiveId, catchmentId).then((r) => {
+      if (!live) return;
+      setRunoff(r);
+      setRunoffLoaded(true);
+    });
+    return () => {
+      live = false;
+    };
+  }, [effectiveId, catchmentId]);
+
+  // The flood-day rainfall depth for this catchment, from the anchor's own
+  // committed series — the only rainfall source in this project, and it is
+  // keyed to the anchor event alone (docs/event_dates.md's converted arrival
+  // times exist only for AQ-2016-10-28). Showing it under a non-anchor id
+  // would silently attribute Oct 2016's rainfall to a different storm, so it
+  // renders only when `isAnchor` — see the render below.
+  const floodDayRainfall = useMemo(() => {
+    if (!anchorSeries || !anchorId) return null;
+    const datePart = anchorId.slice(3); // 'AQ-2016-10-28' -> '2016-10-28'
+    const series = anchorSeries.rainfall_daily.by_catchment[catchmentId] ?? [];
+    return series.find((p) => p.t.startsWith(datePart)) ?? null;
+  }, [anchorSeries, anchorId, catchmentId]);
+
   const frames = useMemo(() => plume?.frames ?? [], [plume]);
 
   useEffect(() => {
@@ -121,7 +177,7 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
 
   const isAnchor = effectiveId !== null && effectiveId === anchorId;
   const results = exposure?.results ?? [];
-  const runCaveats = (exposure as (ExposureRun & { caveats?: unknown[] }) | null)?.caveats ?? [];
+  const runCaveats = exposure?.caveats ?? [];
 
   if (!anchorResolved || !effectiveId) {
     return (
@@ -152,6 +208,96 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
         </Link>
       }
     >
+      <Section label={t('replay.rainfallLabel')}>
+        {!isAnchor ? (
+          <Empty title={t('replay.rainfallUnavailableTitle')} body={t('replay.rainfallUnavailableBody')} />
+        ) : !anchorResolved ? (
+          <Loading what={t('replay.loading')} />
+        ) : floodDayRainfall === null ? (
+          <Empty title={t('replay.rainfallUnavailableTitle')} body={t('replay.rainfallUnavailableBody')} />
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-baseline gap-4">
+              <span className="flex flex-col gap-0.5">
+                <ValueWithUnit
+                  value={floodDayRainfall.mm}
+                  unit={anchorSeries?.rainfall_daily.unit}
+                  digits={2}
+                  provenance={anchorSeries?.rainfall_daily.provenance}
+                />
+                <span className="text-2xs text-ink-3">
+                  {t('replay.rainfallFloodDay', { catchment: catchmentId })}
+                </span>
+              </span>
+            </div>
+            <p className="m-0 max-w-prose text-2xs text-ink-2">{anchorSeries?.rainfall_daily.note}</p>
+            <p className="m-0 text-2xs text-ink-3">
+              {t('replay.source')}{' '}
+              <IdText>{anchorSeries?.rainfall_daily.source ?? ''}</IdText>
+            </p>
+          </div>
+        )}
+      </Section>
+
+      <Section label={t('replay.runoffSedimentLabel')}>
+        {!runoffLoaded ? (
+          <Loading what={t('replay.loading')} />
+        ) : runoff === null ? (
+          <ErrorState what={t('replay.runoffUnavailableTitle')} message={t('replay.runoffUnavailableBody')} />
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-6">
+              <span className="flex flex-col gap-0.5">
+                <ValueWithUnit value={runoff.runoff_probability} digits={2} provenance="modelled" />
+                <span className="text-2xs text-ink-3">{t('replay.runoffProbability')}</span>
+              </span>
+              <span className="flex flex-col gap-0.5">
+                {runoff.severity ? (
+                  <BandChip band={bandForSeverity(runoff.severity)} />
+                ) : (
+                  <ValueWithUnit value={null} />
+                )}
+                <span className="text-2xs text-ink-3">{t('replay.runoffSeverity')}</span>
+              </span>
+              <span className="flex flex-col gap-0.5">
+                <ValueWithUnit value={runoff.relative_sediment_intensity} digits={3} provenance="modelled" />
+                <span className="text-2xs text-ink-3">{t('replay.sedimentIntensity')}</span>
+              </span>
+              <span className="flex flex-col gap-0.5">
+                {runoff.sediment_class ? (
+                  <span className="text-sm font-semibold text-ink">
+                    {t(`replay.sedimentClassValue.${runoff.sediment_class}`)}
+                  </span>
+                ) : (
+                  <ValueWithUnit value={null} />
+                )}
+                <span className="text-2xs text-ink-3">{t('replay.sedimentClass')}</span>
+              </span>
+            </div>
+
+            {runoff.drivers.length > 0 ? (
+              <div className="flex flex-col gap-1">
+                <p className="m-0 text-2xs font-semibold text-ink-2">{t('common:risk.drivers')}</p>
+                <ul className="m-0 flex flex-col gap-1 p-0 text-2xs text-ink-2">
+                  {runoff.drivers.map((d) => (
+                    <li key={d.key} className="flex items-baseline justify-between gap-2">
+                      <span>{t(`common:driver.${d.key}`, { defaultValue: d.key })}</span>
+                      <ValueWithUnit value={d.contribution} digits={3} provenance="modelled" />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            <p className="m-0 text-2xs text-ink-3">
+              {t('replay.modelVersions')} <IdText>{runoff.model_version}</IdText>
+            </p>
+
+            <CaveatList items={runoff.caveats} />
+          </div>
+        )}
+      </Section>
+
       <Section label={t('replay.playbackLabel')}>
         {!loaded ? (
           <Loading what={t('replay.simulating', { seconds: STEP_MS_HINT })} />
@@ -217,11 +363,29 @@ export function ReplayPage({ eventId }: { eventId?: string }) {
             </div>
 
             {/* Not a footnote. A direction read off these frames is a direction
-                nothing forced. */}
+                nothing forced. Rendered from `plume.provenance`/`caveats`
+                verbatim rather than a fixed sentence — see the module docstring
+                on why a hardcoded "falls back to zero" claim is wrong exactly
+                when the HYCOM archive is cached for this event. */}
             <div className="flex flex-col gap-1 rule bg-surface-2 p-3">
               <p className="m-0 text-xs font-semibold">{t('replay.forcingTitle')}</p>
-              <p className="m-0 max-w-prose text-2xs text-ink-2">{t('replay.forcingBody')}</p>
+              {(plume?.provenance ?? []).map((p, i) => (
+                <p key={`${p.kind}-${i}`} className="m-0 max-w-prose text-2xs text-ink-2">
+                  {p.detail}
+                </p>
+              ))}
+              <p className="m-0 max-w-prose text-2xs text-ink-2">
+                {t('replay.forcingWindStatement')}
+              </p>
+              {plume?.windage_is_tiebreak && plume.windage_caveat ? (
+                <p className="m-0 max-w-prose text-2xs text-ink-2">{plume.windage_caveat}</p>
+              ) : null}
+              <p className="m-0 max-w-prose text-2xs text-ink-2">
+                {t('replay.forcingDiffusionBody')}
+              </p>
             </div>
+
+            <CaveatList items={plume?.caveats ?? []} />
           </>
         )}
       </Section>
