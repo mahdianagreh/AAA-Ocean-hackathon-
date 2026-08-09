@@ -30,6 +30,7 @@ export function ProvenancePage() {
   const [sources, setSources] = useState<DataSourceRow[] | null>(null);
   const [sourcesLoaded, setSourcesLoaded] = useState(false);
   const [open, setOpen] = useState<string | null>(null);
+  const [chainFilter, setChainFilter] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -55,6 +56,23 @@ export function ProvenancePage() {
 
   const shown = figures?.figures.find((f) => f.file === open) ?? null;
 
+  // Filter by processing chain, derived from the figures' own `source` values —
+  // never a fabricated category. The control appears only when there is more than
+  // one chain to choose between.
+  const chains = figures
+    ? Array.from(new Set(figures.figures.map((f) => f.source).filter((s): s is string => Boolean(s)))).sort()
+    : [];
+  const visibleFigures = figures
+    ? figures.figures.filter((f) => !chainFilter || f.source === chainFilter)
+    : [];
+
+  // Caption: a bold summary (first sentence) + supporting detail, instead of one
+  // dense paragraph.
+  const caption = shown?.caption ?? '';
+  const capDot = caption.indexOf('. ');
+  const capSummary = capDot > 0 ? caption.slice(0, capDot + 1) : caption;
+  const capDetail = capDot > 0 ? caption.slice(capDot + 2) : '';
+
   return (
     <PageShell title={t('provenance.title')} lede={t('provenance.lede')}>
       <Section label={t('provenance.figuresSection')}>
@@ -73,8 +91,32 @@ export function ProvenancePage() {
             </p>
             <p className="m-0 max-w-prose text-2xs text-ink-3">{t(figures.excluded_reason_key, { ns: 'common' })}</p>
 
+            {chains.length > 1 ? (
+              <div role="group" aria-label={t('provenance.filterLabel')} className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  aria-pressed={chainFilter === null}
+                  onClick={() => setChainFilter(null)}
+                  className={`rounded-full px-3 py-1 text-2xs font-semibold transition-colors cursor-pointer ${chainFilter === null ? 'bg-ink text-ink-inverse' : 'glass-panel text-ink-2 hover:border-accent'}`}
+                >
+                  {t('provenance.filterAll')}
+                </button>
+                {chains.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-pressed={chainFilter === c}
+                    onClick={() => setChainFilter(c)}
+                    className={`rounded-full px-3 py-1 text-2xs font-semibold transition-colors cursor-pointer ${chainFilter === c ? 'bg-ink text-ink-inverse' : 'glass-panel text-ink-2 hover:border-accent'}`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+
             <ul className="m-0 grid list-none gap-3 p-0" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(12rem, 1fr))' }}>
-              {figures.figures.map((f) => (
+              {visibleFigures.map((f) => (
                 <li key={f.file}>
                   <button
                     type="button"
@@ -92,11 +134,11 @@ export function ProvenancePage() {
                         />
                       </span>
                     ) : (
-                      <span className="flex aspect-4/3 w-full items-center justify-center rounded-sm bg-surface-2 text-2xs text-ink-3">
+                      <span className="flex aspect-4/3 w-full items-center justify-center rounded-sm bg-surface-2 text-2xs text-ink-2">
                         {t('provenance.noThumb')}
                       </span>
                     )}
-                    <span dir="ltr" className="line-clamp-2 px-1 font-mono num text-2xs text-ink-3">
+                    <span dir="ltr" className="line-clamp-2 px-1 font-mono num text-2xs text-ink-2">
                       {f.file}
                     </span>
                   </button>
@@ -229,41 +271,83 @@ export function ProvenancePage() {
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-60 bg-canvas/80 backdrop-blur-sm" />
           <Dialog.Content
-            className="fixed inset-4 z-60 flex flex-col gap-3 overflow-auto p-6 glass-card lg:inset-12"
+            className="fixed inset-4 z-60 flex flex-col gap-4 overflow-auto p-6 glass-card lg:inset-12"
             aria-describedby={undefined}
           >
-            <Dialog.Title dir="ltr" className="m-0 font-mono num text-lg font-bold premium-gradient-text">
-              {shown?.file}
-            </Dialog.Title>
+            {/* File id as a small eyebrow; the bold summary is the real title. */}
+            <div className="flex flex-col gap-1">
+              <span dir="ltr" style={{ unicodeBidi: 'isolate' }} className="font-mono num text-2xs text-ink-3">
+                {shown?.file}
+              </span>
+              <Dialog.Title dir="auto" className="m-0 text-lg font-bold text-ink">
+                {capSummary}
+              </Dialog.Title>
+            </div>
+
             {shown?.thumb ? (
               <img
                 src={`${import.meta.env.BASE_URL}fixtures/${shown.thumb}`}
-                alt={shown.caption}
-                className="max-h-[55vh] w-auto self-start"
+                alt={caption}
+                className="max-h-[55vh] w-auto self-start rounded-md border border-hairline"
               />
             ) : null}
-            <p dir="auto" className="m-0 max-w-prose text-xs text-ink-2">
-              {shown?.caption}
-            </p>
-            <dl className="m-0 flex flex-wrap gap-x-6 gap-y-1 text-2xs text-ink-3">
-              <div>
-                <dt className="inline">{t('provenance.generated')} </dt>
-                <dd className="m-0 inline font-mono num">
+
+            {capDetail ? (
+              <p dir="auto" className="m-0 max-w-prose text-xs text-ink-2">
+                {capDetail}
+              </p>
+            ) : null}
+
+            {/* Metadata row, one small icon per item. */}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-2xs text-ink-2">
+              <span className="inline-flex items-center gap-1.5">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="2.5" y="3" width="11" height="10.5" rx="1" />
+                  <path d="M2.5 6h11M5.5 3V1.5M10.5 3V1.5" />
+                </svg>
+                <span className="font-semibold">{t('provenance.generated')}</span>
+                <span dir="ltr" style={{ unicodeBidi: 'isolate' }} className="num font-mono">
                   {shown?.generated ?? t('provenance.notStated')}
-                </dd>
-              </div>
-              <div>
-                <dt className="inline">{t('provenance.chain')} </dt>
-                <dd className="m-0 inline">{shown?.source ?? t('provenance.notStated')}</dd>
-              </div>
-              <div>
-                <dt className="inline">{t('provenance.fullRes')} </dt>
-                <dd className="m-0 inline font-mono num" dir="ltr">
-                  {shown?.full_path}
-                </dd>
-              </div>
-            </dl>
-            <Dialog.Close className="self-start mt-4 px-6 py-2 text-sm font-bold premium-button hover:premium-button-hover cursor-pointer">
+                </span>
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M6.5 9.5a2.5 2.5 0 0 0 3.5 0l2-2a2.5 2.5 0 1 0-3.5-3.5l-.5.5" />
+                  <path d="M9.5 6.5a2.5 2.5 0 0 0-3.5 0l-2 2a2.5 2.5 0 1 0 3.5 3.5l.5-.5" />
+                </svg>
+                <span className="font-semibold">{t('provenance.chain')}</span>
+                <span dir="auto">{shown?.source ?? t('provenance.notStated')}</span>
+              </span>
+            </div>
+
+            {/* "Open image" opens the served thumbnail in a new tab — labelled
+                honestly, because that served asset is the downscaled JPG, not the
+                full-resolution PNG. The true full-res image lives on disk at
+                full_path (never web-served), shown beneath as the operator's
+                reference rather than dressed up as a working link. */}
+            {shown?.thumb ? (
+              <a
+                href={`${import.meta.env.BASE_URL}fixtures/${shown.thumb}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex w-fit items-center gap-1.5 text-xs font-semibold text-accent hover:underline"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M6 3H3v10h10v-3M9.5 2.5H13.5V6.5M13 3 7.5 8.5" />
+                </svg>
+                {t('provenance.openImage')}
+              </a>
+            ) : null}
+            {shown?.full_path ? (
+              <span className="text-2xs text-ink-3">
+                {t('provenance.fullRes')}:{' '}
+                <code dir="ltr" style={{ unicodeBidi: 'isolate' }} className="font-mono num">
+                  {shown.full_path}
+                </code>
+              </span>
+            ) : null}
+
+            <Dialog.Close className="self-start mt-2 rounded-md bg-ink px-6 py-2 text-sm font-bold text-ink-inverse transition-opacity hover:opacity-90 cursor-pointer">
               {t('provenance.close')}
             </Dialog.Close>
           </Dialog.Content>

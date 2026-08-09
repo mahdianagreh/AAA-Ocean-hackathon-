@@ -219,7 +219,7 @@ export function Landing() {
                   className="rounded-md border px-5 py-4 transition-colors"
                   style={{ background: BRAND_VEIL, borderColor: BRAND_VEIL_EDGE }}
                 >
-                  <span className="num block text-2xl font-bold leading-tight">
+                  <span className="num block text-xl font-bold leading-tight">
                     {t(`landing.hero.stats.${k}.value`)}
                   </span>
                   <span className="block text-xs" style={{ color: ON_BRAND_SOFT }}>
@@ -322,6 +322,34 @@ export function Landing() {
                 ))}
               </ul>
             </div>
+          </div>
+        </section>
+
+        {/* ---- why this reef: the sourced coral fact (p4-18) ------------- */}
+        <section className={`bg-surface-2 py-24 ${GUTTER}`}>
+          <div className="mx-auto flex max-w-[820px] flex-col items-center gap-5 text-center">
+            <p className="m-0 text-xs font-bold tracking-[0.14em] text-accent">
+              {t('landing.coralFact.eyebrow')}
+            </p>
+            <h2 className="m-0 text-[clamp(24px,4vw,36px)] leading-[1.2] font-bold">
+              {t('landing.coralFact.title')}
+            </h2>
+            <p className="m-0 max-w-[680px] text-md leading-[1.6] text-ink-2">
+              {t('landing.coralFact.fact')}
+            </p>
+            {/* The citation binds to the sourced fact above it, not to the
+                product "turn" below — per p4-18: sourced, not folklore. The
+                reference is Latin bibliographic text, so it stays dir=ltr and is
+                not translated; only the "Source" label flips. */}
+            <p className="m-0 inline-flex flex-wrap items-center justify-center gap-2 rounded-full border border-hairline bg-surface px-4 py-2 text-2xs text-ink-3">
+              <span className="font-bold uppercase tracking-wide">
+                {t('landing.coralFact.sourceLabel')}
+              </span>
+              <span dir="ltr">{t('landing.coralFact.source')}</span>
+            </p>
+            <p className="m-0 mt-2 max-w-[680px] text-sm leading-[1.6] text-ink-2">
+              {t('landing.coralFact.turn')}
+            </p>
           </div>
         </section>
 
