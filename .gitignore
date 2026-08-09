@@ -103,10 +103,14 @@ frontend/.env.local
 data/processed/basemap/
 
 # Terrain-RGB tile pyramid for the 3D Journey (feature 14) -- derived from the real
-# merged DEM+bathymetry surface by scripts/tile_terrain_rgb.py, regenerable, not the
-# kind of small shared artefact this repo commits. Same "absent means degrade honestly,
-# not silently" rule as the basemap raster above.
-frontend/public/terrain/
+# merged DEM+bathymetry surface by scripts/tile_terrain_rgb.py. Unlike the basemap
+# raster above, this IS committed (as of 9 Aug 2026): the source merged raster
+# (data/processed/dem/terrain_merged_utm36n.tif) is itself not committed and its raw
+# DEM/bathymetry inputs live under the git-ignored data/raw/, so no teammate besides
+# the machine that baked it can actually regenerate these tiles. The "degrade
+# honestly, not silently" fallback doesn't fire anyway -- Journey3D.tsx calls
+# m.setTerrain() unconditionally with no absence-check -- so until that's fixed,
+# committing the baked tiles is the only way other machines see real terrain at all.
 
 # Second, browser-reachable copy of the same baked Esri imagery data/processed/basemap/
 # already holds (see layers/imagery.ts) -- a `cp`, not a second fetch. Same reasoning:
