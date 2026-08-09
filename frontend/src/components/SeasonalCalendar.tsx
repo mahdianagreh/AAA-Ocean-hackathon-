@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { bandForScore, BAND_CLASS, type HazardBand } from '../api/types';
+import { bandForScore, BAND_CLASS, HAZARD_BANDS, type HazardBand } from '../api/types';
 import type { SeasonalCalendar as SeasonalCalendarData } from '../api/live';
 import { Link } from './Link';
 import { ValueWithUnit } from './ValueWithUnit';
@@ -31,27 +31,56 @@ export function SeasonalCalendar({ data }: { data: SeasonalCalendarData }) {
   // One shared scale: each month's peak depth against the wettest month, so the
   // ramp orders months relative to one another rather than to an absolute score.
   const peak = Math.max(1e-6, ...data.months.map((m) => m.max_daily_mm ?? 0));
+  // The single wettest month on record gets a quiet emphasis, so the eye lands on
+  // the season that matters before reading any number.
+  const peakMonth = data.months.reduce(
+    (best, m) => ((m.max_daily_mm ?? -1) > (best?.max_daily_mm ?? -1) ? m : best),
+    data.months[0],
+  );
 
   return (
     <div className="flex flex-col gap-3" data-seasonal-calendar="true">
-      <p className="m-0 max-w-prose text-2xs text-ink-2">{t('events.calendar.framingNote')}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="m-0 max-w-prose text-2xs text-ink-2">{t('events.calendar.framingNote')}</p>
+        {/* Legend: the ramp is relative intensity, not a hazard score. */}
+        <div className="flex shrink-0 items-center gap-1.5 text-2xs text-ink-3">
+          <span>{t('events.calendar.legendLess')}</span>
+          <span className="flex" aria-hidden="true">
+            {HAZARD_BANDS.map((band) => (
+              <span key={band} className={`h-2.5 w-4 border ${BAND_CLASS[band]}`} />
+            ))}
+          </span>
+          <span>{t('events.calendar.legendMore')}</span>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {data.months.map((m) => {
           const has = m.event_count > 0 && m.max_daily_mm !== null;
           const rel = has ? ((m.max_daily_mm as number) / peak) * 100 : 0;
           const band = has ? bandForScore(rel) : null;
+          const isPeak = has && m.month === peakMonth?.month;
           // Numbers sit on the neutral surface so they stay legible and AA-safe;
           // the hazard colour rides an intensity meter, where length AND hue both
           // carry the reading and no value is ever set against a coloured ground.
           const cell = (
             <div
-              className="flex h-full flex-col gap-1.5 border border-hairline bg-surface p-3"
+              className={[
+                'flex h-full flex-col gap-1.5 border bg-surface p-3 transition-colors',
+                isPeak ? 'border-accent' : 'border-hairline group-hover:border-hairline-2',
+              ].join(' ')}
               style={{ borderRadius: 'var(--radius-md)' }}
               data-month={m.month}
               data-band={band ?? 'none'}
             >
-              <span className="text-xs font-semibold text-ink">{monthName(m.month)}</span>
+              <div className="flex items-baseline justify-between gap-1">
+                <span className="text-xs font-semibold text-ink">{monthName(m.month)}</span>
+                {isPeak ? (
+                  <span className="text-2xs font-semibold uppercase tracking-wide text-accent">
+                    {t('events.calendar.peakTag')}
+                  </span>
+                ) : null}
+              </div>
               {has ? (
                 <>
                   <ValueWithUnit
@@ -71,9 +100,17 @@ export function SeasonalCalendar({ data }: { data: SeasonalCalendarData }) {
                       style={{ inlineSize: `${Math.max(4, rel)}%`, borderRadius: 'var(--radius-hairline)' }}
                     />
                   </div>
-                  <span className="text-2xs text-ink-2">
-                    {t('events.calendar.storms', { n: m.event_count })}
-                  </span>
+                  <div className="mt-0.5 flex items-baseline justify-between gap-1">
+                    <span className="text-2xs text-ink-2">
+                      {t('events.calendar.storms', { n: m.event_count })}
+                    </span>
+                    {m.worst_event_id ? (
+                      <span className="flex items-center gap-0.5 text-2xs text-accent opacity-0 transition-opacity group-hover:opacity-100">
+                        {t('events.calendar.open')}
+                        <span aria-hidden="true">→</span>
+                      </span>
+                    ) : null}
+                  </div>
                 </>
               ) : (
                 <span className="text-2xs text-ink-2">{t('events.calendar.noEvents')}</span>
@@ -88,7 +125,7 @@ export function SeasonalCalendar({ data }: { data: SeasonalCalendarData }) {
               key={m.month}
               to={`/dashboard/replay/${encodeURIComponent(m.worst_event_id)}`}
               title={t('events.calendar.worstLink', { id: m.worst_event_id })}
-              className="block no-underline"
+              className="group block no-underline"
             >
               {cell}
             </Link>

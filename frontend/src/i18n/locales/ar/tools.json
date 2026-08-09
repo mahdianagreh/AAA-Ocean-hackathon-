@@ -3,7 +3,18 @@
     "title": "التحقق",
     "lede": "ما قاله النموذج، مقابل ما قاسه جهاز فعلي في الماء.",
     "loading": "جارٍ تحميل السجل المقيس…",
-    "error": "تعذّر تحميل السجل المقيس.",
+    "error": "الخطأ",
+    "field": {
+      "salinity_anomaly": "شذوذ الملوحة",
+      "salinity_minimum": "الحد الأدنى للملوحة",
+      "peak_suspended_sediment": "ذروة الرواسب العالقة",
+      "elevated_duration_hours": "مدة الاضطراب",
+      "sediment_mass_total": "الكتلة الكلية للرواسب"
+    },
+    "marker": {
+      "turbidity_onset": "بدء العكارة",
+      "turbidity_cleared": "زوال العكارة"
+    },
     "eventSection": "الحدث",
     "eventLabel": "الحدث",
     "eventHint": "الحدث المرجعي وحده يملك سجلًا من أجهزة القياس. أي حدث آخر لا يعيد سجلًا، وهذا مقصود.",

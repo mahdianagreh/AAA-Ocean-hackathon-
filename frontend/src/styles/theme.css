@@ -21,8 +21,7 @@
   --text-*: initial;
   --radius-*: initial;
   --shadow-*: initial;
-  /* Cleared because blur is how the rejected glassmorphic look gets built. */
-  --blur-*: initial;
+  /* Restored blur for glassmorphic redesign. */
 
   /* --container-* is deliberately NOT cleared. Container widths are not part of
      01 §3's rejected defaults — that list is about colour, radius, shadow and
@@ -228,3 +227,93 @@
   stroke: var(--data-modelled);
   stroke-dasharray: 4 3;
 }
+
+/* --- Premium Redesign Utilities --- */
+
+@utility glass-card {
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  backdrop-filter: blur(16px);
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--hairline-2);
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-lg);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+@utility glass-card-hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgb(0 183 195 / 0.15);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+@utility glass-panel {
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+@utility glass-panel-hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--hairline-2);
+}
+
+@utility premium-button {
+  background: var(--brand-gradient);
+  color: var(--surface);
+  border-radius: var(--radius-full);
+  box-shadow: 0 4px 15px color-mix(in srgb, var(--accent) 30%, transparent);
+  transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+@utility premium-button-hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 20px var(--accent), 0 0 40px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+@utility premium-gradient-text {
+  background: var(--brand-gradient);
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-background-clip: text;
+  /* stylelint-disable-next-line property-no-vendor-prefix */
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+@utility neon-glow {
+  box-shadow: 0 0 10px var(--accent), 0 0 20px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+@utility animate-overlay-show {
+  animation: overlay-show 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility animate-content-show {
+  animation: content-show 400ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes overlay-show {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes content-show {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+

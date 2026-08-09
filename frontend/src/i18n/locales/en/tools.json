@@ -3,7 +3,18 @@
     "title": "Validation",
     "lede": "What the model said, against what an instrument in the water actually measured.",
     "loading": "Loading the measured record…",
-    "error": "The measured record could not be loaded.",
+    "error": "Error",
+    "field": {
+      "salinity_anomaly": "Salinity anomaly",
+      "salinity_minimum": "Salinity minimum",
+      "peak_suspended_sediment": "Peak suspended sediment",
+      "elevated_duration_hours": "Elevated duration",
+      "sediment_mass_total": "Total sediment mass"
+    },
+    "marker": {
+      "turbidity_onset": "Turbidity onset",
+      "turbidity_cleared": "Turbidity cleared"
+    },
     "eventSection": "Event",
     "eventLabel": "Event",
     "eventHint": "Only the anchor event has an instrumented record. Every other event returns no record by design.",

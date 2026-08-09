@@ -201,6 +201,7 @@
   "subdaily": {
     "title": "Peak accumulation windows",
     "window": "{{h}} h",
+    "caveatShort": "Grid-cell maxima — not the daily series above, and not a rolling accumulation.",
     "caveat": "Heaviest 1/3/6/24-hour totals recorded anywhere in the Aqaba grid during the storm — maxima over the AOI cells, not the catchment daily series above and not a rolling accumulation. Derived from IMERG, not reported by the paper; this is why the 3 h peak can exceed the daily mean."
   },
   "common": {
@@ -362,7 +363,10 @@
     "alt": "Predicted sediment plume at +{{hours}} hours, on real satellite imagery",
     "stepper": "Prediction timestep",
     "rendering": "Rendering the next frame…",
-    "caveat": "Real Esri satellite imagery and real Allen Coral Atlas reef outlines. The plume contours are the model's own output — nothing in this image is generated."
+    "caveat": "Real Esri satellite imagery and real Allen Coral Atlas reef outlines. The plume contours are the model's own output — nothing in this image is generated.",
+    "forcingTitle": "What forces this run",
+    "forcingWindStatement": "Wind forcing is permanently zero (ConstantWindField(0, 0)): no historical marine wind source exists for this basin — the reanalysis products here are land-only and the forecast products are forecast-only, not a historical archive.",
+    "forcingDiffusionBody": "The cloud spreads by diffusion; it does not drift with a current. Timing and extent are meaningful — a direction read off these frames is not. Measured across this run's own six timesteps: contour-centroid displacement from the release point wobbles non-monotonically within roughly 15–100 m, the signature of a random walk, not of advection."
   },
   "landing": {
     "nav": {

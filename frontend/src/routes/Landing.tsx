@@ -216,10 +216,10 @@ export function Landing() {
               {HERO_STATS.map((k) => (
                 <li
                   key={k}
-                  className="rounded-md border px-5 py-4"
+                  className="rounded-md border px-5 py-4 transition-colors"
                   style={{ background: BRAND_VEIL, borderColor: BRAND_VEIL_EDGE }}
                 >
-                  <span className="num block text-lg font-bold">
+                  <span className="num block text-2xl font-bold leading-tight">
                     {t(`landing.hero.stats.${k}.value`)}
                   </span>
                   <span className="block text-xs" style={{ color: ON_BRAND_SOFT }}>

@@ -49,12 +49,12 @@ export function Hyetograph({ byCatchment, unit, cursor, onCursor, marks = [] }: 
   if (!steps) return <p className="text-xs text-ink-3">{t('rail.loading')}</p>;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2 glass-card p-3 hover:glass-card-hover transition-all duration-300">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-xs font-semibold text-ink-2">{t('chart.hyetograph')}</h3>
+        <h3 className="text-sm font-bold premium-gradient-text">{t('chart.hyetograph')}</h3>
         {/* One direct label rather than a number on every bar — the peak is the
             figure a reader wants, and labelling all 25 would be noise. */}
-        <span className="text-2xs text-ink-3">
+        <span className="text-2xs font-medium text-ink-3">
           {t('chart.peak')} <ValueWithUnit value={peak} unit={unit} digits={2} provenance="modelled" />
         </span>
       </div>
@@ -95,9 +95,9 @@ export function Hyetograph({ byCatchment, unit, cursor, onCursor, marks = [] }: 
                       />
                     ) : (
                       <span
-                        className={`block w-full ${active ? 'bg-accent' : 'bg-ink-3'} group-hover:bg-ink-2`}
+                        className={`block w-full transition-all duration-300 ${active ? 'brand-gradient neon-glow' : 'bg-ink-3 opacity-60'} group-hover:brand-gradient group-hover:opacity-100 hover:-translate-y-1`}
                         // 4px rounded data-end, anchored to the baseline.
-                        style={{ height: `${h}%`, borderStartStartRadius: 2, borderStartEndRadius: 2 }}
+                        style={{ height: `${h}%`, borderStartStartRadius: 4, borderStartEndRadius: 4 }}
                       />
                     )}
                   </button>
@@ -108,7 +108,7 @@ export function Hyetograph({ byCatchment, unit, cursor, onCursor, marks = [] }: 
                   even on a catchment whose bar is short at this step. */}
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 w-px bg-accent"
+                className="pointer-events-none absolute inset-y-0 w-px bg-accent/50 neon-glow"
                 style={{
                   insetInlineStart: `${((cursor + 0.5) / steps) * 100}%`,
                 }}

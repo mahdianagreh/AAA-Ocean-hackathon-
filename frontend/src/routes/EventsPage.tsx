@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   fetchEvents,
@@ -10,6 +10,7 @@ import { IntensityRanking } from '../components/IntensityRanking';
 import { Link } from '../components/Link';
 import { SeasonalCalendar } from '../components/SeasonalCalendar';
 import { Segmented } from '../components/Segmented';
+import { Select } from '../components/Select';
 import { Empty, ErrorState, Loading } from '../components/States';
 import { ValueWithUnit } from '../components/ValueWithUnit';
 import { PageShell, Section } from '../shell/PageShell';
@@ -73,6 +74,40 @@ function formatDate(iso: string, lang: 'en' | 'ar'): string | null {
   }).format(d);
 }
 
+/** A sortable column header: the label plus an arrow that appears only on the
+ *  active column and points the current way. Colour is not the only signal —
+ *  the arrow is. */
+function SortButton({
+  active,
+  dir,
+  onClick,
+  end,
+  children,
+}: {
+  active: boolean;
+  dir: SortDir;
+  onClick: () => void;
+  end?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        'inline-flex items-center gap-1 text-2xs font-semibold uppercase tracking-wide transition-colors',
+        end ? 'flex-row-reverse' : '',
+        active ? 'text-accent' : 'text-ink-3 hover:text-ink-2',
+      ].join(' ')}
+    >
+      {children}
+      <span aria-hidden="true" className="font-mono">
+        {active ? (dir === 'asc' ? '↑' : '↓') : ''}
+      </span>
+    </button>
+  );
+}
+
 export function EventsPage() {
   const { t, i18n } = useTranslation('pages');
   const lang = i18n.language.startsWith('ar') ? 'ar' : 'en';
@@ -81,7 +116,11 @@ export function EventsPage() {
   // `null` rows plus `failed` distinguishes the three real states: still asking,
   // asked and the API is unreachable, asked and the catalogue is empty.
   const [failed, setFailed] = useState(false);
-  const [query, setQuery] = useState('');
+  // Filter by selection, not by typing an ID: catchment, year, and whether the
+  // storm carries a literature label. 'all' is the unset value for the dropdowns.
+  const [catchment, setCatchment] = useState('all');
+  const [year, setYear] = useState('all');
+  const [labelledOnly, setLabelledOnly] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('rank');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [view, setView] = useState<EventsView>('catalogue');
@@ -102,24 +141,47 @@ export function EventsPage() {
     };
   }, []);
 
+  // Options come from the data, not a hardcoded list — a catchment or year with
+  // no storms never appears as a dead choice.
+  const catchmentOptions = useMemo(() => {
+    const ids = [...new Set((rows ?? []).map((e) => e.wettest_catchment).filter(Boolean))].sort();
+    return [
+      { value: 'all', label: t('events.filter.allCatchments') },
+      ...ids.map((id) => ({ value: id as string, label: id as string })),
+    ];
+  }, [rows, t]);
+
+  const yearOptions = useMemo(() => {
+    const years = [...new Set((rows ?? []).map((e) => e.start?.slice(0, 4)).filter(Boolean))]
+      .sort()
+      .reverse();
+    return [
+      { value: 'all', label: t('events.filter.allYears') },
+      ...years.map((y) => ({ value: y as string, label: y as string })),
+    ];
+  }, [rows, t]);
+
   const matched = useMemo(() => {
     if (!rows) return [];
-    const q = query.trim().toLowerCase();
-    const hit = q
-      ? rows.filter(
-          (e) =>
-            e.event_id.toLowerCase().includes(q) || (e.label ?? '').toLowerCase().includes(q),
-        )
-      : rows;
+    const hit = rows.filter(
+      (e) =>
+        (catchment === 'all' || e.wettest_catchment === catchment) &&
+        (year === 'all' || (e.start ?? '').startsWith(year)) &&
+        (!labelledOnly || !!e.label),
+    );
     return [...hit].sort((a, b) =>
       sortKey === 'rank'
         ? cmpNullable(a.rank, b.rank, sortDir)
         : cmpDate(a.start, b.start, sortDir),
     );
-  }, [rows, query, sortKey, sortDir]);
+  }, [rows, catchment, year, labelledOnly, sortKey, sortDir]);
 
   const shown = matched.slice(0, WINDOW);
   const hidden = matched.length - shown.length;
+  const filtered = catchment !== 'all' || year !== 'all' || labelledOnly;
+  // Shared scale for the inline intensity bar, so a longer bar means more rain
+  // across the whole visible table — the same rule the ranking view follows.
+  const peakDaily = Math.max(1e-6, ...shown.map((e) => e.max_daily_mm ?? 0));
 
   const caveats = useMemo(() => {
     const seen = new Set<string>();
@@ -188,28 +250,58 @@ export function EventsPage() {
       {view === 'catalogue' ? (
         <>
       <Section label={t('events.filterLabel')}>
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex flex-col gap-1">
-            <label htmlFor="events-filter" className="text-2xs font-semibold text-ink-2">
-              {t('events.filterFieldLabel')}
-            </label>
-            <input
-              id="events-filter"
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('events.filterPlaceholder')}
-              className="min-h-8 min-w-64 rounded-sm border border-hairline bg-surface px-2 py-1 text-xs text-ink"
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            label={t('events.filter.catchmentLabel')}
+            value={catchment}
+            onChange={setCatchment}
+            options={catchmentOptions}
+          />
+          <Select
+            label={t('events.filter.yearLabel')}
+            value={year}
+            onChange={setYear}
+            options={yearOptions}
+          />
+          <button
+            type="button"
+            aria-pressed={labelledOnly}
+            onClick={() => setLabelledOnly((v) => !v)}
+            className={[
+              'inline-flex min-h-9 items-center gap-1.5 border px-3 text-xs transition-colors',
+              labelledOnly
+                ? 'border-accent bg-surface-2 font-semibold text-ink'
+                : 'border-hairline bg-surface text-ink-2 hover:border-hairline-2',
+            ].join(' ')}
+            style={{ borderRadius: 'var(--radius-md)' }}
+          >
+            <span
+              aria-hidden="true"
+              className={`inline-block h-2.5 w-2.5 rounded-full border ${labelledOnly ? 'border-accent bg-accent' : 'border-hairline-2'}`}
             />
-          </div>
+            {t('events.filter.labelledOnly')}
+          </button>
+          {filtered ? (
+            <button
+              type="button"
+              onClick={() => {
+                setCatchment('all');
+                setYear('all');
+                setLabelledOnly(false);
+              }}
+              className="min-h-9 px-2 text-2xs text-ink-3 underline hover:text-ink-2"
+            >
+              {t('events.filter.reset')}
+            </button>
+          ) : null}
           {rows ? (
-            <p className="m-0 text-2xs text-ink-2">
-              {t('events.count', { shown: shown.length, total: rows.length })}
+            <p className="m-0 ms-auto text-2xs text-ink-2">
+              {t('events.count', { shown: shown.length, total: matched.length })}
             </p>
           ) : null}
         </div>
         {hidden > 0 ? (
-          <p className="m-0 text-2xs text-ink-2">{t('events.hidden', { n: hidden })}</p>
+          <p className="m-0 mt-1 text-2xs text-ink-3">{t('events.hidden', { n: hidden })}</p>
         ) : null}
       </Section>
 
@@ -224,42 +316,31 @@ export function EventsPage() {
             body={rows.length === 0 ? t('events.emptyBody') : t('events.noMatchBody')}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rule" style={{ borderRadius: 'var(--radius-md)' }}>
             <table className="w-full border-collapse text-xs">
               <caption className="sr-only">{t('events.tableCaption')}</caption>
               <thead>
-                <tr className="border-b border-hairline text-2xs text-ink-2">
-                  <th scope="col" className="p-2 text-start font-semibold">
+                <tr className="border-b border-hairline bg-surface-2 text-2xs uppercase tracking-wide text-ink-3">
+                  <th scope="col" className="px-3 py-2 text-start font-semibold">
                     {t('events.col.id')}
                   </th>
-                  <th scope="col" aria-sort={ariaSort('date')} className="p-2 text-start font-semibold">
-                    <button
-                      type="button"
-                      onClick={() => toggle('date')}
-                      className="text-2xs font-semibold text-ink-2 underline"
-                    >
+                  <th scope="col" aria-sort={ariaSort('date')} className="px-3 py-2 text-start font-semibold">
+                    <SortButton active={sortKey === 'date'} dir={sortDir} onClick={() => toggle('date')}>
                       {t('events.col.start')}
-                    </button>
+                    </SortButton>
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
-                    {t('events.col.label')}
-                  </th>
-                  <th scope="col" aria-sort={ariaSort('rank')} className="p-2 text-start font-semibold">
-                    <button
-                      type="button"
-                      onClick={() => toggle('rank')}
-                      className="text-2xs font-semibold text-ink-2 underline"
-                    >
+                  <th scope="col" aria-sort={ariaSort('rank')} className="px-3 py-2 text-end font-semibold">
+                    <SortButton active={sortKey === 'rank'} dir={sortDir} onClick={() => toggle('rank')} end>
                       {t('events.col.rank')}
-                    </button>
+                    </SortButton>
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
+                  <th scope="col" className="px-3 py-2 text-end font-semibold">
                     {t('events.col.maxDaily')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
+                  <th scope="col" className="px-3 py-2 text-start font-semibold">
                     {t('events.col.wettest')}
                   </th>
-                  <th scope="col" className="p-2 text-start font-semibold">
+                  <th scope="col" className="px-3 py-2 text-end font-semibold">
                     {t('events.col.stormDays')}
                   </th>
                 </tr>
@@ -267,52 +348,72 @@ export function EventsPage() {
               <tbody>
                 {shown.map((e) => {
                   const started = e.start ? formatDate(e.start, lang) : null;
+                  const barW = e.max_daily_mm ? Math.max(3, (e.max_daily_mm / peakDaily) * 100) : 0;
                   return (
-                    <tr key={e.event_id} className="border-b border-hairline align-top">
-                      <th scope="row" className="p-2 text-start font-normal">
+                    <tr
+                      key={e.event_id}
+                      className="border-b border-hairline transition-colors last:border-0 hover:bg-surface-2"
+                    >
+                      <th scope="row" className="px-3 py-2.5 text-start font-normal">
                         <Link
                           to={`/dashboard/replay/${encodeURIComponent(e.event_id)}`}
-                          className="underline"
+                          className="text-accent hover:underline"
                           title={t('events.replayLink')}
                         >
                           <IdText>{e.event_id}</IdText>
                         </Link>
+                        {e.label ? (
+                          <span
+                            className="ms-2 inline-block border border-accent px-1.5 py-0.5 text-2xs align-middle text-accent"
+                            style={{ borderRadius: 'var(--radius-sm)' }}
+                            title={t('events.labelledHint')}
+                          >
+                            {t('events.labelledChip')}
+                          </span>
+                        ) : null}
                       </th>
-                      <td className="p-2">
+                      <td className="px-3 py-2.5 text-ink-2">
                         {e.start && started ? (
-                          <time dateTime={e.start} className="text-ink-2">
-                            {started}
-                          </time>
+                          <time dateTime={e.start}>{started}</time>
                         ) : (
                           <ValueWithUnit value={null} />
                         )}
                       </td>
-                      <td className="max-w-prose p-2">
-                        {e.label ?? (
-                          <span className="text-ink-3" title={t('events.noLabelHint')}>
-                            {t('events.noLabel')}
+                      <td className="px-3 py-2.5 text-end">
+                        {e.rank !== null ? (
+                          <span
+                            className="inline-block min-w-7 bg-surface-2 px-1.5 py-0.5 text-center font-mono num text-ink"
+                            style={{ borderRadius: 'var(--radius-sm)' }}
+                          >
+                            {e.rank}
                           </span>
+                        ) : (
+                          <ValueWithUnit value={null} />
                         )}
                       </td>
-                      <td className="p-2">
-                        <ValueWithUnit value={e.rank} digits={0} provenance="measured" />
+                      <td className="px-3 py-2.5 text-end">
+                        <div className="flex items-center justify-end gap-2">
+                          <span
+                            aria-hidden="true"
+                            className="hidden h-1.5 bg-accent sm:block"
+                            style={{ inlineSize: `${barW}%`, maxInlineSize: '5rem', borderRadius: 'var(--radius-hairline)' }}
+                          />
+                          <ValueWithUnit
+                            value={e.max_daily_mm}
+                            digits={1}
+                            unit={t('units.mmPerDay')}
+                            provenance="measured"
+                          />
+                        </div>
                       </td>
-                      <td className="p-2">
-                        <ValueWithUnit
-                          value={e.max_daily_mm}
-                          digits={1}
-                          unit={t('units.mmPerDay')}
-                          provenance="measured"
-                        />
-                      </td>
-                      <td className="p-2">
+                      <td className="px-3 py-2.5">
                         {e.wettest_catchment ? (
                           <IdText>{e.wettest_catchment}</IdText>
                         ) : (
                           <ValueWithUnit value={null} />
                         )}
                       </td>
-                      <td className="p-2">
+                      <td className="px-3 py-2.5 text-end">
                         <ValueWithUnit
                           value={e.storm_days}
                           digits={0}
@@ -327,7 +428,7 @@ export function EventsPage() {
             </table>
           </div>
         )}
-        <p className="m-0 max-w-prose text-2xs text-ink-3">{t('events.rankingNote')}</p>
+        <p className="m-0 mt-2 max-w-prose text-2xs text-ink-3">{t('events.rankingNote')}</p>
       </Section>
 
       {caveats.length > 0 ? (

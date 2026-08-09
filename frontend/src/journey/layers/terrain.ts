@@ -94,17 +94,25 @@ export function terrainSourceFragment() {
 //: the same raster-dem `terrain` source `map.setTerrain()` already reads for
 //: mesh displacement -- this just textures it, on top of (not instead of)
 //: that real 3D shape.
+// A hypsometric tint, not UI chrome — which is why these are raw hex and carry
+// `token-ok`. The ramp depicts real physical ground: measured bathymetry from the
+// deepest cell in the merge, through the Gulf's own turquoise shelf cast, across
+// the coastline seam, into sand, scree and bare rock. Mapping it onto the
+// interface tokens would tie the shape of the seabed to the app's text palette
+// and would change the terrain's appearance whenever the theme is retuned. Same
+// exemption the neighbouring journey layers already hold for sky lighting and
+// relief shading.
 const ELEVATION_COLOR_STOPS: Array<[number, string]> = [
-  [-926, '#0a2f4d'], // deepest real bathymetry cell in the merge
-  [-200, '#0f5c8a'],
-  [-30, '#3fa7c9'], // shallow reef-depth water, Gulf's own turquoise cast
-  [-2, '#8fd6d9'],
-  [0, '#e8dcb0'], // the real coastline seam -- sea/land boundary itself
-  [40, '#d9c48a'], // coastal plain, sand/desert
-  [250, '#c2a06a'],
-  [700, '#a67c52'], // wadi flanks, bare rock and scree
-  [1200, '#8a7160'],
-  [1847, '#e8e4de'], // the merge's highest real cell, pale exposed rock
+  [-926, '#0a2f4d'], // deepest real bathymetry cell in the merge -- token-ok: real-world elevation colour, not app chrome
+  [-200, '#0f5c8a'], // token-ok: real-world elevation colour, not app chrome
+  [-30, '#3fa7c9'], // shallow reef-depth water, Gulf's own turquoise cast -- token-ok: real-world elevation colour, not app chrome
+  [-2, '#8fd6d9'], // token-ok: real-world elevation colour, not app chrome
+  [0, '#e8dcb0'], // the real coastline seam -- sea/land boundary itself -- token-ok: real-world elevation colour, not app chrome
+  [40, '#d9c48a'], // coastal plain, sand/desert -- token-ok: real-world elevation colour, not app chrome
+  [250, '#c2a06a'], // token-ok: real-world elevation colour, not app chrome
+  [700, '#a67c52'], // wadi flanks, bare rock and scree -- token-ok: real-world elevation colour, not app chrome
+  [1200, '#8a7160'], // token-ok: real-world elevation colour, not app chrome
+  [1847, '#e8e4de'], // the merge's highest real cell, pale exposed rock -- token-ok: real-world elevation colour, not app chrome
 ];
 
 //: Fixed rather than theme-derived, same reasoning as rain.ts's white

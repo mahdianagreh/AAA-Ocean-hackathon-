@@ -98,13 +98,13 @@ export function AssistantPage() {
               onChange={(e) => setQuestion(e.target.value)}
               placeholder={t('assistant.placeholder')}
               data-assistant-input="true"
-              className="h-11 w-full rounded-md border border-hairline bg-surface px-3 text-sm text-ink placeholder:text-ink-3"
+              className="h-12 w-full rounded-full border border-hairline bg-surface/50 px-5 text-sm text-ink placeholder:text-ink-3 hover:border-accent focus:border-accent outline-none transition-colors shadow-inner"
             />
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 mt-1">
               <button
                 type="submit"
                 disabled={!question.trim() || state.kind === 'asking'}
-                className="h-10 rounded-md bg-ink px-4 text-xs font-bold text-ink-inverse disabled:opacity-50"
+                className="h-10 rounded-full px-6 text-sm font-bold premium-button hover:premium-button-hover disabled:opacity-50 cursor-pointer"
               >
                 {state.kind === 'asking' ? t('assistant.asking') : t('assistant.ask')}
               </button>
@@ -125,7 +125,7 @@ export function AssistantPage() {
                         setQuestion(q);
                         void run(q);
                       }}
-                      className="rounded-md border border-hairline px-2 py-1 text-2xs text-ink-2 hover:border-accent"
+                      className="glass-panel px-3 py-1.5 text-xs text-ink-2 hover:border-accent hover:text-accent transition-colors cursor-pointer shadow-none"
                     >
                       {q}
                     </button>
@@ -193,13 +193,13 @@ export function AssistantPage() {
                     composes the answer out of the sections it retrieved. */}
                 <blockquote
                   dir="auto"
-                  className="m-0 max-w-prose whitespace-pre-line border-s-2 border-data-measured ps-3 text-xs text-ink-2"
+                  className="m-0 max-w-prose whitespace-pre-line border-s-4 border-accent bg-accent/5 p-5 rounded-r-xl text-sm leading-relaxed text-ink shadow-inner"
                 >
                   {state.response.answer}
                 </blockquote>
 
-                <div className="flex flex-col gap-2">
-                  <h4 className="m-0 text-2xs font-bold text-ink-2">
+                <div className="flex flex-col gap-3 mt-4">
+                  <h4 className="m-0 text-xs font-bold premium-gradient-text">
                     {t('assistant.citations', { n: state.response.citations.length })}
                   </h4>
                   <ol className="m-0 flex list-none flex-col gap-3 p-0">
@@ -207,17 +207,17 @@ export function AssistantPage() {
                       <li
                         key={`${c.source_file}#${c.section}#${i}`}
                         data-citation={i}
-                        className="flex flex-col gap-1 border-s-2 border-hairline-2 ps-3"
+                        className="flex flex-col gap-2 glass-panel p-4 transition-all duration-300 hover:glass-panel-hover border-s-4 border-hairline-2 hover:border-s-accent cursor-default group"
                       >
-                        <span className="flex flex-wrap items-baseline gap-2 text-2xs">
-                          <code dir="ltr" className="font-mono num text-ink">
+                        <span className="flex flex-wrap items-baseline gap-2 text-xs">
+                          <code dir="ltr" className="font-mono num font-bold text-ink group-hover:text-accent transition-colors">
                             {c.source_file}
                           </code>
-                          <span dir="auto" className="text-ink-3">
+                          <span dir="auto" className="text-ink-3 font-semibold">
                             § {c.section}
                           </span>
                         </span>
-                        <p dir="auto" className="m-0 max-w-prose text-2xs text-ink-2">
+                        <p dir="auto" className="m-0 max-w-prose text-xs text-ink-2">
                           {c.excerpt}
                         </p>
                       </li>

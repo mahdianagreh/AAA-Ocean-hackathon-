@@ -15,5 +15,6 @@
   "account": "Preferences",
   "backToSite": "Back to site",
   "live": "LIVE",
-  "liveHint": "Reading from the API right now, not a saved snapshot."
+  "liveHint": "Reading from the API right now, not a saved snapshot.",
+  "signOut": "Sign Out"
 }

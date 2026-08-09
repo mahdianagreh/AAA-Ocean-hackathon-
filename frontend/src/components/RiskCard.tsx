@@ -47,17 +47,17 @@ export function RiskCard({ data }: { data: RiskCardData }) {
   const { t } = useTranslation();
 
   return (
-    <article className="flex flex-col gap-3 rule bg-surface p-3" data-risk-card={data.catchment_id}>
+    <article className="flex flex-col gap-3 glass-card p-4 hover:glass-card-hover group" data-risk-card={data.catchment_id}>
       <header className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-col">
+        <div className="flex min-w-0 flex-col justify-center">
           <span
             dir="ltr"
             style={{ unicodeBidi: 'isolate' }}
-            className="font-mono num text-2xs text-ink-3"
+            className="font-mono num text-2xs font-bold text-accent group-hover:neon-glow transition-all"
           >
             {data.catchment_id}
           </span>
-          <span dir="auto" style={{ unicodeBidi: 'isolate' }} className="truncate text-sm">
+          <span dir="auto" style={{ unicodeBidi: 'isolate' }} className="truncate text-base font-bold text-ink">
             {data.name ?? t('rail.unnamed')}
           </span>
         </div>
@@ -67,9 +67,10 @@ export function RiskCard({ data }: { data: RiskCardData }) {
             measures 1.29 against canvas and a fill alone is not a boundary. */}
         <div
           data-band={data.band}
-          className={`flex shrink-0 flex-col items-end border px-2 py-1 ${BAND_CLASS[data.band]}`}
+          className={`flex shrink-0 flex-col items-end border px-3 py-1.5 transition-transform duration-300 group-hover:scale-105 ${BAND_CLASS[data.band]} ${data.band === 'high' || data.band === 'critical' ? 'shadow-[0_0_15px_var(--risk-critical)]' : ''}`}
+          style={{ borderRadius: 'var(--radius-md)' }}
         >
-          <span className="text-sm font-semibold">{t(`hazard.${data.band}`)}</span>
+          <span className="text-sm font-bold uppercase tracking-wider">{t(`hazard.${data.band}`)}</span>
           <span
             dir="ltr"
             style={{ unicodeBidi: 'isolate' }}
