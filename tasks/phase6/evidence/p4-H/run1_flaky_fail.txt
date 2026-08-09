@@ -1,0 +1,25 @@
+Running 3 tests using 3 workers
+
+  ✘  3 [chromium-offline] › tests/wifi-off.offline.spec.ts:90:1 › names truncate at the end in RTL, not the start (856ms)
+  ✓  1 [chromium-offline] › tests/wifi-off.offline.spec.ts:68:1 › the side rail still lists every value with no network (2.8s)
+  ✓  2 [chromium-offline] › tests/wifi-off.offline.spec.ts:25:1 › the whole view works with DNS blackholed (4.8s)
+
+
+  1) [chromium-offline] › tests/wifi-off.offline.spec.ts:90:1 › names truncate at the end in RTL, not the start
+
+    Error: expect(received).toBeGreaterThan(expected)
+
+    Expected: > 10
+    Received:   0
+
+       99 |
+      100 |   const names = await rail.locator('[dir="auto"]').allInnerTexts();
+    > 101 |   expect(names.length).toBeGreaterThan(10);
+          |                        ^
+      102 |   for (const n of names) {
+      103 |     expect(n.trimStart().startsWith('…'), `"${n}" is truncated at the start`).toBe(false);
+      104 |   }
+
+  1 failed
+    [chromium-offline] › tests/wifi-off.offline.spec.ts:90:1 › names truncate at the end in RTL, not the start
+  2 passed (5.3s)

@@ -64,7 +64,7 @@ test.describe('3D Journey — real terrain', () => {
     // adopting real terrain must not have silently dropped a layer.
     for (const id of [
       'terrain-hillshade',
-      'runoff-flow',
+      'runoff-wet-ground',
       'buildings-extrusion',
       'reef-extrusion',
       'reef-outline',
@@ -105,13 +105,13 @@ test.describe('3D Journey — real terrain', () => {
   });
 
   test('rain and runoff actually render pixels, not just update a source nobody sees', async ({ page }) => {
-    // Regression check: the first pass over real terrain still ran the rain/
-    // runoff animation loops correctly (sources kept getting real features),
-    // but rendered near-invisibly — a same-colour stroke on a 1-2px ripple, or
-    // a 3px line in one desaturated tone, thinned into real satellite imagery's
-    // own high-frequency texture in a way it never did against the old flat
-    // relief bands. queryRenderedFeatures is the honest check: it asks
-    // MapLibre what is actually on screen, not just what the source holds.
+    // Regression check: the first pass over real terrain still ran the rain
+    // animation loop correctly (the source kept getting real features), but
+    // rendered near-invisibly — a same-colour stroke on a 1-2px ripple
+    // thinned into real satellite imagery's own high-frequency texture in a
+    // way it never did against the old flat relief bands. queryRenderedFeatures
+    // is the honest check for the ripple: it asks MapLibre what is actually
+    // on screen, not just what the source holds.
     await openJourney(page);
 
     await page.locator('[data-journey-phase="rain"]').click();
@@ -122,13 +122,26 @@ test.describe('3D Journey — real terrain', () => {
     });
     expect(rainRendered, 'no rain-ripples pixels were actually rendered').toBeGreaterThan(0);
 
+    // The flood phase's flow animation is a screen-space canvas overlay
+    // (layers/waterFlowOverlay.ts), not a MapLibre layer — a dashed
+    // MapLibre line was tried first and read as "a line", not moving
+    // water. queryRenderedFeatures can't see a canvas, so the honest check
+    // here is the canvas's own pixels: read them directly and confirm a
+    // real, non-transparent count, the same way this was verified by hand
+    // during development.
     await page.locator('[data-journey-phase="flood"]').click();
     await page.waitForTimeout(2500);
-    const runoffRendered = await page.evaluate(() => {
-      const m = (window as unknown as { __journeyMap?: { queryRenderedFeatures: (g: undefined, o: { layers: string[] }) => unknown[] } }).__journeyMap;
-      return m?.queryRenderedFeatures(undefined, { layers: ['runoff-flow'] }).length ?? 0;
+    const floodCanvasPixels = await page.evaluate(() => {
+      const mapDiv = document.querySelector('[data-journey-map="true"]');
+      const canvas = mapDiv?.querySelectorAll('canvas')[1] as HTMLCanvasElement | undefined;
+      const ctx = canvas?.getContext('2d');
+      if (!canvas || !ctx) return 0;
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let nonTransparent = 0;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 10) nonTransparent++;
+      return nonTransparent;
     });
-    expect(runoffRendered, 'no runoff-flow pixels were actually rendered').toBeGreaterThan(0);
+    expect(floodCanvasPixels, 'no water-flow pixels were actually rendered on the overlay canvas').toBeGreaterThan(0);
   });
 
   test('the reef reveal actually changes the paint property on impact', async ({ page }) => {

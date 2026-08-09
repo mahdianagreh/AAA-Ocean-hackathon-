@@ -1,0 +1,21 @@
+=== p4-D evidence: culvert/drainage correction map regression check ===
+
+Live GET /api/v1/outlets (all 5 outlets) — verdict table matches b9's fresh
+scripts/12_culvert_crosscheck.py rerun exactly, outlet for outlet:
+
+AQ-O01: none needed — DEM and OSM agree on the drainage lines  (nearest_culvert_m=2138.0, unmodelled_coastal_culverts=0)
+AQ-O02: CANDIDATE CORRECTION — unmodelled path to the sea  (nearest_culvert_m=312.0, unmodelled_coastal_culverts=2)
+AQ-O03: CANDIDATE CORRECTION — unmodelled path to the sea  (nearest_culvert_m=829.0, unmodelled_coastal_culverts=1)
+AQ-O04: none needed — DEM and OSM agree on the drainage lines  (nearest_culvert_m=793.0, unmodelled_coastal_culverts=0)
+AQ-O05: none needed — DEM and OSM agree on the drainage lines  (nearest_culvert_m=243.0, unmodelled_coastal_culverts=0)
+
+Matches b9's rerun result exactly: AQ-O01/O04/O05 'none needed', AQ-O02/O03
+'CANDIDATE CORRECTION' — see evidence/b9/culvert_crosscheck_rerun.txt.
+
+Same stale-count issue as b9 applies here: this task's own description
+(tasks/phase4/02-mahdi.md) still says 'already real and already documented:
+27 mapped culverts' — the live total is 46 (docs/data_dictionary.md line 1210,
+corrected 2 Aug 2026). The per-outlet verdicts and correction candidates are
+unaffected by the count correction and are a genuine regression pass; the
+documentation staleness is the same, already-recorded finding from b9, not a
+new one.

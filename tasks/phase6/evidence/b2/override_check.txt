@@ -1,0 +1,2 @@
+transmission_loss: 0.7
+transmission_loss_basis: negev_proxy
