@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   fetchExposure,
@@ -35,6 +35,45 @@ import { IdText } from './AlertsPage';
 interface PhotoState {
   photos: ReefZonePhoto[];
   proposed: ProposedSensitivityWeight;
+}
+
+/** Minimal geometric icons, currentColor, one stroke weight — they orient the
+ *  four attribute cards without competing with the numbers. */
+const svg = (path: ReactNode) => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {path}
+  </svg>
+);
+const ICON = {
+  area: svg(<rect x="2.5" y="2.5" width="11" height="11" rx="1.5" />),
+  depth: svg(<><path d="M2.5 5h11" /><path d="M2.5 9h11" /><path d="M6 12.5 8 14l2-1.5" /></>),
+  park: svg(<path d="M8 2.5 13 4.5v4c0 3-2.2 4.7-5 5.5-2.8-.8-5-2.5-5-5.5v-4z" />),
+  habitat: svg(<><path d="M8 14V6" /><path d="M8 8.5 5 6" /><path d="M8 8.5 11 6" /><path d="M8 6V2.5" /></>),
+};
+
+/** One attribute card: an icon + all-caps eyebrow, then the value large, then an
+ *  optional note. Consistent so the four read as a set, not four one-offs. */
+function AttrCard({
+  icon,
+  label,
+  note,
+  children,
+}: {
+  icon: ReactNode;
+  label: string;
+  note?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card>
+      <div className="mb-1.5 flex items-center gap-1.5 text-ink-3">
+        {icon}
+        <span className="text-2xs font-semibold uppercase tracking-wide">{label}</span>
+      </div>
+      {children}
+      {note ? <p className="m-0 mt-1.5 text-2xs text-ink-3">{note}</p> : null}
+    </Card>
+  );
 }
 
 /** Build the five Factor objects from formula_terms for FormulaChain */
@@ -358,44 +397,42 @@ export function ReefZonePage({ zoneId }: { zoneId: string }) {
     >
       <Section label={t('reefZone.attributesLabel')}>
         <CardGrid>
-          <Card>
-            <p className="m-0 text-2xs text-ink-2">{t('reefZones.col.area')}</p>
+          <AttrCard icon={ICON.area} label={t('reefZones.col.area')}>
             <ValueWithUnit
               value={zone.area_km2}
               digits={3}
               unit={t('units.km2')}
               provenance="measured"
-              className="text-lg"
+              className="text-2xl font-semibold"
             />
-          </Card>
-          <Card>
-            <p className="m-0 text-2xs text-ink-2">{t('reefZones.col.depth')}</p>
+          </AttrCard>
+          <AttrCard icon={ICON.depth} label={t('reefZones.col.depth')} note={t('reefZones.depthNote')}>
             <ValueWithUnit
               value={zone.depth_median_m}
               digits={1}
               unit={t('units.m')}
               provenance="measured"
-              className="text-lg"
+              className="text-2xl font-semibold"
             />
-            <p className="m-0 text-2xs text-ink-3">{t('reefZones.depthNote')}</p>
-          </Card>
-          <Card>
-            <p className="m-0 text-2xs text-ink-2">{t('reefZones.col.park')}</p>
+          </AttrCard>
+          <AttrCard icon={ICON.park} label={t('reefZones.col.park')}>
             <ValueWithUnit
               value={zone.marine_park_overlap_pct}
               digits={1}
               unit={t('units.pct')}
               provenance="measured"
-              className="text-lg"
+              className="text-2xl font-semibold"
             />
-          </Card>
-          <Card>
-            <p className="m-0 text-2xs text-ink-2">{t('reefZones.col.habitat')}</p>
-            <p className="m-0 text-sm">{zone.habitat_class ?? <ValueWithUnit value={null} />}</p>
-            <p className="m-0 text-2xs text-ink-3">
-              {zone.geomorphic_class ?? t('reefZone.noGeomorphic')}
+          </AttrCard>
+          <AttrCard
+            icon={ICON.habitat}
+            label={t('reefZones.col.habitat')}
+            note={zone.geomorphic_class ?? t('reefZone.noGeomorphic')}
+          >
+            <p className="m-0 text-base font-semibold text-ink">
+              {zone.habitat_class ?? <ValueWithUnit value={null} />}
             </p>
-          </Card>
+          </AttrCard>
         </CardGrid>
       </Section>
 

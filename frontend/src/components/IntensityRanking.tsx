@@ -44,25 +44,40 @@ export function IntensityRanking({ rows, topN = 25 }: { rows: EventRow[]; topN?:
 
       {/* Numbers and bars run LTR in both languages so the shared scale reads the
           same way — the row label mirrors with the layout, the scale does not. */}
-      <ol className="m-0 flex list-none flex-col gap-1.5 p-0" dir="ltr">
+      <ol className="m-0 flex list-none flex-col gap-1 p-0" dir="ltr">
         {ranked.map((e) => {
           const w = Math.max(2, ((e.max_daily_mm as number) / peak) * 100);
+          // Documented storms (the ones that carry a literature name, e.g. the
+          // demo event) get a quiet accent rail — they are the notable rows.
+          const documented = !!e.label;
           return (
-            <li key={e.event_id} className="flex items-center gap-2 text-xs">
+            <li
+              key={e.event_id}
+              className={[
+                'group flex items-center gap-3 border-s-2 py-1.5 ps-2 text-xs transition-colors hover:bg-surface-2',
+                documented ? 'border-accent' : 'border-transparent',
+              ].join(' ')}
+            >
               <span className="w-6 shrink-0 text-end font-mono num text-2xs text-ink-3">
                 {e.rank}
               </span>
               <Link
                 to={`/dashboard/replay/${encodeURIComponent(e.event_id)}`}
-                className="w-28 shrink-0 truncate underline"
+                className="w-28 shrink-0 truncate text-accent hover:underline"
                 title={t('events.replayLink')}
               >
                 <IdText>{e.event_id}</IdText>
               </Link>
-              <div className="relative h-4 min-w-0 flex-1 bg-surface-2" style={{ borderRadius: 2 }}>
+              {/* One shared scale — a longer bar is more rain — in the brand's
+                  data colour. The value sits after the bar, always on the
+                  surface, so it never fights the fill for contrast. */}
+              <div
+                className="h-2.5 min-w-0 flex-1 overflow-hidden bg-surface-2"
+                style={{ borderRadius: 'var(--radius-hairline)' }}
+              >
                 <span
-                  className="block h-full bg-ink-3"
-                  style={{ inlineSize: `${w}%`, borderRadius: 2 }}
+                  className="block h-full bg-accent"
+                  style={{ inlineSize: `${w}%`, borderRadius: 'var(--radius-hairline)' }}
                 />
               </div>
               <ValueWithUnit
@@ -70,19 +85,25 @@ export function IntensityRanking({ rows, topN = 25 }: { rows: EventRow[]; topN?:
                 unit={t('units.mmPerDay')}
                 digits={1}
                 provenance="measured"
-                className="w-24 shrink-0"
+                className="w-24 shrink-0 text-end"
               />
-              <span className="w-16 shrink-0 truncate text-2xs text-ink-3">
+              <span className="w-14 shrink-0 truncate text-2xs text-ink-3">
                 {e.wettest_catchment ? <IdText>{e.wettest_catchment}</IdText> : null}
               </span>
               {/* "How unusual, here": top N% of this catchment's own daily record. */}
-              <span className="w-24 shrink-0 text-end text-2xs text-ink-2">
+              <span className="w-20 shrink-0 text-end">
                 {e.intensity_top_percent !== null ? (
-                  t('events.intensity.topPercent', {
-                    pct: e.intensity_top_percent.toLocaleString('en', {
-                      maximumFractionDigits: 2,
-                    }),
-                  })
+                  <span
+                    className="inline-block border border-hairline bg-surface px-1.5 py-0.5 text-2xs text-ink-2"
+                    style={{ borderRadius: 'var(--radius-sm)' }}
+                    title={t('events.intensity.topPercentHint')}
+                  >
+                    {t('events.intensity.topPercent', {
+                      pct: e.intensity_top_percent.toLocaleString('en', {
+                        maximumFractionDigits: 2,
+                      }),
+                    })}
+                  </span>
                 ) : (
                   <ValueWithUnit value={null} />
                 )}
