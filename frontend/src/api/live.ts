@@ -379,9 +379,20 @@ export interface SeasonalCalendar {
 }
 
 /** p4-K ships both an endpoint and a committed fixture. Try live first; fall back
- *  to the shipped snapshot so the calendar survives the wifi-off demo path. */
+ *  to the shipped snapshot so the calendar survives the wifi-off demo path.
+ *
+ *  The live call is time-boxed: a backend that is *hung* (accepting the socket but
+ *  never answering) is not the same as one that is down, and without a deadline
+ *  the fetch would wait indefinitely and the fixture fallback would never run —
+ *  the page would sit in "Loading" forever. A short deadline turns a hung backend
+ *  into the same graceful snapshot the wifi-off path already relies on. */
 export async function fetchSeasonalCalendar(): Promise<SeasonalCalendar | null> {
-  const live = await tryJson<SeasonalMonth[]>(`${API_BASE}/api/v1/seasonal-risk-calendar`);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 4000);
+  const live = await tryJson<SeasonalMonth[]>(`${API_BASE}/api/v1/seasonal-risk-calendar`, {
+    signal: ctrl.signal,
+  });
+  clearTimeout(timer);
   if (live && live.length) return { months: live, provenance: 'live' };
   const snapshot = await tryJson<SeasonalMonth[]>('/fixtures/seasonal.json');
   if (snapshot && snapshot.length) return { months: snapshot, provenance: 'snapshot' };

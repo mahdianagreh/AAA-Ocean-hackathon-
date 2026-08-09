@@ -35,11 +35,15 @@ export function SubDailyWindows({ subdaily }: { subdaily: EventSeries['subdaily'
         {t('subdaily.title')}
       </h3>
 
-      {/* Numbers on one shared line, LTR so the four windows read in order in both
-          languages — a bar of stat tiles, not a time series. */}
-      <div dir="ltr" className="grid grid-cols-4 gap-2">
+      {/* Four stat tiles, LTR so the windows read in order in both languages — a
+          bar of extrema, deliberately not a time series. */}
+      <div dir="ltr" className="grid grid-cols-4 gap-1.5">
         {WINDOWS.map(({ key, hours }) => (
-          <div key={key} className="flex flex-col gap-0.5">
+          <div
+            key={key}
+            className="flex flex-col gap-0.5 border border-hairline bg-surface px-2 py-1.5 text-center"
+            style={{ borderRadius: 'var(--radius-sm)' }}
+          >
             <span className="font-mono num text-2xs text-ink-3">
               {t('subdaily.window', { h: hours })}
             </span>
@@ -48,13 +52,16 @@ export function SubDailyWindows({ subdaily }: { subdaily: EventSeries['subdaily'
               unit={t('units.mm')}
               digits={1}
               provenance="modelled"
-              className="text-xs"
+              className="text-xs font-semibold"
             />
           </div>
         ))}
       </div>
 
-      <p className="m-0 max-w-prose text-2xs text-ink-3">{t('subdaily.caveat')}</p>
+      {/* The claim that must stay visible; the full derivation is on hover. */}
+      <p className="m-0 max-w-prose text-2xs text-ink-3" title={t('subdaily.caveat')}>
+        {t('subdaily.caveatShort')}
+      </p>
     </section>
   );
 }

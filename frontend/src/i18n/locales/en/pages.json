@@ -91,6 +91,10 @@
       "framingNote": "Months coloured by rainfall intensity — the peak daily storm depth on record for each month, relative to the wettest month. This is a rainfall record, not a reef-exposure forecast: the sediment model is anchored to one October event, so this says nothing about coral impact by month.",
       "storms": "{{n}} storms on record",
       "noEvents": "No storms on record",
+      "legendLess": "drier",
+      "legendMore": "wetter",
+      "peakTag": "peak",
+      "open": "replay",
       "worstLink": "Open the replay for {{id}}, this month's heaviest storm",
       "snapshotNote": "Committed snapshot: the live endpoint was unreachable, so this reads the shipped export of the seasonal calendar.",
       "liveNote": "Live from GET /api/v1/seasonal-risk-calendar."
