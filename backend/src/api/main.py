@@ -115,6 +115,7 @@ from .schemas import (
     RunoffPrediction,
     RunoffRequest,
     SamplingFeedbackRequest,
+    SeasonalMonthOut,
     SiteScoreRequest,
     SiteScoreResponse,
     Value,
@@ -558,6 +559,11 @@ def _merged_events() -> list[dict]:
             "wettest_catchment": row["wettest_catchment"],
             "storm_days": row["storm_days"],
             "is_exhaustive": row["is_exhaustive"],
+            # Empirical placement of this storm's depth in its wettest catchment's
+            # own ~28-year record — the honest "how unusual here" number, computed
+            # from the daily record, never max_anomaly_ratio.
+            "intensity_top_percent": da.intensity_top_percent(
+                row["wettest_catchment"], row["max_daily_mm"]),
         })
     # A literature event absent from the catalogue would be a real gap worth
     # seeing, not a silent drop -- append it with its ranking fields at their
@@ -625,6 +631,24 @@ def event_mooring(event_id: str):
         series_available=False,
         caveats=[],
     )
+
+
+@app.get(f"{PREFIX}/seasonal-risk-calendar", response_model=list[SeasonalMonthOut],
+         tags=["events"])
+def seasonal_risk_calendar():
+    """The 12-month rainfall-intensity calendar — Phase 4, 01-karam.md item 3.
+
+    Buckets the real 675-event catalogue by calendar month on RAINFALL INTENSITY,
+    not exposure score (scripts/29_seasonal_risk_calendar.py's framing decision).
+    503, not an empty list, when the artifact is absent — a bare `[]` would read as
+    "twelve quiet months", the opposite of missing.
+    """
+    cal = da.seasonal_risk_calendar()
+    if not cal:
+        raise HTTPException(
+            503, "no seasonal_risk_calendar.parquet present -- run "
+                 "scripts/29_seasonal_risk_calendar.py")
+    return [SeasonalMonthOut(**m) for m in cal]
 
 
 #: Real coastal dive/wreck sites (Gorgon 1, Cedar Pride Shipwreck, King Abdullah

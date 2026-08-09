@@ -382,6 +382,26 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
         },
       },
 
+      // --- dive sites, a toggleable reference overlay --------------------
+      {
+        // The 46 kind=dive POIs as dots, off by default. Hollow accent circles,
+        // the same form the outlets and mooring use, so the map reads as one
+        // system. No colour-by-distance here: the geojson carries no distance, and
+        // the honest coastal-vs-inland split (with the >2 km caveat) lives on the
+        // reef-zone page — inland Wadi Rum POIs simply plot far from the coast.
+        id: 'divesites',
+        type: 'circle',
+        source: `${SRC}-places`,
+        filter: ['==', ['get', 'kind'], 'dive'],
+        layout: { visibility: 'none' },
+        paint: {
+          'circle-radius': 3.5,
+          'circle-color': c.surface,
+          'circle-stroke-color': c.accent,
+          'circle-stroke-width': 1.4,
+        },
+      },
+
       // --- labels, last --------------------------------------------------
       {
         // Dive sites and unclassified POIs at every zoom; hotels only from 14.

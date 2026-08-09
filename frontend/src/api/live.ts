@@ -250,6 +250,11 @@ export interface EventRow {
   wettest_catchment: string | null;
   storm_days: number | null;
   is_exhaustive: boolean | null;
+  /** Empirical "top N%": this event's max_daily_mm sits in the top N% of all days
+   *  in wettest_catchment's ~28-year record. A real percentile of the record, NOT
+   *  max_anomaly_ratio (stale, never shown). null when the daily record or the
+   *  wettest catchment is absent — render a gap, never a fabricated rank. */
+  intensity_top_percent: number | null;
   caveats: unknown[];
 }
 
@@ -353,6 +358,36 @@ export const fetchEvents = () => tryJson<EventRow[]>(`${API_BASE}/api/v1/events`
 export const fetchEvent = (id: string) =>
   tryJson<EventRow>(`${API_BASE}/api/v1/events/${encodeURIComponent(id)}`);
 
+/** One calendar month of the seasonal rainfall-intensity calendar. Buckets are
+ *  RAINFALL INTENSITY, not exposure — the consuming component must say so. */
+export interface SeasonalMonth {
+  month: number;
+  month_name: string;
+  event_count: number;
+  max_daily_mm: number | null;
+  mean_daily_mm: number | null;
+  worst_event_id: string | null;
+}
+
+/** The twelve-month calendar plus where it came from. `provenance: 'snapshot'`
+ *  means the live endpoint was unreachable and the committed fixture answered —
+ *  a real, dated export of the same parquet, not invented data. The caller states
+ *  which on screen so a snapshot is never mistaken for a live read. */
+export interface SeasonalCalendar {
+  months: SeasonalMonth[];
+  provenance: 'live' | 'snapshot';
+}
+
+/** p4-K ships both an endpoint and a committed fixture. Try live first; fall back
+ *  to the shipped snapshot so the calendar survives the wifi-off demo path. */
+export async function fetchSeasonalCalendar(): Promise<SeasonalCalendar | null> {
+  const live = await tryJson<SeasonalMonth[]>(`${API_BASE}/api/v1/seasonal-risk-calendar`);
+  if (live && live.length) return { months: live, provenance: 'live' };
+  const snapshot = await tryJson<SeasonalMonth[]>('/fixtures/seasonal.json');
+  if (snapshot && snapshot.length) return { months: snapshot, provenance: 'snapshot' };
+  return null;
+}
+
 /** Real Kalman et al. (2025) mooring record. Only AQ-2016-10-28 has one; every
  *  other event 404s by design, which `tryJson` surfaces as null. */
 export const fetchMooring = (eventId: string) =>
@@ -374,8 +409,24 @@ export const fetchForecastLatest = () =>
  *  point falls outside a resolved cell -- render "not available", never 0. */
 export const fetchCurrentsAgreement = () =>
   tryJson<CurrentsAgreement>(`${API_BASE}/api/v1/currents/agreement`);
-export const fetchDiveSites = () =>
-  tryJson<Record<string, unknown>[]>(`${API_BASE}/api/v1/dive-sites`);
+/** A dive-site POI joined to its nearest reef zone. `osm_id` is the stable join
+ *  key (115/115 unique) — never join on name. `distance_m` is a real EPSG:32636
+ *  measurement; a large one means an inland OSM `kind: dive` POI (Wadi Rum desert
+ *  attraction) that is not a coastal dive site, and the backend attaches a caveat
+ *  saying so. That caveat MUST render — an inland POI shown with a dive-safety
+ *  status is actively misleading. */
+export interface DiveSite {
+  osm_id: string;
+  name_en: string | null;
+  name_ar: string | null;
+  lon: number;
+  lat: number;
+  nearest_reef_zone_id: string | null;
+  distance_m: number | null;
+  caveats: unknown[];
+}
+
+export const fetchDiveSites = () => tryJson<DiveSite[]>(`${API_BASE}/api/v1/dive-sites`);
 
 /** Retrieval over the project's own docs. No LLM is involved anywhere in this
  *  path — the backend composes an extractive answer from cited excerpts, and an
