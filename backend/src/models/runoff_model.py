@@ -48,6 +48,34 @@ STUB_VERSION_ID = "STUB-no-model-trained"
 #: response alone. Kept as a string to avoid importing sediment_proxy here.
 SEDIMENT_ANCHOR = "AQ-2016-10-28 / AQ-C01 (~24,400 t)"
 
+#: The one number in this module NOT sourced from model_versions.jsonl.
+#: `scripts/22_label_leakage_diagnostic.py`'s one-off feature ablation
+#: (reports/model/label_problem.md, docs/model_card.md — Mahdi, 4 Aug), run once
+#: to diagnose why the shipped model's mean_AP was high, never registered as its
+#: own trained artefact because it was never shipped. Root CLAUDE.md's label rule
+#: section, verbatim: "Quote 0.662, not 0.741, for 'predicts runoff from
+#: independent inputs'." Exists as a module constant, not a magic number in a
+#: template, for the same reason SEDIMENT_ANCHOR is: named once, quoted everywhere.
+LABEL_LEAKAGE_ABLATION = {
+    "claim": "predicts runoff from inputs independent of the label's own atmosphere",
+    "defensible_model": "M1 -- IMERG rainfall + neutral features, no ERA5 input at all",
+    "defensible_n_features": 15,
+    "defensible_mean_AP": 0.6623,
+    "shipped_model": "M2 -- the shipped CD- feature set (this artefact's own feature list)",
+    "shipped_n_features": 20,
+    "shipped_mean_AP": 0.7445,
+    "why_shipped_is_not_defensible": (
+        "corr(ERA5-Land sro, ERA5-Land rainfall) = +0.985 vs corr(sro, IMERG "
+        "rainfall) = +0.573 -- the label is near-deterministic in ERA5's own "
+        "weather, so any ERA5-sourced feature this model uses "
+        "(soil_moisture_lag1d, soil_moisture_lag3d, wind_speed_ms, "
+        "wind_direction_deg, temp_c) leaks the same atmosphere the label came "
+        "from, not hydrology. M2-M1 = +0.082: those five columns alone "
+        "contribute 15% of the model's lift over baseline."
+    ),
+    "source": "reports/model/label_problem.md; docs/model_card.md",
+}
+
 #: Phase 5, B2. Mirrors sediment_proxy.TRANSMISSION_LOSS_BASIS - duplicated as
 #: a literal for the same reason as SEDIMENT_ANCHOR above, not because the two
 #: could drift independently. Unconditional: there is no "learned" path yet.
@@ -403,6 +431,11 @@ def model_info(version_id: str | None = None) -> dict[str, Any]:
     row["source"] = "artifact"
     row["trained"] = True
     row["n_training_events"] = len(row.get("training_event_ids") or [])
+    # Not one of this artefact's own recorded metrics -- a different, never-shipped
+    # model, carried here so a caller asking "does this predict from independent
+    # inputs" gets routed to the number that actually answers that question rather
+    # than this artefact's own (leakage-contaminated) mean_AP.
+    row["label_leakage_ablation"] = LABEL_LEAKAGE_ABLATION
     return row
 
 

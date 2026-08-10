@@ -1,0 +1,11 @@
+=== current registered model_versions.jsonl entry ===
+id: runoff_weighted_gbm_6de325c_20260806T105403Z
+trained_at: 2026-08-06T10:54:03.126384+00:00
+git_commit: 6de325c
+features (n): 20
+
+=== stored metrics ===
+mean_AP: 0.7474
+pooled_AP: 0.6831
+baseline_mean_AP: 0.2004
+temporal_holdout_AP: 0.5923

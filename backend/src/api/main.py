@@ -46,7 +46,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from exposure import engine, store
@@ -74,6 +74,7 @@ from rag import answer as rag_answer
 from rag import corpus as rag_corpus
 from rag import explain as rag_explain
 from rag import index as rag_index
+from . import auth
 from . import caveats as cav
 from . import data_access as da
 from .schemas import (
@@ -484,10 +485,19 @@ def list_reef_zone_photos(id: str):
 
 @app.post(f"{PREFIX}/reef-zones/{{id}}/sensitivity-weight/approve",
          response_model=ApproveSensitivityWeightResponse, tags=["geometry"])
-def approve_sensitivity_weight(id: str, req: ApproveSensitivityWeightRequest):
+def approve_sensitivity_weight(
+    id: str,
+    req: ApproveSensitivityWeightRequest,
+    current_user: auth.CurrentUser = Depends(auth.get_current_user),
+):
     """The ONLY code path anywhere that sets a live `sensitivity_weight`
     override — Standing Law rule 13. Requires a named reviewer and stated
     reasoning (not optional — a proposal cannot approve itself).
+
+    Phase 8, Track B (tasks/00-contracts.md §9): the reviewer identity comes
+    from a verified Supabase Auth session, never `req.reviewer` — a free-text
+    field a client can put anything into is not an audit trail. `req.reviewer`
+    is kept for the reasoning text's own readability but is not trusted.
 
     Writes a read-time overlay (`reef_zone_photos.set_override`), never
     `reef_zones.gpkg` itself — `./data` is mounted read-only in the deployed
@@ -500,10 +510,11 @@ def approve_sensitivity_weight(id: str, req: ApproveSensitivityWeightRequest):
     if id not in _known_reef_zone_ids():
         raise HTTPException(404, f"unknown reef zone {id}")
 
+    reviewer_identity = current_user.email or current_user.sub
     proposal = reef_zone_photos.proposed_sensitivity_weight_for_zone(id)
 
     approval_id = reef_zone_photos.record_approval(
-        reef_zone_id=id, reviewer=req.reviewer, reasoning=req.reasoning,
+        reef_zone_id=id, reviewer=reviewer_identity, reasoning=req.reasoning,
         proposed_value=proposal["proposed_value"] or 0.0,
         approved_value=req.approved_value,
     )
@@ -516,7 +527,7 @@ def approve_sensitivity_weight(id: str, req: ApproveSensitivityWeightRequest):
 
     return ApproveSensitivityWeightResponse(
         reef_zone_id=id, approval_id=approval_id, approved_value=req.approved_value,
-        approved_at=datetime.now(timezone.utc), reviewer=req.reviewer,
+        approved_at=datetime.now(timezone.utc), reviewer=reviewer_identity,
     )
 
 
@@ -1365,6 +1376,14 @@ def plume_map_frames(event_id: str, outlet_id: str,
 
     Returned rather than assumed so the client never guesses a `upto_hours` the
     simulation did not produce.
+
+    Also carries the run's `provenance`/`caveats` verbatim from `plume_simulate` --
+    the currents source (real HYCOM where cached, the documented PLACEHOLDER
+    otherwise) and the permanent wind/windage caveats live only there today, and
+    the 05-abd.md rule is to render that provenance on screen rather than have the
+    UI assert its own copy of it. `windage_*` is added separately because the
+    72-trial calibration result lives in its own sidecar file, not in the plume
+    run itself -- see `data/models/plume_calibration.json`'s own `windage_caveat`.
     """
     from rendering import plume_map as renderer
 
@@ -1373,6 +1392,8 @@ def plume_map_frames(event_id: str, outlet_id: str,
     times = renderer.frame_times(c.model_dump() for c in plume.contours)
     base = (f"{PREFIX}/plume/map?event_id={event_id}&outlet_id={outlet_id}"
             f"&horizon_hours={horizon_hours}")
+    calibration = _load_plume_calibration()
+    calibrated_here = bool(calibration) and calibration.get("event_id") == event_id
     return {
         "event_id": event_id,
         "outlet_id": outlet_id,
@@ -1380,6 +1401,18 @@ def plume_map_frames(event_id: str, outlet_id: str,
         "frames": [{"t_hours": t, "url": f"{base}&upto_hours={t:g}"} for t in times],
         "basemap_present": renderer.load_basemap() is not None,
         "plume_source": "stub" if plume.is_stub else "particle-engine",
+        "provenance": plume.provenance,
+        "caveats": plume.caveats,
+        # windage_fraction "won" a calibration grid search in which wind was
+        # identically zero, so every candidate's windage term contributed the same
+        # zero drift -- the winner is a tie-break artefact, not a fitted value.
+        # None (not 0.0) when no calibration ran for this event, so the UI can
+        # tell "no calibration" from "calibrated to exactly zero".
+        "windage_fraction": (
+            calibration["params"]["windage_fraction"] if calibrated_here else None
+        ),
+        "windage_is_tiebreak": calibrated_here,
+        "windage_caveat": calibration.get("windage_caveat") if calibrated_here else None,
     }
 
 
@@ -2018,11 +2051,21 @@ def get_report(report_id: str):
 
 @app.patch(f"{PREFIX}/reports/{{report_id}}/review", response_model=ReportOut,
           tags=["language"])
-def review_report(report_id: str, req: ReviewReportRequest):
+def review_report(
+    report_id: str,
+    req: ReviewReportRequest,  # noqa: ARG001 — kept for schema compatibility, not trusted
+    current_user: auth.CurrentUser = Depends(auth.get_current_user),
+):
     """The only code path anywhere that can move a report from ai_drafted to
     human_reviewed. `reviewed_by` is required — a report cannot review
-    itself."""
-    row = generated_reports.set_reviewed(report_id, req.reviewed_by)
+    itself.
+
+    Phase 8, Track B (tasks/00-contracts.md §9): `reviewed_by` now comes from
+    the verified session, not `req.reviewed_by` — a human-review audit trail
+    whose author is a free-text string a client can put anything into is not
+    an audit trail."""
+    reviewer_identity = current_user.email or current_user.sub
+    row = generated_reports.set_reviewed(report_id, reviewer_identity)
     if row is None:
         raise HTTPException(404, f"unknown report {report_id}")
     return _report_out(row)
@@ -2031,3 +2074,12 @@ def review_report(report_id: str, req: ReviewReportRequest):
 @app.get(f"{PREFIX}/cache-stats", tags=["meta"])
 def cache_stats():
     return {"plume": da.PLUME_CACHE.stats(), "exposure": da.EXPOSURE_CACHE.stats()}
+
+
+@app.get(f"{PREFIX}/users/me", tags=["meta"])
+def users_me(current_user: auth.CurrentUser = Depends(auth.get_current_user)):
+    """The one call the frontend needs to answer "am I signed in, and as
+    whom" — its absence was named explicitly as a gap in Login.tsx's own
+    docstring before Phase 8, Track B. Identity is read straight from the
+    verified token, never echoed back from anything the client sent."""
+    return {"id": current_user.sub, "email": current_user.email}

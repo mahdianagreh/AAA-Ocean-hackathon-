@@ -32,11 +32,11 @@ export type RouteName =
   | 'reports'
   | 'sitesScore'
   | 'alerts'
+  | 'systemHealth'
+  | 'dataExplorer'
   | 'account'
   | 'specimen'
   | 'backtests'
-  | 'system'
-  | 'explorer'
   | 'notFound';
 
 export interface RouteMatch {
@@ -69,11 +69,11 @@ const ROUTES: ReadonlyArray<readonly [string, RouteName]> = [
   ['/reports', 'reports'],
   ['/sites/score', 'sitesScore'],
   ['/alerts', 'alerts'],
+  ['/system-health', 'systemHealth'],
+  ['/data-explorer', 'dataExplorer'],
   ['/account', 'account'],
   ['/specimen', 'specimen'],
   ['/backtests', 'backtests'],
-  ['/system', 'system'],
-  ['/explorer', 'explorer'],
 ];
 
 /** Strip trailing slashes, but keep the root as "/" rather than "". */

@@ -12,7 +12,7 @@ import { useUi } from '../app/uiStore';
 import { palette } from '../design/palette.generated';
 import { buildJourneyStyle } from './journeyStyle';
 import { usePhaseTimeline } from './usePhaseTimeline';
-import { transportPaint, accumulationPaint } from './layers/plume';
+import { transportPaint, accumulationPaint, outlinePaint } from './layers/plume';
 import { reefRiskColorExpression, reefStrokeExpression } from './layers/reef';
 import { catchmentOpacity } from './layers/catchments';
 import { makeRainSeeds, rainFrameFeatures, RAIN_POOL_SIZE, type RainSeed } from './layers/rain';
@@ -26,9 +26,17 @@ import {
   type RainStreak,
   type CloudAnchor,
 } from './layers/rainOverlay';
-import { runoffFeatures, runoffDashArray } from './layers/runoff';
-import { TERRAIN_EXAGGERATION } from './layers/terrain';
-import { loadImageryCorners, IMAGE_URL } from './layers/imagery';
+import { runoffFeatures, runoffPolygonFeatures } from './layers/runoff';
+import {
+  buildFlowPaths,
+  createFlowParticles,
+  stepFlowParticles,
+  drawWaterFlow,
+  type FlowParticle,
+} from './layers/waterFlowOverlay';
+import { JourneyAlert, type JourneyAlertCatchment } from './JourneyAlert';
+import { TERRAIN_EXAGGERATION, TERRAIN_MIN_ZOOM } from './layers/terrain';
+import { loadImageryCorners, imageUrlFor, TERRAIN_STEM, CORRIDOR_STEM, WIDE_STEM } from './layers/imagery';
 import type { JourneyPhase } from './constants';
 
 //: The same Esri World Imagery this project's 2D plume map already ships in
@@ -77,6 +85,16 @@ interface JourneyFixture {
   //: comparison point, not a bare mm figure.
   rainfall_p99_by_catchment: Record<string, number | null>;
   runoff_lines: number[][][];
+  //: The same real centrelines above, buffered by a real-drainage-density-
+  //: scaled width -- see runoff.ts's docstring and frontend_journey.py's
+  //: `_real_runoff_polygon`. One exterior ring per disjoint polygon.
+  runoff_polygon: number[][][];
+  //: The release catchment's real sediment-proxy result for this event —
+  //: same formula, same anchor, `POST /api/v1/exposure/calculate` would
+  //: compute (see plume.ts's own comment on where `sediment_index_normalized`
+  //: drives the plume's visual intensity). `null` if the event isn't in the
+  //: real training set for this catchment — never a borrowed default.
+  sediment: { sediment_index: number; sediment_index_normalized: number; sediment_class: string; sediment_basis: string } | null;
   source: string;
 }
 
@@ -111,7 +129,6 @@ function roughCentroid(geom: Geometry): [number, number] {
 //: behind this normalisation.
 const RAIN_INTENSITY_REFERENCE_MM = 15;
 const RAIN_TICK_MS = 90;
-const RUNOFF_TICK_MS = 220;
 //: The overlay's own pool, independent of RAIN_POOL_SIZE (the ripple pool) --
 //: a full-canvas storm sheet reads right at a higher count than the small
 //: real-lon/lat ripple field does.
@@ -136,17 +153,25 @@ export function Journey3D() {
   const [catchmentFeatures, setCatchmentFeatures] = useState<CatchmentFeature[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [alertDismissed, setAlertDismissed] = useState(false);
 
   const timeline = usePhaseTimeline(fixture?.frames.length ?? 0);
   const { phase, playing, frameIndex } = timeline;
+
+  // Re-arm the warning every time the story restarts, so replaying the
+  // journey (Reset, or clicking back to Normal) shows it again rather than
+  // remembering a dismissal from a previous run.
+  useEffect(() => {
+    if (phase === 'normal') setAlertDismissed(false);
+  }, [phase]);
 
   const rainSeedsRef = useRef<RainSeed[] | null>(null);
   const rainStreaksRef = useRef<RainStreak[] | null>(null);
   const lastOverlayTsRef = useRef<number | null>(null);
   const effectRafRef = useRef<number | null>(null);
   const lastRainTickRef = useRef(0);
-  const lastRunoffTickRef = useRef(0);
-  const runoffTickCountRef = useRef(0);
+  const floodStartTsRef = useRef<number | null>(null);
+  const flowParticlesRef = useRef<FlowParticle[] | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -186,6 +211,24 @@ export function Journey3D() {
       zoom: 9.6,
       pitch: 35,
       bearing: -10,
+      // Belt-and-suspenders alongside the terrain source's own `minzoom`
+      // (layers/terrain.ts): the baked terrain tiles physically stop at
+      // zoom 7, and scrolling/pinching past that point broke the whole
+      // scene into streaked artifacts before the source-level fix. This
+      // stops the camera from ever reaching that zoom at all, rather than
+      // relying only on the source recovering gracefully once it's there.
+      //
+      // `maxBounds` was tried as a second layer on top of this and
+      // reverted: it clamps pan *and* silently overrides zoom/center mid-
+      // drag to keep its box framed, which fought the pitched camera badly
+      // enough that ordinary dragging felt broken (confirmed: a single
+      // straight drag jumped the center ~0.2 deg north and changed zoom on
+      // its own). `minzoom`/`minZoom` plus the source's own `bounds` (never
+      // requesting a tile outside the real AOI) is what actually stops the
+      // glitch — verified with fresh-page repros at z7 across pitch
+      // 0/35/50/60/70 and hard pans, all clean. `maxBounds` added no
+      // measurable protection on top of that.
+      minZoom: TERRAIN_MIN_ZOOM,
       attributionControl: false,
       dragRotate: true,
       touchZoomRotate: true,
@@ -206,19 +249,36 @@ export function Journey3D() {
     m.on('load', () => {
       m.setTerrain({ source: 'terrain', exaggeration: TERRAIN_EXAGGERATION });
       setMapReady(true);
-      // Async: the sidecar JSON carries the real image's corner bounds, so
-      // the `image` source can't be declared in the static style (journeyStyle.ts)
-      // the way every other source is — see layers/imagery.ts's own docstring.
-      // Resolves to null (degrade honestly, no drape) if the baked file was
-      // never copied into frontend/public/basemap-raster/ in this environment.
-      void loadImageryCorners().then((corners) => {
-        if (!corners || !map.current) return;
-        map.current.addSource('imagery', { type: 'image', url: IMAGE_URL, coordinates: corners.coordinates });
-        map.current.addLayer(
-          { id: 'imagery-raster', type: 'raster', source: 'imagery', paint: { 'raster-opacity': 1 } },
-          'terrain-hillshade',
-        );
-      });
+      // Async: the sidecar JSON carries each real image's corner bounds, so
+      // the `image` sources can't be declared in the static style
+      // (journeyStyle.ts) the way every other source is — see
+      // layers/imagery.ts's own docstring. Each resolves to null (degrade
+      // honestly, no drape) if its baked file was never copied into
+      // frontend/public/basemap-raster/ in this environment.
+      //
+      // Loaded and inserted *sequentially*, not fired in parallel: all three
+      // target the same "before terrain-hillshade" anchor, so whichever
+      // finishes its fetch first would otherwise land lowest — a real race,
+      // not a hypothetical one, since network timing has no reason to match
+      // sharp-to-coarse order. Awaiting each in turn guarantees the stack is
+      // always wide (coarse, padded well past the AOI) below full-AOI below
+      // corridor (sharpest, smallest), so each only ever draws over ground
+      // its own real extent actually covers.
+      void (async () => {
+        for (const [stem, sourceId, layerId] of [
+          [WIDE_STEM, 'imagery-wide', 'imagery-wide-raster'],
+          [TERRAIN_STEM, 'imagery', 'imagery-raster'],
+          [CORRIDOR_STEM, 'imagery-corridor', 'imagery-corridor-raster'],
+        ] as const) {
+          const corners = await loadImageryCorners(stem);
+          if (!corners || !map.current) continue;
+          map.current.addSource(sourceId, { type: 'image', url: imageUrlFor(stem), coordinates: corners.coordinates });
+          map.current.addLayer(
+            { id: layerId, type: 'raster', source: sourceId, paint: { 'raster-opacity': 1 } },
+            'terrain-hillshade',
+          );
+        }
+      })();
     });
     map.current = m;
     // Dev/specimen only — same pattern as map/MapView.tsx's own __map handle,
@@ -267,12 +327,33 @@ export function Journey3D() {
     if (!m || !mapReady || !fixture) return;
     if (phase === 'normal') {
       m.flyTo({ center: [fixture.release.lon, fixture.release.lat - 0.01], zoom: 9.6, pitch: 35, bearing: -10, duration: 1600 });
-    } else if ((phase === 'rain' || phase === 'flood') && wadiCenter) {
+    } else if (phase === 'rain' && wadiCenter) {
       const midLon = (wadiCenter[0] + fixture.release.lon) / 2;
       const midLat = (wadiCenter[1] + fixture.release.lat) / 2;
       m.flyTo({ center: [midLon, midLat], zoom: 10.2, pitch: 55, bearing: 5, duration: 1800 });
+    } else if (phase === 'flood' && wadiCenter) {
+      // Its own framing, not a reuse of 'rain''s: bearing is the real
+      // compass direction from the catchment's own centroid to the real
+      // release point (small-distance planar approximation, cos(lat)
+      // correction for the east/west component), so the camera looks down
+      // the real flow direction toward the outlet rather than a fixed,
+      // arbitrary angle. Slightly closer and steeper than 'rain' so the
+      // widening water channel (layers/runoff.ts) reads clearly.
+      const midLon = (wadiCenter[0] + fixture.release.lon) / 2;
+      const midLat = (wadiCenter[1] + fixture.release.lat) / 2;
+      const latRad = (midLat * Math.PI) / 180;
+      const dLon = (fixture.release.lon - wadiCenter[0]) * Math.cos(latRad);
+      const dLat = fixture.release.lat - wadiCenter[1];
+      const bearing = ((Math.atan2(dLon, dLat) * 180) / Math.PI + 360) % 360;
+      m.flyTo({ center: [midLon, midLat], zoom: 10.6, pitch: 60, bearing, duration: 1800 });
     } else if (phase === 'transport' || phase === 'accumulation') {
-      m.flyTo({ center: [fixture.release.lon, fixture.release.lat], zoom: 12.5, pitch: 65, bearing: -18, duration: 1800 });
+      // Real measurement, not a guess: this event's real contour rings span
+      // well under 2 km even at their largest (+24h) real timestep -- at the
+      // old zoom 12.5 (~23 m/px here) the densest, most colourful inner band
+      // was only a few screen px wide, reading as a pale smudge dominated by
+      // its own faintest outer ring. Close enough that the real shape (and
+      // the new colour bands) is actually legible, not just technically drawn.
+      m.flyTo({ center: [fixture.release.lon, fixture.release.lat], zoom: 14.3, pitch: 58, bearing: -18, duration: 1800 });
     } else if (phase === 'impact') {
       m.flyTo({ center: [fixture.release.lon, fixture.release.lat], zoom: 12, pitch: 45, bearing: 40, duration: 1800 });
     }
@@ -294,13 +375,18 @@ export function Journey3D() {
         })),
       };
       (m.getSource('plume-frame') as GeoJSONSource | undefined)?.setData(fc);
-      const paint = phase === 'accumulation' ? accumulationPaint(c) : transportPaint(c);
+      const sedimentIntensity = fixture.sediment?.sediment_index_normalized ?? 1;
+      const paint = phase === 'accumulation' ? accumulationPaint(c, sedimentIntensity) : transportPaint(c, sedimentIntensity);
       // setPaintProperty's key type is a closed union of every paint property
       // MapLibre knows about; `paint` is built from that same union in
       // layers/plume.ts, so the runtime keys are always valid even though
       // Object.entries widens them to `string` for TypeScript.
       for (const [k, v] of Object.entries(paint)) {
         m.setPaintProperty('plume-extrusion', k as Parameters<typeof m.setPaintProperty>[1], v as never);
+      }
+      const stroke = outlinePaint(c, phase === 'accumulation' ? 'accumulation' : 'transport');
+      for (const [k, v] of Object.entries(stroke)) {
+        m.setPaintProperty('plume-outline', k as Parameters<typeof m.setPaintProperty>[1], v as never);
       }
     } else if (phase === 'normal' || phase === 'rain' || phase === 'flood') {
       (m.getSource('plume-frame') as GeoJSONSource | undefined)?.setData({
@@ -343,12 +429,16 @@ export function Journey3D() {
     if (phase !== 'rain' && phase !== 'flood') {
       (m.getSource('rain') as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
       (m.getSource('runoff') as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
+      (m.getSource('runoff-fill') as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features: [] });
+      if (m.getLayer('runoff-wet-ground')) m.setPaintProperty('runoff-wet-ground', 'line-opacity', 0);
       const canvas = rainCanvasRef.current;
       const ctx = canvas?.getContext('2d');
       const dpr0 = window.devicePixelRatio || 1;
       if (canvas && ctx) clearRainCanvas(ctx, canvas.width / dpr0, canvas.height / dpr0);
       rainStreaksRef.current = null;
       lastOverlayTsRef.current = null;
+      floodStartTsRef.current = null;
+      flowParticlesRef.current = null;
       return;
     }
 
@@ -361,6 +451,15 @@ export function Journey3D() {
     }
     if (phase === 'flood') {
       (m.getSource('runoff') as GeoJSONSource | undefined)?.setData(runoffFeatures(fixture.runoff_lines));
+      (m.getSource('runoff-fill') as GeoJSONSource | undefined)?.setData(runoffPolygonFeatures(fixture.runoff_polygon));
+      if (!flowParticlesRef.current) {
+        const initialPaths = buildFlowPaths(
+          fixture.runoff_lines,
+          (lon, lat) => m.project([lon, lat]),
+          [fixture.release.lon, fixture.release.lat],
+        );
+        flowParticlesRef.current = createFlowParticles(initialPaths, 9);
+      }
     }
 
     let cancelled = false;
@@ -421,20 +520,41 @@ export function Journey3D() {
         }
       }
       if (phase === 'flood') {
-        if (now - lastRunoffTickRef.current >= RUNOFF_TICK_MS) {
-          lastRunoffTickRef.current = now;
-          runoffTickCountRef.current += 1;
-          if (m.getLayer('runoff-flow')) {
-            m.setPaintProperty('runoff-flow', 'line-dasharray', runoffDashArray(runoffTickCountRef.current) as never);
-            // Real flow strength, not a fixed line regardless of how much
-            // rain actually fell -- the same release-catchment intensity the
-            // rain phase already uses. No floor: a catchment with almost no
-            // real rain shows almost no visible flow, not a full dashed line
-            // at reduced opacity.
-            m.setPaintProperty('runoff-flow', 'line-opacity', 0.9 * intensity);
-            m.setPaintProperty('runoff-flow', 'line-width', 1.5 + 2 * intensity);
-            m.setPaintProperty('runoff-casing', 'line-opacity', 0.5 * intensity);
-          }
+        if (floodStartTsRef.current === null) floodStartTsRef.current = now;
+
+        // The actual "this is moving water" signal: screen-space particles
+        // riding the real wadi path, every rAF frame (not throttled) so the
+        // motion reads as continuous, same reasoning as the rain streak
+        // step above. Paths are rebuilt fresh each frame from the current
+        // camera projection (cheap -- a handful of already-simplified
+        // lines) since the flood camera is still easing into place; only
+        // the particles' own along-path progress persists across frames.
+        const canvas = rainCanvasRef.current;
+        const ctx = canvas?.getContext('2d');
+        if (canvas && ctx && flowParticlesRef.current) {
+          const dpr = window.devicePixelRatio || 1;
+          const w = canvas.width / dpr;
+          const h = canvas.height / dpr;
+          const dt = lastOverlayTsRef.current === null ? 0 : (now - lastOverlayTsRef.current) / 1000;
+          lastOverlayTsRef.current = now;
+          const project = (lon: number, lat: number) => m.project([lon, lat]);
+          const paths = buildFlowPaths(fixture.runoff_lines, project, [fixture.release.lon, fixture.release.lat]);
+          // Speed scales with the same real intensity as everything else
+          // this phase drives -- heavier real rain, visibly faster current.
+          stepFlowParticles(flowParticlesRef.current, paths, Math.min(dt, 0.05), 0.5 + 1.5 * intensity);
+          clearRainCanvas(ctx, w, h);
+          drawWaterFlow(ctx, paths, flowParticlesRef.current, intensity);
+        }
+
+        // The wet-ground halo ramps in over real time, scaled by the same
+        // real intensity -- no floor, so a catchment with almost no real
+        // rain shows an almost-imperceptible halo, not a fixed one at
+        // reduced opacity. `rampMs` shrinks (faster fill-in) as intensity
+        // rises, clamped so near-zero intensity can't freeze it entirely.
+        if (m.getLayer('runoff-wet-ground')) {
+          const rampMs = Math.max(2000, Math.min(9000, 6000 / (0.4 + 1.2 * intensity)));
+          const fillProgress = Math.min(1, (now - floodStartTsRef.current) / rampMs);
+          m.setPaintProperty('runoff-wet-ground', 'line-opacity', 0.55 * intensity * fillProgress);
         }
       }
       effectRafRef.current = requestAnimationFrame(loop);
@@ -462,6 +582,30 @@ export function Journey3D() {
   }
 
   const phases: JourneyPhase[] = ['normal', 'rain', 'flood', 'transport', 'accumulation', 'impact'];
+
+  // Every real catchment that actually recorded rainfall this event day —
+  // `rainfall_by_catchment` entries are `null` (never a borrowed zero) for
+  // any catchment with no real measured value, so this list is already the
+  // honest "only these actually had rain" set.
+  const alertCatchments: JourneyAlertCatchment[] = Object.entries(fixture.rainfall_by_catchment)
+    .filter((entry): entry is [string, { peak_mm: number }] => entry[1] !== null)
+    .map(([catchmentId, r]) => ({
+      catchmentId,
+      peakMm: r.peak_mm,
+      p99Mm: fixture.rainfall_p99_by_catchment[catchmentId] ?? null,
+    }));
+
+  const hasSediment = (fixture.frames[frameIndex]?.contours.length ?? 0) > 0;
+  const hasExposure = fixture.reef_exposure.length > 0;
+  // If a real day/event has no plume contours or no reef exposure at all,
+  // the phase text says so honestly instead of describing a simulation that
+  // isn't there for this particular run -- this event has real data for
+  // both, so this branch exists for correctness, not because today's replay
+  // exercises it.
+  const phaseBodyKey =
+    (phase === 'transport' || phase === 'accumulation') && !hasSediment ? `${phase}Empty`
+      : phase === 'impact' && !hasExposure ? 'impactEmpty'
+      : phase;
 
   return (
     <div className="flex h-full flex-col gap-2" data-journey="true">
@@ -505,6 +649,30 @@ export function Journey3D() {
         </div>
       </div>
 
+      {(phase === 'transport' || phase === 'accumulation') ? (
+        // Manual seek across the real particle-engine timesteps -- there was
+        // previously no way to land on a specific one, only watch autoplay
+        // step through them in order. Always jumps into 'transport' (the
+        // phase a specific timestep is meaningful in; 'accumulation' is
+        // deliberately always the final one, never a browsable frame).
+        <div className="flex flex-wrap items-center gap-1 text-2xs" role="tablist" aria-label={t('journey.frameNav')}>
+          {fixture.frames.map((f, i) => (
+            <button
+              key={f.t_hours}
+              type="button"
+              onClick={() => timeline.goToFrame(i)}
+              data-journey-frame={i}
+              aria-pressed={frameIndex === i}
+              dir="ltr"
+              style={{ unicodeBidi: 'isolate' }}
+              className={`rule px-1.5 py-0.5 font-mono num ${frameIndex === i ? 'border-accent text-accent' : 'text-ink-3 hover:text-ink-2'}`}
+            >
+              {t('journey.hourLabel', { h: f.t_hours })}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <div
         data-journey-map="true"
         className="relative grid min-h-0 flex-1 rule"
@@ -532,12 +700,27 @@ export function Journey3D() {
           ref={rainCanvasRef}
           className="pointer-events-none relative col-start-1 row-start-1 h-full w-full"
         />
+        {/* Pops in once the story reaches real rainfall, built from the same
+            real per-catchment numbers the phase text below already quotes —
+            see JourneyAlert.tsx for why the wording says "recorded", not
+            "predicted". `relative`, same stacking reason as the rain canvas
+            above: a non-positioned sibling would still lose to MapLibre's
+            own `position:absolute` canvas. */}
+        {(phase === 'rain' || phase === 'flood') && !alertDismissed && alertCatchments.length > 0 ? (
+          <JourneyAlert
+            catchments={alertCatchments}
+            dateUtc={fixture.rainfall?.peak_date_utc ?? null}
+            onDismiss={() => setAlertDismissed(true)}
+          />
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-1 text-2xs text-ink-3">
-        <p className="font-semibold text-ink-2">{t(`journey.phaseBody.${phase}`, {
+        <p className="font-semibold text-ink-2">{t(`journey.phaseBody.${phaseBodyKey}`, {
           mm: fixture.rainfall?.peak_mm,
           date: fixture.rainfall?.peak_date_utc?.slice(0, 10),
+          sedimentClass: fixture.sediment?.sediment_class ?? '—',
+          sedimentPct: fixture.sediment ? Math.round(fixture.sediment.sediment_index_normalized * 100) : 0,
         })}</p>
         <p>{t('journey.realismCaveat', { exaggeration: TERRAIN_EXAGGERATION })}</p>
         {fixture.current_masking_caveat ? (

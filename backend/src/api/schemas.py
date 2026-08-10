@@ -564,7 +564,10 @@ class ExplainRequest(BaseModel):
     shap_drivers: list[dict] = Field(
         default_factory=list,
         description='e.g. [{"feature": "rainfall_3h_mm", "value": 41.2, '
-                    '"contribution": 0.31}] — passed through verbatim',
+                    '"contribution": 0.31}] — passed through verbatim. `/runoff/predict`\'s '
+                    'own `drivers` field names this the same way except "key" instead of '
+                    '"feature" (DriverOut); rag.explain accepts either, so that response '
+                    'can be forwarded here unmodified.',
     )
     plume_probability: float | None = Field(default=None, ge=0, le=1)
     arrival_window_hours: tuple[float, float] | None = None

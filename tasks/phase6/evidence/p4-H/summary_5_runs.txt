@@ -1,0 +1,29 @@
+=== p4-H evidence: offline emergency mode (A2.5/A6.2 wifi-off test), rerun live ===
+
+Container: reefshield-frontend-1, built fresh via
+  FRONTEND_PORT=5199 docker compose --profile frontend up --build -d frontend
+(port 5199 used instead of default 5173, which is held by an unrelated project's
+container, 9xai-whocan-web-1 — no other containers touched, no 'down' run).
+
+Test: frontend/tests/wifi-off.offline.spec.ts, chromium-offline Playwright project
+(DNS-blackholes the browser via --host-resolver-rules=MAP * ~NOTFOUND — the
+mechanised form of 'wifi physically off' named in A2.5/A6.2, per the test's own
+docstring). Ran 5 times against the live container:
+
+run 1 (first run, right after container start): 2 passed, 1 FAILED
+  -- 'names truncate at the end in RTL, not the start': rail read 0 names
+     (expected >10) -- looks like a cold-start timing race, not a real defect
+run 2: 3 passed
+run 3: 3 passed
+run 4: 3 passed
+run 5: 3 passed
+
+Full output of the first (failing) run:
+
+Running 3 tests using 3 workers
+
+  ✓  2 [chromium-offline] › tests/wifi-off.offline.spec.ts:90:1 › names truncate at the end in RTL, not the start (1.4s)
+  ✓  1 [chromium-offline] › tests/wifi-off.offline.spec.ts:68:1 › the side rail still lists every value with no network (2.6s)
+  ✓  3 [chromium-offline] › tests/wifi-off.offline.spec.ts:25:1 › the whole view works with DNS blackholed (5.0s)
+
+  3 passed (5.3s)

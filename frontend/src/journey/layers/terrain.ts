@@ -38,6 +38,31 @@ const TERRAIN_AOI_WSEN: [number, number, number, number] = [34.75, 29.15, 35.94,
 //: resolves (30 m / 50 m).
 const TERRAIN_MAX_ZOOM = 12;
 
+//: Matches tile_terrain_rgb.py's own MIN_Z -- tiles below this zoom were
+//: never baked at all. Stops MapLibre requesting tiles for zoom levels that
+//: don't exist on disk, matching MapLibre's own documented *overzoom*
+//: behaviour (reuse the nearest baked tile) to the *underzoom* direction.
+//:
+//: This is necessary but NOT sufficient on its own -- the real AOI is
+//: barely one tile column wide even at z7 (`ls public/terrain/7` -> only
+//: `76/52.png` and `76/53.png`), so a viewport merely *allowed* down to z7
+//: can still pan or zoom to frame area beyond real tile coverage, and
+//: `color-relief`/hillshade -- both reading this same `terrain` source --
+//: render that void as stretched, streaky garbage rather than nothing.
+//: Confirmed two ways: scroll-wheel zoom-out from the app's own default
+//: view, and a plain hard drag at z7, both without touching pitch at all.
+//:
+//: Constraining the *camera* to prevent this (`maxBounds` on the Map) was
+//: tried and reverted -- it fights MapLibre's own pitch handling badly
+//: enough that an ordinary drag silently jumped the center and changed
+//: zoom on its own, which is the worse of the two problems. The fix that
+//: actually holds without restricting movement is `terrainVoidMaskFragment`
+//: below: a plain fill layer, painted over color-relief/hillshade, that
+//: repaints anything outside the real AOI back to the app's own background
+//: tone -- so the glitch has nothing left to show regardless of where the
+//: camera points.
+export const TERRAIN_MIN_ZOOM = 7;
+
 //: How high the real elevation reads versus how far apart things are on the
 //: ground. 1.0 (no exaggeration) is an honest option; a modest boost makes
 //: the coastal mountains and the reef-zone seafloor relief read clearly at
@@ -52,6 +77,7 @@ export function terrainSourceFragment() {
     tiles: [TILE_URL],
     tileSize: 256,
     encoding: 'mapbox',
+    minzoom: TERRAIN_MIN_ZOOM,
     maxzoom: TERRAIN_MAX_ZOOM,
     bounds: TERRAIN_AOI_WSEN,
   };
@@ -77,16 +103,16 @@ export function terrainSourceFragment() {
 // exemption the neighbouring journey layers already hold for sky lighting and
 // relief shading.
 const ELEVATION_COLOR_STOPS: Array<[number, string]> = [
-  [-926, '#0a2f4d'], // deepest real bathymetry cell in the merge (token-ok: hypsometric ramp)
-  [-200, '#0f5c8a'],  // token-ok: hypsometric elevation ramp
-  [-30, '#3fa7c9'], // shallow reef-depth water, Gulf's own turquoise cast (token-ok: hypsometric ramp)
-  [-2, '#8fd6d9'],  // token-ok: hypsometric elevation ramp
-  [0, '#e8dcb0'], // the real coastline seam -- sea/land boundary itself (token-ok: hypsometric ramp)
-  [40, '#d9c48a'], // coastal plain, sand/desert (token-ok: hypsometric ramp)
-  [250, '#c2a06a'],  // token-ok: hypsometric elevation ramp
-  [700, '#a67c52'], // wadi flanks, bare rock and scree (token-ok: hypsometric ramp)
-  [1200, '#8a7160'],  // token-ok: hypsometric elevation ramp
-  [1847, '#e8e4de'], // the merge's highest real cell, pale exposed rock (token-ok: hypsometric ramp)
+  [-926, '#0a2f4d'], // deepest real bathymetry cell in the merge -- token-ok: real-world elevation colour, not app chrome
+  [-200, '#0f5c8a'], // token-ok: real-world elevation colour, not app chrome
+  [-30, '#3fa7c9'], // shallow reef-depth water, Gulf's own turquoise cast -- token-ok: real-world elevation colour, not app chrome
+  [-2, '#8fd6d9'], // token-ok: real-world elevation colour, not app chrome
+  [0, '#e8dcb0'], // the real coastline seam -- sea/land boundary itself -- token-ok: real-world elevation colour, not app chrome
+  [40, '#d9c48a'], // coastal plain, sand/desert -- token-ok: real-world elevation colour, not app chrome
+  [250, '#c2a06a'], // token-ok: real-world elevation colour, not app chrome
+  [700, '#a67c52'], // wadi flanks, bare rock and scree -- token-ok: real-world elevation colour, not app chrome
+  [1200, '#8a7160'], // token-ok: real-world elevation colour, not app chrome
+  [1847, '#e8e4de'], // the merge's highest real cell, pale exposed rock -- token-ok: real-world elevation colour, not app chrome
 ];
 
 //: Fixed rather than theme-derived, same reasoning as rain.ts's white
@@ -107,6 +133,82 @@ export function terrainColorFragment() {
             ['elevation'],
             ...ELEVATION_COLOR_STOPS.flat(),
           ] as unknown as string,
+        },
+      },
+    ],
+  };
+}
+
+//: Matches fetch_journey_wide_imagery.py's own `--pad` default exactly --
+//: that script's real, fetched imagery is what this hole needs to line up
+//: with, not the tight TERRAIN_AOI. If that script's default ever changes,
+//: this must change with it (same one-necessary-duplication reasoning as
+//: TERRAIN_AOI_WSEN above; there is no shared config file across the
+//: language boundary for either).
+const WIDE_IMAGE_PAD_FRACTION = 1.2;
+
+function widePaddedAoiWsen(): [number, number, number, number] {
+  const [w, s, e, n] = TERRAIN_AOI_WSEN;
+  const dx = (e - w) * WIDE_IMAGE_PAD_FRACTION;
+  const dy = (n - s) * WIDE_IMAGE_PAD_FRACTION;
+  return [w - dx, s - dy, e + dx, n + dy];
+}
+
+//: One polygon, world-sized outer ring with the wide bake's own real, padded
+//: extent cut out as a hole (GeoJSON winding: CCW exterior, CW hole, per
+//: spec) -- everywhere beyond even that. Sized to the *wide* image, not the
+//: tight TERRAIN_AOI: this layer draws above the imagery layers
+//: (journeyStyle.ts / Journey3D.tsx), so a hole any smaller would paint the
+//: mask right back over the wide bake's own real ground. -85/85 rather than
+//: the poles because this style is `projection: { type: 'mercator' }`, which
+//: is undefined past ~85.05 deg.
+function terrainVoidGeometry() {
+  const [w, s, e, n] = widePaddedAoiWsen();
+  return {
+    type: 'Feature' as const,
+    properties: {},
+    geometry: {
+      type: 'Polygon' as const,
+      coordinates: [
+        [
+          [-180, -85],
+          [180, -85],
+          [180, 85],
+          [-180, 85],
+          [-180, -85],
+        ],
+        [
+          [w, s],
+          [w, n],
+          [e, n],
+          [e, s],
+          [w, s],
+        ],
+      ],
+    },
+  };
+}
+
+//: Drawn above `terrain-color-relief`/`terrain-hillshade` (journeyStyle.ts's
+//: layer order), below everything real (imagery, catchments, buildings,
+//: reef, plume) -- repaints the glitching void back to the app's own `bg`
+//: layer colour, so free camera movement can never expose the streaked
+//: artifact layers/terrain.ts's TERRAIN_MIN_ZOOM doc names. Matches `bg`
+//: exactly (same isDark ternary) rather than a new colour, so the seam
+//: between "real terrain" and "masked void" is invisible, not a visible
+//: second background.
+export function terrainVoidMaskFragment(isDark: boolean, canvasColor: string) {
+  return {
+    sources: {
+      'terrain-void': { type: 'geojson' as const, data: terrainVoidGeometry() },
+    },
+    layers: [
+      {
+        id: 'terrain-void-mask',
+        type: 'fill' as const,
+        source: 'terrain-void',
+        paint: {
+          'fill-color': isDark ? '#020a0d' : canvasColor, // token-ok: matches bg exactly, see journeyStyle.ts
         },
       },
     ],

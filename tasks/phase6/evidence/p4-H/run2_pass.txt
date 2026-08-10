@@ -1,0 +1,8 @@
+
+Running 3 tests using 3 workers
+
+  ✓  2 [chromium-offline] › tests/wifi-off.offline.spec.ts:90:1 › names truncate at the end in RTL, not the start (1.4s)
+  ✓  1 [chromium-offline] › tests/wifi-off.offline.spec.ts:68:1 › the side rail still lists every value with no network (2.6s)
+  ✓  3 [chromium-offline] › tests/wifi-off.offline.spec.ts:25:1 › the whole view works with DNS blackholed (5.0s)
+
+  3 passed (5.3s)

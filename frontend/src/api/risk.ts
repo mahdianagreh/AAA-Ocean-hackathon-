@@ -35,10 +35,11 @@ const AREA_MIN_KM2 = 35.64; // AQ-C05
 const AREA_MAX_KM2 = 4453.08; // AQ-C01, Wadi Yutum
 
 /** How much of a flood never reaches the sea. 20–85% infiltrates the wadi bed,
- *  and the pipeline does not model it. Applied as a fixed haircut with the
- *  midpoint of that range, and surfaced as a driver so it is visible rather than
- *  buried in a constant. */
-const TRANSMISSION_LOSS = 0.5;
+ *  and the pipeline does not model it. Applied as a fixed haircut at the Negev
+ *  midpoint — 0.525, matching `sediment_proxy.py`'s own `TAU_DEFAULT`, not the
+ *  0.5 this used to independently guess — and surfaced as a driver so it is
+ *  visible rather than buried in a constant. */
+const TRANSMISSION_LOSS = 0.525;
 
 /** Concentration: a large catchment delivers far more water to one outlet from
  *  the same depth of rain.
@@ -88,6 +89,7 @@ export function riskFromPredictions(
         band: 'minimal' as const,
         score: 0,
         runoff_probability: null,
+        predicted_runoff_m3: null,
         provisional: true,
         caveat: c.caveat,
         drivers: [],
@@ -107,6 +109,7 @@ export function riskFromPredictions(
       band: bandForSeverity(p.severity),
       score: Math.round(p.runoff_probability * 100),
       runoff_probability: p.runoff_probability,
+      predicted_runoff_m3: p.predicted_runoff_m3,
       // The model is real, so the card is no longer a stand-in. A stub prediction
       // would still be flagged, which is why is_stub travels through the fixture.
       provisional: p.is_stub,
@@ -179,6 +182,7 @@ export function riskFromSeries(
       // browser against moved sliders — so on this path there is no probability to
       // report, and a number here would be a claim nothing computed.
       runoff_probability: null,
+      predicted_runoff_m3: null,
       provisional: true,
       caveat: c.caveat,
       drivers: [

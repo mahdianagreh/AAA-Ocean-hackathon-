@@ -12,11 +12,19 @@
   "sites": "Site Scoring",
   "limitations": "Honest Limits",
   "accessMode": "Open access — no sign-in",
+  "signedInAs": "Signed in as {{email}}",
+  "signOut": "Sign out",
+  "signIn": "Sign in",
   "account": "Preferences",
   "backToSite": "Back to site",
   "live": "LIVE",
   "liveHint": "Reading from the API right now, not a saved snapshot.",
-  "backtests": "Backtests",
-  "system": "System Health",
-  "explorer": "Data Explorer"
+  "sessionExpired": "Your session ended — sign back in to see your account, or keep browsing with open access.",
+  "sessionExpiredDismiss": "Dismiss",
+  "login": "Sign in",
+  "signup": "Request access",
+  "notFound": "Not found",
+  "systemHealth": "System Health",
+  "dataExplorer": "Data Explorer",
+  "backtests": "Backtests"
 }

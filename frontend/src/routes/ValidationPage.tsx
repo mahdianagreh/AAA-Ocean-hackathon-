@@ -2,6 +2,8 @@ import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, PageShell, Section } from '../shell/PageShell';
 import { ValueWithUnit } from '../components/ValueWithUnit';
+import { DataTable, type Column } from '../components/DataTable';
+import { Timeline } from '../components/Timeline';
 import { fetchEvents, fetchMooring, type EventRow } from '../api/live';
 import { loadEventSeries } from '../api/event';
 import { loadValidation, type Validation } from '../api/panels';
@@ -214,37 +216,40 @@ export function ValidationPage() {
             <p className="m-0 max-w-prose text-xs text-ink-2">
               {t('validation.calibrationBody', { n: record.calibration_fit.n_trials })}
             </p>
-            <table className="w-full border-collapse text-xs">
-              <caption className="sr-only">{t('validation.calibrationTitle')}</caption>
-              <thead>
-                <tr className="border-b border-hairline-2 text-xs premium-gradient-text pb-2">
-                  <th scope="col" className="py-2 text-start font-bold">
-                    {t('validation.quantity')}
-                  </th>
-                  <th scope="col" className="py-2 text-end font-bold">
-                    {t('validation.error')}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {(
-                  [
-                    ['arrival', record.calibration_fit.arrival_time_error_hours],
-                    ['duration', record.calibration_fit.duration_error_hours],
-                    ['peak', record.calibration_fit.peak_timing_error_hours],
-                  ] as const
-                ).map(([key, value]) => (
-                  <tr key={key} className="border-b border-hairline hover:bg-surface/50 transition-colors group/row cursor-default">
-                    <th scope="row" className="py-2 text-start font-normal text-ink-2 group-hover/row:text-accent transition-colors">
-                      {t(`validation.calibration.${key}`)}
-                    </th>
-                    <td className="py-1 text-end">
+            {/* Measured-vs-modelled timing, as a chart of how far the modelled
+                arrival/duration/peak fall from the measured record. Real API
+                error values; modelled provenance means the bars read dashed-hue,
+                distinct from any measured mark. Magnitude bars fill from the
+                inline-start, so the chart mirrors cleanly under RTL. */}
+            {/* Not role="img": each row's label and its ValueWithUnit magnitude
+                must stay readable to assistive tech — only the bar itself is
+                decorative (aria-hidden). The section heading names it. */}
+            <div className="flex flex-col gap-2">
+              {(
+                [
+                  ['arrival', record.calibration_fit.arrival_time_error_hours],
+                  ['duration', record.calibration_fit.duration_error_hours],
+                  ['peak', record.calibration_fit.peak_timing_error_hours],
+                ] as const
+              ).map(([key, value], _i, arr) => {
+                const maxAbs = Math.max(0.5, ...arr.map(([, v]) => Math.abs(v ?? 0)));
+                const pct = value == null ? 0 : (Math.abs(value) / maxAbs) * 100;
+                return (
+                  <div key={key} className="flex items-center gap-3 text-xs">
+                    <span className="w-20 shrink-0 text-ink-2">{t(`validation.calibration.${key}`)}</span>
+                    <span className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-surface-2">
+                      <span
+                        className="absolute inset-y-0 start-0 rounded-full"
+                        style={{ width: `${pct}%`, background: 'var(--data-modelled)' }}
+                      />
+                    </span>
+                    <span className="w-20 shrink-0 text-end">
                       <ValueWithUnit value={value} unit="h" digits={2} provenance="modelled" />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
             {/* Caveats verbatim from the calibration record — sourced prose, not
                 UI chrome, so they are not run through i18n. */}
             <p className="m-0 max-w-prose text-2xs text-ink-2">
@@ -314,6 +319,61 @@ export function ValidationPage() {
 function MeasuredRecord({ record }: { record: MooringLive }) {
   const { t } = useTranslation('tools');
 
+  // Measured-quantities table on the shared DataTable (Page 2's pattern). Every
+  // value carries its provenance through ValueWithUnit (measured solid / reported
+  // / converted / modelled), so "source vs derived" survives the redesign, and
+  // the provenance column names it in words as well.
+  const fieldColumns: Column<FieldKey>[] = [
+    {
+      key: 'quantity',
+      header: t('validation.quantity'),
+      cardLabel: t('validation.quantity'),
+      cell: (key) => t(`validation.field.${key}`),
+    },
+    {
+      key: 'measured',
+      align: 'end',
+      header: t('validation.measured'),
+      cell: (key) => (
+        <ValueWithUnit
+          value={record[key].value}
+          unit={record[key].unit}
+          digits={DIGITS[key]}
+          provenance={record[key].provenance}
+        />
+      ),
+    },
+    {
+      key: 'provenance',
+      header: t('validation.provenanceLabel'),
+      cell: (key) => t(`common:provenance.${record[key].provenance}`),
+    },
+    {
+      key: 'uncertainty',
+      header: t('validation.uncertaintyLabel'),
+      cell: (key) => {
+        const u = record[key].uncertainty;
+        if (u?.sigma !== undefined && u.sigma !== null) {
+          return (
+            <span>
+              {t('validation.sigma')} <ValueWithUnit value={u.sigma} digits={0} />
+            </span>
+          );
+        }
+        if (u?.lower !== undefined && u.upper !== undefined) {
+          return (
+            <span>
+              <ValueWithUnit value={u.lower} digits={2} />
+              {' – '}
+              <ValueWithUnit value={u.upper} digits={2} />
+            </span>
+          );
+        }
+        return <span className="text-ink-2">{t('validation.noUncertainty')}</span>;
+      },
+    },
+  ];
+
   return (
     <div className="flex flex-col gap-5">
       {/* Plainly as text, before any table. A reader who never looks at the grid
@@ -373,88 +433,41 @@ function MeasuredRecord({ record }: { record: MooringLive }) {
           a derived one are three different claims. */}
       <Card>
         <h3 className="m-0 text-sm font-semibold">{t('validation.fieldsTitle')}</h3>
-        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={t('validation.fieldsTitle')}>
-          <table className="w-full border-collapse text-xs">
-            <caption className="sr-only">{t('validation.fieldsTitle')}</caption>
-            <thead>
-              <tr className="border-b border-hairline-2 text-xs premium-gradient-text pb-2">
-                <th scope="col" className="py-2 pe-3 text-start font-bold">
-                  {t('validation.quantity')}
-                </th>
-                <th scope="col" className="py-2 pe-3 text-end font-bold">
-                  {t('validation.measured')}
-                </th>
-                <th scope="col" className="py-2 pe-3 text-start font-bold">
-                  {t('validation.provenanceLabel')}
-                </th>
-                <th scope="col" className="py-2 text-start font-bold">
-                  {t('validation.uncertaintyLabel')}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {FIELDS.map((key) => {
-                const v = record[key];
-                return (
-                  <tr key={key} className="border-b border-hairline hover:bg-surface/50 transition-colors group/row cursor-default">
-                    <th scope="row" className="py-2 pe-3 text-start font-normal text-ink-2 group-hover/row:text-accent transition-colors">
-                      {t(`validation.field.${key}`)}
-                    </th>
-                    <td className="py-1 pe-3 text-end">
-                      <ValueWithUnit
-                        value={v.value}
-                        unit={v.unit}
-                        digits={DIGITS[key]}
-                        provenance={v.provenance}
-                      />
-                    </td>
-                    <td className="py-1 pe-3 text-ink-2">
-                      {t(`validation.provenance.${v.provenance}`)}
-                    </td>
-                    <td className="py-1 text-ink-2">
-                      {v.uncertainty?.sigma !== undefined && v.uncertainty.sigma !== null ? (
-                        <span>
-                          {t('validation.sigma')}{' '}
-                          <ValueWithUnit value={v.uncertainty.sigma} digits={0} />
-                        </span>
-                      ) : v.uncertainty?.lower !== undefined && v.uncertainty.upper !== undefined ? (
-                        <span>
-                          <ValueWithUnit value={v.uncertainty.lower} digits={2} />
-                          {' – '}
-                          <ValueWithUnit value={v.uncertainty.upper} digits={2} />
-                        </span>
-                      ) : (
-                        <span className="text-ink-3">{t('validation.noUncertainty')}</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={fieldColumns}
+          rows={FIELDS}
+          getRowKey={(key) => key}
+          ariaLabel={t('validation.fieldsTitle')}
+        />
         {!record.series_available ? (
-          <p className="m-0 text-2xs text-ink-3">{t('validation.seriesUnavailable')}</p>
+          // Flagged explicitly, not styled away: the raw 5-minute trace is not
+          // served by the API, so a time-series line chart cannot be drawn from
+          // real data — and we do not draw one from invented data.
+          <div className="flex items-start gap-2 rule bg-surface-2 p-3 text-2xs text-ink-2">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mt-px shrink-0 text-accent">
+              <circle cx="8" cy="8" r="6.5" />
+              <path d="M8 7.2v3.6" />
+              <circle cx="8" cy="4.9" r="0.5" fill="currentColor" />
+            </svg>
+            <span className="max-w-prose">{t('validation.seriesUnavailable')}</span>
+          </div>
         ) : null}
       </Card>
 
       <Card>
         <h3 className="m-0 text-sm font-semibold">{t('validation.markersTitle')}</h3>
-        <dl className="m-0 flex flex-col gap-1 text-xs">
-          {record.markers.map((m) => (
-            <div key={m.key} className="flex flex-wrap items-baseline gap-2">
-              <dt className="text-ink-2">{t(`validation.marker.${m.key}`)}</dt>
-              <dd className="m-0 flex flex-wrap items-baseline gap-2">
-                <code dir="ltr" className="font-mono num">
-                  {m.t}
-                </code>
-                <span className="text-2xs text-ink-3">
-                  {t(`validation.provenance.${m.provenance}`)}
-                </span>
-              </dd>
-            </div>
-          ))}
-        </dl>
+        {/* A real timeline of the measured markers over time, dot colour driven
+            by provenance form (measured vs modelled), not a plain list. */}
+        <Timeline
+          ariaLabel={t('validation.markersTitle')}
+          entries={record.markers.map((m) => ({
+            key: m.key,
+            label: t(`validation.marker.${m.key}`),
+            time: m.t,
+            meta: t(`common:provenance.${m.provenance}`),
+            provenance: m.provenance,
+          }))}
+        />
         <p className="m-0 text-2xs text-ink-3">{t('validation.markersNote')}</p>
       </Card>
 

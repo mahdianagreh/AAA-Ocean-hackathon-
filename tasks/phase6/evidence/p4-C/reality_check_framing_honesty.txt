@@ -1,0 +1,39 @@
+=== p4-C evidence: transmission-loss reality-check framing, checked for honesty ===
+
+1. Live API response (Pulga's echo check, re-inspected): transmission_loss=0.72 override
+   echoed exactly in formula_terms, no 'learned' framing anywhere in the payload.
+
+2. docs/model_card.md (lines 566-576) states the honest, current reason for negev_proxy:
+write-up: `docs/HANDOFF_transmission_loss_2026-08-06.md`.
+
+**A learned, per-catchment alternative was tested and rejected (8 Aug).**
+`transmission_loss_basis: "learned" | "negev_proxy"` (Phase 5, B2) ships
+unconditionally as `"negev_proxy"` — not because no data existed, but because
+real data was found (Cataldo et al. 2010, 12 real systems, 58 usable storm
+events with a genuine 0-1 fractional loss derived from the paper's own
+regression equations) and a learned model built against it scored **worse than
+predicting the mean** under leave-one-system-out validation, for every feature
+combination tried. Transmission loss is dominated by storm-to-storm dynamics
+this dataset doesn't capture, not by static catchment characteristics. Full
+
+3. sediment_proxy.py code comment (lines 52-56) — checked for consistency with the doc above:
+# Phase 5, B2. The only two honest values: every response must say which one
+# produced its transmission_loss, not just carry the number. "learned" has no
+# implementation yet - flagged (docs/HANDOFF_abd_2026-08-07_b2_data.md) rather
+# than built, because there is no per-catchment measured tau anywhere in this
+# project to train a regression against. Every transmission_loss in the system
+# today - default or user-overridden via the slider - is a point somewhere on
+# this borrowed range, never a per-catchment estimate, so the basis is
+# "negev_proxy" unconditionally until that changes.
+TRANSMISSION_LOSS_BASIS = "negev_proxy"
+
+FINDING (not fixed, per Phase 6 rule): the code comment says 'there is no
+per-catchment measured tau anywhere in this project to train a regression
+against' — this is the PRE-Phase-5-B2-test reasoning. It is stale: real
+data (Cataldo et al. 2010) was found and a learned model WAS built and
+tested against it on 8 Aug, then rejected for negative skill, not for lack
+of data. docs/model_card.md's prose was updated to say this correctly
+('not because no data existed, but because real data was found... and
+scored worse than predicting the mean'); the source-code comment above
+TRANSMISSION_LOSS_BASIS was not. User-facing framing (model_card.md, API
+responses) is honest; the internal code comment is out of date.

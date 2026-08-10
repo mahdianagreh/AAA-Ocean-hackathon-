@@ -1,31 +1,46 @@
 /** Real satellite imagery drape — the same real, never-generated Esri World
- *  Imagery this project's 2D plume map uses (`docs/plume_imagery_decision.md`),
- *  baked by its own script (`scripts/fetch_journey_imagery.py`) rather than
- *  reusing the 2D map's file: that one covers only `MARINE_AOI` (the sea
- *  strip, ~27x33 km), and this scene's terrain mesh covers the full
- *  `TERRAIN_AOI` (~115x128 km, every mountain in it) — draping the smaller
- *  image here would leave a visible seam between real photo (near the coast)
- *  and the colour-relief fallback (`layers/terrain.ts`) everywhere else. Never
- *  a live Mapbox/Google tile fetch (DoD item 9, "works with wifi off").
+ *  Imagery this project's 2D plume map uses (`docs/plume_imagery_decision.md`).
+ *  Three bakes, not one: `fetch_journey_imagery.py` covers the full
+ *  `TERRAIN_AOI` at zoom 12 (~38 m/px) so it survives as one WebGL texture —
+ *  a zoom-13 attempt at that extent decoded to 7168x8192px and the browser
+ *  refused to load it, a real failure this session hit, not a hypothetical
+ *  one. `fetch_journey_corridor_imagery.py` covers just the release outlet's
+ *  real area at zoom 14 (~9.5 m/px), sharp for the journey's closer camera
+ *  phases (flood, transport, accumulation, impact). `fetch_journey_wide_imagery.py`
+ *  covers a padded box around `TERRAIN_AOI` at zoom 9 (~300 m/px), coarse but
+ *  real ground for whatever a free-roaming camera can see beyond the sharp
+ *  AOI edge — see `layers/terrain.ts`'s `TERRAIN_MIN_ZOOM` doc for the glitch
+ *  this replaces. Stacked bottom to top wide -> full-AOI -> corridor in
+ *  `Journey3D.tsx` — each simply draws over the coarser one wherever it
+ *  covers, no per-phase source-swapping needed. Never a live Mapbox/Google
+ *  tile fetch (DoD item 9, "works with wifi off").
  *
- *  A single `image` source, not a tile scheme: one JPEG covering the whole
- *  AOI (see the sidecar JSON's own `width_px`/`height_px`/`zoom`), which is
- *  simpler and sufficient at this scene's scale — no reason to re-tile an
- *  image this project already treats as one asset.
+ *  A single `image` source per bake, not a tile scheme: each is one JPEG
+ *  covering its own real extent (see each sidecar JSON's own
+ *  `width_px`/`height_px`/`zoom`) — simpler and sufficient at this scene's
+ *  scale, no reason to re-tile an image this project already treats as one
+ *  asset per bake.
  *
- *  NOTE ON WHERE THE FILE ACTUALLY LIVES: `fetch_journey_imagery.py` writes to
+ *  NOTE ON WHERE THE FILES ACTUALLY LIVE: all three fetch scripts write to
  *  `data/processed/basemap/`, same convention as `fetch_basemap_raster.py`.
- *  This scene needs the raw file reachable by the browser directly, so it
+ *  This scene needs the raw files reachable by the browser directly, so they
  *  must also be copied to `frontend/public/basemap-raster/` — a plain `cp`,
  *  not a second fetch:
  *      cp data/processed/basemap/aqaba_terrain_esri.{jpg,json} \
+ *         data/processed/basemap/aqaba_journey_corridor_esri.{jpg,json} \
+ *         data/processed/basemap/aqaba_journey_wide_esri.{jpg,json} \
  *         frontend/public/basemap-raster/
- *  Both copies are git-ignored/regenerable; this is not a new data source,
- *  just a second, browser-reachable serving location for the same one.
+ *  All six files are git-ignored/regenerable; this is not a new data
+ *  source, just a second, browser-reachable serving location for the same
+ *  three bakes.
  */
 
-const JSON_URL = `${import.meta.env.BASE_URL}basemap-raster/aqaba_terrain_esri.json`;
-const IMAGE_URL = `${import.meta.env.BASE_URL}basemap-raster/aqaba_terrain_esri.jpg`;
+export const TERRAIN_STEM = 'aqaba_terrain_esri';
+export const CORRIDOR_STEM = 'aqaba_journey_corridor_esri';
+export const WIDE_STEM = 'aqaba_journey_wide_esri';
+
+const jsonUrl = (stem: string) => `${import.meta.env.BASE_URL}basemap-raster/${stem}.json`;
+const imageUrl = (stem: string) => `${import.meta.env.BASE_URL}basemap-raster/${stem}.jpg`;
 
 interface BasemapRasterMeta {
   left: number;
@@ -38,7 +53,7 @@ interface BasemapRasterMeta {
 //: The sidecar's extent is EPSG:3857 (Web Mercator) metres — MapLibre's `image`
 //: source wants the four corners in EPSG:4326 lon/lat. Standard spherical
 //: Web Mercator inverse; correct for any axis-aligned Web Mercator rectangle,
-//: not specific to this one image.
+//: not specific to either bake.
 function webMercatorToLonLat(x: number, y: number): [number, number] {
   const R = 20037508.342789244;
   const lon = (x / R) * 180;
@@ -46,10 +61,10 @@ function webMercatorToLonLat(x: number, y: number): [number, number] {
   return [lon, lat];
 }
 
-export async function loadImageryCorners(): Promise<
-  { coordinates: [[number, number], [number, number], [number, number], [number, number]] } | null
-> {
-  const res = await fetch(JSON_URL);
+export async function loadImageryCorners(
+  stem: string,
+): Promise<{ coordinates: [[number, number], [number, number], [number, number], [number, number]] } | null> {
+  const res = await fetch(jsonUrl(stem));
   if (!res.ok) return null; // not baked in this environment — degrade honestly, no drape
   const meta = (await res.json()) as BasemapRasterMeta;
   const [westLon, northLat] = webMercatorToLonLat(meta.left, meta.top);
@@ -65,4 +80,6 @@ export async function loadImageryCorners(): Promise<
   };
 }
 
-export { IMAGE_URL };
+export function imageUrlFor(stem: string): string {
+  return imageUrl(stem);
+}

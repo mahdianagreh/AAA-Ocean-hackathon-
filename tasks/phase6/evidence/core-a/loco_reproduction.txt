@@ -1,0 +1,12 @@
+11,810 rows, 20 features (same feature list as registered model: True)
+  AQ-C01: AP 0.6096
+  AQ-C02: AP 0.7521
+  AQ-C03: AP 0.7691
+  AQ-C04: AP 0.8025
+  AQ-C05: AP 0.8035
+mean AP (fresh reproduction): 0.7474
+pooled AP (fresh reproduction): 0.6831
+
+stored mean_AP: 0.7474   delta: -0.0000
+stored pooled_AP: 0.6831 delta: -0.0000
+documented noise floor: +-0.017

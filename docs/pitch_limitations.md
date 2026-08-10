@@ -278,6 +278,29 @@ factor, not only what `/reef-zones` shows. What is *proposed* from photo evidenc
 still requires that same human approval before it is ever used; nothing here
 changed which step requires a person.
 
+## 13. Our runoff label fires far more often than real floods do — and it is a detection failure, not a scaling one
+
+The classifier's target is `sro > 0.002 mm/day` — ERA5-Land generating surface
+runoff — not "sediment reached the sea." It fires on **288 days**, measured at
+**3.21% of calendar days** (`reports/model/label_problem.md` §3; the source states
+the share directly rather than a separate total day count, so we do not invent
+one here). Kalman et al. (2025) document **13 sea-reaching floods since 1994**
+across the whole record, **0.156%** of days. That is a **21× gap**, and the 21×
+itself is the optimistic case — it assumes every day we did not individually
+sample is a genuine non-event. On the days we actually did sample, the gap is
+**78×**.
+
+We checked whether this is just a threshold calibrated for balance rather than
+for truth, and it is not fixable that way. ERA5-Land is **essentially dry
+(< 0.1 mm) on 35% of the days IMERG calls wet**, and on **20% of the heaviest
+IMERG days in the record** — of 276 catchment-days where IMERG saw more than
+1 mm and ERA5 saw nothing, our label is positive on exactly **one**. **The
+October 2016 anchor storm is among the misses**: 0.77 mm and the 92.6th
+percentile in ERA5, against 9.58 mm and the 99.5th percentile in IMERG — the
+same storm the sediment proxy is anchored to reads as an unremarkable day to
+the label that trains Component A. No threshold moves a detector that never
+saw the event. Full derivation: `reports/model/label_problem.md`.
+
 ---
 
 ## Why we are telling you all this

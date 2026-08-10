@@ -209,7 +209,7 @@ export function ValidationPanel() {
       {/* Where the measured numbers come from, in full. A validation panel whose
           own source is vague is not a validation panel. */}
       <section className="flex flex-col gap-1.5 mt-2">
-        <h3 className="text-base font-bold text-ink">{t('validation.target')}</h3>
+        <h3 className="text-md font-bold text-ink">{t('validation.target')}</h3>
         <p className="text-xs text-ink-2 leading-relaxed">{v.mooring_target.citation}</p>
         <p className="text-2xs text-ink-3">
           <span dir="ltr" style={{ unicodeBidi: 'isolate' }} className="font-mono num">

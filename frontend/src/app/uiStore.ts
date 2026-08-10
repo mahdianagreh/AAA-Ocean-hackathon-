@@ -25,12 +25,23 @@ export const dirFor = (lang: Lang): 'ltr' | 'rtl' => (lang === 'ar' ? 'rtl' : 'l
 
 /** Which overlay is open. 03 §1: the limitations text and the provenance panel are
  *  overlays rather than routes, because the whole product is one screen. */
-export type Overlay = 'provenance' | 'limitations' | 'validation' | 'assistant' | 'journey' | null;
+export type Overlay =
+  | 'provenance'
+  | 'limitations'
+  | 'validation'
+  | 'assistant'
+  | 'journey'
+  | 'model'
+  | null;
 
-/** The six scenario controls. Defaults are the midpoints of what the documents
- *  actually say, not round numbers: transmission loss defaults to 50% because the
- *  measured range is 20–85%, and rainfall/sediment default to 100% because the
- *  unscaled event is the baseline the demo starts from. */
+/** The six scenario controls. Defaults are what the documents actually say, not
+ *  round numbers: transmission loss defaults to **52.5%**, matching
+ *  `sediment_proxy.py`'s own `TAU_DEFAULT` (0.525) — the Negev midpoint, not an
+ *  independently-guessed midpoint of the 20-85% slider range (which would also be
+ *  52.5, but for the wrong reason; this used to read a plain 50, invented here
+ *  rather than sourced from the backend constant it is supposed to match).
+ *  Rainfall/sediment default to 100% because the unscaled event is the baseline
+ *  the demo starts from. */
 export interface Scenario {
   transmissionLoss: number;
   rainfallScale: number;
@@ -41,7 +52,7 @@ export interface Scenario {
 }
 
 export const SCENARIO_DEFAULTS: Scenario = {
-  transmissionLoss: 50,
+  transmissionLoss: 52.5,
   rainfallScale: 100,
   antecedentWetness: 50,
   windDirection: 340,

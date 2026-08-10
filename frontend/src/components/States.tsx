@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 /** The states 04-component-inventory.md requires, as real components.
@@ -31,7 +32,24 @@ export function Loading({ what }: { what?: string }) {
  *  empty and what that means, because "no plume today" and "the plume layer failed
  *  to load" must never look the same.
  */
-export function Empty({ title, body }: { title: string; body?: string }) {
+export function Empty({ title, body, icon }: { title: string; body?: string; icon?: ReactNode }) {
+  // With an icon this becomes a centred, generously-padded first-class empty
+  // state (used where the empty case is itself the story, e.g. /alerts); without
+  // one it stays the compact inline note the data panels use.
+  if (icon) {
+    return (
+      <div
+        data-state="empty"
+        className="flex flex-col items-center gap-3 rule bg-surface-2 px-6 py-12 text-center"
+      >
+        <span className="text-accent" aria-hidden="true">
+          {icon}
+        </span>
+        <p className="m-0 text-sm font-semibold text-ink">{title}</p>
+        {body ? <p className="m-0 max-w-prose text-xs text-ink-2">{body}</p> : null}
+      </div>
+    );
+  }
   return (
     <div data-state="empty" className="flex flex-col gap-1 rule bg-surface-2 p-3">
       <p className="text-xs font-semibold">{title}</p>

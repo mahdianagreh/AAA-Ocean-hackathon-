@@ -2,6 +2,8 @@ import { useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, PageShell, Section } from '../shell/PageShell';
 import { ValueWithUnit } from '../components/ValueWithUnit';
+import { CaveatCard } from '../components/CaveatCard';
+import { Field } from '../components/Field';
 import { scoreSite, type CriterionScore, type SiteScoreResponse } from '../api/live';
 
 /** Site scoring, at /sites/score. An internal tool, and framed as one.
@@ -77,10 +79,7 @@ export function SiteScorePage() {
     id: string,
     key: 'west' | 'south' | 'east' | 'north',
   ) => (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-semibold">
-        {t(`sites.${key}`)}
-      </label>
+    <Field id={id} label={t(`sites.${key}`)}>
       <input
         id={id}
         type="text"
@@ -90,7 +89,7 @@ export function SiteScorePage() {
         onChange={(e) => setBbox((b) => ({ ...b, [key]: e.target.value }))}
         className="h-10 w-28 rounded-md border border-hairline bg-surface/50 px-3 font-mono num text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
       />
-    </div>
+    </Field>
   );
 
   return (
@@ -109,10 +108,7 @@ export function SiteScorePage() {
             <p className="m-0 text-2xs text-ink-3">{t('sites.bboxHint')}</p>
 
             <div className="flex flex-wrap items-end gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor={nameId} className="text-xs font-semibold">
-                  {t('sites.nameLabel')}
-                </label>
+              <Field id={nameId} label={t('sites.nameLabel')}>
                 <input
                   id={nameId}
                   type="text"
@@ -121,11 +117,11 @@ export function SiteScorePage() {
                   onChange={(e) => setSiteName(e.target.value)}
                   className="h-10 w-64 rounded-md border border-hairline bg-surface/50 px-3 text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
                 />
-              </div>
+              </Field>
               <button
                 type="submit"
                 disabled={state.kind === 'scoring'}
-                className="h-10 rounded-full px-6 text-sm font-bold premium-button hover:premium-button-hover disabled:opacity-50 cursor-pointer"
+                className="h-11 rounded-md bg-ink px-6 text-sm font-bold text-ink-inverse transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
               >
                 {state.kind === 'scoring' ? t('sites.scoring') : t('sites.score')}
               </button>
@@ -164,40 +160,92 @@ export function SiteScorePage() {
   );
 }
 
+/** The overall score as a donut: filled arc = total / max, with the number
+ *  through ValueWithUnit at the centre. role=img prunes the subtree, so the
+ *  ariaLabel (built by the caller) carries the value for assistive tech. When no
+ *  criterion scored (max 0) the centre is a gap, not a measured-looking 0.0. */
+function ScoreDonut({ value, max, ariaLabel }: { value: number; max: number; ariaLabel: string }) {
+  const r = 42;
+  const circumference = 2 * Math.PI * r;
+  const frac = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+  return (
+    <div className="relative inline-flex h-28 w-28 shrink-0 items-center justify-center" role="img" aria-label={ariaLabel}>
+      <svg width="112" height="112" viewBox="0 0 100 100" aria-hidden="true" className="-rotate-90">
+        <circle cx="50" cy="50" r={r} fill="none" stroke="var(--hairline)" strokeWidth="9" />
+        <circle
+          cx="50"
+          cy="50"
+          r={r}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="9"
+          strokeLinecap="round"
+          strokeDasharray={`${circumference * frac} ${circumference}`}
+        />
+      </svg>
+      <span className="absolute inset-0 flex flex-col items-center justify-center">
+        {max > 0 ? (
+          <>
+            <ValueWithUnit value={value} digits={1} provenance="modelled" className="text-xl font-bold" />
+            <span className="flex items-baseline gap-0.5 text-2xs text-ink-3">
+              / <ValueWithUnit value={max} digits={0} />
+            </span>
+          </>
+        ) : (
+          <ValueWithUnit value={null} />
+        )}
+      </span>
+    </div>
+  );
+}
+
 function Result({ result }: { result: SiteScoreResponse }) {
   const { t } = useTranslation('tools');
 
   const byId = new Map(result.criteria.map((c) => [c.criterion, c]));
   const scored = result.criteria.filter((c) => c.status === 'scored' && c.score !== null);
   const total = scored.reduce((a, c) => a + (c.score ?? 0), 0);
-  const caveats = (result.caveats as Caveat[]).filter((c) => c.message);
+  const maxPossible = scored.length * 2;
+  // Null-safe narrow, matching the shared asCaveat pattern — a null or non-object
+  // entry never reaches CaveatCard.
+  const caveats = result.caveats.filter(
+    (c): c is Caveat => !!c && typeof c === 'object' && typeof (c as Caveat).message === 'string',
+  );
+  const overallAria =
+    maxPossible > 0
+      ? `${t('sites.overallLabel')}: ${total.toFixed(1)} / ${maxPossible}`
+      : t('sites.overallLabel');
 
   return (
     <>
+      {/* Overall score — prominent donut + identity + the partial/complete note. */}
       <Card>
-        <h3 className="m-0 flex flex-wrap items-baseline gap-2 text-sm font-semibold">
-          <span dir="auto">{result.site_name ?? t('sites.unnamed')}</span>
-          <code dir="ltr" className="font-mono num text-2xs font-normal text-ink-3">
-            {result.site_id}
-          </code>
-        </h3>
-        <p className="m-0 text-xs text-ink-2">
-          {t('sites.bboxIs')}{' '}
-          <code dir="ltr" className="font-mono num">
-            {result.bbox.join(', ')}
-          </code>
-        </p>
-        {/* The subtotal counts only the criteria that were actually scored, and
-            says so — summing a null as zero would understate a site for a
-            criterion nobody can compute anywhere. */}
-        <p className="m-0 text-xs text-ink-2">
-          {t('sites.subtotal', { n: scored.length, total: result.criteria.length })}{' '}
-          <ValueWithUnit value={total} digits={1} provenance="modelled" />
-          {' / '}
-          <ValueWithUnit value={scored.length * 2} digits={0} />
-        </p>
+        <div className="flex flex-wrap items-center gap-6">
+          <ScoreDonut value={total} max={maxPossible} ariaLabel={overallAria} />
+          <div className="flex flex-col gap-1">
+            <h3 className="m-0 flex flex-wrap items-baseline gap-2 text-sm font-semibold">
+              <span dir="auto">{result.site_name ?? t('sites.unnamed')}</span>
+              <code dir="ltr" style={{ unicodeBidi: 'isolate' }} className="font-mono num text-2xs font-normal text-ink-3">
+                {result.site_id}
+              </code>
+            </h3>
+            <p className="m-0 text-xs text-ink-2">
+              {t('sites.bboxIs')}{' '}
+              <code dir="ltr" style={{ unicodeBidi: 'isolate' }} className="font-mono num">
+                {result.bbox.join(', ')}
+              </code>
+            </p>
+            {/* Partial vs complete, stated. Only scored criteria count toward the
+                total — summing a null as zero would understate a site for a
+                criterion nobody can compute anywhere. */}
+            <p className="m-0 text-xs text-ink-2">
+              {t('sites.subtotal', { n: scored.length, total: result.criteria.length })}
+            </p>
+          </div>
+        </div>
       </Card>
 
+      {/* The scorecard. */}
       <Card>
         <h3 className="m-0 text-sm font-semibold">{t('sites.criteriaTitle')}</h3>
         <ol className="m-0 flex list-none flex-col gap-4 p-0">
@@ -205,53 +253,58 @@ function Result({ result }: { result: SiteScoreResponse }) {
             const c = byId.get(id);
             if (!c) return null;
             const insufficient = c.status === 'insufficient_data' || c.score === null;
+            const scoreVal = c.score ?? 0;
             return (
-              <li key={id} data-criterion={id} className="flex flex-col gap-2">
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <h4 className="m-0 text-xs font-bold">
-                    <span dir="ltr" className="font-mono num">
+              <li key={id} data-criterion={id} className="flex flex-col gap-2 border-s-2 border-hairline-2 ps-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex flex-col gap-0.5">
+                    {/* Plain-language name is the headline; the raw C-key is small
+                        secondary detail, not the label a reader has to decode. */}
+                    <h4 className="m-0 text-xs font-bold text-ink">
+                      <span dir="auto">{t(`sites.criterion.${id}`)}</span>
+                    </h4>
+                    <span dir="ltr" style={{ unicodeBidi: 'isolate' }} className="font-mono num text-2xs text-ink-3">
                       {id}
-                    </span>{' '}
-                    <span dir="auto">{t(`sites.criterion.${id}`)}</span>
-                    {id === 'C6' ? (
-                      <span className="ms-2 text-2xs font-normal text-ink-3">
-                        (constant, no data required)
-                      </span>
-                    ) : null}
-                  </h4>
+                      {id === 'C6' ? ` · ${t('sites.constantNote')}` : ''}
+                    </span>
+                  </div>
                   {insufficient ? (
-                    <span className="rounded-sm border border-hairline-2 bg-surface-2 px-2 py-0.5 text-2xs font-bold text-ink-2">
+                    // Explicit "insufficient data" state — never a zero-filled bar.
+                    <span className="inline-flex items-center rounded-full border border-hairline bg-surface px-2 py-0.5 text-2xs font-bold text-ink-2">
                       {t('sites.insufficient')}
                     </span>
                   ) : (
-                    <span className="text-xs">
-                      <ValueWithUnit value={c.score} digits={1} provenance="modelled" />
-                      <span className="text-ink-3"> / 2</span>
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="relative h-1.5 w-16 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
+                        <span
+                          className="absolute inset-y-0 start-0 rounded-full"
+                          style={{ width: `${(scoreVal / 2) * 100}%`, background: 'var(--accent)' }}
+                        />
+                      </span>
+                      <span className="whitespace-nowrap text-xs">
+                        <ValueWithUnit value={c.score} digits={1} provenance="modelled" />
+                        <span className="text-ink-3"> / 2</span>
+                      </span>
+                    </div>
                   )}
                 </div>
 
                 {insufficient ? (
-                  <p className="m-0 max-w-prose text-2xs text-ink-2">
-                    {t('sites.insufficientBody')}
-                  </p>
+                  <p className="m-0 max-w-prose text-2xs text-ink-2">{t('sites.insufficientBody')}</p>
                 ) : null}
 
                 {c.evidence.length ? (
                   <ul className="m-0 flex list-none flex-col gap-2 p-0">
                     {c.evidence.map((e, i) => (
-                      <li
-                        key={`${id}-${i}`}
-                        className="flex flex-col gap-0.5 border-s-2 border-hairline-2 ps-3"
-                      >
+                      <li key={`${id}-${i}`} className="flex flex-col gap-1">
                         <p dir="auto" className="m-0 max-w-prose text-xs text-ink-2">
                           {e.excerpt}
                         </p>
-                        <span className="flex flex-wrap items-baseline gap-2 text-2xs text-ink-3">
-                          <code dir="ltr" className="font-mono num">
+                        <span className="inline-flex w-fit items-center gap-1 rounded-full border border-hairline bg-surface-2 px-2 py-0.5 text-2xs text-ink-2">
+                          <code dir="ltr" style={{ unicodeBidi: 'isolate' }} className="font-mono num">
                             {e.source_file}
                           </code>
-                          <span dir="auto">§ {e.section}</span>
+                          <span dir="auto" className="opacity-70">§ {e.section}</span>
                         </span>
                       </li>
                     ))}
@@ -272,25 +325,22 @@ function Result({ result }: { result: SiteScoreResponse }) {
         </p>
       </Card>
 
-      {/* Always rendered, never behind a disclosure. The rubric's own limit
-          travels with every score it produces. */}
+      {/* Always rendered, never behind a disclosure — via the shared CaveatCard.
+          The rubric's own one-site limit travels with every score. */}
       <Card>
         <h3 className="m-0 text-sm font-semibold">{t('sites.caveatsTitle')}</h3>
-        <p className="m-0 max-w-prose text-xs font-semibold text-ink">{t('sites.oneSite')}</p>
-        <ul className="m-0 flex list-none flex-col gap-2 p-0">
+        <div className="flex flex-col gap-3">
+          <CaveatCard severity="warning" message={t('sites.oneSite')} />
           {caveats.map((c, i) => (
-            <li key={`caveat-${i}`} className="flex flex-col gap-0.5">
-              <p dir="auto" className="m-0 max-w-prose text-xs text-ink-2">
-                {c.message}
-              </p>
-              {c.source ? (
-                <code dir="ltr" className="font-mono num text-2xs text-ink-3">
-                  {c.source}
-                </code>
-              ) : null}
-            </li>
+            <CaveatCard
+              key={`caveat-${i}`}
+              severity={c.severity ?? 'note'}
+              message={c.message ?? ''}
+              source={c.source ?? null}
+              field={c.field ?? null}
+            />
           ))}
-        </ul>
+        </div>
       </Card>
     </>
   );

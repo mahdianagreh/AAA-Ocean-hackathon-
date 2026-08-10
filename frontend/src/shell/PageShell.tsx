@@ -20,7 +20,13 @@ export function PageShell({
     <div className="mx-auto flex w-full max-w-[82rem] flex-col gap-8 p-6 lg:p-10">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="m-0 text-xl font-bold">{title}</h1>
+          {/* data-page-heading + tabIndex -1 make this the target the router
+              moves focus to on navigation, so keyboard and screen-reader users
+              land on the new page's title rather than nowhere. The outline is
+              suppressed because focus here is programmatic, not user-driven. */}
+          <h1 data-page-heading tabIndex={-1} className="m-0 text-xl font-bold focus:outline-none">
+            {title}
+          </h1>
           {lede ? <p className="m-0 text-xs text-ink-2">{lede}</p> : null}
         </div>
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}

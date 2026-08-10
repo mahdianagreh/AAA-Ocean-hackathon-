@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { PageShell, Section, Card } from '../shell/PageShell';
 import { useUi, type Lang, type ThemeChoice } from '../app/uiStore';
+import { useAuth } from '../app/AuthContext';
 
 /** Preferences, not a profile.
  *
@@ -17,6 +18,7 @@ import { useUi, type Lang, type ThemeChoice } from '../app/uiStore';
  *  the choice survives a reload. */
 export function AccountPage() {
   const { t } = useTranslation('tools');
+  const { session } = useAuth();
   const lang = useUi((s) => s.lang);
   const setLang = useUi((s) => s.setLang);
   const theme = useUi((s) => s.theme);
@@ -26,9 +28,23 @@ export function AccountPage() {
     <PageShell title={t('account.title')} lede={t('account.lede')}>
       <Section label={t('account.accessSection')}>
         <Card>
-          <h3 className="m-0 text-md font-semibold">{t('account.noAuthTitle')}</h3>
-          <p className="m-0 text-xs text-ink-2">{t('account.noAuthBody')}</p>
-          <p className="m-0 text-xs text-ink-2">{t('account.noAuthConsequence')}</p>
+          {session ? (
+            <>
+              {/* Real identity, once a real session exists — Phase 8, Track B.
+                  Nothing here is a placeholder: this is the same verified
+                  email GET /api/v1/users/me returns for this token. */}
+              <h3 className="m-0 text-md font-semibold">{t('account.signedInTitle')}</h3>
+              <p className="m-0 text-xs text-ink-2" dir="ltr" style={{ unicodeBidi: 'isolate' }}>
+                {session.user.email}
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 className="m-0 text-md font-semibold">{t('account.noAuthTitle')}</h3>
+              <p className="m-0 text-xs text-ink-2">{t('account.noAuthBody')}</p>
+              <p className="m-0 text-xs text-ink-2">{t('account.noAuthConsequence')}</p>
+            </>
+          )}
         </Card>
       </Section>
 

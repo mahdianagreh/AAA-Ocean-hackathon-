@@ -16,7 +16,11 @@ x-supabase: &supabase
   # Set in .env, which is gitignored. .env.example lists every key.
   SUPABASE_URL: ${SUPABASE_URL:-}
   SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
-  SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+  # Matches backend/src/db/storage.py's own os.getenv() name exactly -- this
+  # was previously SUPABASE_SERVICE_KEY, which the code never read, so a
+  # correctly-filled .env still failed with "SUPABASE_SERVICE_ROLE_KEY is not
+  # set" inside the container (found flagging Phase 8's frontend loose ends).
+  SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
   SUPABASE_DSN: ${SUPABASE_DSN:-}
 
 services:
@@ -104,6 +108,11 @@ services:
       - "${FRONTEND_PORT:-5173}:5173"
     environment:
       VITE_API_URL: http://localhost:${API_PORT:-8000}
+      # Phase 8, Track B: the anon/publishable key is safe in a frontend
+      # bundle by design, once RLS is on for every table it touches
+      # (tasks/00-contracts.md §9) — never the service-role key here.
+      VITE_SUPABASE_URL: ${SUPABASE_URL:-}
+      VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
     volumes:
       - ./frontend:/app
       - /app/node_modules

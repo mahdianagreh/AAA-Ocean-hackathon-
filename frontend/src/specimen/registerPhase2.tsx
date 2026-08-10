@@ -10,6 +10,11 @@ import type { LayerKey, Mode } from '../app/uiStore';
 import type { RainPoint } from '../api/event';
 import { Empty, ErrorState, Loading, Stale } from '../components/States';
 import { ValueWithUnit } from '../components/ValueWithUnit';
+import { AlertCard } from '../components/AlertCard';
+import { CaveatCard } from '../components/CaveatCard';
+import { DataTable, type Column } from '../components/DataTable';
+import { Timeline } from '../components/Timeline';
+import type { AlertRow } from '../api/live';
 
 /** Every Phase 2 component, on all four specimen panes.
  *
@@ -47,6 +52,10 @@ function card(band: (typeof BANDS)[number], score: number): RiskCardData {
     // now the ONLY place the main view guarantees a visible gap in default mode: the
     // registered model fills runoff_probability everywhere else.
     runoff_probability: band === 'critical' ? 0.8121 : null,
+    // Always null on every real path — a classifier has no volume to report.
+    // No band-conditional case here, unlike runoff_probability above: this gap
+    // is not a fixture-of-convenience, it is what the model always returns.
+    predicted_runoff_m3: null,
     provisional: band !== 'critical',
     modelVersion: band === 'critical' ? 'runoff_weighted_gbm_2194b48_20260803T214757Z' : undefined,
     caveat:
@@ -204,4 +213,88 @@ export function registerPhase2Specimens() {
     titleKey: 'specimen.sectionLegend',
     render: () => <Legend plumeLevels={[0.1, 0.25, 0.5, 0.75]} />,
   });
+
+  // The alert card is built ahead of the data: the exposure engine reaches no
+  // named zone today, so /alerts is empty, but the card must be reviewable now.
+  // Two samples — one with an arrival window, one with a null window rendered as
+  // a gap — exercise both paths with fabricated specimen data.
+  registerSpecimen({
+    id: 'alert-card',
+    titleKey: 'specimen.sectionAlertCard',
+    render: () => (
+      <div className="flex flex-col gap-3">
+        <AlertCard alert={SAMPLE_ALERT} zoneName="Power Station Reef" />
+        <AlertCard alert={SAMPLE_ALERT_NO_WINDOW} />
+      </div>
+    ),
+  });
+
+  // The three shared components introduced this phase land on the specimen too,
+  // per the design-system rule: a primitive not on /specimen has not been checked.
+  registerSpecimen({
+    id: 'caveat-card',
+    titleKey: 'specimen.sectionCaveatCard',
+    render: () => (
+      <div className="flex flex-col gap-3">
+        <CaveatCard severity="critical" headline="Critical example" message="A critical caveat, with a source pill." source="backend/src/api/caveats.py" field="depth_median_m" />
+        <CaveatCard severity="warning" message="A warning-level caveat with no headline." source="docs/data_dictionary.md" />
+        <CaveatCard severity="info" message="An informational note. Info and unknown severities read as a note." />
+      </div>
+    ),
+  });
+
+  registerSpecimen({
+    id: 'data-table',
+    titleKey: 'specimen.sectionDataTable',
+    render: () => {
+      const rows = [
+        { id: 'R-01', name: 'Tala Bay', n: 0.42 },
+        { id: 'R-02', name: 'Power Station Reef', n: null },
+      ];
+      const cols: Column<(typeof rows)[number]>[] = [
+        { key: 'id', header: 'Zone', cell: (r) => <span dir="ltr" className="num font-mono">{r.id}</span> },
+        { key: 'name', header: 'Name', cell: (r) => r.name },
+        { key: 'n', align: 'end', header: 'Value', cell: (r) => <ValueWithUnit value={r.n} digits={2} provenance="modelled" /> },
+      ];
+      return <DataTable columns={cols} rows={rows} getRowKey={(r) => r.id} ariaLabel="Specimen data table" />;
+    },
+  });
+
+  registerSpecimen({
+    id: 'timeline',
+    titleKey: 'specimen.sectionTimeline',
+    render: () => (
+      <Timeline
+        ariaLabel="Specimen timeline"
+        entries={[
+          { key: 'onset', label: 'Turbidity onset', time: '2016-10-28T06:50:00Z', meta: 'measured', provenance: 'measured' },
+          { key: 'cleared', label: 'Turbidity cleared', time: '2016-10-29T14:15:00Z', meta: 'measured', provenance: 'measured' },
+          { key: 'modelled', label: 'Modelled arrival', time: '2016-10-28T07:30:00Z', meta: 'modelled', provenance: 'modelled' },
+        ]}
+      />
+    ),
+  });
 }
+
+const SAMPLE_ALERT: AlertRow = {
+  alert_id: 'alert_sample_01',
+  source_run_id: 'sim_01KZSPECIMEN0000000000000',
+  reef_zone_id: 'R-03',
+  risk_level: 'high',
+  risk_score: 72.4,
+  issued_at: '2016-10-28T09:15:00Z',
+  arrival_window_hours: [6, 14],
+  headline_en: 'Elevated sediment exposure expected at Power Station Reef within the day.',
+  headline_ar: 'يُتوقّع تعرّض مرتفع للرواسب عند شعاب محطة الكهرباء خلال اليوم.',
+};
+
+const SAMPLE_ALERT_NO_WINDOW: AlertRow = {
+  ...SAMPLE_ALERT,
+  alert_id: 'alert_sample_02',
+  reef_zone_id: 'R-01',
+  risk_level: 'moderate',
+  risk_score: 48.1,
+  arrival_window_hours: null,
+  headline_en: 'Moderate exposure at Tala Bay; arrival window not resolved for this run.',
+  headline_ar: 'تعرّض متوسّط عند خليج تالا؛ لم تُحدَّد نافذة الوصول لهذا التشغيل.',
+};

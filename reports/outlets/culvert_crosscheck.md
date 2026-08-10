@@ -2,7 +2,7 @@
 
 **Date:** 3 August 2026 · `scripts/12_culvert_crosscheck.py`
 **Sources:** `outlets.gpkg` (GLO-30 D8 routing) × `osm_aqaba.gpkg` layer
-`drainage_features`, 27 features tagged `tunnel=culvert`
+`drainage_features`, 46 features tagged `tunnel=culvert`
 
 ---
 

@@ -1,5 +1,7 @@
 import { Direction } from 'radix-ui';
 import { useDocumentChrome } from './app/useDocumentChrome';
+import { useDocumentTitle } from './app/useDocumentTitle';
+import { useRouteFocus } from './app/useRouteFocus';
 import { specimenEnabled, useRoute } from './app/useRoute';
 import { DashboardChrome } from './shell/DashboardChrome';
 import { Dashboard } from './routes/Dashboard';
@@ -18,16 +20,18 @@ import { AssistantPage } from './routes/AssistantPage';
 import { ValidationPage } from './routes/ValidationPage';
 import { ProvenancePage } from './routes/ProvenancePage';
 import { LimitationsPage } from './routes/LimitationsPage';
+import { SystemHealthPage } from './routes/SystemHealthPage';
+import { DataExplorerPage } from './routes/DataExplorerPage';
 import { NotFoundPage } from './routes/NotFoundPage';
 import { Specimen } from './routes/Specimen';
 import { SpecimenSolo } from './routes/SpecimenSolo';
 import { BacktestsPage } from './routes/BacktestsPage';
-import { SystemHealthPage } from './routes/SystemHealthPage';
-import { DataExplorerPage } from './routes/DataExplorerPage';
 
 export function App() {
   const route = useRoute();
   const { dir } = useDocumentChrome();
+  useDocumentTitle(route.name);
+  useRouteFocus(route.path);
   const solo = new URLSearchParams(window.location.search).get('solo') === '1';
 
   /** DirectionProvider is mandatory, not belt-and-braces.
@@ -104,9 +108,9 @@ export function App() {
         return wrap(<LimitationsPage />);
       case 'backtests':
         return wrap(<BacktestsPage />);
-      case 'system':
+      case 'systemHealth':
         return wrap(<SystemHealthPage />);
-      case 'explorer':
+      case 'dataExplorer':
         return wrap(<DataExplorerPage />);
 
       default:

@@ -39,6 +39,10 @@ pydantic==2.13.4
 # ~30 KB) -- unlike the CV-library decision this session deliberately avoided
 # (no torch/tensorflow added; see models/coral_health_classifier.py).
 python-multipart==0.0.32
+# Phase 8, Track B: verifies Supabase Auth session JWTs against the
+# project's own JWKS (ES256, asymmetric) -- see backend/src/api/auth.py.
+# [crypto] pulls in `cryptography` for ES256; PyJWT alone only does HMAC.
+PyJWT[crypto]==2.10.1
 pandas==2.3.3
 numpy==2.4.6
 pyarrow==25.0.0

@@ -215,6 +215,38 @@ class TestEndpoint:
         for f in body["frames"]:
             assert f"upto_hours={f['t_hours']:g}" in f["url"]
 
+    def test_frames_carry_forcing_provenance_verbatim_from_the_run(self, client):
+        """05-abd.md core-C: the UI must render the currents/wind provenance rather
+        than assert its own copy of it, which means the frames endpoint -- the one
+        the dashboard plume panel and Replay actually call -- has to carry it."""
+        r = client.get("/api/v1/plume/map/frames",
+                       params={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O01"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["provenance"], "no provenance -- the UI would have nothing to render"
+        assert any("current" in p["detail"].lower() for p in body["provenance"])
+        assert body["caveats"], "no caveats -- wind-is-zero would be unstated"
+        assert any("ConstantWindField(0, 0)" in c["message"] for c in body["caveats"])
+        # AQ-2016-10-28 is the one event `data/models/plume_calibration.json` is
+        # calibrated against, so this checkout must resolve the tie-break fields --
+        # not fall back to the "no calibration ran" None branch.
+        assert body["windage_is_tiebreak"] is True
+        assert body["windage_fraction"] == 0.0
+        assert "tie-break" in body["windage_caveat"]
+
+    def test_windage_fields_are_none_when_uncalibrated_for_this_event(self, client, monkeypatch):
+        """A different event has no calibration fit against it -- the response must
+        say "not calibrated" (None), never silently reuse the anchor's numbers."""
+        import api.main as main_module
+        monkeypatch.setattr(main_module, "_load_plume_calibration", lambda: None)
+        r = client.get("/api/v1/plume/map/frames",
+                       params={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O01"})
+        assert r.status_code == 200
+        body = r.json()
+        assert body["windage_fraction"] is None
+        assert body["windage_is_tiebreak"] is False
+        assert body["windage_caveat"] is None
+
     def test_unknown_outlet_is_404_not_a_blank_map(self, client):
         r = client.get("/api/v1/plume/map",
                        params={"event_id": "AQ-2016-10-28", "outlet_id": "AQ-O99"})

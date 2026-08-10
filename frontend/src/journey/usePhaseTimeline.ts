@@ -30,6 +30,11 @@ export interface PhaseTimelineState {
   /** Jump straight to a phase (manual exploration, not autoplay). Also seeks
    *  frameIndex sensibly for 'transport'/'accumulation'. */
   goToPhase: (phase: JourneyPhase) => void;
+  /** Jump straight to one real plume timestep, always under 'transport'
+   *  (the phase with a real reason to browse individual frames —
+   *  'accumulation' is deliberately always the final one). Pauses autoplay,
+   *  same as goToPhase. */
+  goToFrame: (index: number) => void;
 }
 
 export function usePhaseTimeline(frameCount: number): PhaseTimelineState {
@@ -140,6 +145,24 @@ export function usePhaseTimeline(frameCount: number): PhaseTimelineState {
     setPhaseProgress(1);
   }, [clearRaf, enterPhase]);
 
+  const goToFrame = useCallback((index: number) => {
+    setPlaying(false);
+    clearRaf();
+    const clamped = Math.max(0, Math.min(Math.max(frameCount - 1, 0), index));
+    const now = performance.now();
+    phaseRef.current = 'transport';
+    setPhase('transport');
+    frameIndexRef.current = clamped;
+    setFrameIndex(clamped);
+    // Keeps a subsequent Play resuming from here rather than snapping back
+    // to frame 0 -- phaseProgress and phaseStartRef both reflect the frame
+    // actually selected, same bookkeeping enterPhase does for a fresh entry.
+    const totalMs = Math.max(frameCount, 1) * PLUME_FRAME_MS;
+    const progress = totalMs > 0 ? (clamped * PLUME_FRAME_MS) / totalMs : 0;
+    phaseStartRef.current = now - progress * totalMs;
+    setPhaseProgress(progress);
+  }, [clearRaf, frameCount]);
+
   return {
     phase,
     phaseIndex: PHASE_ORDER.indexOf(phase),
@@ -150,5 +173,6 @@ export function usePhaseTimeline(frameCount: number): PhaseTimelineState {
     pause,
     reset,
     goToPhase,
+    goToFrame,
   };
 }

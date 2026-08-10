@@ -1,123 +1,166 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageShell } from '../shell/PageShell';
-import { Section } from '../shell/PageShell';
-import { fetchCatchments, fetchOutlets, fetchDiveSites } from '../api/live';
+import type { TFunction } from 'i18next';
+import { Card, PageShell, Section } from '../shell/PageShell';
+import { DataTable, type Column } from '../components/DataTable';
+import { CaveatList } from '../components/CaveatList';
+import { ValueWithUnit } from '../components/ValueWithUnit';
+import { Loading } from '../components/States';
+import { IdText } from './AlertsPage';
+import {
+  fetchDataSources,
+  fetchDiveSites,
+  fetchEvents,
+  fetchReefZonesLive,
+  type DataSourceRow,
+  type DiveSite,
+  type EventRow,
+  type ReefZoneRow,
+} from '../api/live';
+
+/** Data explorer, at /data-explorer.
+ *
+ *  A browse-what-the-API-serves surface: pick a dataset and read it, as it is
+ *  served, in the shared DataTable (so it matches every other table and reflows
+ *  to a card stack on a phone). Everything here is a real live endpoint; each
+ *  dataset degrades to an honest "unavailable" or "empty" state rather than a
+ *  blank, and every number goes through ValueWithUnit. */
+
+type Cat = 'reefZones' | 'events' | 'diveSites' | 'dataSources';
+const CATS: Cat[] = ['reefZones', 'events', 'diveSites', 'dataSources'];
+
+const FETCHERS: Record<Cat, () => Promise<unknown[] | null>> = {
+  reefZones: () => fetchReefZonesLive(),
+  events: () => fetchEvents(),
+  diveSites: () => fetchDiveSites(),
+  dataSources: () => fetchDataSources(),
+};
 
 export function DataExplorerPage() {
-  const { t } = useTranslation('pages');
-  const [catchments, setCatchments] = useState<any[] | null>(null);
-  const [outlets, setOutlets] = useState<any[] | null>(null);
-  const [diveSites, setDiveSites] = useState<any[] | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const [activeTab, setActiveTab] = useState<'catchments' | 'outlets' | 'divesites'>('catchments');
+  const { t } = useTranslation('tools');
+  const [cat, setCat] = useState<Cat>('reefZones');
+  const [rows, setRows] = useState<unknown[] | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    Promise.all([fetchCatchments(), fetchOutlets(), fetchDiveSites()]).then(([c, o, d]) => {
-      if (!mounted) return;
-      setCatchments(c ?? null);
-      setOutlets(o ?? null);
-      setDiveSites(d ?? null);
-      setLoading(false);
+    let live = true;
+    setLoaded(false);
+    setRows(null);
+    void FETCHERS[cat]().then((r) => {
+      if (!live) return;
+      setRows(r);
+      setLoaded(true);
     });
-    return () => { mounted = false; };
-  }, []);
-
-  const renderTable = (data: any[] | null, columns: { key: string; label: string }[]) => {
-    if (loading) return <p className="text-sm text-ink-2 animate-pulse">{t('explorer.loading', { defaultValue: 'Loading data...' })}</p>;
-    if (!data || data.length === 0) return <p className="text-sm text-ink-3 italic">{t('explorer.empty', { defaultValue: 'No data available.' })}</p>;
-
-    return (
-      <div className="overflow-x-auto w-full glass-panel">
-        <table className="w-full text-left border-collapse text-sm">
-          <thead className="bg-surface-2/50 border-b border-hairline-2">
-            <tr>
-              {columns.map((col) => (
-                <th key={col.key} className="p-3 font-semibold text-ink-2 uppercase tracking-wider text-xs">
-                  {col.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((item, i) => (
-              <tr key={i} className="border-b border-hairline hover:bg-surface/50 transition-colors">
-                {columns.map((col) => (
-                  <td key={col.key} className="p-3 text-ink-2 max-w-[200px] truncate">
-                    {typeof item[col.key] === 'object' ? JSON.stringify(item[col.key]) : String(item[col.key] ?? '-')}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
+    return () => {
+      live = false;
+    };
+  }, [cat]);
 
   return (
-    <PageShell title={t('explorer.title', { defaultValue: 'Geographic Data Explorer' })}>
-      <div className="flex flex-col gap-6">
-        
-        {/* Tabs */}
-        <div className="flex items-center gap-2 border-b border-hairline pb-2">
-          {[
-            { id: 'catchments', label: t('explorer.catchments', { defaultValue: 'Catchments' }), count: catchments?.length },
-            { id: 'outlets', label: t('explorer.outlets', { defaultValue: 'Outlets' }), count: outlets?.length },
-            { id: 'divesites', label: t('explorer.divesites', { defaultValue: 'Dive Sites' }), count: diveSites?.length },
-          ].map(tab => (
+    <PageShell title={t('dataExplorer.title')} lede={t('dataExplorer.lede')}>
+      <Section label={t('dataExplorer.categorySection')}>
+        <div role="group" aria-label={t('dataExplorer.categorySection')} className="flex flex-wrap gap-2">
+          {CATS.map((c) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2 rounded-t-md text-sm font-semibold transition-colors ${
-                activeTab === tab.id 
-                  ? 'border-b-2 border-accent text-accent bg-surface-2/30' 
-                  : 'text-ink-3 hover:text-ink hover:bg-surface-2/10'
+              key={c}
+              type="button"
+              aria-pressed={cat === c}
+              onClick={() => setCat(c)}
+              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                cat === c ? 'bg-ink text-ink-inverse' : 'glass-panel text-ink-2 hover:border-accent'
               }`}
             >
-              {tab.label} {tab.count !== undefined ? <span className="ml-2 text-xs opacity-60 bg-surface-2 px-1.5 py-0.5 rounded-full">{tab.count}</span> : null}
+              {t(`dataExplorer.cat.${c}`)}
             </button>
           ))}
         </div>
+      </Section>
 
-        {/* Content */}
-        <div className="animate-overlay-show">
-          {activeTab === 'catchments' && (
-            <Section label={t('explorer.catchmentsTitle', { defaultValue: 'Registered Catchments' })}>
-              {renderTable(catchments, [
-                { key: 'id', label: 'ID' },
-                { key: 'area_sqkm', label: 'Area (km²)' },
-                { key: 'outlet_id', label: 'Outlet ID' },
-              ])}
-            </Section>
-          )}
-
-          {activeTab === 'outlets' && (
-            <Section label={t('explorer.outletsTitle', { defaultValue: 'Coastal Outlets' })}>
-              {renderTable(outlets, [
-                { key: 'id', label: 'ID' },
-                { key: 'type', label: 'Type' },
-                { key: 'description', label: 'Description' },
-              ])}
-            </Section>
-          )}
-
-          {activeTab === 'divesites' && (
-            <Section label={t('explorer.divesitesTitle', { defaultValue: 'Dive Sites' })}>
-              {renderTable(diveSites, [
-                { key: 'id', label: 'ID' },
-                { key: 'name', label: 'Name' },
-                { key: 'rating', label: 'Rating' },
-                { key: 'depth_m', label: 'Depth (m)' },
-                { key: 'difficulty', label: 'Difficulty' },
-              ])}
-            </Section>
-          )}
-        </div>
-
-      </div>
+      <Section label={t(`dataExplorer.cat.${cat}`)}>
+        {!loaded ? (
+          <Loading what={t('dataExplorer.loading')} />
+        ) : !rows ? (
+          <Card>
+            <p className="m-0 max-w-prose text-xs text-ink-2">{t('dataExplorer.unavailable')}</p>
+          </Card>
+        ) : rows.length === 0 ? (
+          <Card>
+            <p className="m-0 text-xs text-ink-2">{t('dataExplorer.empty')}</p>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <p className="m-0 text-2xs text-ink-2">{t('dataExplorer.count', { n: rows.length })}</p>
+            {renderTable(cat, rows, t)}
+          </div>
+        )}
+      </Section>
     </PageShell>
   );
+}
+
+function renderTable(cat: Cat, rows: unknown[], t: TFunction) {
+  switch (cat) {
+    case 'reefZones': {
+      const data = rows as ReefZoneRow[];
+      const cols: Column<ReefZoneRow>[] = [
+        { key: 'id', header: t('dataExplorer.col.id'), cell: (r) => <IdText>{r.reef_zone_id}</IdText> },
+        { key: 'name', header: t('dataExplorer.col.name'), cell: (r) => r.zone_name ?? <ValueWithUnit value={null} /> },
+        { key: 'area', align: 'end', header: t('dataExplorer.col.area'), cell: (r) => <ValueWithUnit value={r.area_km2} digits={3} unit="km²" provenance="measured" /> },
+        { key: 'depth', align: 'end', header: t('dataExplorer.col.depth'), cell: (r) => <ValueWithUnit value={r.depth_median_m} digits={1} unit="m" provenance="measured" /> },
+        { key: 'habitat', header: t('dataExplorer.col.habitat'), cell: (r) => r.habitat_class ?? <ValueWithUnit value={null} /> },
+      ];
+      return <DataTable columns={cols} rows={data} getRowKey={(r) => r.reef_zone_id} ariaLabel={t('dataExplorer.cat.reefZones')} />;
+    }
+    case 'events': {
+      const data = rows as EventRow[];
+      const cols: Column<EventRow>[] = [
+        { key: 'id', header: t('dataExplorer.col.id'), cell: (r) => <IdText>{r.event_id}</IdText> },
+        { key: 'label', header: t('dataExplorer.col.label'), cell: (r) => (r.label ? <span dir="auto">{r.label}</span> : <ValueWithUnit value={null} />) },
+        { key: 'start', header: t('dataExplorer.col.start'), cell: (r) => (r.start ? <IdText>{r.start}</IdText> : <ValueWithUnit value={null} />) },
+        { key: 'rank', align: 'end', header: t('dataExplorer.col.rank'), cell: (r) => <ValueWithUnit value={r.rank} digits={0} provenance="measured" /> },
+        { key: 'maxDaily', align: 'end', header: t('dataExplorer.col.maxDaily'), cell: (r) => <ValueWithUnit value={r.max_daily_mm} digits={1} unit="mm" provenance="measured" /> },
+      ];
+      return <DataTable columns={cols} rows={data} getRowKey={(r) => r.event_id} ariaLabel={t('dataExplorer.cat.events')} />;
+    }
+    case 'diveSites': {
+      const data = rows as DiveSite[];
+      const cols: Column<DiveSite>[] = [
+        { key: 'name', header: t('dataExplorer.col.name'), cell: (r) => (r.name_en ?? r.name_ar) ? <span dir="auto">{r.name_en ?? r.name_ar}</span> : <IdText>{r.osm_id}</IdText> },
+        { key: 'nearestZone', header: t('dataExplorer.col.nearestZone'), cell: (r) => (r.nearest_reef_zone_id ? <IdText>{r.nearest_reef_zone_id}</IdText> : <ValueWithUnit value={null} />) },
+        { key: 'distance', align: 'end', header: t('dataExplorer.col.distance'), cell: (r) => <ValueWithUnit value={r.distance_m} digits={0} unit="m" provenance="measured" /> },
+      ];
+      // The dive-site caveat MUST render: a large distance_m is an inland OSM
+      // POI (e.g. a Wadi Rum desert attraction), and showing it beside a coastal
+      // dive table without the backend's caveat is actively misleading. Deduped
+      // across rows so one message is not repeated per inland POI.
+      const seen = new Set<string>();
+      const caveats: unknown[] = [];
+      for (const r of data) {
+        for (const c of r.caveats ?? []) {
+          const key = JSON.stringify(c);
+          if (seen.has(key)) continue;
+          seen.add(key);
+          caveats.push(c);
+        }
+      }
+      return (
+        <div className="flex flex-col gap-4">
+          <DataTable columns={cols} rows={data} getRowKey={(r) => r.osm_id} ariaLabel={t('dataExplorer.cat.diveSites')} />
+          {caveats.length ? <CaveatList items={caveats} /> : null}
+        </div>
+      );
+    }
+    case 'dataSources': {
+      const data = rows as DataSourceRow[];
+      const cols: Column<DataSourceRow>[] = [
+        { key: 'name', header: t('dataExplorer.col.name'), cell: (r) => <span dir="auto">{r.name}</span> },
+        { key: 'version', header: t('dataExplorer.col.version'), cell: (r) => <span dir="auto">{r.product_version}</span> },
+        { key: 'accessed', header: t('dataExplorer.col.accessed'), cell: (r) => <IdText>{r.access_date}</IdText> },
+        { key: 'licence', header: t('dataExplorer.col.licence'), cell: (r) => <span dir="auto">{r.licence}</span> },
+      ];
+      return <DataTable columns={cols} rows={data} getRowKey={(r) => r.name} ariaLabel={t('dataExplorer.cat.dataSources')} />;
+    }
+    default:
+      return null;
+  }
 }
