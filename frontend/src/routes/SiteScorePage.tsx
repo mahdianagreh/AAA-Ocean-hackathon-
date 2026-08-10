@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, PageShell, Section } from '../shell/PageShell';
 import { ValueWithUnit } from '../components/ValueWithUnit';
 import { CaveatCard } from '../components/CaveatCard';
+import { Field } from '../components/Field';
 import { scoreSite, type CriterionScore, type SiteScoreResponse } from '../api/live';
 
 /** Site scoring, at /sites/score. An internal tool, and framed as one.
@@ -78,10 +79,7 @@ export function SiteScorePage() {
     id: string,
     key: 'west' | 'south' | 'east' | 'north',
   ) => (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-xs font-semibold">
-        {t(`sites.${key}`)}
-      </label>
+    <Field id={id} label={t(`sites.${key}`)}>
       <input
         id={id}
         type="text"
@@ -91,7 +89,7 @@ export function SiteScorePage() {
         onChange={(e) => setBbox((b) => ({ ...b, [key]: e.target.value }))}
         className="h-10 w-28 rounded-md border border-hairline bg-surface/50 px-3 font-mono num text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
       />
-    </div>
+    </Field>
   );
 
   return (
@@ -110,10 +108,7 @@ export function SiteScorePage() {
             <p className="m-0 text-2xs text-ink-3">{t('sites.bboxHint')}</p>
 
             <div className="flex flex-wrap items-end gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor={nameId} className="text-xs font-semibold">
-                  {t('sites.nameLabel')}
-                </label>
+              <Field id={nameId} label={t('sites.nameLabel')}>
                 <input
                   id={nameId}
                   type="text"
@@ -122,7 +117,7 @@ export function SiteScorePage() {
                   onChange={(e) => setSiteName(e.target.value)}
                   className="h-10 w-64 rounded-md border border-hairline bg-surface/50 px-3 text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
                 />
-              </div>
+              </Field>
               <button
                 type="submit"
                 disabled={state.kind === 'scoring'}

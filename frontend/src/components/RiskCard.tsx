@@ -57,7 +57,7 @@ export function RiskCard({ data }: { data: RiskCardData }) {
           >
             {data.catchment_id}
           </span>
-          <span dir="auto" style={{ unicodeBidi: 'isolate' }} className="truncate text-base font-bold text-ink">
+          <span dir="auto" style={{ unicodeBidi: 'isolate' }} className="truncate text-md font-bold text-ink">
             {data.name ?? t('rail.unnamed')}
           </span>
         </div>
