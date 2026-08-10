@@ -100,7 +100,12 @@ test.describe('honest states are on screen', () => {
     // only the second would fail the moment honesty improved.
     const card = page.locator('[data-risk-card]').first();
     await expect(card.getByText(/runoff_weighted_gbm_\w+/)).toBeVisible();
-    await expect(card.locator('[data-missing="true"]')).toHaveCount(0);
+    // Scoped to the runoff-probability row specifically, not the whole card:
+    // `predicted_runoff_m3` is now a permanent, correct gap on every card (core-A —
+    // the model is a classifier, not a volume regressor, so there is never a volume
+    // to show), and a card-wide zero-gaps assertion would fail on that gap forever.
+    const probabilityRow = card.locator('div', { hasText: 'Runoff probability' }).first();
+    await expect(probabilityRow.locator('[data-missing="true"]')).toHaveCount(0);
 
     await page.locator('[data-mode="scenario"]').click();
     await page.waitForTimeout(700);

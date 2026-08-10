@@ -62,6 +62,15 @@ const OVERLAY_ICONS: Record<string, React.ReactNode> = {
       <circle cx="8" cy="11.8" r="0.6" fill="currentColor" />
     </>
   ),
+  // A simple bar chart — two bars of different heights, echoing the
+  // baseline-vs-model comparisons the panel itself shows.
+  model: (
+    <>
+      <path d="M2 14 H14" {...stroke} />
+      <rect x="4" y="9" width="2.6" height="5" {...stroke} />
+      <rect x="9.4" y="5" width="2.6" height="9" {...stroke} />
+    </>
+  ),
 };
 
 const THEME_ICONS: Record<ThemeChoice, React.ReactNode> = {
@@ -75,7 +84,7 @@ const THEME_ICONS: Record<ThemeChoice, React.ReactNode> = {
   dark: <path d="M13 9.6A5.6 5.6 0 1 1 6.4 3a4.4 4.4 0 0 0 6.6 6.6Z" {...stroke} />,
 };
 
-const OVERLAYS = ['journey', 'validation', 'provenance', 'limitations', 'assistant'] as const;
+const OVERLAYS = ['journey', 'validation', 'model', 'provenance', 'limitations', 'assistant'] as const;
 
 export function Masthead({ steps }: { steps: string[] }) {
   const { t } = useTranslation();

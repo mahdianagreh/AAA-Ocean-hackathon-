@@ -38,7 +38,7 @@ test.describe('automated axe pass', () => {
     }
   }
 
-  for (const overlay of ['validation', 'provenance', 'limitations', 'assistant'] as const) {
+  for (const overlay of ['validation', 'model', 'provenance', 'limitations', 'assistant'] as const) {
     test(`no violations in the ${overlay} panel`, async ({ page }) => {
       await ready(page);
       await page.locator(`[data-open-overlay="${overlay}"]`).click();

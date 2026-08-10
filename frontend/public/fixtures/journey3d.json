@@ -12235,5 +12235,11 @@
     29.45549
    ]
   ]
- ]
+ ],
+ "sediment": {
+  "sediment_index": 13312.901153,
+  "sediment_index_normalized": 0.091539,
+  "sediment_class": "Low",
+  "sediment_basis": "banded against AQ-2016-10-28 (≈24,400 t)"
+ }
 }

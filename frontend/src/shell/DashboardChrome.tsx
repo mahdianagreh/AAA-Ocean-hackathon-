@@ -154,7 +154,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 export function DashboardChrome({ children }: { children: ReactNode }) {
   const { t } = useTranslation('nav');
   const route = useRoute();
-  const { session, signOut } = useAuth();
+  const { session, signOut, sessionExpired, clearSessionExpired } = useAuth();
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-ink lg:flex-row" data-dash-shell="true">
@@ -233,7 +233,32 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* A refresh failed silently in the background — AuthContext tells this
+            apart from an explicit sign-out. Reads stay open either way
+            (tasks/00-contracts.md §9), so this is a dismissible notice, not a
+            login wall: the only thing that changed is that "signed in as..."
+            in the rail below is no longer true. */}
+        {sessionExpired ? (
+          <div
+            role="status"
+            className="flex items-center justify-between gap-3 border-b-2 border-risk-high-stroke bg-surface-2 px-4 py-2"
+          >
+            <p className="m-0 flex items-center gap-2 text-xs text-ink">
+              <span aria-hidden="true" className="text-risk-high">⚠</span>
+              {t('sessionExpired')}
+            </p>
+            <button
+              type="button"
+              onClick={clearSessionExpired}
+              className="shrink-0 text-2xs font-semibold text-accent hover:underline"
+            >
+              {t('sessionExpiredDismiss')}
+            </button>
+          </div>
+        ) : null}
+        {children}
+      </div>
 
       {/* Persistent assistant surface on every dashboard page except the
           assistant page (redundant) and the map (its masthead carries it). */}

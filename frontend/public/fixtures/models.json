@@ -1,0 +1,60 @@
+{
+ "id": "runoff_weighted_gbm_6de325c_20260806T105403Z",
+ "algorithm": "weighted_gbm",
+ "trained_at": "2026-08-06T10:54:03.126384+00:00",
+ "n_training_events": 2362,
+ "features": [
+  "precipitation_mm_day",
+  "precip_prior_1d_mm",
+  "precip_prior_3d_mm",
+  "precip_prior_7d_mm",
+  "rain_over_p50",
+  "rain_over_p90",
+  "rain_over_p99",
+  "rain_self_percentile",
+  "soil_moisture_lag1d",
+  "soil_moisture_lag3d",
+  "dry_days_before",
+  "wind_speed_ms",
+  "wind_direction_deg",
+  "temp_c",
+  "season_sin",
+  "season_cos",
+  "area_km2",
+  "slope_mean_deg",
+  "drainage_density_km_km2",
+  "elongation_ratio"
+ ],
+ "metrics": {
+  "mean_AP": 0.7474,
+  "baseline_mean_AP": 0.2004,
+  "pooled_AP": 0.6831,
+  "temporal_holdout_AP": 0.5923,
+  "temporal_holdout_baseline_AP": 0.2083,
+  "temporal_holdout_split": {
+   "cutoff_year": 2015,
+   "train_rows": 6300,
+   "test_rows": 5510,
+   "train_pos_rate": 0.0797,
+   "test_pos_rate": 0.0773
+  },
+  "temporal_holdout_anchor_check": {
+   "anchor_catchment": "AQ-C01",
+   "anchor_rank_among_catchment_only": 76,
+   "anchor_n_days_in_catchment_test_set": 1102,
+   "anchor_percentile": 93.1
+  },
+  "_note": "mean_AP/pooled_AP/etc. are LOCO - a DIFFERENT split from temporal_holdout_AP, and neither is the shipped model's own-rows score (not computed, would be meaningless). LOCO tests transfer to an unseen CATCHMENT; temporal_holdout tests transfer to an unseen TIME PERIOD - specifically, that the classifier's training data ends before 2015, which is what licenses any claim of the form 'the model never saw this storm during training'. Do not quote temporal_holdout_AP as LOCO or vice versa."
+ },
+ "label_leakage_ablation": {
+  "claim": "predicts runoff from inputs independent of the label's own atmosphere",
+  "defensible_model": "M1 -- IMERG rainfall + neutral features, no ERA5 input at all",
+  "defensible_n_features": 15,
+  "defensible_mean_AP": 0.6623,
+  "shipped_model": "M2 -- the shipped CD- feature set (this artefact's own feature list)",
+  "shipped_n_features": 20,
+  "shipped_mean_AP": 0.7445,
+  "why_shipped_is_not_defensible": "corr(ERA5-Land sro, ERA5-Land rainfall) = +0.985 vs corr(sro, IMERG rainfall) = +0.573 -- the label is near-deterministic in ERA5's own weather, so any ERA5-sourced feature this model uses (soil_moisture_lag1d, soil_moisture_lag3d, wind_speed_ms, wind_direction_deg, temp_c) leaks the same atmosphere the label came from, not hydrology. M2-M1 = +0.082: those five columns alone contribute 15% of the model's lift over baseline.",
+  "source": "reports/model/label_problem.md; docs/model_card.md"
+ }
+}

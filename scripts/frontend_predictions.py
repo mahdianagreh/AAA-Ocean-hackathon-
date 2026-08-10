@@ -102,6 +102,10 @@ def main():
                 "t": row["date"].strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "is_stub": bool(r.get("is_stub")),
                 "runoff_probability": r.get("runoff_probability"),
+                # Always null — predict_one() never returns this key. A classifier
+                # has no volume to report; the frontend renders the gap rather than
+                # omitting the field, so the card states what it does not know.
+                "predicted_runoff_m3": r.get("predicted_runoff_m3"),
                 "severity": r.get("severity"),
                 "confidence": r.get("confidence"),
                 "confidence_terms": r.get("confidence_terms"),

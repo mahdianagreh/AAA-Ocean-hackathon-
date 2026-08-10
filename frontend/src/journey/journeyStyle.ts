@@ -1,6 +1,6 @@
 import type { StyleSpecification } from 'maplibre-gl';
 import { palette, type ThemeName } from '../design/palette.generated';
-import { terrainSourceFragment, terrainColorFragment } from './layers/terrain';
+import { terrainSourceFragment, terrainColorFragment, terrainVoidMaskFragment } from './layers/terrain';
 import { catchmentsFragment } from './layers/catchments';
 import { buildingsFragment } from './layers/buildings';
 import { reefFragment } from './layers/reef';
@@ -33,6 +33,7 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
 
   const terrain = terrainSourceFragment();
   const terrainColor = terrainColorFragment();
+  const terrainVoidMask = terrainVoidMaskFragment(isDark, c.canvas);
   const catchments = catchmentsFragment(c);
   const buildings = buildingsFragment(c);
   const reef = reefFragment(c);
@@ -48,6 +49,7 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
     sources: {
       outlets: { type: 'geojson', data: url('outlets') },
       ...terrain.sources,
+      ...terrainVoidMask.sources,
       ...catchments.sources,
       ...runoff.sources,
       ...buildings.sources,
@@ -72,6 +74,7 @@ export function buildJourneyStyle(theme: ThemeName): StyleSpecification {
           'hillshade-exaggeration': 0.45,
         },
       },
+      ...terrainVoidMask.layers,
       ...catchments.layers,
       ...runoff.layers,
       ...buildings.layers,

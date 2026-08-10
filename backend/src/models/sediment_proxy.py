@@ -45,14 +45,27 @@ TAU_DEFAULT = 0.525
 TAU_NEGEV = (0.20, 0.85)
 TAU_LITERATURE = (0.132, 0.98)
 
-# Phase 5, B2. The only two honest values: every response must say which one
-# produced its transmission_loss, not just carry the number. "learned" has no
-# implementation yet - flagged (docs/HANDOFF_abd_2026-08-07_b2_data.md) rather
-# than built, because there is no per-catchment measured tau anywhere in this
-# project to train a regression against. Every transmission_loss in the system
-# today - default or user-overridden via the slider - is a point somewhere on
-# this borrowed range, never a per-catchment estimate, so the basis is
-# "negev_proxy" unconditionally until that changes.
+# The only two honest values: every response must say which one produced its
+# transmission_loss, not just carry the number.
+#
+# UPDATE, per Phase 6's own "finding, not fixed" note on this exact comment: this
+# used to say "learned" has no implementation because there is no per-catchment
+# measured tau to train a regression against. That is no longer why. Karam found
+# real data (Cataldo et al. 2010, 58 real fractional-tau examples across 12
+# systems) and a learned model WAS built and tested -- 7 feature combinations x 2
+# model types, leave-one-system-out validated, same discipline as the runoff
+# model's LOCO. Every single one scored WORSE than predicting the mean (negative
+# R^2 throughout, -0.04 to -0.71): transmission loss varies enormously
+# storm-to-storm within one system (comparable to the spread BETWEEN systems),
+# which no static per-catchment feature can explain. Full result:
+# tasks/mahdis-features-handoff/RESULT_b2_learned_model_tested_and_rejected.md.
+# "learned" is not unbuilt -- it was built, tested honestly, and rejected on its
+# own merits, because shipping a negative-skill model as an improvement is the
+# exact failure mode this project exists to avoid. Every transmission_loss in the
+# system today - default or user-overridden via the slider - is a point
+# somewhere on this borrowed Negev range, never a per-catchment estimate, so the
+# basis is "negev_proxy" unconditionally until per-storm dynamic data (not more
+# static catchment characteristics) makes a learned estimate viable.
 TRANSMISSION_LOSS_BASIS = "negev_proxy"
 
 # Reference conditions - the point at which every dimensionless term equals 1.

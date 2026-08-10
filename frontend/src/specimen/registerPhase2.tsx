@@ -52,6 +52,10 @@ function card(band: (typeof BANDS)[number], score: number): RiskCardData {
     // now the ONLY place the main view guarantees a visible gap in default mode: the
     // registered model fills runoff_probability everywhere else.
     runoff_probability: band === 'critical' ? 0.8121 : null,
+    // Always null on every real path — a classifier has no volume to report.
+    // No band-conditional case here, unlike runoff_probability above: this gap
+    // is not a fixture-of-convenience, it is what the model always returns.
+    predicted_runoff_m3: null,
     provisional: band !== 'critical',
     modelVersion: band === 'critical' ? 'runoff_weighted_gbm_2194b48_20260803T214757Z' : undefined,
     caveat:

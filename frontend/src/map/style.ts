@@ -39,6 +39,16 @@ const SRC = 'basemap';
  *  family *name* — so never put a weight word in `text-font`. */
 const LABEL_FONT = ['IBM Plex Sans Arabic'];
 
+/** p4-D. Shared between the outlets layer's paint and its flag label's filter,
+ *  so the two cannot silently disagree about which outlets are flagged. `in`
+ *  checks substring containment, not exact match — robust to the trailing
+ *  description text changing without this expression going stale. */
+const CULVERT_CANDIDATE_CORRECTION = [
+  'in',
+  'CANDIDATE CORRECTION',
+  ['coalesce', ['get', 'culvert_verdict'], ''],
+] as unknown as boolean;
+
 /** Bilingual labels, with the fallback the docs get half-right.
  *
  *  06 §4 says select `name:ar` and fall back to `name`. Checked against the
@@ -344,9 +354,55 @@ export function buildStyle(theme: ThemeName, lang: Lang): StyleSpecification {
             67,
             10, // sqrt(4453) — AQ-O01 carries 96% of the discharge
           ],
-          'circle-color': c.canvas,
-          'circle-stroke-color': c.ink,
-          'circle-stroke-width': 1.2,
+          // p4-D: AQ-O02/AQ-O03 carry a real culvert_verdict of "CANDIDATE
+          // CORRECTION -- unmodelled path to the sea" (backend/src/data_access.py,
+          // sourced from the real OSM/DEM culvert cross-check, not a placeholder).
+          // `in` matches on substring so a change to the trailing description does
+          // not silently stop matching -- the classification word is what's load-
+          // bearing here, not its exact punctuation. Form (fill + stroke + the
+          // label below), not colour alone, per 01 §4.
+          'circle-color': [
+            'case',
+            CULVERT_CANDIDATE_CORRECTION,
+            c.risk.high,
+            c.canvas,
+          ],
+          'circle-stroke-color': [
+            'case',
+            CULVERT_CANDIDATE_CORRECTION,
+            c.riskStroke.high,
+            c.ink,
+          ],
+          'circle-stroke-width': ['case', CULVERT_CANDIDATE_CORRECTION, 2.2, 1.2],
+        },
+      },
+      {
+        // The label IS the correction, on the feature it corrects -- not a
+        // legend entry a reader has to go find and connect back to the dot.
+        // Untranslated in both languages deliberately, same reasoning as the
+        // Validation panel's "NO-GO" verdict badge: this is a formal
+        // classification string, not descriptive prose, and 06 §6's Arabic-review
+        // policy already forbids machine-translating scientific/technical
+        // findings without human review -- so the honest choice is to show the
+        // real English verdict rather than an unreviewed Arabic paraphrase of it.
+        // The concrete numbers behind it (nearest_culvert_m, culvert count) are
+        // in the side rail's outlet row, per 09 rule 7.
+        id: 'outlet-culvert-flag',
+        type: 'symbol',
+        source: `${SRC}-outlets`,
+        filter: CULVERT_CANDIDATE_CORRECTION,
+        layout: {
+          'text-field': '⚠ CANDIDATE CORRECTION',
+          'text-font': LABEL_FONT,
+          'text-size': 10,
+          'text-anchor': 'top',
+          'text-offset': [0, 0.9],
+          'text-max-width': 10,
+        },
+        paint: {
+          'text-color': c.riskStroke.high,
+          'text-halo-color': c.canvas,
+          'text-halo-width': 1.4,
         },
       },
 

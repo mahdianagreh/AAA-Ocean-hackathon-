@@ -177,12 +177,16 @@ test.describe('the honest panels', () => {
     await expect(page.getByText(expected.slice(0, 60), { exact: false })).toBeVisible();
   });
 
-  test('limitations renders all nine, from the documents', async ({ page }) => {
+  test('limitations renders all thirteen, from the documents', async ({ page }) => {
     await ready(page);
     await page.locator('[data-open-overlay="limitations"]').click();
     const l = page.locator('[data-overlay="limitations"]');
     await expect(l).toBeVisible();
-    await expect(l.locator('[data-limitation]')).toHaveCount(9);
+    // 13, not 9: docs/pitch_limitations.md already had items 10-12 committed, but
+    // fixtures/limitations.json had never been regenerated to pick them up — a
+    // real backlog found while adding item 13 (p4-17's label-frequency gap), not
+    // caused by it. See tasks/phase7/02-mahdi.md.
+    await expect(l.locator('[data-limitation]')).toHaveCount(13);
     await expect(l.getByText(/forcing_limitations\.md/).first()).toBeVisible();
   });
 
