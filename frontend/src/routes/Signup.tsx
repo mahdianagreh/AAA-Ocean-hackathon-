@@ -2,16 +2,22 @@ import { useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from '../components/Link';
 import { Logo } from '../components/Logo';
+import { Button } from '../components/Button';
+import { Field, FIELD_CLASS, fieldBorder } from '../components/Field';
+import { NoticeCard } from '../components/NoticeCard';
 import { AuthAside } from '../shell/MarketingChrome';
+import { supabase } from '../api/supabaseClient';
 
 /** Request access — transcribed from the design canvas `isSignup` block.
  *
- *  Same constraint as Login: there is no auth backend, and there is no intake
- *  endpoint either. Nothing typed here leaves the browser. The canvas's
- *  "Request received" confirmation is kept because it is the designed end of
- *  the flow, but it says plainly that the request was not transmitted — a
- *  confirmation that implies a human will read it, when nothing was sent, is
- *  the same failure as a fake login wearing a friendlier face.
+ *  Phase 8, Track B (tasks/00-contracts.md §9): a real submission now — one
+ *  row into `access_requests` (RLS: anon may INSERT only, never read it
+ *  back). This does NOT create a Supabase Auth user or grant access by
+ *  itself; a person reviews the row and provisions a real account
+ *  out-of-band if approved. The confirmation screen says exactly that —
+ *  recorded and pending, not approved, and no automated email exists yet —
+ *  rather than either the old "nothing was sent" claim (no longer true) or
+ *  implying an automated approval that doesn't exist.
  *
  *  The canvas gates submission on full name and organisation being non-empty
  *  but renders no message for either, so an empty name produced a button that
@@ -32,9 +38,6 @@ function emailLooksValid(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
 
-const FIELD =
-  'h-12 w-full rounded-md border bg-surface px-4 text-sm text-ink placeholder:text-ink-3';
-
 export function Signup() {
   const { t } = useTranslation();
 
@@ -46,6 +49,7 @@ export function Signup() {
   const useCaseId = useId();
   const agreeId = useId();
   const noticeId = useId();
+  const notTransmittedId = useId();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -60,9 +64,12 @@ export function Signup() {
   const [orgError, setOrgError] = useState<string | null>(null);
   const [agreeError, setAgreeError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (pending) return;
 
     const nextName = fullName.trim() ? null : t('auth.errors.nameRequired');
     const nextEmail = !email.trim()
@@ -77,9 +84,30 @@ export function Signup() {
     setEmailError(nextEmail);
     setOrgError(nextOrg);
     setAgreeError(nextAgree);
+    setServerError(null);
+    if (nextName || nextEmail || nextOrg || nextAgree) return;
 
-    // Local state only. No request is made — see the file docstring.
-    if (!nextName && !nextEmail && !nextOrg && !nextAgree) setSubmitted(true);
+    if (!supabase) {
+      setServerError(t('auth.signup.submitUnavailable'));
+      return;
+    }
+
+    setPending(true);
+    const { error } = await supabase.from('access_requests').insert({
+      full_name: fullName,
+      work_email: email,
+      organization: org,
+      role_title: role || null,
+      org_type: orgType || null,
+      use_case: useCase || null,
+    });
+    setPending(false);
+
+    if (error) {
+      setServerError(t('auth.signup.submitUnavailable'));
+      return;
+    }
+    setSubmitted(true);
   };
 
   const aside = (
@@ -110,6 +138,10 @@ export function Signup() {
           </Link>
 
           <div className="flex w-full max-w-[420px] flex-col items-center gap-4 rounded-card bg-surface px-8 py-12 text-center shadow-md">
+            {/* Not a checkmark on purpose — a checkmark reads as "done,
+                succeeded," and this form was validated locally, not sent
+                anywhere. A recorded-document glyph makes a different, true
+                claim: "noted here," not "delivered." */}
             <svg
               width="48"
               height="48"
@@ -119,24 +151,20 @@ export function Signup() {
               focusable="false"
               className="text-accent"
             >
-              <circle cx="24" cy="24" r="21" stroke="currentColor" strokeWidth="2.5" fill="none" />
-              <path
-                d="M14 25 L21 32 L35 16"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
+              <rect x="12" y="7" width="24" height="34" rx="2" stroke="currentColor" strokeWidth="2.5" fill="none" />
+              <line x1="18" y1="17" x2="30" y2="17" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+              <line x1="18" y1="24" x2="30" y2="24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+              <line x1="18" y1="31" x2="25" y2="31" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
             </svg>
             <h1 className="m-0 text-lg font-bold">{t('auth.signup.receivedTitle')}</h1>
             <p className="m-0 text-sm leading-[1.6] text-ink-2">
               {t('auth.signup.receivedBody')}
             </p>
-            {/* The load-bearing sentence on this screen. */}
-            <p className="m-0 rounded-md border border-hairline-2 bg-surface-2 p-4 text-xs leading-[1.6] text-ink">
-              {t('auth.signup.notTransmitted')}
-            </p>
+            {/* The load-bearing sentence on this screen — full NoticeCard
+                treatment, not fine print under a success symbol. */}
+            <NoticeCard id={notTransmittedId} title={t('auth.signup.notTransmittedTitle')}>
+              <p className="m-0 text-start">{t('auth.signup.notTransmitted')}</p>
+            </NoticeCard>
             <Link to="/" className="py-2 text-xs font-semibold text-accent underline">
               {t('auth.backToSite')}
             </Link>
@@ -161,22 +189,17 @@ export function Signup() {
             <p className="m-0 text-xs leading-[1.5] text-ink-2">{t('auth.signup.subtitle')}</p>
           </div>
 
-          <section
-            id={noticeId}
-            aria-labelledby={`${noticeId}-title`}
-            className="flex flex-col gap-2 rounded-md border border-hairline-2 bg-surface-2 p-4"
-          >
-            <h2 id={`${noticeId}-title`} className="m-0 text-xs font-bold text-ink">
-              {t('auth.notice.title')}
-            </h2>
-            <p className="m-0 text-xs leading-[1.6] text-ink-2">{t('auth.signup.noticeBody')}</p>
-          </section>
+          <NoticeCard id={noticeId} title={t('auth.notice.title')}>
+            <p className="m-0">{t('auth.signup.noticeBody')}</p>
+          </NoticeCard>
 
           <form className="flex flex-col gap-3.5" onSubmit={onSubmit} noValidate>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={nameId} className="text-xs font-semibold">
-                {t('auth.signup.fullName')}
-              </label>
+            <Field
+              id={nameId}
+              label={t('auth.signup.fullName')}
+              error={nameError}
+              errorPrefix={t('auth.errors.prefix')}
+            >
               <input
                 id={nameId}
                 name="fullName"
@@ -186,19 +209,16 @@ export function Signup() {
                 onChange={(e) => setFullName(e.target.value)}
                 aria-invalid={nameError ? true : undefined}
                 aria-describedby={nameError ? `${nameId}-error` : undefined}
-                className={`${FIELD} ${nameError ? 'border-risk-critical' : 'border-hairline'}`}
+                className={`${FIELD_CLASS} ${fieldBorder(!!nameError)}`}
               />
-              {nameError ? (
-                <p id={`${nameId}-error`} className="m-0 text-xs font-semibold text-ink">
-                  {t('auth.errors.prefix')} {nameError}
-                </p>
-              ) : null}
-            </div>
+            </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={emailId} className="text-xs font-semibold">
-                {t('auth.signup.email')}
-              </label>
+            <Field
+              id={emailId}
+              label={t('auth.signup.email')}
+              error={emailError}
+              errorPrefix={t('auth.errors.prefix')}
+            >
               <input
                 id={emailId}
                 name="email"
@@ -209,19 +229,16 @@ export function Signup() {
                 onChange={(e) => setEmail(e.target.value)}
                 aria-invalid={emailError ? true : undefined}
                 aria-describedby={emailError ? `${emailId}-error` : undefined}
-                className={`${FIELD} ${emailError ? 'border-risk-critical' : 'border-hairline'}`}
+                className={`${FIELD_CLASS} ${fieldBorder(!!emailError)}`}
               />
-              {emailError ? (
-                <p id={`${emailId}-error`} className="m-0 text-xs font-semibold text-ink">
-                  {t('auth.errors.prefix')} {emailError}
-                </p>
-              ) : null}
-            </div>
+            </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={orgId} className="text-xs font-semibold">
-                {t('auth.signup.org')}
-              </label>
+            <Field
+              id={orgId}
+              label={t('auth.signup.org')}
+              error={orgError}
+              errorPrefix={t('auth.errors.prefix')}
+            >
               <input
                 id={orgId}
                 name="organization"
@@ -231,19 +248,14 @@ export function Signup() {
                 onChange={(e) => setOrg(e.target.value)}
                 aria-invalid={orgError ? true : undefined}
                 aria-describedby={orgError ? `${orgId}-error` : undefined}
-                className={`${FIELD} ${orgError ? 'border-risk-critical' : 'border-hairline'}`}
+                className={`${FIELD_CLASS} ${fieldBorder(!!orgError)}`}
               />
-              {orgError ? (
-                <p id={`${orgId}-error`} className="m-0 text-xs font-semibold text-ink">
-                  {t('auth.errors.prefix')} {orgError}
-                </p>
-              ) : null}
-            </div>
+            </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={roleId} className="text-xs font-semibold">
-                {t('auth.signup.role')}
-              </label>
+            {/* Optional, and now visibly so before submission — role and
+                org type used to be indistinguishable from the required
+                fields until a successful submit proved otherwise. */}
+            <Field id={roleId} label={t('auth.signup.role')} optional={t('auth.signup.optional')}>
               <input
                 id={roleId}
                 name="role"
@@ -251,20 +263,21 @@ export function Signup() {
                 autoComplete="organization-title"
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className={`${FIELD} border-hairline`}
+                className={`${FIELD_CLASS} border-hairline`}
               />
-            </div>
+            </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={orgTypeId} className="text-xs font-semibold">
-                {t('auth.signup.orgType')}
-              </label>
+            <Field
+              id={orgTypeId}
+              label={t('auth.signup.orgType')}
+              optional={t('auth.signup.optional')}
+            >
               <select
                 id={orgTypeId}
                 name="orgType"
                 value={orgType}
                 onChange={(e) => setOrgType(e.target.value)}
-                className={`${FIELD} border-hairline`}
+                className={`${FIELD_CLASS} border-hairline`}
               >
                 <option value="">{t('auth.signup.orgTypeSelect')}</option>
                 {ORG_TYPES.map((o) => (
@@ -273,22 +286,22 @@ export function Signup() {
                   </option>
                 ))}
               </select>
-            </div>
+            </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={useCaseId} className="text-xs font-semibold">
-                {t('auth.signup.useCase')}{' '}
-                <span className="font-normal text-ink-2">{t('auth.signup.optional')}</span>
-              </label>
+            <Field
+              id={useCaseId}
+              label={t('auth.signup.useCase')}
+              optional={t('auth.signup.optional')}
+            >
               <textarea
                 id={useCaseId}
                 name="useCase"
                 rows={3}
                 value={useCase}
                 onChange={(e) => setUseCase(e.target.value)}
-                className="w-full resize-y rounded-md border border-hairline bg-surface px-4 py-3 text-sm text-ink"
+                className="w-full resize-y rounded-md border border-hairline bg-surface px-4 py-3 text-sm text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
               />
-            </div>
+            </Field>
 
             <div className="flex flex-col gap-1.5">
               <div className="flex items-start gap-3">
@@ -300,26 +313,32 @@ export function Signup() {
                   onChange={(e) => setAgree(e.target.checked)}
                   aria-invalid={agreeError ? true : undefined}
                   aria-describedby={agreeError ? `${agreeId}-error` : undefined}
-                  className="mt-1 size-6 shrink-0 accent-accent"
+                  className="mt-1 size-6 shrink-0 accent-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 />
                 <label htmlFor={agreeId} className="text-xs leading-[1.5] text-ink-2">
                   {t('auth.signup.agree')}
                 </label>
               </div>
               {agreeError ? (
-                <p id={`${agreeId}-error`} className="m-0 text-xs font-semibold text-ink">
+                <p id={`${agreeId}-error`} className="m-0 text-xs font-semibold text-risk-critical">
                   {t('auth.errors.prefix')} {agreeError}
                 </p>
               ) : null}
             </div>
 
-            <button
-              type="submit"
-              aria-describedby={noticeId}
-              className="mt-1 h-12 w-full rounded-md bg-ink text-sm font-bold text-ink-inverse"
+            <Button type="submit" disabled={pending} aria-describedby={noticeId} className="mt-1">
+              {pending ? t('auth.signup.pending') : t('auth.signup.submit')}
+            </Button>
+
+            <p
+              role="status"
+              aria-live="polite"
+              className={`m-0 min-h-5 text-center text-xs ${
+                serverError ? 'font-semibold text-risk-critical' : ''
+              }`}
             >
-              {t('auth.signup.submit')}
-            </button>
+              {serverError ?? ''}
+            </p>
           </form>
 
           <p className="m-0 text-center text-xs text-ink-2">

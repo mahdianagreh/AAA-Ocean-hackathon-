@@ -86,7 +86,11 @@
     "riskCardsNote": "Every band, plus a null runoff probability rendered as a gap and a row with missing rainfall hatched rather than drawn as zero.",
     "sectionLegend": "Legend",
     "sectionStates": "Component states",
-    "statesNote": "Loading, empty, error, stale and a declared gap. A component whose empty, error and stale states were never designed will improvise them on stage."
+    "statesNote": "Loading, empty, error, stale and a declared gap. A component whose empty, error and stale states were never designed will improvise them on stage.",
+    "sectionAlertCard": "Alert card",
+    "sectionCaveatCard": "Caveat card",
+    "sectionDataTable": "Data table",
+    "sectionTimeline": "Timeline"
   },
   "hazard": {
     "minimal": "Minimal",
@@ -312,7 +316,18 @@
     "gapDocumented": "Documented sea-reaching floods",
     "gapMultiple": "A {{optimistic}}× gap — and that is the optimistic case, assuming every day we did not individually check is a genuine non-event. On the days we actually checked, the gap is {{sampled}}×.",
     "gapDetection": "Not fixable by moving a threshold: ERA5-Land is essentially dry on {{wetPct}}% of the days IMERG satellite data calls wet, and on {{heavyPct}}% of the heaviest IMERG days on record. Of {{checked}} catchment-days where IMERG saw real rain and ERA5 saw none, our label is positive on exactly {{positive}}.",
-    "gapAnchor": "The October 2016 anchor storm is among the misses: {{era5mm}} mm ({{era5pct}}th percentile) in ERA5, against {{imergmm}} mm ({{imergpct}}th percentile) in IMERG — the same storm the sediment proxy is anchored to reads as an unremarkable day to the label that trains this classifier."
+    "gapAnchor": "The October 2016 anchor storm is among the misses: {{era5mm}} mm ({{era5pct}}th percentile) in ERA5, against {{imergmm}} mm ({{imergpct}}th percentile) in IMERG — the same storm the sediment proxy is anchored to reads as an unremarkable day to the label that trains this classifier.",
+    "jumpTo": "On this page",
+    "expandHint": "Select a limitation to read it in full.",
+    "missingNote": "The source document (pitch_limitations.md) carries more numbered limitations than are surfaced here. Not yet included: site-scoring validation, adaptive sampling, and the coral-health vision model.",
+    "absentTitle": "Features that are not built",
+    "absentIntro": "Named here on purpose. These were scoped but have no backend, so the app does not pretend they exist.",
+    "absent": {
+      "b1": "Plume auto-segmentation — a model to trace plume masks from imagery — is not built; masks are not machine-segmented.",
+      "b2": "A learned transmission-loss prediction is not built; the scenario slider's transmission-loss control is a neutral default, not a fitted value.",
+      "b3": "Cross-site transfer, and the per-site model-maturity it would need, is not built; the system is tuned to Aqaba alone.",
+      "b9": "Culvert and drainage-conflict detection — flagging where mapped drainage disagrees with the terrain model — is not built."
+    }
   },
   "assistant": {
     "label": "Ask about the pipeline, the data or the limitations",
@@ -444,6 +459,14 @@
       "openData": "Open data only",
       "limitations": "Every limitation documented"
     },
+    "coralFact": {
+      "eyebrow": "WHY THIS REEF",
+      "title": "The Gulf of Aqaba is a coral refuge worth defending.",
+      "fact": "Its corals tolerate warming of several degrees above today's summer maximum before they bleach — an unusually wide thermal safety margin that makes the northern Red Sea a rare refuge for reef-building corals as the oceans warm.",
+      "turn": "But heat tolerance is no defence against being buried. A single flood's sediment can smother a reef that would have survived the century's warming — which is exactly the risk this system forecasts.",
+      "sourceLabel": "Source",
+      "source": "Fine, M., Gildor, H. & Genin, A. (2013). A coral reef refuge in the Red Sea. Global Change Biology 19(12), 3640–3647."
+    },
     "cta": {
       "title": "Built for the people protecting this coastline.",
       "body": "Coastal authorities, researchers, and dive operators — request access to the live dashboard.",
@@ -462,8 +485,8 @@
   "auth": {
     "backToSite": "Back to site",
     "notice": {
-      "title": "Account sign-in is not available yet",
-      "body": "This platform has no authentication backend — no accounts, no sessions, and no credential is ever checked. The form below validates what you type and stops there: nothing is sent anywhere, and signing in does not open anything. The dashboard is currently open access and needs no account.",
+      "title": "Sign-in is limited to approved accounts",
+      "body": "There is no public sign-up — accounts are created only after a request is reviewed and approved. If you don't have one yet, the dashboard itself stays fully open and needs no account.",
       "openDashboard": "Open the dashboard — no account needed"
     },
     "aside": {
@@ -491,9 +514,11 @@
       "password": "Password",
       "showPassword": "Show password",
       "hidePassword": "Hide password",
-      "forgotPassword": "Password reset is unavailable — there are no accounts to reset.",
+      "forgotPassword": "Password reset isn't available yet — contact your team to have it reset manually.",
       "submit": "Sign In",
       "unavailableStatus": "Your details are well-formed, but nothing was submitted: there is no sign-in service behind this form.",
+      "pending": "Signing in…",
+      "invalidCredentials": "Incorrect email or password.",
       "or": "or",
       "sso": "Continue with organization SSO",
       "ssoUnavailable": "Organization SSO is not connected to any identity provider.",
@@ -503,7 +528,7 @@
     "signup": {
       "title": "Request Access",
       "subtitle": "AQABA AQUA AI is currently available to coastal authorities, research institutions, and development partners. Tell us about your organization.",
-      "noticeBody": "There is no backend to receive this request yet. Everything you type stays in this browser tab and is lost when you close it — nothing is emailed, stored, or sent to the team.",
+      "noticeBody": "Requests are reviewed by a person, not approved automatically — there is no public sign-up. Submitting records your request; it does not create an account by itself.",
       "fullName": "Full name",
       "email": "Work email",
       "org": "Organization name",
@@ -522,9 +547,12 @@
       "optional": "(optional)",
       "agree": "I agree to the Terms of Use and Data Policy",
       "submit": "Submit Request",
+      "pending": "Submitting…",
+      "submitUnavailable": "Your request could not be submitted right now. Please try again shortly.",
       "receivedTitle": "Request received",
       "receivedBody": "Once the platform is live, our team will review requests and follow up by email within a few business days.",
-      "notTransmitted": "This confirmation is local to your browser. The request was NOT transmitted: no intake service exists yet, so no one has received it and no email will follow. Nothing you typed left this page.",
+      "notTransmittedTitle": "Recorded, pending human review",
+      "notTransmitted": "This request has been recorded. There is no automated approval or email system yet — a person on our team reviews requests and, if approved, reaches out directly to the email address you provided. This is not instant.",
       "haveAccess": "Already have access?",
       "signIn": "Sign In"
     }

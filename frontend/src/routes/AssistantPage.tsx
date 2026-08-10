@@ -138,7 +138,9 @@ export function AssistantPage() {
       </Section>
 
       <Section label={t('assistant.answerSection')}>
-        <div aria-live="polite" className="flex flex-col gap-4">
+        {/* Constrained, centred reading column (~736px) — replaces the old
+            full-bleed answer that stretched to the 82rem page width. */}
+        <div aria-live="polite" className="mx-auto flex w-full max-w-[46rem] flex-col gap-4">
           {state.kind === 'idle' ? (
             <p className="m-0 text-xs text-ink-3">{t('assistant.idle')}</p>
           ) : null}
@@ -182,23 +184,29 @@ export function AssistantPage() {
           {state.kind === 'answered' ? (
             <Card>
               <div data-assistant-state="answered" className="flex flex-col gap-4">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h3 className="m-0 text-sm font-semibold">{t('assistant.answerTitle')}</h3>
-                  <span className="rounded-sm border border-hairline-2 bg-surface-2 px-1.5 py-0.5 text-2xs text-ink-2">
-                    {t('assistant.extractive')}
-                  </span>
+                {/* Compact disclaimer banner atop every answer: this is retrieval,
+                    not generation — an icon and one line, not a chip in a corner. */}
+                <div className="flex items-start gap-2 rule bg-surface-2 p-3 text-2xs text-ink-2">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="mt-px shrink-0 text-accent">
+                    <circle cx="8" cy="8" r="6.5" />
+                    <path d="M8 7.2v3.6" />
+                    <circle cx="8" cy="4.9" r="0.5" fill="currentColor" />
+                  </svg>
+                  <span className="max-w-prose">{t('assistant.extractive')}</span>
                 </div>
+
+                <h3 className="m-0 text-sm font-semibold">{t('assistant.answerTitle')}</h3>
 
                 {/* Marked as a quotation, because it is quotation: the backend
                     composes the answer out of the sections it retrieved. */}
                 <blockquote
                   dir="auto"
-                  className="m-0 max-w-prose whitespace-pre-line border-s-4 border-accent bg-accent/5 p-5 rounded-r-xl text-sm leading-relaxed text-ink shadow-inner"
+                  className="m-0 max-w-prose whitespace-pre-line border-s-4 border-accent bg-accent/5 p-5 rounded-e-xl text-sm leading-relaxed text-ink shadow-inner"
                 >
                   {state.response.answer}
                 </blockquote>
 
-                <div className="flex flex-col gap-3 mt-4">
+                <div className="flex flex-col gap-3 mt-2">
                   <h4 className="m-0 text-xs font-bold premium-gradient-text">
                     {t('assistant.citations', { n: state.response.citations.length })}
                   </h4>
@@ -207,19 +215,39 @@ export function AssistantPage() {
                       <li
                         key={`${c.source_file}#${c.section}#${i}`}
                         data-citation={i}
-                        className="flex flex-col gap-2 glass-panel p-4 transition-all duration-300 hover:glass-panel-hover border-s-4 border-hairline-2 hover:border-s-accent cursor-default group"
+                        className="flex gap-3 glass-panel p-4"
                       >
-                        <span className="flex flex-wrap items-baseline gap-2 text-xs">
-                          <code dir="ltr" className="font-mono num font-bold text-ink group-hover:text-accent transition-colors">
-                            {c.source_file}
-                          </code>
-                          <span dir="auto" className="text-ink-3 font-semibold">
-                            § {c.section}
-                          </span>
+                        {/* Numbered badge = the citation's position in citations[]
+                            (the API sends no id). Navy circle, foam number. */}
+                        <span
+                          aria-hidden="true"
+                          className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-ink text-2xs font-bold num text-ink-inverse"
+                        >
+                          {i + 1}
                         </span>
-                        <p dir="auto" className="m-0 max-w-prose text-xs text-ink-2">
-                          {c.excerpt}
-                        </p>
+                        <div className="flex min-w-0 flex-1 flex-col gap-2">
+                          <blockquote
+                            dir="auto"
+                            className="m-0 max-w-prose border-s-4 border-accent ps-3 text-xs text-ink-2"
+                          >
+                            {c.excerpt}
+                          </blockquote>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="inline-flex items-center gap-1 rounded-full border border-hairline bg-surface-2 px-2 py-0.5 text-2xs text-ink-2">
+                              <code dir="ltr" style={{ unicodeBidi: 'isolate' }} className="font-mono num font-semibold">
+                                {c.source_file}
+                              </code>
+                              <span dir="auto" className="opacity-70">§ {c.section}</span>
+                            </span>
+                            {/* A null score shows no chip — never a 0. */}
+                            {c.score != null ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-hairline bg-surface-2 px-2 py-0.5 text-2xs text-ink-2">
+                                {t('assistant.scoreLabel')}{' '}
+                                <span dir="ltr" className="num font-mono">{c.score.toFixed(2)}</span>
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
                       </li>
                     ))}
                   </ol>
@@ -227,10 +255,6 @@ export function AssistantPage() {
 
                 <p className="m-0 text-2xs text-ink-3">
                   {t('assistant.searchedCount', { n: state.response.corpus_files_searched })}
-                  {' · '}
-                  {t('assistant.answerLanguage', {
-                    language: t(`assistant.language.${state.response.language}`),
-                  })}
                 </p>
               </div>
             </Card>

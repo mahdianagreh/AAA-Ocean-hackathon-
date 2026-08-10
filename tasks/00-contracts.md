@@ -389,3 +389,51 @@ Half a day, together, then everyone is independent.
 - [ ] Everyone confirms they can start their stream **today** without needing anything from anyone
 
 Last item is the test. If anyone answers no, the contract has a gap — fix it before the day ends.
+
+---
+
+## 9. Auth model — decided 2026-08-09 (Phase 8, Nizar)
+
+No `users`/`roles` table existed in `data-model.md` before this, and no auth
+decision existed anywhere in this repo. Recorded here so the five other people
+touching identity-adjacent code (report review, sensitivity-weight approval,
+photo upload) all read the same answer.
+
+**Identity provider: Supabase Auth**, not a hand-rolled FastAPI session. This
+project already runs Supabase for Postgres/PostGIS; Supabase Auth gives real
+password hashing, session issuance and JWT signing without writing any of it
+four days before a demo. The project uses Supabase's newer key format
+(`sb_publishable_…`/`sb_secret_…`), which signs JWTs asymmetrically (ES256) and
+publishes a JWKS at `${SUPABASE_URL}/auth/v1/.well-known/jwks.json` — so
+verification needs no shared secret, only that public key set.
+
+**Access model: approval-gated, not self-serve — but not via a Supabase Auth
+setting.** The Signup screen is literally titled "Request access" and ends in
+"we will get back to you," which is incompatible with public self-serve
+sign-up. Rather than disabling sign-up in the Supabase dashboard (a setting
+this session has no way to script), the two flows are simply decoupled:
+
+- **`Signup` never calls Supabase Auth at all.** It inserts one row into a new
+  `access_requests` table (RLS: `anon` may only `INSERT`, never read). No
+  Supabase Auth user is created by this flow, by design.
+- **A real Supabase Auth user is provisioned out-of-band** (an admin, using the
+  service-role key server-side, after reviewing an `access_requests` row) —
+  never through a public endpoint.
+- **`Login` calls Supabase Auth's real sign-in** against whichever users were
+  provisioned this way. Wrong email and wrong password produce the identical
+  error — this is standard practice, and matters more here because the user
+  list is a short list of named regional institutions.
+
+**What auth actually protects — reads stay public.** This is a public-good
+ocean product; putting reef zones behind a login would be a real loss. Only
+the writes that need an audit trail require a verified session:
+`PATCH /api/v1/reports/{id}/review` (`reviewed_by` comes from the verified
+token, never the request body) and
+`POST /api/v1/reef-zones/{id}/sensitivity-weight/approve` (Standing Law rule
+13's one live-override path). `/dashboard` itself stays open to signed-out
+visitors — the honest answer, since every read it uses already is.
+
+**Service-role key discipline**: it already lives only in `backend/.env`
+server-side and must never reach `frontend/`. The anon/publishable key is safe
+in the frontend bundle by design, once RLS is on for every new table — it is
+on for `access_requests` from the same migration that creates it.

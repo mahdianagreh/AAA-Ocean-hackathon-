@@ -104,6 +104,11 @@ services:
       - "${FRONTEND_PORT:-5173}:5173"
     environment:
       VITE_API_URL: http://localhost:${API_PORT:-8000}
+      # Phase 8, Track B: the anon/publishable key is safe in a frontend
+      # bundle by design, once RLS is on for every table it touches
+      # (tasks/00-contracts.md §9) — never the service-role key here.
+      VITE_SUPABASE_URL: ${SUPABASE_URL:-}
+      VITE_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
     volumes:
       - ./frontend:/app
       - /app/node_modules

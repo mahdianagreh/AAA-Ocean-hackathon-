@@ -12,9 +12,17 @@
   "sites": "Site Scoring",
   "limitations": "Honest Limits",
   "accessMode": "Open access — no sign-in",
+  "signedInAs": "Signed in as {{email}}",
+  "signOut": "Sign out",
+  "signIn": "Sign in",
   "account": "Preferences",
   "backToSite": "Back to site",
   "live": "LIVE",
   "liveHint": "Reading from the API right now, not a saved snapshot.",
-  "signOut": "Sign Out"
+  "signOut": "Sign Out",
+  "login": "Sign in",
+  "signup": "Request access",
+  "notFound": "Not found",
+  "systemHealth": "System Health",
+  "dataExplorer": "Data Explorer"
 }

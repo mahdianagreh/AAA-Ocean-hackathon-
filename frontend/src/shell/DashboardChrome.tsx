@@ -2,7 +2,10 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from '../components/Link';
 import { LogoMark } from '../components/Logo';
+import { AssistantDock } from '../components/AssistantDock';
 import { useRoute, type RouteName } from '../app/useRoute';
+import { useAuth } from '../app/AuthContext';
+import { navigate } from '../app/useRoute';
 
 /** The dashboard navigation rail.
  *
@@ -12,10 +15,12 @@ import { useRoute, type RouteName } from '../app/useRoute';
  *  and the contrast pairs are fixed and checked against the brand palette
  *  (foam #E6F7FA on navy #0A1F4D is 14.6:1) rather than against the theme.
  *
- *  Every destination here is a real route. The five overlay panels that used to
- *  be modal-only (validation, provenance, limitations, assistant, journey) now
- *  have URLs, so a judge can be sent straight to one — but OverlayHost still
- *  works, because the map screen's own buttons still open them in place. */
+ *  Every destination here is a real route. Four of the five overlay panels that
+ *  used to be modal-only (validation, provenance, limitations, assistant) now
+ *  have URLs too, so a judge can be sent straight to one — but OverlayHost still
+ *  works, because the map screen's own buttons still open them in place. The
+ *  fifth, the 3D Journey, is deliberately map-overlay-only: it needs the live
+ *  terrain/plume context of the map screen and does not stand alone at a URL. */
 
 interface NavItem {
   to: string;
@@ -96,6 +101,14 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   limits: <path d="M2 13.5 L2 8.5 L8 3.5 L14 8.5 L14 13.5 Z" {...stroke} />,
+  systemHealth: <path d="M1.5 8 H5 L6.5 4 L9 12 L10.5 8 H14.5" {...stroke} />,
+  dataExplorer: (
+    <>
+      <ellipse cx="8" cy="4" rx="5.5" ry="2" {...stroke} />
+      <path d="M2.5 4 V12 C2.5 13.1 5 14 8 14 C11 14 13.5 13.1 13.5 12 V4" {...stroke} />
+      <path d="M2.5 8 C2.5 9.1 5 10 8 10 C11 10 13.5 9.1 13.5 8" {...stroke} />
+    </>
+  ),
 };
 
 const NAV: NavItem[] = [
@@ -110,6 +123,8 @@ const NAV: NavItem[] = [
   { to: '/dashboard/provenance', labelKey: 'provenance', match: ['provenance'], icon: ICONS.provenance },
   { to: '/sites/score', labelKey: 'sites', match: ['sitesScore'], icon: ICONS.sites },
   { to: '/limitations', labelKey: 'limitations', match: ['limitations'], icon: ICONS.limits },
+  { to: '/system-health', labelKey: 'systemHealth', match: ['systemHealth'], icon: ICONS.systemHealth },
+  { to: '/data-explorer', labelKey: 'dataExplorer', match: ['dataExplorer'], icon: ICONS.dataExplorer },
 ];
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
@@ -139,6 +154,7 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
 export function DashboardChrome({ children }: { children: ReactNode }) {
   const { t } = useTranslation('nav');
   const route = useRoute();
+  const { session, signOut } = useAuth();
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-ink lg:flex-row" data-dash-shell="true">
@@ -158,7 +174,9 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
           </span>
         </Link>
 
-        <div className="flex flex-col gap-1">
+        {/* Horizontal wrap below lg so eleven destinations do not become a tall
+            navy column that buries the content on a phone; a vertical rail at lg. */}
+        <div className="flex flex-row flex-wrap gap-1 lg:flex-col">
           {NAV.map((item) => (
             <NavLink key={item.to} item={item} active={item.match.includes(route.name)} />
           ))}
@@ -173,11 +191,19 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
             marginBottom: '-1.75rem'
           }}
         >
-          {/* No account system exists — see Login. Saying "signed in as" here
-              would be the same lie in a quieter place. */}
-          <span className="text-2xs" style={{ color: 'var(--brand-foam)', opacity: 0.7 }}>
-            {t('accessMode')}
-          </span>
+          {/* Phase 8, Track B: only says "signed in as" when a real verified
+              session exists — the same claim would have been a lie before
+              this. Reads (this whole dashboard) stay open either way, per
+              tasks/00-contracts.md §9 — signing out never adds a login wall. */}
+          {session ? (
+            <span className="text-2xs" style={{ color: 'var(--brand-foam)', opacity: 0.7 }}>
+              {t('signedInAs', { email: session.user.email })}
+            </span>
+          ) : (
+            <span className="text-2xs" style={{ color: 'var(--brand-foam)', opacity: 0.7 }}>
+              {t('accessMode')}
+            </span>
+          )}
           <Link
             to="/account"
             className="text-2xs no-underline"
@@ -185,6 +211,22 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
           >
             {t('account')}
           </Link>
+          {session ? (
+            <button
+              type="button"
+              onClick={() => {
+                void signOut().then(() => navigate('/'));
+              }}
+              className="text-2xs no-underline text-start"
+              style={{ color: 'var(--brand-aqua)', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
+            >
+              {t('signOut')}
+            </button>
+          ) : (
+            <Link to="/login" className="text-2xs no-underline" style={{ color: 'var(--brand-aqua)' }}>
+              {t('signIn')}
+            </Link>
+          )}
           <Link to="/" className="text-2xs no-underline" style={{ color: 'var(--brand-aqua)' }}>
             {t('backToSite')}
           </Link>
@@ -192,6 +234,10 @@ export function DashboardChrome({ children }: { children: ReactNode }) {
       </nav>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+
+      {/* Persistent assistant surface on every dashboard page except the
+          assistant page (redundant) and the map (its masthead carries it). */}
+      {route.name !== 'assistant' && route.name !== 'dashboard' ? <AssistantDock /> : null}
     </div>
   );
 }

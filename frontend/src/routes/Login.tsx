@@ -2,21 +2,27 @@ import { useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from '../components/Link';
 import { Logo } from '../components/Logo';
+import { Button } from '../components/Button';
+import { Field, FIELD_CLASS, fieldBorder } from '../components/Field';
+import { NoticeCard } from '../components/NoticeCard';
 import { AuthAside } from '../shell/MarketingChrome';
+import { useAuth } from '../app/AuthContext';
+import { navigate } from '../app/useRoute';
 
 /** Sign in — transcribed from the design canvas `isLogin` block.
  *
- *  THERE IS NO AUTHENTICATION BACKEND. Not "not wired up yet": the API exposes
- *  no /login, /token, /session or /users/me, and no middleware reads a
- *  credential. So this screen does exactly what the canvas designed it to do —
- *  validate its own fields locally — and nothing more. It does not set a
- *  session, it does not navigate to /dashboard, and it does not pretend a
- *  correct-looking email and password mean anything.
+ *  Phase 8, Track B (tasks/00-contracts.md §9): real Supabase Auth sign-in,
+ *  behind the local field validation kept from the canvas. There is still no
+ *  public sign-up — accounts are provisioned only after a request (Signup)
+ *  is reviewed and approved out-of-band, which is why the notice at the top
+ *  of the card stays permanent: most visitors genuinely won't have an
+ *  account, and the dashboard staying fully open either way is the accurate
+ *  claim to make, not "sign-in doesn't work."
  *
- *  A form that silently accepts input and lands you on a dashboard is worse
- *  than no form: it teaches everyone downstream that sign-in works. The notice
- *  at the top of the card is therefore permanent and not dismissible, and the
- *  submit button restates it rather than going quiet.
+ *  Wrong email and wrong password produce the identical message — see
+ *  `AuthContext.tsx` — because the user list is a short list of named
+ *  institutions and confirming which credential was wrong would leak more
+ *  than it should.
  *
  *  Kept from the canvas: the email format check, the required-field checks, the
  *  password reveal toggle, and the SSO affordance — the last rendered disabled,
@@ -56,11 +62,9 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
-const FIELD =
-  'h-12 w-full rounded-md border bg-surface px-4 text-sm text-ink placeholder:text-ink-3';
-
 export function Login() {
   const { t } = useTranslation();
+  const { signIn } = useAuth();
 
   const emailId = useId();
   const passwordId = useId();
@@ -74,10 +78,12 @@ export function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [attempted, setAttempted] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (pending) return; // no double-submit while a request is in flight
 
     const nextEmailError = !email.trim()
       ? t('auth.errors.emailRequired')
@@ -88,9 +94,19 @@ export function Login() {
 
     setEmailError(nextEmailError);
     setPasswordError(nextPasswordError);
-    // No credential is sent anywhere. The only thing a well-formed submission
-    // earns is the status line repeating why nothing happened.
-    setAttempted(!nextEmailError && !nextPasswordError);
+    setServerError(null);
+    if (nextEmailError || nextPasswordError) return;
+
+    setPending(true);
+    const { error } = await signIn(email, password);
+    setPending(false);
+
+    if (error) {
+      // Never distinguish wrong email from wrong password — see AuthContext.
+      setServerError(t('auth.login.invalidCredentials'));
+      return;
+    }
+    navigate('/dashboard');
   };
 
   return (
@@ -116,25 +132,20 @@ export function Login() {
           </div>
 
           {/* Permanent, not dismissible. See the file docstring. */}
-          <section
-            id={noticeId}
-            aria-labelledby={`${noticeId}-title`}
-            className="flex flex-col gap-2 rounded-md border border-hairline-2 bg-surface-2 p-4"
-          >
-            <h2 id={`${noticeId}-title`} className="m-0 text-xs font-bold text-ink">
-              {t('auth.notice.title')}
-            </h2>
-            <p className="m-0 text-xs leading-[1.6] text-ink-2">{t('auth.notice.body')}</p>
+          <NoticeCard id={noticeId} title={t('auth.notice.title')}>
+            <p className="m-0">{t('auth.notice.body')}</p>
             <Link to="/dashboard" className="text-xs font-semibold text-accent underline">
               {t('auth.notice.openDashboard')}
             </Link>
-          </section>
+          </NoticeCard>
 
           <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={emailId} className="text-xs font-semibold">
-                {t('auth.login.email')}
-              </label>
+            <Field
+              id={emailId}
+              label={t('auth.login.email')}
+              error={emailError}
+              errorPrefix={t('auth.errors.prefix')}
+            >
               <input
                 id={emailId}
                 name="email"
@@ -146,21 +157,16 @@ export function Login() {
                 placeholder={t('auth.login.emailPlaceholder')}
                 aria-invalid={emailError ? true : undefined}
                 aria-describedby={emailError ? emailErrorId : undefined}
-                className={`${FIELD} ${emailError ? 'border-risk-critical' : 'border-hairline'}`}
+                className={`${FIELD_CLASS} ${fieldBorder(!!emailError)}`}
               />
-              {emailError ? (
-                <p id={emailErrorId} className="m-0 text-xs font-semibold text-ink">
-                  {/* Text, not colour alone — 09 rule: an error a colour-blind
-                      or greyscale reader cannot see is not an error message. */}
-                  {t('auth.errors.prefix')} {emailError}
-                </p>
-              ) : null}
-            </div>
+            </Field>
 
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor={passwordId} className="text-xs font-semibold">
-                {t('auth.login.password')}
-              </label>
+            <Field
+              id={passwordId}
+              label={t('auth.login.password')}
+              error={passwordError}
+              errorPrefix={t('auth.errors.prefix')}
+            >
               <div className="relative flex items-center">
                 <input
                   id={passwordId}
@@ -173,9 +179,7 @@ export function Login() {
                   placeholder="••••••••"
                   aria-invalid={passwordError ? true : undefined}
                   aria-describedby={passwordError ? passwordErrorId : undefined}
-                  className={`${FIELD} pe-12 ${
-                    passwordError ? 'border-risk-critical' : 'border-hairline'
-                  }`}
+                  className={`${FIELD_CLASS} pe-12 ${fieldBorder(!!passwordError)}`}
                 />
                 <button
                   type="button"
@@ -185,38 +189,32 @@ export function Login() {
                   }
                   aria-pressed={showPassword}
                   aria-controls={passwordId}
-                  className="absolute end-1 flex size-9 items-center justify-center rounded-sm text-ink-2 hover:text-ink"
+                  className="absolute end-1 flex size-11 items-center justify-center rounded-sm text-ink-2 hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                 >
                   <EyeIcon open={showPassword} />
                 </button>
               </div>
-              {passwordError ? (
-                <p id={passwordErrorId} className="m-0 text-xs font-semibold text-ink">
-                  {t('auth.errors.prefix')} {passwordError}
-                </p>
-              ) : null}
-            </div>
+            </Field>
 
-            {/* The canvas links this to "#". There is no password to reset
-                because there are no accounts, so it states that instead of
-                being a link to nowhere. */}
+            {/* The canvas links this to "#". Real accounts exist now (Track
+                B), but no reset flow was built — that's real, separate work,
+                not something to fake with a link to nowhere. Styled as
+                text, not a broken link. */}
             <p className="m-0 text-end text-xs text-ink-3">{t('auth.login.forgotPassword')}</p>
 
-            <button
-              type="submit"
-              className="h-12 w-full rounded-md bg-ink text-sm font-bold text-ink-inverse"
-              aria-describedby={noticeId}
-            >
-              {t('auth.login.submit')}
-            </button>
+            <Button type="submit" disabled={pending} aria-describedby={noticeId}>
+              {pending ? t('auth.login.pending') : t('auth.login.submit')}
+            </Button>
 
             <p
               id={statusId}
               role="status"
               aria-live="polite"
-              className="m-0 min-h-6 text-center text-xs text-ink-2"
+              className={`m-0 min-h-6 text-center text-xs ${
+                serverError ? 'font-semibold text-risk-critical' : 'text-ink-2'
+              }`}
             >
-              {attempted ? t('auth.login.unavailableStatus') : ''}
+              {serverError ?? ''}
             </p>
 
             <div className="flex items-center gap-3">
@@ -225,12 +223,7 @@ export function Login() {
               <span aria-hidden="true" className="h-px flex-1 bg-hairline" />
             </div>
 
-            <button
-              type="button"
-              disabled
-              aria-describedby={noticeId}
-              className="flex h-12 w-full items-center justify-center gap-3 rounded-md border-[1.5px] border-hairline-2 bg-surface text-sm font-semibold text-ink-3"
-            >
+            <Button type="button" variant="secondary" disabled aria-describedby={noticeId}>
               <svg
                 width="18"
                 height="18"
@@ -244,7 +237,7 @@ export function Login() {
                 <line x1="6" y1="2" x2="12" y2="2" stroke="currentColor" strokeWidth="1.6" />
               </svg>
               {t('auth.login.sso')}
-            </button>
+            </Button>
             <p className="m-0 text-center text-xs text-ink-3">{t('auth.login.ssoUnavailable')}</p>
           </form>
 
