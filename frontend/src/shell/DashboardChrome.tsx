@@ -96,6 +96,19 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   limits: <path d="M2 13.5 L2 8.5 L8 3.5 L14 8.5 L14 13.5 Z" {...stroke} />,
+  backtests: <path d="M8 2.5 A 5.5 5.5 0 1 0 13.5 8 M8 5 V8 L10.5 9.5" {...stroke} />,
+  system: (
+    <>
+      <rect x="4" y="3" width="8" height="10" rx="1" {...stroke} />
+      <path d="M4 6 H12 M4 10 H12" {...stroke} />
+    </>
+  ),
+  explorer: (
+    <>
+      <circle cx="8" cy="8" r="5.5" {...stroke} />
+      <path d="M2.6 8 H13.4 M8 2.6 V13.4" {...stroke} />
+    </>
+  ),
 };
 
 const NAV: NavItem[] = [
@@ -110,6 +123,9 @@ const NAV: NavItem[] = [
   { to: '/dashboard/provenance', labelKey: 'provenance', match: ['provenance'], icon: ICONS.provenance },
   { to: '/sites/score', labelKey: 'sites', match: ['sitesScore'], icon: ICONS.sites },
   { to: '/limitations', labelKey: 'limitations', match: ['limitations'], icon: ICONS.limits },
+  { to: '/backtests', labelKey: 'backtests', match: ['backtests'], icon: ICONS.backtests },
+  { to: '/system', labelKey: 'system', match: ['system'], icon: ICONS.system },
+  { to: '/explorer', labelKey: 'explorer', match: ['explorer'], icon: ICONS.explorer },
 ];
 
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {

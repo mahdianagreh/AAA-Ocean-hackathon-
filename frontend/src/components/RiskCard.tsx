@@ -45,17 +45,43 @@ export function RiskCard({ data }: { data: RiskCardData }) {
   return (
     <article className="flex flex-col gap-3 glass-card p-4 hover:glass-card-hover group" data-risk-card={data.catchment_id}>
       <header className="flex items-start justify-between gap-2">
+        {/* Only AQ-C01 has a documented name. tasks/00-contracts.md lists
+            AQ-C02..AQ-C05 by id, outlet, area and coordinates and nothing else,
+            and data_access.py:73 is explicit that inventing a plausible wadi name
+            for a user-facing label would be fabricated geography — so on those
+            four THE ID IS THE TITLE, which is what that comment already promised
+            ("they render as their IDs until someone documents a name").
+
+            Rendering the literal word "unnamed" as the headline instead made a
+            different claim, and an untrue one: it reads as a field that failed to
+            load on four of five catchments, on the largest text of the card. The
+            name is not missing. It does not exist to be missing. */}
         <div className="flex min-w-0 flex-col justify-center">
-          <span
-            dir="ltr"
-            style={{ unicodeBidi: 'isolate' }}
-            className="font-mono num text-2xs font-bold text-accent group-hover:neon-glow transition-all"
-          >
-            {data.catchment_id}
-          </span>
-          <span dir="auto" style={{ unicodeBidi: 'isolate' }} className="truncate text-base font-bold text-ink">
-            {data.name ?? t('rail.unnamed')}
-          </span>
+          {data.name ? (
+            <>
+              <span
+                dir="ltr"
+                style={{ unicodeBidi: 'isolate' }}
+                className="font-mono num text-2xs font-bold text-accent group-hover:neon-glow transition-all"
+              >
+                {data.catchment_id}
+              </span>
+              <span dir="auto" style={{ unicodeBidi: 'isolate' }} className="truncate text-base font-bold text-ink">
+                {data.name}
+              </span>
+            </>
+          ) : (
+            // No second line, and no repeated "no name here" note on four of five
+            // cards — the absence is explained on hover, not restated per card.
+            <span
+              dir="ltr"
+              style={{ unicodeBidi: 'isolate' }}
+              title={t('rail.noDocumentedName')}
+              className="truncate font-mono num text-base font-bold text-ink"
+            >
+              {data.catchment_id}
+            </span>
+          )}
         </div>
 
         {/* The band leads: the largest, highest-contrast thing on the card. Every

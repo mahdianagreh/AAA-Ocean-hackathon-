@@ -16,5 +16,7 @@
   "backToSite": "Back to site",
   "live": "LIVE",
   "liveHint": "Reading from the API right now, not a saved snapshot.",
-  "signOut": "Sign Out"
+  "backtests": "Backtests",
+  "system": "System Health",
+  "explorer": "Data Explorer"
 }

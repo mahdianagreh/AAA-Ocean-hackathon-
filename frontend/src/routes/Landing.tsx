@@ -325,6 +325,154 @@ export function Landing() {
           </div>
         </section>
 
+        {/* ---- The Platform Preview (Bento Grid) -------------------------------- */}
+        <section className={`bg-surface-2 py-24 ${GUTTER}`}>
+          <div className="mx-auto flex max-w-[1200px] flex-col gap-16">
+            <div className="text-center">
+              <h2 className="m-0 text-[clamp(28px,5vw,48px)] font-bold tracking-tight">
+                {t('landing.bento.title')}
+              </h2>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Backtesting - Large Span */}
+              <div className="md:col-span-2 rounded-2xl overflow-hidden glass-panel border border-hairline p-8 flex flex-col md:flex-row gap-8 relative group hover:border-accent/50 transition-colors">
+                <div className="flex-1 flex flex-col gap-4 z-10">
+                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center text-accent shrink-0">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
+                  <h3 className="m-0 text-2xl font-bold">{t('landing.bento.backtests.title')}</h3>
+                  <p className="m-0 text-ink-2 leading-relaxed">{t('landing.bento.backtests.body')}</p>
+                </div>
+                <div className="flex-1 relative min-h-[150px] rounded-lg border border-hairline bg-surface-2/50 overflow-hidden shadow-inner flex items-center justify-center">
+                   <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--brand-aqua)_0%,_transparent_70%)]" />
+                   <div className="flex flex-col gap-2 w-3/4 z-10">
+                     <div className="h-2 bg-accent rounded-full w-full opacity-80" />
+                     <div className="h-2 bg-ink-3 rounded-full w-2/3 opacity-50" />
+                     <div className="h-2 bg-ink-3 rounded-full w-4/5 opacity-50" />
+                   </div>
+                </div>
+              </div>
+
+              {/* System Health */}
+              <div className="rounded-2xl glass-panel border border-hairline p-8 flex flex-col gap-4 group hover:border-accent/50 transition-colors">
+                <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                </div>
+                <h3 className="m-0 text-xl font-bold">{t('landing.bento.system.title')}</h3>
+                <p className="m-0 text-ink-2 text-sm leading-relaxed">{t('landing.bento.system.body')}</p>
+                <div className="mt-auto pt-6 flex justify-between items-end">
+                  <div className="flex gap-1 items-end">
+                    <div className="w-2 h-8 bg-ink-3 rounded-sm group-hover:bg-blue-400/50 transition-colors" />
+                    <div className="w-2 h-12 bg-ink-3 rounded-sm group-hover:bg-blue-400/70 transition-colors" />
+                    <div className="w-2 h-10 bg-ink-3 rounded-sm group-hover:bg-blue-400 transition-colors" />
+                  </div>
+                  <span className="text-2xs font-bold uppercase tracking-widest text-blue-400">OK</span>
+                </div>
+              </div>
+
+              {/* Data Explorer */}
+              <div className="md:col-span-3 rounded-2xl glass-panel border border-hairline p-8 flex flex-col md:flex-row-reverse gap-8 group hover:border-accent/50 transition-colors">
+                 <div className="flex-1 flex flex-col gap-4 justify-center">
+                  <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400 shrink-0">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                  </div>
+                  <h3 className="m-0 text-2xl font-bold">{t('landing.bento.explorer.title')}</h3>
+                  <p className="m-0 text-ink-2 leading-relaxed">{t('landing.bento.explorer.body')}</p>
+                </div>
+                <div className="flex-[2] relative rounded-lg border border-hairline bg-canvas overflow-hidden flex flex-col sm:flex-row items-stretch sm:items-center p-6 gap-4">
+                   <div className="w-full sm:w-1/3 h-full rounded bg-surface border border-hairline p-4 flex flex-col gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
+                     <div className="h-2 w-1/2 bg-ink-3 rounded" />
+                     <div className="h-2 w-3/4 bg-ink-3 rounded" />
+                     <div className="h-2 w-full bg-ink-3 rounded" />
+                   </div>
+                   <div className="w-full sm:w-2/3 h-full rounded bg-surface border border-hairline p-4 flex flex-col justify-center gap-3 opacity-80 group-hover:opacity-100 transition-opacity">
+                     <div className="flex justify-between border-b border-hairline pb-2"><div className="h-2 w-8 bg-teal-400 rounded" /><div className="h-2 w-16 bg-teal-400/50 rounded" /></div>
+                     <div className="flex justify-between"><div className="h-2 w-12 bg-ink-2 rounded" /><div className="h-2 w-24 bg-ink-3 rounded" /></div>
+                     <div className="flex justify-between"><div className="h-2 w-10 bg-ink-2 rounded" /><div className="h-2 w-20 bg-ink-3 rounded" /></div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ---- Feature Spotlight -------------------------------- */}
+        <section className={`bg-surface py-32 overflow-hidden ${GUTTER}`}>
+          <div className="mx-auto flex max-w-[1200px] flex-col gap-32">
+            
+            {/* Spotlight 1 */}
+            <div className="flex flex-col md:flex-row items-center gap-16 relative">
+              <div className="flex-1 flex flex-col gap-6 z-10">
+                <p className="m-0 text-xs font-bold tracking-[0.2em] text-accent">
+                  {t('landing.spotlight.precision.eyebrow')}
+                </p>
+                <h2 className="m-0 text-[clamp(28px,4vw,40px)] font-bold leading-[1.1]">
+                  {t('landing.spotlight.precision.title')}
+                </h2>
+                <p className="m-0 text-md text-ink-2 leading-[1.6]">
+                  {t('landing.spotlight.precision.body')}
+                </p>
+              </div>
+              <div className="flex-1 relative w-full h-[300px] md:h-[400px]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--brand-aqua)_0%,_transparent_60%)] opacity-20 blur-3xl rounded-full" />
+                <div className="absolute inset-4 border border-accent/20 rounded-2xl glass-panel flex items-center justify-center overflow-hidden">
+                  <div className="w-full h-full opacity-30 border-[0.5px] border-accent/10" style={{ backgroundImage: 'linear-gradient(var(--brand-aqua) 1px, transparent 1px), linear-gradient(90deg, var(--brand-aqua) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+                  <svg className="absolute text-accent drop-shadow-[0_0_15px_var(--brand-aqua)]" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Spotlight 2 */}
+            <div className="flex flex-col md:flex-row-reverse items-center gap-16 relative">
+              <div className="flex-1 flex flex-col gap-6 z-10">
+                <p className="m-0 text-xs font-bold tracking-[0.2em] text-accent">
+                  {t('landing.spotlight.intelligence.eyebrow')}
+                </p>
+                <h2 className="m-0 text-[clamp(28px,4vw,40px)] font-bold leading-[1.1]">
+                  {t('landing.spotlight.intelligence.title')}
+                </h2>
+                <p className="m-0 text-md text-ink-2 leading-[1.6]">
+                  {t('landing.spotlight.intelligence.body')}
+                </p>
+              </div>
+              <div className="flex-1 relative w-full h-[300px] md:h-[400px]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#3fa7c9_0%,_transparent_60%)] opacity-20 blur-3xl rounded-full" />
+                <div className="absolute inset-4 border border-[#3fa7c9]/20 rounded-2xl glass-panel flex items-center justify-center overflow-hidden p-8 flex-col gap-6">
+                  <div className="w-full flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-[#3fa7c9]/30 flex-shrink-0 animate-pulse" />
+                    <div className="h-4 bg-[#3fa7c9]/20 rounded-full w-full" />
+                  </div>
+                  <div className="w-full flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-red-500/30 flex-shrink-0 shadow-[0_0_20px_rgb(239,68,68)]" />
+                    <div className="h-4 bg-red-500/20 rounded-full w-3/4" />
+                  </div>
+                  <div className="w-full flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-[#3fa7c9]/30 flex-shrink-0 animate-pulse" />
+                    <div className="h-4 bg-[#3fa7c9]/20 rounded-full w-5/6" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* ---- Trusted By Marquee -------------------------------- */}
+        <section className={`bg-canvas py-16 border-y border-hairline ${GUTTER}`}>
+          <div className="mx-auto flex flex-col items-center gap-10 max-w-[1200px] overflow-hidden">
+            <p className="m-0 text-sm font-semibold tracking-widest text-ink-3 uppercase text-center">
+              {t('landing.trusted.title')}
+            </p>
+            <div className="flex flex-wrap justify-center items-center gap-x-16 gap-y-10 opacity-40 grayscale hover:opacity-70 hover:grayscale-0 transition-all duration-500">
+              <svg width="120" height="40" viewBox="0 0 120 40" fill="currentColor"><path d="M20 10 L30 30 L10 30 Z" /><rect x="40" y="15" width="60" height="10" /></svg>
+              <svg width="140" height="40" viewBox="0 0 140 40" fill="currentColor"><circle cx="20" cy="20" r="10" /><path d="M40 20 Q 70 0 100 20 T 140 20" stroke="currentColor" strokeWidth="4" fill="none" /></svg>
+              <svg width="110" height="40" viewBox="0 0 110 40" fill="currentColor"><rect x="10" y="10" width="20" height="20" rx="4" /><rect x="40" y="15" width="60" height="10" rx="2" /></svg>
+              <svg width="130" height="40" viewBox="0 0 130 40" fill="currentColor"><path d="M10 20 L30 10 L50 20 L30 30 Z" /><rect x="60" y="15" width="60" height="10" /></svg>
+            </div>
+          </div>
+        </section>
+
         {/* ---- closing call to action ------------------------------------ */}
         <section
           className={`brand-gradient py-20 text-center ${GUTTER}`}

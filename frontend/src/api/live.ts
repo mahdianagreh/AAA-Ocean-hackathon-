@@ -442,6 +442,8 @@ export interface DiveSite {
 }
 
 export const fetchDiveSites = () => tryJson<DiveSite[]>(`${API_BASE}/api/v1/dive-sites`);
+export const fetchCatchments = () => tryJson<any[]>(`${API_BASE}/api/v1/catchments`);
+export const fetchOutlets = () => tryJson<any[]>(`${API_BASE}/api/v1/outlets`);
 
 /** Retrieval over the project's own docs. No LLM is involved anywhere in this
  *  path — the backend composes an extractive answer from cited excerpts, and an
@@ -492,3 +494,49 @@ export async function uploadReefZonePhoto(zoneId: string, file: File) {
     { method: 'POST', body },
   );
 }
+
+// ------------------------------------------------------------------- System Health
+
+export interface HealthOut {
+  status: 'ok' | 'degraded';
+  version: string;
+  artifacts_present: Record<string, boolean>;
+  degraded_reason: string[];
+}
+
+export const fetchSystemHealth = () => tryJson<HealthOut>(`${API_BASE}/api/v1/health`);
+export const fetchCacheStats = () => tryJson<Record<string, unknown>>(`${API_BASE}/api/v1/cache-stats`);
+
+// ------------------------------------------------------------------- Backtesting
+
+export interface BacktestRequest {
+  event_id: string;
+  outlet_id?: string;
+  baseline?: 'circular_buffer' | 'none';
+}
+
+export interface BacktestCaveat {
+  kind: 'gap' | 'proxy' | 'heuristic' | 'limit';
+  severity: 'info' | 'warning' | 'critical';
+  detail: string;
+}
+
+export interface BacktestResult {
+  run_id: string;
+  event_id: string;
+  status: 'queued' | 'running' | 'complete' | 'failed' | 'not_possible';
+  metrics?: Record<string, number>;
+  baseline_metrics?: Record<string, number>;
+  note?: string;
+  caveats: BacktestCaveat[];
+}
+
+export const runBacktest = (req: BacktestRequest) =>
+  tryJson<BacktestResult>(`${API_BASE}/api/v1/backtests/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+
+export const fetchBacktest = (runId: string) =>
+  tryJson<BacktestResult>(`${API_BASE}/api/v1/backtests/${encodeURIComponent(runId)}`);

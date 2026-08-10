@@ -21,6 +21,9 @@ import { LimitationsPage } from './routes/LimitationsPage';
 import { NotFoundPage } from './routes/NotFoundPage';
 import { Specimen } from './routes/Specimen';
 import { SpecimenSolo } from './routes/SpecimenSolo';
+import { BacktestsPage } from './routes/BacktestsPage';
+import { SystemHealthPage } from './routes/SystemHealthPage';
+import { DataExplorerPage } from './routes/DataExplorerPage';
 
 export function App() {
   const route = useRoute();
@@ -99,6 +102,12 @@ export function App() {
         return wrap(<ProvenancePage />);
       case 'limitations':
         return wrap(<LimitationsPage />);
+      case 'backtests':
+        return wrap(<BacktestsPage />);
+      case 'system':
+        return wrap(<SystemHealthPage />);
+      case 'explorer':
+        return wrap(<DataExplorerPage />);
 
       default:
         return <NotFoundPage />;
