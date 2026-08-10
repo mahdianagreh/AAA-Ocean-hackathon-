@@ -138,6 +138,34 @@ def split_sections(text: str, level: int = 2) -> list[dict]:
     return out
 
 
+#: Phase 8, 03-mahdi.md: section 8 ("What we would fix first, given another week")
+#: is a forward-looking to-do list, not a limitation -- rendering it as accordion
+#: item 8 under a "N things our data cannot tell you" header is a category error,
+#: not a numbering nicety. Held out of `items` by number, not by content-sniffing,
+#: so a future section that happens to also start with "What we would" is never
+#: silently excluded by accident.
+NOT_A_LIMITATION_SECTION = 8
+
+#: The one `###` subheading in the whole document (checked: exactly one, in
+#: section 9). It is nested inside item 9's own body by split_sections(level=2),
+#: which only looks at "##" -- pulled out here into its own field so the UI can
+#: render it as an always-visible callout instead of prose a reader only sees if
+#: they expand item 9 AND scroll past three other subsections first (03-mahdi.md's
+#: own concern: "a collapsed view hides it entirely").
+SUB_FINDING_HEADING = re.compile(r"^### +(.+?)\n(.*)$", re.S)
+
+
+def _split_sub_finding(body: str) -> tuple[str, dict | None]:
+    idx = body.find("\n### ")
+    if idx == -1:
+        return body, None
+    main, rest = body[:idx].rstrip(), body[idx + 1 :]
+    m = SUB_FINDING_HEADING.match(rest)
+    if not m:
+        return body, None
+    return main, {"title": m.group(1).strip(), "body": m.group(2).strip()}
+
+
 def limitations() -> dict:
     """The limitations page — 04's LimitationsPage, from its own sources.
 
@@ -150,10 +178,21 @@ def limitations() -> dict:
     forcing = (DOCS / "forcing_limitations.md").read_text()
 
     numbered = []
+    fix_next = None
     for s in split_sections(pitch, 2):
         m = re.match(r"^(\d+)\.\s*(.+)$", s["heading"])
-        if m:
-            numbered.append({"n": int(m.group(1)), "title": m.group(2), "body": s["body"]})
+        if not m:
+            continue
+        n, title, body = int(m.group(1)), m.group(2), s["body"]
+        if n == NOT_A_LIMITATION_SECTION:
+            fix_next = {"title": title, "body": body}
+            continue
+        item = {"n": n, "title": title, "body": body}
+        body_wo_sub, sub_finding = _split_sub_finding(body)
+        if sub_finding:
+            item["body"] = body_wo_sub
+            item["sub_finding"] = sub_finding
+        numbered.append(item)
 
     one_line = next(
         (s["body"] for s in split_sections(pitch, 2) if "one-line" in s["heading"].lower()), ""
@@ -166,6 +205,7 @@ def limitations() -> dict:
     return {
         "one_line": one_line,
         "items": numbered,
+        "fix_next": fix_next,
         "forcing": {
             "statement": forcing_stmt,
             "source": "docs/forcing_limitations.md",

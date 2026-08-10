@@ -231,7 +231,7 @@ export function LimitationsPanel() {
         <p className="m-0 text-2xs text-ink-3">{t('limitations.expandHint')}</p>
         <ol className="m-0 flex list-none flex-col gap-2 p-0">
           {l.items.map((it) => (
-            <li key={it.n}>
+            <li key={it.n} className="flex flex-col gap-2">
               <details
                 id={`limitation-${it.n}`}
                 data-limitation={it.n}
@@ -255,10 +255,36 @@ export function LimitationsPanel() {
                   </p>
                 </div>
               </details>
+              {/* Section 9's own subheading reads "worth stating on its own" —
+                  taken at its word: rendered here, outside the <details>, so it
+                  is visible whether or not item 9 itself is expanded. A reader
+                  who never opens 09 still sees this. */}
+              {it.sub_finding ? (
+                <div
+                  data-limitation-subfinding={it.n}
+                  className="ms-6 flex flex-col gap-1 rounded-card border-s-4 border-accent bg-surface-2 p-4"
+                >
+                  <h4 dir="ltr" className="m-0 text-xs font-bold text-ink">{strip(it.sub_finding.title)}</h4>
+                  <p dir="ltr" className="m-0 max-w-prose whitespace-pre-line text-xs leading-relaxed text-ink-2">
+                    {strip(it.sub_finding.body)}
+                  </p>
+                </div>
+              ) : null}
             </li>
           ))}
         </ol>
-        {/* The gap between the derived fixture and the source document, stated. */}
+        {/* Section 8 in the source is a to-do list, not a limitation — held out
+            of the numbered accordion above (and out of its count) so "N things
+            our data cannot tell you" only ever counts things it actually cannot
+            tell you. Shown here so nothing from the source silently disappears. */}
+        {l.fix_next ? (
+          <div className="flex flex-col gap-2 rule p-4" data-panel-section="fix-next">
+            <h4 className="m-0 text-sm font-semibold text-ink">{strip(l.fix_next.title)}</h4>
+            <p dir="ltr" className="m-0 max-w-prose whitespace-pre-line text-xs leading-relaxed text-ink-2">
+              {strip(l.fix_next.body)}
+            </p>
+          </div>
+        ) : null}
         <p className="m-0 max-w-prose text-2xs text-ink-3">{t('limitations.missingNote')}</p>
       </section>
 
@@ -290,12 +316,21 @@ export function LimitationsPanel() {
 
 /** Markdown emphasis and code fences are noise in a rendered panel. Deliberately
  *  not a markdown renderer: these bodies are prose with the occasional bold, and a
- *  parser would be a dependency plus an XSS surface for content we already own. */
+ *  parser would be a dependency plus an XSS surface for content we already own.
+ *
+ *  `_` is deliberately NOT in the blanket-strip set below. The source docs never
+ *  use `_word_` italics (checked: zero matches across both source files), but they
+ *  are full of real underscored identifiers this panel promises to quote verbatim
+ *  — `sensitivity_weight_status`, `assert_spatial_metrics_allowed`,
+ *  `depth_land_cell_pct`, file paths. A blanket strip silently turned every one of
+ *  those into a wrong, unfindable string (`assertspatialmetricsallowed`) — a real
+ *  bug caught reviewing item 9's rendered body, not a hypothetical. */
 function strip(md: string): string {
   return md
     .replace(/```[\s\S]*?```/g, '')
     .replace(/\*\*(.+?)\*\*/g, '$1')
-    .replace(/[`*_>]/g, '')
+    .replace(/^#{1,6} +/gm, '')
+    .replace(/[`*>]/g, '')
     .replace(/\[(.+?)\]\((.+?)\)/g, '$1')
     .replace(/\n{2,}/g, '\n\n')
     .trim();

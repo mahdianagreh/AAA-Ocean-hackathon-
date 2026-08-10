@@ -31,7 +31,18 @@ export interface Provenance {
 
 export interface Limitations {
   one_line: string;
-  items: Array<{ n: number; title: string; body: string }>;
+  items: Array<{
+    n: number;
+    title: string;
+    body: string;
+    /** Section 9's own "worth stating on its own" subheading, split out so the
+     *  UI can render it as a callout that survives even if the item stays
+     *  collapsed — see LimitationsPanel.tsx. */
+    sub_finding?: { title: string; body: string };
+  }>;
+  /** Section 8, "What we would fix first" — a to-do list, not a limitation,
+   *  so it is not in `items`. null only if the source section is ever removed. */
+  fix_next: { title: string; body: string } | null;
   forcing: { statement: string; source: string };
   /** p4-17's gap chart. Frozen historical findings (reports/model/label_problem.md),
    *  not live-computed — same category as sediment_proxy.py's ANCHOR_MASS_T. */

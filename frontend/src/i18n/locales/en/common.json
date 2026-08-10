@@ -319,7 +319,7 @@
     "gapAnchor": "The October 2016 anchor storm is among the misses: {{era5mm}} mm ({{era5pct}}th percentile) in ERA5, against {{imergmm}} mm ({{imergpct}}th percentile) in IMERG — the same storm the sediment proxy is anchored to reads as an unremarkable day to the label that trains this classifier.",
     "jumpTo": "On this page",
     "expandHint": "Select a limitation to read it in full.",
-    "missingNote": "The source document (pitch_limitations.md) carries more numbered limitations than are surfaced here. Not yet included: site-scoring validation, adaptive sampling, and the coral-health vision model.",
+    "missingNote": "Every numbered limitation in the source document is above. One section of the source, \"what we would fix first, given another week,\" is a to-do list rather than a limitation, so it is shown separately below rather than counted here.",
     "absentTitle": "Features that are not built",
     "absentIntro": "Named here on purpose. These were scoped but have no backend, so the app does not pretend they exist.",
     "absent": {
