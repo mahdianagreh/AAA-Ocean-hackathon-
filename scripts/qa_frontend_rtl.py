@@ -53,7 +53,11 @@ CLASS_PATTERNS = [
     (r"(?<![\w-])m[lr]-[\w.[\]/]+", "ms-* / me-*"),
     (r"(?<![\w-])p[lr]-[\w.[\]/]+", "ps-* / pe-*"),
     (r"(?<![\w-])border-[lr]-[\w.[\]/]+", "border-s-* / border-e-*"),
-    (r"(?<![\w-])rounded-[lr](?:-[\w.[\]/]+)?", "rounded-s-* / rounded-e-*"),
+    # The trailing boundary matters: without it this matched `rounded-lg`, whose
+    # `l` is Tailwind's LARGE radius, not `left`. It stayed latent only because
+    # nothing in src/ used rounded-lg until Phase 8. Every true positive is still
+    # caught — `rounded-l`, `rounded-l-md`, `rounded-r-xl` all match.
+    (r"(?<![\w-])rounded-[lr](?:-[\w.[\]/]+)?(?![\w-])", "rounded-s-* / rounded-e-*"),
     (r"(?<![\w-])(?:left|right)-[\w.[\]/]+", "start-* / end-*"),
     (r"(?<![\w-])inset-[lr]-[\w.[\]/]+", "inset-s-* / inset-e-*"),
     (r"(?<![\w-])text-(?:left|right)(?![\w-])", "text-start / text-end"),

@@ -437,19 +437,19 @@ export function Landing() {
                 </p>
               </div>
               <div className="flex-1 relative w-full h-[300px] md:h-[400px]">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#3fa7c9_0%,_transparent_60%)] opacity-20 blur-3xl rounded-full" />
-                <div className="absolute inset-4 border border-[#3fa7c9]/20 rounded-2xl glass-panel flex items-center justify-center overflow-hidden p-8 flex-col gap-6">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--brand-aqua)_0%,_transparent_60%)] opacity-20 blur-3xl rounded-full" />
+                <div className="absolute inset-4 border border-accent/20 rounded-2xl glass-panel flex items-center justify-center overflow-hidden p-8 flex-col gap-6">
                   <div className="w-full flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-[#3fa7c9]/30 flex-shrink-0 animate-pulse" />
-                    <div className="h-4 bg-[#3fa7c9]/20 rounded-full w-full" />
+                    <div className="w-10 h-10 rounded-full bg-accent/30 flex-shrink-0 animate-pulse" />
+                    <div className="h-4 bg-accent/20 rounded-full w-full" />
                   </div>
                   <div className="w-full flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-red-500/30 flex-shrink-0 shadow-[0_0_20px_rgb(239,68,68)]" />
                     <div className="h-4 bg-red-500/20 rounded-full w-3/4" />
                   </div>
                   <div className="w-full flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-[#3fa7c9]/30 flex-shrink-0 animate-pulse" />
-                    <div className="h-4 bg-[#3fa7c9]/20 rounded-full w-5/6" />
+                    <div className="w-10 h-10 rounded-full bg-accent/30 flex-shrink-0 animate-pulse" />
+                    <div className="h-4 bg-accent/20 rounded-full w-5/6" />
                   </div>
                 </div>
               </div>

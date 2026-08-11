@@ -286,6 +286,10 @@ const SAMPLE_ALERT: AlertRow = {
   arrival_window_hours: [6, 14],
   headline_en: 'Elevated sediment exposure expected at Power Station Reef within the day.',
   headline_ar: 'يُتوقّع تعرّض مرتفع للرواسب عند شعاب محطة الكهرباء خلال اليوم.',
+  // A specimen row carries no caveats of its own — the card's caveat rendering is
+  // exercised by the live feed, not here. Empty, never omitted: the field is
+  // required precisely so a real alert cannot lose its caveats silently.
+  caveats: [],
 };
 
 const SAMPLE_ALERT_NO_WINDOW: AlertRow = {

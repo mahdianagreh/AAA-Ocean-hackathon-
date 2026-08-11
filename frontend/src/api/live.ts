@@ -1,4 +1,5 @@
 import { API_BASE } from './client';
+import { supabase } from './supabaseClient';
 import { DEMO_OUTLET } from './types';
 
 /** The genuinely-live surface: exposure, the plume-prediction image, and alerts.
@@ -108,6 +109,15 @@ export interface AlertRow {
   arrival_window_hours: [number, number] | null;
   headline_en: string;
   headline_ar: string;
+  /** `GET /api/v1/alerts` really does send this on every row — verified against
+   *  the live endpoint, which returns it alongside the nine fields above. It was
+   *  missing here and AlertsPage patched it back on locally as
+   *  `AlertRow & { caveats?: unknown[] }`, which is the shape of bug that ends
+   *  with a caveat silently not rendering: the standing rule is that every caveat
+   *  the API sends must reach the screen, and a field the shared type does not
+   *  admit is one refactor away from being dropped. `unknown[]`, narrowed at the
+   *  render boundary by CaveatList — the same convention as every other endpoint. */
+  caveats: unknown[];
 }
 
 export interface ForecastCatchmentRainfall {
@@ -558,11 +568,28 @@ export const generateReport = (eventId: string) =>
 export const fetchReport = (id: string) =>
   tryJson<ReportOut>(`${API_BASE}/api/v1/reports/${encodeURIComponent(id)}`);
 
-export const reviewReport = (id: string, reviewedBy: string) =>
+/** Phase 8, Track B: the two write routes verify a Supabase session JWT, so a
+ *  call without this header is a 401 — which `tryJson` turns into `null`, i.e.
+ *  a button that appears to do nothing. Read at call time rather than cached:
+ *  the client refreshes the token on its own schedule, and a stale copy would
+ *  start 401-ing mid-session. Returns no header when auth is unconfigured or
+ *  signed out; the caller is expected to have gated the action already. */
+async function authHeaders(): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/** `reviewed_by` is still sent because the request schema still requires it
+ *  (omitting it is a 422), but the server does NOT trust it — it records the
+ *  identity from the verified token. So this takes no reviewer argument: a
+ *  parameter the backend ignores is a parameter that lies to its caller. */
+export const reviewReport = async (id: string) =>
   tryJson<ReportOut>(`${API_BASE}/api/v1/reports/${encodeURIComponent(id)}/review`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ reviewed_by: reviewedBy }),
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify({ reviewed_by: 'from-verified-session' }),
   });
 
 export const scoreSite = (bbox: [number, number, number, number], siteName?: string) =>

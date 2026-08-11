@@ -171,8 +171,8 @@
     "reviewedMeaning": "A named person has reviewed and signed off on this report.",
     "markReviewed": "Mark as human-reviewed",
     "reviewing": "Recording review…",
-    "reviewerLabel": "Reviewer name",
-    "reviewerHint": "Recorded as stated. There is no account system, so this name is not authenticated.",
+    "reviewerLabel": "Reviewed as",
+    "reviewerHint": "Recorded from your verified session, never from anything typed on this page — a review that cannot be attributed is not a review.",
     "claimSource": "Source",
     "claimSourceMissing": "No source recorded",
     "noClaims": "No claims in this section.",
@@ -188,7 +188,8 @@
       "generate": "Could not generate the report. The service may be unreachable.",
       "fetch": "No report found for that ID, or the service is unreachable.",
       "review": "Could not record the review. The service may be unreachable."
-    }
+    },
+    "reviewSignInRequired": "Sign in to mark a report as human-reviewed — the reviewer recorded is your signed-in identity, so an anonymous review cannot be attributed to anyone."
   },
   "sites": {
     "title": "Site scoring",
@@ -206,7 +207,7 @@
     "idle": "Enter a bounding box to score a candidate coastline.",
     "resultSection": "Result",
     "overallLabel": "Overall score",
-    "constantNote": "constant, no data required",
+    "constantNote": "same for every site — no automated source exists",
     "criteriaTitle": "Criteria",
     "criterion": {
       "C1": "Ephemeral, not perennial, drainage",
@@ -218,7 +219,7 @@
     },
     "subtotal": "{{n}} of {{total}} criteria scored",
     "insufficient": "Insufficient data",
-    "insufficientBody": "No score is given where the underlying data does not cover this area. A missing score is left missing rather than guessed.",
+    "insufficientBody": "No score is given where no evidence source can supply one — the specific reason is cited below. A missing score is left missing rather than guessed, and never counted as zero.",
     "noEvidence": "No evidence cited",
     "narrativeTitle": "Narrative",
     "caveatsTitle": "Caveats",

@@ -126,16 +126,32 @@ def test_proposed_weight_requires_the_minimum_photo_count():
     assert d2["proposed_sensitivity_weight"]["proposed_value"] is not None
 
 
-def test_approve_requires_reviewer_and_reasoning():
+def test_approve_requires_reviewer_and_reasoning(authed_client):
     from api.main import PREFIX
 
-    client = _client()
+    client, _ = authed_client
     r = client.post(f"{PREFIX}/reef-zones/{ZONE}/sensitivity-weight/approve",
                     json={"approved_value": 1.2})
     assert r.status_code == 422
 
 
-def test_approve_writes_a_read_time_overlay_never_the_real_gpkg_file(tmp_path):
+def test_approve_rejects_an_unauthenticated_caller():
+    """Standing Law rule 13's one write path, asserted to be closed. A weight that
+    an unauthenticated caller can set is not a scientist-assigned weight."""
+    from api.main import PREFIX
+
+    client = _client()
+    r = client.post(f"{PREFIX}/reef-zones/{ZONE}/sensitivity-weight/approve", json={
+        "reviewer": "anyone", "reasoning": "no session", "approved_value": 1.9,
+    })
+    assert r.status_code == 401
+
+    zones = client.get(f"{PREFIX}/reef-zones", params={"include_geometry": False}).json()
+    zone = next(z for z in zones if z["reef_zone_id"] == ZONE)
+    assert zone["sensitivity_weight_status"] == "PLACEHOLDER_PENDING_MARINE_SCIENTIST"
+
+
+def test_approve_writes_a_read_time_overlay_never_the_real_gpkg_file(tmp_path, authed_client):
     """`./data` is mounted read-only in the deployed container — approval
     writes a separate override (sensitivity_weight_overrides), applied by
     data_access.py::reef_zones() as a read-time overlay, and never rewrites
@@ -150,7 +166,7 @@ def test_approve_writes_a_read_time_overlay_never_the_real_gpkg_file(tmp_path):
     real_path = da.ARTIFACTS["reef_zones"]
     before_hash = hashlib.sha256(real_path.read_bytes()).hexdigest()
 
-    client = _client()
+    client, identity = authed_client
     before = client.get(f"{PREFIX}/reef-zones", params={"include_geometry": False}).json()
     zone_before = next(z for z in before if z["reef_zone_id"] == ZONE)
     assert zone_before["sensitivity_weight_status"] == "PLACEHOLDER_PENDING_MARINE_SCIENTIST"
@@ -163,7 +179,10 @@ def test_approve_writes_a_read_time_overlay_never_the_real_gpkg_file(tmp_path):
     approved = r.json()
     assert approved["approval_id"].startswith("approval_")
     assert approved["approved_value"] == 1.45
-    assert approved["reviewer"] == "Dr. Test Scientist"
+    # Track B: recorded from the verified session, not req.reviewer — the request
+    # above sends "Dr. Test Scientist" and it must NOT be what gets logged.
+    assert approved["reviewer"] == identity
+    assert approved["reviewer"] != "Dr. Test Scientist"
 
     after = client.get(f"{PREFIX}/reef-zones", params={"include_geometry": False}).json()
     zone_after = next(z for z in after if z["reef_zone_id"] == ZONE)
@@ -176,7 +195,7 @@ def test_approve_writes_a_read_time_overlay_never_the_real_gpkg_file(tmp_path):
     da.clear_all_caches()  # leave the module cache clean for subsequent tests
 
 
-def test_an_approved_weight_actually_changes_the_real_exposure_formula():
+def test_an_approved_weight_actually_changes_the_real_exposure_formula(authed_client):
     """Closes the loop fully: an approval used to change only what /reef-zones
     displayed. exposure_calculate::main.py was hardcoding
     engine.HABITAT_SENSITIVITY_PLACEHOLDER regardless of the real per-zone
@@ -187,7 +206,7 @@ def test_an_approved_weight_actually_changes_the_real_exposure_formula():
     exposure run — not just on the /reef-zones display endpoint."""
     from api.main import PREFIX
 
-    client = _client()
+    client, _ = authed_client
     zone = "R-08"  # a zone this test file doesn't touch elsewhere
 
     before = client.post(f"{PREFIX}/exposure/calculate",
