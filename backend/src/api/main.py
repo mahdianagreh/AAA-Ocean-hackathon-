@@ -46,7 +46,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from exposure import engine, store
@@ -63,11 +63,15 @@ from models import (
     candidate_sites,
     coral_health_classifier,
     generated_reports,
+    ollama_client,
     particle_engine,
     plume_forcing,
+    recommendation_swarm,
     reef_zone_photos,
     report_assembly,
+    response_recommendations as rec_store,
     sampling_feedback,
+    severity_brief as sev_brief,
     site_scoring,
 )
 from rag import answer as rag_answer
@@ -108,10 +112,12 @@ from .schemas import (
     PlumeResult,
     ProposedSensitivityWeightOut,
     Provenance,
+    RecommendationTriggerRequest,
     ReefZoneOut,
     ReefZonePhotoOut,
     ReportOut,
     ReportSection,
+    ResponseRecommendationOut,
     ReviewReportRequest,
     RunoffPrediction,
     RunoffRequest,
@@ -1459,6 +1465,10 @@ def exposure_calculate(req: ExposureRequest):
     # from a placeholder must be distinguishable later from one that did not.
     cid = req.catchment_id or outlet.get("catchment_id")
     intensity, intensity_source = 0.5, "default 0.5 (no catchment supplied)"
+    # p4-J: Low/Medium/High/Extreme, straight from the same real model call below —
+    # never re-derived, never defaulted to a guess. None means no real path set it,
+    # which report_assembly.py must render as an absence, not a class.
+    sediment_class_value: str | None = None
     # A3.4 fix: runoff_predict already echoes transmission_loss structurally
     # (RunoffPrediction.transmission_loss); this endpoint silently dropped it —
     # transmission_loss_override was applied but never surfaced anywhere in the
@@ -1488,6 +1498,7 @@ def exposure_calculate(req: ExposureRequest):
                 if real.get("model_version_id"):
                     run_model_versions["runoff_model"] = real["model_version_id"]
                 transmission_loss_basis = real.get("transmission_loss_basis")
+                sediment_class_value = real.get("sediment_class")
                 index = real.get("sediment_index")
                 anchor_index = real.get("anchor_index_for_normalisation")
                 if index is not None and anchor_index:
@@ -1519,6 +1530,10 @@ def exposure_calculate(req: ExposureRequest):
                     f"30 mm/3h for {cid} was used for intensity")
                 run_model_versions["runoff_model"] = pred.model_version
                 transmission_loss_basis = pred.transmission_loss_basis
+                # Guarded the same way run_model_versions is above: the stub branch's
+                # sediment_class is a fixed "medium" (_stub_response()'s literal), and
+                # threading that through would report a fabricated class as real.
+                sediment_class_value = pred.sediment_class
 
     # Confidence: real per-catchment GEFS ensemble agreement (Nizar's forecast
     # pipeline, via Karam's own p99 climatology as the exceedance threshold) times
@@ -1603,6 +1618,11 @@ def exposure_calculate(req: ExposureRequest):
 
         summary["formula_terms"].update({
             "relative_sediment_intensity_source": intensity_source,
+            # p4-J: Low/Medium/High/Extreme, or None if no real path set one — never
+            # a guessed class. report_assembly.py cites this key verbatim in the
+            # forensic report, which is the whole reason it travels in formula_terms
+            # rather than staying a local variable only this route reads.
+            "sediment_class": sediment_class_value,
             "transmission_loss": transmission_loss_value,
             # Phase 5, B2 — Standing Law rule 10: the basis travels with the number,
             # not just in a log. None when no real path set relative_sediment_intensity
@@ -1839,6 +1859,108 @@ def list_alerts(
     # endpoint got whatever order store.latest_results() happened to produce.
     out.sort(key=lambda a: a.risk_score, reverse=True)
     return out
+
+
+# ---------------------------------------------------- response recommendations
+#
+# Phase 9 (tasks/phase9/00-phase9-plan.md). Follows exposure/store.py's own rule
+# verbatim: this endpoint never opens a Postgres connection. Every recommendation
+# lives in local SQLite (models/response_recommendations.py) — a Postgres copy is a
+# later, separate batch bridge, same shape as db/loaders/exposure_runs.py, decided
+# 11 Aug so the swarm still runs with no network/credentials mid-demo.
+
+_RISK_ORDER = [b[2] for b in engine.RISK_BANDS]
+
+
+def _run_swarm_background(recommendation_id: str, brief: dict) -> None:
+    """The actual ~1-2 minute job (§4). Runs after the response has already been
+    sent — a crash here is caught and written to the row rather than left silent,
+    since a `status: "running"` row that never moves is indistinguishable from one
+    still in progress."""
+    try:
+        recommendation_swarm.run_swarm(recommendation_id, brief)
+    except Exception as exc:  # noqa: BLE001 — this is the last handler in the chain
+        rec_store.update_status(
+            recommendation_id, "judge_rejected",
+            final_recommendation=f"[swarm failed: {exc}]",
+            complete=True,
+        )
+
+
+@app.post(f"{PREFIX}/recommendations/trigger", response_model=ResponseRecommendationOut,
+          tags=["exposure"])
+def trigger_recommendation(
+    req: RecommendationTriggerRequest,
+    background_tasks: BackgroundTasks,
+    current_user: auth.CurrentUser | None = Depends(auth.get_current_user_optional),
+):
+    """Returns immediately with `status: "running"` (§3) — the swarm itself runs in
+    `background_tasks`, same process, no new container (worker/run.py is still a
+    polling placeholder with no real queue to hand this to).
+
+    Gate: the triggering run's highest zone risk_level must be high/critical, unless
+    `min_risk_level_override` is supplied — which requires authentication, because the
+    override is itself part of the audit trail (§2), not a silent bypass.
+    """
+    run = store.get_run(req.run_id)
+    if run is None:
+        raise HTTPException(404, f"unknown exposure run {req.run_id}")
+    if not run["results"]:
+        raise HTTPException(422, f"run {req.run_id} has no per-zone results to brief from")
+
+    max_level = max(run["results"], key=lambda r: _RISK_ORDER.index(r["risk_level"]))["risk_level"]
+    gate_level = req.min_risk_level_override or "high"
+
+    if req.min_risk_level_override is not None:
+        if current_user is None:
+            raise HTTPException(
+                401, "min_risk_level_override requires authentication — the override "
+                     "is logged as part of the audit trail, per Phase 9 §2."
+            )
+        triggered_by, triggered_by_user = "human_override", current_user.sub
+    else:
+        triggered_by, triggered_by_user = "auto", None
+        if _RISK_ORDER.index(max_level) < _RISK_ORDER.index("high"):
+            raise HTTPException(
+                409, f"run {req.run_id}'s highest zone risk is {max_level!r}, below the "
+                     "default high/critical gate. Use min_risk_level_override to force a "
+                     "run at this level."
+            )
+
+    if _RISK_ORDER.index(max_level) < _RISK_ORDER.index(gate_level):
+        raise HTTPException(
+            409, f"run {req.run_id}'s highest zone risk is {max_level!r}, below the "
+                 f"requested override level {gate_level!r}."
+        )
+
+    zones_meta = {z["reef_zone_id"]: z for z in da.reef_zones(include_geometry=False)[0]}
+    outlets_meta = {o["outlet_id"]: o for o in da.outlets()}
+    mooring = da.mooring_for(run["event_id"]) if run["event_id"] else None
+    brief = sev_brief.build_severity_brief(run, zones_meta, outlets_meta, mooring)
+
+    rec = rec_store.create_recommendation(
+        run_id=req.run_id,
+        event_id=run["event_id"],
+        triggered_by=triggered_by,
+        severity_brief=brief,
+        model=ollama_client.MODEL,
+        triggered_by_user=triggered_by_user,
+        min_risk_level_override=req.min_risk_level_override,
+    )
+    background_tasks.add_task(_run_swarm_background, rec["id"], brief)
+    return rec
+
+
+@app.get(f"{PREFIX}/recommendations/{{recommendation_id}}",
+         response_model=ResponseRecommendationOut, tags=["exposure"])
+def get_recommendation(recommendation_id: str):
+    """Poll target for the frontend's Recommended Response panel (§3, §8.7).
+    Returns the row as-is at whatever `status` it's currently in — `running` means
+    the background job hasn't finished, not that it failed."""
+    rec = rec_store.get_recommendation(recommendation_id)
+    if rec is None:
+        raise HTTPException(404, f"unknown recommendation {recommendation_id}")
+    return rec
 
 
 # ------------------------------------------------------------- explain and ask

@@ -89,6 +89,21 @@ def get_current_user(authorization: str | None = Header(default=None)) -> Curren
     return CurrentUser(sub=payload["sub"], email=payload.get("email"))
 
 
+def get_current_user_optional(
+    authorization: str | None = Header(default=None),
+) -> CurrentUser | None:
+    """Same verification as `get_current_user`, but returns `None` on a missing
+    header instead of raising — for `/recommendations/trigger`, where auth is
+    only required on the human-override path (Phase 9 §2), not on the default
+    automatic gate. A malformed or invalid token still raises; this only makes
+    the header itself optional, never weakens verification of one that's present."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization.split(" ", 1)[1].strip()
+    payload = _verify(token)
+    return CurrentUser(sub=payload["sub"], email=payload.get("email"))
+
+
 def jwks_reachable() -> bool:
     """For a startup/health-style check, not used on the request path —
     confirms the JWKS endpoint actually answers, since a wrong SUPABASE_URL
@@ -109,3 +124,7 @@ PROTECTED_ROUTES = (
     "PATCH /api/v1/reports/{id}/review",
     "POST /api/v1/reef-zones/{id}/sensitivity-weight/approve",
 )
+
+# Conditionally protected: POST /api/v1/recommendations/trigger uses
+# get_current_user_optional above, and only requires the header when the
+# request carries min_risk_level_override (the human-override path).
