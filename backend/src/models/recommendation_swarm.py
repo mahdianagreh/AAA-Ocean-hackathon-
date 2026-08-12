@@ -82,6 +82,12 @@ _SYSTEM_PREAMBLE = (
     "brief built from real, already-computed numbers, and optionally reference "
     "material retrieved from this project's own documentation. You must propose or "
     "critique ONE concrete action from your seat's perspective. "
+    "Use simple, direct language: short sentences, plain words, no jargon, no "
+    "hedging, no long qualifying clauses. Write the proposal as exactly two "
+    "sentences, in this order: first the specific problem, starting with "
+    "'Problem: ' — name the zone/outlet and the risk, not a vague restatement of "
+    "'there is a storm'; then the action, starting with 'Solution: ' — one "
+    "concrete thing to do, not a general goal. "
     "Cite every factual claim: use a chunk_id from the reference material, or a "
     "'brief.<field>' path into the severity brief. If you have neither for a claim, "
     "state that you cannot ground it and do not make the claim. "
@@ -243,7 +249,9 @@ def run_judge(brief: dict, candidate: str, transcript: list[dict], retrieve=None
     )
     messages = [
         {"role": "system", "content": "You are a strict evidence-grounding judge. "
-                                       "You never approve an unsupported claim."},
+                                       "You never approve an unsupported claim. Write "
+                                       "your reasoning in simple, direct language — "
+                                       "one or two short sentences, no jargon."},
         {"role": "user", "content": "\n".join(lines)},
     ]
     result = oc.chat_json(messages, think=True)
@@ -274,7 +282,9 @@ def run_gaps(brief: dict, final_recommendation: str, transcript: list[dict]) -> 
     )
     messages = [
         {"role": "system", "content": "You are the limitations agent. You find real "
-                                       "gaps, not boilerplate disclaimers."},
+                                       "gaps, not boilerplate disclaimers. Write each "
+                                       "gap as one short, direct sentence in plain "
+                                       "language — no jargon, no hedging."},
         {"role": "user", "content": "\n".join(lines)},
     ]
     result = oc.chat_json(messages, think=True)
