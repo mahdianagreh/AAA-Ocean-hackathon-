@@ -665,6 +665,38 @@ class AskResponse(BaseModel):
     corpus_files_searched: int
 
 
+# ------------------------------------------------------------ assistant chat
+
+class AssistantChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str
+
+
+class AssistantChatRequest(BaseModel):
+    message: str = Field(min_length=1)
+    history: list[AssistantChatMessage] = Field(default_factory=list, max_length=12)
+    language: Language = "en"
+
+
+class AssistantToolCall(BaseModel):
+    tool: str
+    args: dict
+    summary: str = Field(description="Short human-readable note of what was fetched")
+
+
+class AssistantChatResponse(BaseModel):
+    text: str
+    tools_used: list[AssistantToolCall] = []
+    citations: list[Citation] = Field(
+        default=[], description="Populated only when search_docs was used this turn"
+    )
+    suggested_route: str | None = Field(
+        default=None, description="Validated against a known route; never the model's raw string"
+    )
+    caveats: list[Caveat] = []
+    model: str
+
+
 # ------------------------------------------------------- site scoring (Phase 5, B4)
 
 class SiteScoreRequest(BaseModel):
