@@ -82,23 +82,18 @@ export function BandChip({ band }: { band: HazardBand }) {
   );
 }
 
-/** Alerts carry a `caveats` array the shared type does not model yet, and
- *  live.ts is owned elsewhere in this change — so it is widened locally rather
- *  than dropped. */
-type AlertRowFull = AlertRow & { caveats?: unknown[] };
-
 export function AlertsPage() {
   const { t } = useTranslation('pages');
 
   // `null` is "still asking", `[]` is "asked, got nothing" — the whole point of
   // this page is that those two render differently.
-  const [rows, setRows] = useState<AlertRowFull[] | null>(null);
+  const [rows, setRows] = useState<AlertRow[] | null>(null);
   const [zoneNames, setZoneNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let live = true;
     void fetchAlerts().then((a) => {
-      if (live) setRows(a as AlertRowFull[]);
+      if (live) setRows(a);
     });
     // Best-effort zone-name resolution so a card can read "Power Station Reef"
     // rather than R-03; falls back to the id when unavailable (offline/fixtures).

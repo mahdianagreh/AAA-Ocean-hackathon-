@@ -75,10 +75,10 @@ def test_a_thin_event_states_the_gap_per_section_not_one_blanket_disclaimer():
     assert "no mooring record" in by_title["Sensor validation"]["claims"][0]["text"].lower()
 
 
-def test_only_the_review_endpoint_can_set_human_reviewed():
+def test_only_the_review_endpoint_can_set_human_reviewed(authed_client):
     from api.main import PREFIX
 
-    client = _client()
+    client, identity = authed_client
     generated = client.post(f"{PREFIX}/reports/generate",
                             json={"event_id": ANCHOR_EVENT}).json()
     assert generated["status"] == "ai_drafted"
@@ -87,29 +87,50 @@ def test_only_the_review_endpoint_can_set_human_reviewed():
     assert fetched_before["status"] == "ai_drafted"
 
     reviewed = client.patch(f"{PREFIX}/reports/{generated['report_id']}/review",
-                            json={"reviewed_by": "Pulga"}).json()
+                            json={"reviewed_by": "ignored-by-design"}).json()
     assert reviewed["status"] == "human_reviewed"
-    assert reviewed["reviewed_by"] == "Pulga"
+    # Phase 8, Track B: the reviewer is the VERIFIED SESSION, never the body. The
+    # request above deliberately sends a different string; recording it would mean
+    # an audit trail a client can write whatever it likes into.
+    assert reviewed["reviewed_by"] == identity
+    assert reviewed["reviewed_by"] != "ignored-by-design"
     assert reviewed["reviewed_at"] is not None
 
     fetched_after = client.get(f"{PREFIX}/reports/{generated['report_id']}").json()
     assert fetched_after["status"] == "human_reviewed"
 
 
-def test_review_requires_a_reviewer_not_optional():
+def test_review_rejects_an_unauthenticated_caller():
+    """The protection itself, asserted directly — without this, every other test
+    here could pass against a route that had quietly stopped requiring a session."""
     from api.main import PREFIX
 
     client = _client()
+    generated = client.post(f"{PREFIX}/reports/generate",
+                            json={"event_id": ANCHOR_EVENT}).json()
+    r = client.patch(f"{PREFIX}/reports/{generated['report_id']}/review",
+                     json={"reviewed_by": "anyone"})
+    assert r.status_code == 401
+    # And the report must be untouched by the attempt.
+    after = client.get(f"{PREFIX}/reports/{generated['report_id']}").json()
+    assert after["status"] == "ai_drafted"
+    assert after["reviewed_by"] is None
+
+
+def test_review_requires_a_reviewer_not_optional(authed_client):
+    from api.main import PREFIX
+
+    client, _ = authed_client
     generated = client.post(f"{PREFIX}/reports/generate",
                             json={"event_id": ANCHOR_EVENT}).json()
     r = client.patch(f"{PREFIX}/reports/{generated['report_id']}/review", json={})
     assert r.status_code == 422
 
 
-def test_reviewing_an_unknown_report_is_404():
+def test_reviewing_an_unknown_report_is_404(authed_client):
     from api.main import PREFIX
 
-    client = _client()
+    client, _ = authed_client
     r = client.patch(f"{PREFIX}/reports/report_DOESNOTEXIST00000000000/review",
                      json={"reviewed_by": "Pulga"})
     assert r.status_code == 404

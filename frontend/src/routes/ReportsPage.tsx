@@ -11,6 +11,7 @@ import {
   type ReportOut,
 } from '../api/live';
 import { loadEventSeries } from '../api/event';
+import { useAuth } from '../app/AuthContext';
 import { downloadReportPdf } from '../app/reportPdf';
 
 /** Forensic event reports, at /reports.
@@ -38,9 +39,12 @@ type Notice =
 
 export function ReportsPage() {
   const { t } = useTranslation('tools');
+  // The identity the backend will record — `current_user.email or .sub`, mirrored
+  // here so the screen names the same person the audit trail will.
+  const { session } = useAuth();
+  const signedInAs = session?.user?.email ?? session?.user?.id ?? null;
   const eventSelectId = useId();
   const lookupId = useId();
-  const reviewerId = useId();
 
   const [eventId, setEventId] = useState<string | null>(null);
   const [events, setEvents] = useState<EventRow[] | null>(null);
@@ -48,7 +52,6 @@ export function ReportsPage() {
   /** Session-only. See the file docstring: there is nothing to load this from. */
   const [reports, setReports] = useState<ReportOut[]>([]);
   const [lookup, setLookup] = useState('');
-  const [reviewer, setReviewer] = useState('');
   const [notice, setNotice] = useState<Notice>({ kind: 'none' });
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -102,10 +105,9 @@ export function ReportsPage() {
   }
 
   async function onReview(id: string) {
-    const by = reviewer.trim();
-    if (!by) return;
+    if (!signedInAs) return;
     setBusyId(id);
-    const report = await reviewReport(id, by);
+    const report = await reviewReport(id);
     setBusyId(null);
     if (!report) {
       setNotice({ kind: 'failed', what: 'review' });
@@ -202,21 +204,23 @@ export function ReportsPage() {
           </Card>
         ) : (
           <>
+            {/* Phase 8, Track B: this used to be a free-text "reviewer" box, and
+                the backend stopped trusting it — `review_report` records
+                `current_user.email or .sub` from the verified session and ignores
+                the body. A field whose value is silently discarded is worse than
+                no field: someone types a colleague's name, the audit trail records
+                a different one, and nothing on screen says so. The signed-in
+                identity is shown instead, because that IS what gets recorded. */}
             <Card>
-              <div className="flex flex-wrap items-end gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor={reviewerId} className="text-xs font-semibold">
-                    {t('reports.reviewerLabel')}
-                  </label>
-                  <input
-                    id={reviewerId}
-                    type="text"
-                    dir="auto"
-                    value={reviewer}
-                    onChange={(e) => setReviewer(e.target.value)}
-                    className="h-10 w-64 rounded-md border border-hairline bg-surface/50 px-3 text-sm text-ink hover:border-accent focus:border-accent outline-none transition-colors"
-                  />
-                </div>
+              <div className="flex flex-wrap items-center gap-4">
+                {signedInAs ? (
+                  <>
+                    <span className="text-xs font-semibold">{t('reports.reviewerLabel')}</span>
+                    <span dir="auto" className="text-sm text-ink">{signedInAs}</span>
+                  </>
+                ) : (
+                  <p className="m-0 max-w-prose text-xs text-ink-2">{t('reports.reviewSignInRequired')}</p>
+                )}
                 <p className="m-0 max-w-prose text-2xs text-ink-2">{t('reports.reviewerHint')}</p>
               </div>
             </Card>
@@ -225,7 +229,7 @@ export function ReportsPage() {
               <ReportCard
                 key={r.report_id}
                 report={r}
-                canReview={Boolean(reviewer.trim())}
+                canReview={Boolean(signedInAs)}
                 busy={busyId === r.report_id}
                 onReview={() => void onReview(r.report_id)}
               />

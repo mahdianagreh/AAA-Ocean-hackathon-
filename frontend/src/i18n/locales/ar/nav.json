@@ -26,5 +26,6 @@
   "signup": "طلب وصول",
   "notFound": "غير موجود",
   "systemHealth": "حالة النظام",
-  "dataExplorer": "مستكشف البيانات"
+  "dataExplorer": "مستكشف البيانات",
+  "backtests": "الاختبارات الخلفية"
 }

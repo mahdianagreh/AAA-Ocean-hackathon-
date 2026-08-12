@@ -26,5 +26,6 @@
   "signup": "Request access",
   "notFound": "Not found",
   "systemHealth": "System Health",
-  "dataExplorer": "Data Explorer"
+  "dataExplorer": "Data Explorer",
+  "backtests": "Backtests"
 }

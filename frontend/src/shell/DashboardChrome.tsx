@@ -101,6 +101,7 @@ const ICONS: Record<string, ReactNode> = {
     </>
   ),
   limits: <path d="M2 13.5 L2 8.5 L8 3.5 L14 8.5 L14 13.5 Z" {...stroke} />,
+  backtests: <path d="M8 2.5 A 5.5 5.5 0 1 0 13.5 8 M8 5 V8 L10.5 9.5" {...stroke} />,
   systemHealth: <path d="M1.5 8 H5 L6.5 4 L9 12 L10.5 8 H14.5" {...stroke} />,
   dataExplorer: (
     <>
@@ -135,6 +136,7 @@ const NAV: NavItem[] = [
   { to: '/dashboard/provenance', labelKey: 'provenance', match: ['provenance'], icon: ICONS.provenance },
   { to: '/sites/score', labelKey: 'sites', match: ['sitesScore'], icon: ICONS.sites },
   { to: '/limitations', labelKey: 'limitations', match: ['limitations'], icon: ICONS.limits },
+  { to: '/backtests', labelKey: 'backtests', match: ['backtests'], icon: ICONS.backtests },
   { to: '/system-health', labelKey: 'systemHealth', match: ['systemHealth'], icon: ICONS.systemHealth },
   { to: '/data-explorer', labelKey: 'dataExplorer', match: ['dataExplorer'], icon: ICONS.dataExplorer },
 ];

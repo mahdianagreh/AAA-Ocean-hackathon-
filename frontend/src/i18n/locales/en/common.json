@@ -41,7 +41,7 @@
     "catchments": "Catchments",
     "outlets": "Coastal outlets",
     "reefZones": "Reef zones",
-    "unnamed": "unnamed",
+    "noDocumentedName": "No documented name. This catchment is identified by its ID — naming it would mean inventing geography we have no source for.",
     "reefProvisional": "Reef geometry is real Allen Coral Atlas habitat (v2.0). Sensitivity weighting is still 1.0 on all eight zones pending marine-science review — so exposure varies only through the hazard term, and these zones do not differ in sensitivity.",
     "coverage": "Basemap coverage",
     "coverageNote": "The dashed boundary is where the OpenStreetMap extract ends, at 35.0°E. Catchment AQ-C01 continues past it — Wadi Yutum drains from 90 km inland — so the absence of detail out there is a gap in the basemap, not empty desert.",
@@ -471,6 +471,36 @@
       "title": "Built for the people protecting this coastline.",
       "body": "Coastal authorities, researchers, and dive operators — request access to the live dashboard.",
       "button": "Request Access"
+    },
+    "bento": {
+      "title": "A complete marine intelligence platform.",
+      "backtests": {
+        "title": "Historical Backtesting",
+        "body": "Run real past events through the exposure model to track baseline drift."
+      },
+      "system": {
+        "title": "System Health",
+        "body": "Live telemetry on ML models and caching performance."
+      },
+      "explorer": {
+        "title": "Data Explorer",
+        "body": "Directly interact with raw geographic primitives like catchments and outlets."
+      }
+    },
+    "spotlight": {
+      "precision": {
+        "eyebrow": "PRECISION MODELING",
+        "title": "High-fidelity terrain and current tracking.",
+        "body": "Our models capture intricate coastal geography and ocean currents to map exactly where sediment will spread during a storm event."
+      },
+      "intelligence": {
+        "eyebrow": "PREDICTIVE INTELLIGENCE",
+        "title": "Early warnings for specific reef zones.",
+        "body": "Receive accurate risk assessments and timelines for each reef zone hours before the flood waters even reach the sea."
+      }
+    },
+    "trusted": {
+      "title": "Built for the Gulf. Trusted by Marine Authorities."
     },
     "footer": {
       "platform": "PLATFORM",

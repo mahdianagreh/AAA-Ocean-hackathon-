@@ -37,6 +37,7 @@ export type RouteName =
   | 'dataExplorer'
   | 'account'
   | 'specimen'
+  | 'backtests'
   | 'notFound';
 
 export interface RouteMatch {
@@ -79,6 +80,7 @@ const ROUTES: ReadonlyArray<readonly [string, RouteName]> = [
   ['/data-explorer', 'dataExplorer'],
   ['/account', 'account'],
   ['/specimen', 'specimen'],
+  ['/backtests', 'backtests'],
 ];
 
 /** Strip trailing slashes, but keep the root as "/" rather than "". */
