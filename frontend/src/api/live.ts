@@ -558,6 +558,50 @@ export const ask = (question: string, language: 'en' | 'ar' = 'en', k = 5) =>
     body: JSON.stringify({ question, language, k }),
   });
 
+export interface AssistantChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+export interface AssistantToolCall {
+  tool: string;
+  args: Record<string, unknown>;
+  summary: string;
+}
+
+// A per-response-type caveat interface, matching this file's existing
+// convention (e.g. BacktestCaveat) rather than one shared global Caveat type.
+export interface AssistantChatCaveat {
+  field: string;
+  message: string;
+  severity: 'critical' | 'warning' | 'info';
+  source: string | null;
+}
+
+export interface AssistantChatResponse {
+  text: string;
+  tools_used: AssistantToolCall[];
+  citations: Citation[];
+  suggested_route: string | null;
+  caveats: AssistantChatCaveat[];
+  model: string;
+}
+
+/** Tool-calling chat: a real model (gemma4:31b) that can look up this system's
+ *  live data via tools and suggest where to go, but never computes a number
+ *  itself — every figure it states is checked against a tool result before
+ *  this returns; see `backend/src/models/assistant_agent.py`. */
+export const chatWithAssistant = (
+  message: string,
+  history: AssistantChatMessage[],
+  language: 'en' | 'ar' = 'en',
+) =>
+  tryJson<AssistantChatResponse>(`${API_BASE}/api/v1/assistant/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, history, language }),
+  });
+
 export const generateReport = (eventId: string) =>
   tryJson<ReportOut>(`${API_BASE}/api/v1/reports/generate`, {
     method: 'POST',

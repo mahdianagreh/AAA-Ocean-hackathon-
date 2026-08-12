@@ -60,6 +60,8 @@ from ingestion import ocean_currents as oc  # noqa: F401 — its own module does
                                              # dotted `backend.src.api.main` import.
 from config import spatial
 from models import (
+    assistant_agent,
+    assistant_tools,
     candidate_sites,
     coral_health_classifier,
     generated_reports,
@@ -87,6 +89,8 @@ from .schemas import (
     ApproveSensitivityWeightResponse,
     AskRequest,
     AskResponse,
+    AssistantChatRequest,
+    AssistantChatResponse,
     BacktestRequest,
     BacktestResult,
     CatchmentOut,
@@ -2033,6 +2037,48 @@ def ask(req: AskRequest):
 
     return AskResponse(answer=text, citations=citations, language=req.language,
                        corpus_files_searched=n_files)
+
+
+def _assistant_dispatch(tool: str, args: dict) -> dict:
+    """The only place an assistant tool call touches real data — `main.py`
+    fetches, `models/assistant_tools.py` only shapes, per this codebase's
+    standing rule that `models/` never imports `api.data_access`/
+    `exposure.store` itself (see that module's docstring)."""
+    if tool == "get_alerts":
+        results, _ = store.latest_results()
+        zone_meta = {z["reef_zone_id"]: z for z in da.reef_zones(include_geometry=False)[0]}
+        return assistant_tools.shape_alerts(results, zone_meta, args.get("min_level", "minimal"))
+    if tool == "get_reef_zone":
+        zones = da.reef_zones(include_geometry=False)[0]
+        return assistant_tools.shape_reef_zone(zones, args.get("zone_id", ""))
+    if tool == "get_event":
+        return assistant_tools.shape_event(da.events(), args.get("event_id", ""))
+    if tool == "get_exposure_run":
+        run = store.get_run(args.get("run_id", ""))
+        return assistant_tools.shape_exposure_run(run)
+    if tool == "get_data_sources":
+        return assistant_tools.shape_data_sources(da.data_sources())
+    if tool == "search_docs":
+        chunks = rag_index.retrieve(str(args.get("query", "")), k=int(args.get("k", 5) or 5))
+        return assistant_tools.shape_search_docs(chunks)
+    raise KeyError(f"unknown tool {tool!r}")
+
+
+@app.post(f"{PREFIX}/assistant/chat", response_model=AssistantChatResponse, tags=["language"])
+def assistant_chat(req: AssistantChatRequest):
+    """Tool-calling chat: the model can look up this system's live data via
+    `_assistant_dispatch` and suggest where to go, but never computes or
+    invents a number — see `models/assistant_agent.py` for the fidelity check."""
+    try:
+        result = assistant_agent.run_assistant_turn(
+            req.message,
+            [m.model_dump() for m in req.history],
+            req.language,
+            _assistant_dispatch,
+        )
+    except ollama_client.OllamaUnavailable:
+        raise HTTPException(503, "The assistant model is not reachable right now.")
+    return AssistantChatResponse(**result, model=ollama_client.MODEL)
 
 
 @app.get(f"{PREFIX}/ask/corpus", tags=["language"])
