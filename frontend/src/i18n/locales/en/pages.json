@@ -70,6 +70,18 @@
       "port_ops": "Port & Industrial Operations",
       "civil_defense": "Municipal / Civil Defense",
       "tourism": "Tourism & Dive Operators"
+    },
+    "table": {
+      "judge": "Judge",
+      "done": "Finished",
+      "failed": "Failed",
+      "starting": "Starting…",
+      "roundBadge": "Round {{round}} of {{max}}",
+      "waiting": "Waiting for this round…",
+      "awaitingJudge": "Awaiting judge review…",
+      "spokenInRound": "Spoke in round {{round}}",
+      "liveRegionRunning": "Round {{round}} of up to {{max}} in progress.",
+      "liveRegionDone": "The debate has finished."
     }
   },
   "recommendationPage": {
