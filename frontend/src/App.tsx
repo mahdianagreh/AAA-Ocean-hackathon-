@@ -9,6 +9,7 @@ import { Landing } from './routes/Landing';
 import { Login } from './routes/Login';
 import { Signup } from './routes/Signup';
 import { AlertsPage } from './routes/AlertsPage';
+import { RecommendationPage } from './routes/RecommendationPage';
 import { EventsPage } from './routes/EventsPage';
 import { ReplayPage } from './routes/ReplayPage';
 import { ReefZonesPage } from './routes/ReefZonesPage';
@@ -83,6 +84,12 @@ export function App() {
         return (
           <DashboardChrome>
             <ReefZonePage zoneId={route.params.id} />
+          </DashboardChrome>
+        );
+      case 'recommendation':
+        return (
+          <DashboardChrome>
+            <RecommendationPage recommendationId={route.params.recommendationId} />
           </DashboardChrome>
         );
 

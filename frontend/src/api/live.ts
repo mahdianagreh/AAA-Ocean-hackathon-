@@ -662,3 +662,69 @@ export const runBacktest = (req: BacktestRequest) =>
 
 export const fetchBacktest = (runId: string) =>
   tryJson<BacktestResult>(`${API_BASE}/api/v1/backtests/${encodeURIComponent(runId)}`);
+
+// ------------------------------------------------------ response recommendations
+
+/** Phase 9 (tasks/phase9/00-phase9-plan.md). One specialist's contribution in one
+ *  round of the debate — content is the model's own text, rendered verbatim like
+ *  every other API-authored string on this page (see AlertCard's headline note). */
+export interface RecommendationTurn {
+  round: number;
+  agent_role: 'aseza' | 'marine_science' | 'port_ops' | 'civil_defense' | 'tourism' | string;
+  content: string;
+  evidence_cited: string[];
+  created_at: string;
+}
+
+export interface RecommendationVerdict {
+  verdict: 'approved' | 'rejected';
+  evidence_cited: string[];
+  reasoning: string;
+  created_at: string;
+}
+
+export interface RecommendationGap {
+  gap_description: string;
+  severity: 'low' | 'medium' | 'high' | null;
+  created_at: string;
+}
+
+export interface ResponseRecommendation {
+  id: string;
+  run_id: string;
+  event_id: string | null;
+  triggered_by: 'auto' | 'human_override';
+  triggered_by_user: string | null;
+  min_risk_level_override: string | null;
+  severity_brief: Record<string, unknown>;
+  final_recommendation: string | null;
+  status: 'running' | 'proposed' | 'judge_approved' | 'judge_rejected' | 'finalized';
+  rounds_used: number | null;
+  converged: boolean | null;
+  model: string;
+  created_at: string;
+  completed_at: string | null;
+  turns: RecommendationTurn[];
+  verdicts: RecommendationVerdict[];
+  gaps: RecommendationGap[];
+}
+
+/** Starts the swarm for an already-stored exposure run and returns the row
+ *  immediately, in `status: "running"` — the swarm itself takes roughly 1-2
+ *  minutes (backend/tasks/phase9/00-phase9-plan.md §4), so the caller polls
+ *  `fetchRecommendation` rather than awaiting completion here.
+ *
+ *  Deliberately no `min_risk_level_override` param: that path requires an
+ *  authenticated operator overriding the default high/critical gate (§2), a
+ *  distinct power-tool this panel does not build — the panel only ever offers
+ *  the automatic path, which the backend itself gates on risk_level, so a
+ *  `409` here means the alert genuinely doesn't clear the bar, not a bug. */
+export const triggerRecommendation = (runId: string) =>
+  tryJson<ResponseRecommendation>(`${API_BASE}/api/v1/recommendations/trigger`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ run_id: runId }),
+  });
+
+export const fetchRecommendation = (id: string) =>
+  tryJson<ResponseRecommendation>(`${API_BASE}/api/v1/recommendations/${encodeURIComponent(id)}`);

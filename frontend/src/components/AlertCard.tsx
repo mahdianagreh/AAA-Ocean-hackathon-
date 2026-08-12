@@ -3,6 +3,7 @@ import { API_BASE } from '../api/client';
 import type { AlertRow } from '../api/live';
 import { BAND_CLASS } from '../api/types';
 import { Link } from './Link';
+import { RecommendedResponsePanel } from './RecommendedResponsePanel';
 import { ValueWithUnit } from './ValueWithUnit';
 
 /** One alert, as a card. Phase 8 asks for a reusable alert row/card built even
@@ -93,6 +94,8 @@ export function AlertCard({ alert, zoneName }: { alert: AlertRow; zoneName?: str
           </span>
         </a>
       </div>
+
+      <RecommendedResponsePanel alert={alert} />
     </article>
   );
 }

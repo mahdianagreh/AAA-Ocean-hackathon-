@@ -24,6 +24,7 @@ const TITLE_KEY: Partial<Record<RouteName, string>> = {
   reefZones: 'reefZones',
   reefZone: 'reefZones',
   alerts: 'alerts',
+  recommendation: 'recommendation',
   reports: 'reports',
   assistant: 'assistant',
   validation: 'validation',

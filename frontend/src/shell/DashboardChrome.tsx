@@ -110,6 +110,12 @@ const ICONS: Record<string, ReactNode> = {
       <path d="M2.5 8 C2.5 9.1 5 10 8 10 C11 10 13.5 9.1 13.5 8" {...stroke} />
     </>
   ),
+  recommendation: (
+    <>
+      <path d="M1.5 3 H9.5 V8 H4 L1.5 10.5 V3 Z" {...stroke} />
+      <path d="M6.5 7.5 H14.5 V12.5 L12 15 V12.5 H6.5 V7.5 Z" {...stroke} />
+    </>
+  ),
 };
 
 const NAV: NavItem[] = [
@@ -118,6 +124,12 @@ const NAV: NavItem[] = [
   { to: '/dashboard/replay', labelKey: 'replay', match: ['replay'], icon: ICONS.replay },
   { to: '/reef-zones', labelKey: 'reefZones', match: ['reefZones', 'reefZone'], icon: ICONS.reef },
   { to: '/alerts', labelKey: 'alerts', match: ['alerts'], icon: ICONS.alerts },
+  {
+    to: '/dashboard/recommendations',
+    labelKey: 'recommendation',
+    match: ['recommendation'],
+    icon: ICONS.recommendation,
+  },
   { to: '/reports', labelKey: 'reports', match: ['reports'], icon: ICONS.reports },
   { to: '/assistant', labelKey: 'assistant', match: ['assistant'], icon: ICONS.assistant },
   { to: '/dashboard/validation', labelKey: 'validation', match: ['validation'], icon: ICONS.validation },

@@ -556,6 +556,60 @@ class AlertOut(BaseModel):
     caveats: list[Caveat] = []
 
 
+# ------------------------------------------------------ response recommendations
+
+class RecommendationTriggerRequest(BaseModel):
+    run_id: str
+    min_risk_level_override: RiskLevel | None = Field(
+        default=None,
+        description="Human-in-the-loop escape hatch: forces a swarm run below the "
+                    "default high/critical gate. Requires authentication — the "
+                    "override itself is part of the audit trail, never a silent "
+                    "bypass (tasks/phase9/00-phase9-plan.md §2).",
+    )
+
+
+class RecommendationTurnOut(BaseModel):
+    round: int
+    agent_role: str
+    content: str
+    evidence_cited: list[str]
+    created_at: datetime
+
+
+class RecommendationVerdictOut(BaseModel):
+    verdict: Literal["approved", "rejected"]
+    evidence_cited: list[str]
+    reasoning: str
+    created_at: datetime
+
+
+class RecommendationGapOut(BaseModel):
+    gap_description: str
+    severity: Literal["low", "medium", "high"] | None
+    created_at: datetime
+
+
+class ResponseRecommendationOut(BaseModel):
+    id: str
+    run_id: str
+    event_id: str | None
+    triggered_by: Literal["auto", "human_override"]
+    triggered_by_user: str | None
+    min_risk_level_override: str | None
+    severity_brief: dict
+    final_recommendation: str | None
+    status: Literal["running", "proposed", "judge_approved", "judge_rejected", "finalized"]
+    rounds_used: int | None
+    converged: bool | None
+    model: str
+    created_at: datetime
+    completed_at: datetime | None
+    turns: list[RecommendationTurnOut] = []
+    verdicts: list[RecommendationVerdictOut] = []
+    gaps: list[RecommendationGapOut] = []
+
+
 # ------------------------------------------------------------------- explain
 
 class ExplainRequest(BaseModel):

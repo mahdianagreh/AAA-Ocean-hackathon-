@@ -703,6 +703,15 @@ CREATE TABLE alerts (
 );
 ```
 
+> **Added 11 Aug 2026 (Phase 9, Mahdi/Nizar).** The storm-response recommendation
+> swarm (`tasks/phase9/00-phase9-plan.md`) adds four tables —
+> `response_recommendations`, `recommendation_turns`, `recommendation_verdicts`,
+> `recommendation_gaps` — and one column, `alerts.recommendation_id text
+> REFERENCES response_recommendations(id)`, linking an alert's existing free-text
+> `recommended_action` to the full evidence-grounded, multi-agent deliberation
+> record behind it. No RLS, matching this section's other tables. Full DDL:
+> `supabase/migrations/20260811090000_response_recommendations.sql`.
+
 ---
 
 ## 5. File storage

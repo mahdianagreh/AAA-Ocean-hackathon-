@@ -32,6 +32,7 @@ export type RouteName =
   | 'reports'
   | 'sitesScore'
   | 'alerts'
+  | 'recommendation'
   | 'systemHealth'
   | 'dataExplorer'
   | 'account'
@@ -69,6 +70,12 @@ const ROUTES: ReadonlyArray<readonly [string, RouteName]> = [
   ['/reports', 'reports'],
   ['/sites/score', 'sitesScore'],
   ['/alerts', 'alerts'],
+  // Both forms resolve to the same page, same reasoning as replay above: there
+  // is no list endpoint to browse, so a bare hand-typed/bookmarked URL still
+  // has to land somewhere rather than 404 — RecommendationPage shows its
+  // empty state instead.
+  ['/dashboard/recommendations', 'recommendation'],
+  ['/dashboard/recommendations/:recommendationId', 'recommendation'],
   ['/system-health', 'systemHealth'],
   ['/data-explorer', 'dataExplorer'],
   ['/account', 'account'],
