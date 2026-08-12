@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { hrefWithSearch, navigate } from '../app/useRoute';
-import { GAP_BAND, MAX_ROUNDS, SWARM_FAILED_PREFIX, parseFinal, roleLabel } from '../app/recommendationText';
+import { GAP_BAND, SWARM_FAILED_PREFIX, parseFinal } from '../app/recommendationText';
 import {
   fetchRecommendation,
   triggerRecommendation,
@@ -9,6 +9,7 @@ import {
   type ResponseRecommendation,
 } from '../api/live';
 import { BAND_CLASS } from '../api/types';
+import { DebateTable } from './DebateTable';
 
 /** Phase 9 — the "Recommended Response" panel on an alert
  *  (tasks/phase9/00-phase9-plan.md §8.7). Lives inside AlertCard, one per alert.
@@ -81,8 +82,6 @@ export function RecommendedResponsePanel({ alert }: { alert: AlertRow }) {
     startPolling(r.id);
   }
 
-  const currentRound = rec ? Math.max(0, ...rec.turns.map((turn) => turn.round)) : 0;
-  const running = rec != null && !rec.completed_at;
   const failed = rec?.final_recommendation?.startsWith(SWARM_FAILED_PREFIX) ?? false;
   const parsed =
     rec?.completed_at && rec.final_recommendation && !failed ? parseFinal(rec.final_recommendation) : null;
@@ -132,13 +131,7 @@ export function RecommendedResponsePanel({ alert }: { alert: AlertRow }) {
         </p>
       ) : null}
 
-      {running ? (
-        <p className="m-0 text-2xs text-ink-3" aria-live="polite">
-          {currentRound > 0
-            ? t('recommendation.runningRound', { round: currentRound, max: MAX_ROUNDS })
-            : t('recommendation.running')}
-        </p>
-      ) : null}
+      {rec ? <DebateTable rec={rec} /> : null}
 
       {rec?.completed_at && failed ? (
         <p role="alert" className="m-0 text-2xs text-risk-critical">
@@ -157,12 +150,6 @@ export function RecommendedResponsePanel({ alert }: { alert: AlertRow }) {
               {t('recommendation.contestedNote', { reasoning: parsed.contested })}
             </p>
           ) : null}
-
-          <p className="m-0 text-2xs text-ink-3">
-            {rec.converged
-              ? t('recommendation.convergedYes', { rounds: rec.rounds_used, max: MAX_ROUNDS })
-              : t('recommendation.convergedNo', { max: MAX_ROUNDS })}
-          </p>
 
           {rec.gaps.length > 0 ? (
             <div className="flex flex-col gap-1.5">
@@ -185,49 +172,6 @@ export function RecommendedResponsePanel({ alert }: { alert: AlertRow }) {
               </ul>
             </div>
           ) : null}
-
-          {rec.verdicts.length > 0 ? (
-            <ul className="m-0 flex list-none flex-col gap-1 p-0">
-              {rec.verdicts.map((v, i) => (
-                <li key={i} className="text-2xs text-ink-2">
-                  <span className="font-semibold">{t('recommendation.judgeLabel')}</span>{' '}
-                  {t(`recommendation.verdict.${v.verdict}`)} — {v.reasoning}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          <details className="glass-panel">
-            <summary className="cursor-pointer p-3 text-2xs font-semibold text-accent list-none [&::-webkit-details-marker]:hidden">
-              {t('recommendation.transcriptToggle')}
-            </summary>
-            <div className="flex flex-col gap-3 px-3 pb-3">
-              {Array.from(new Set(rec.turns.map((turn) => turn.round))).map((round) => (
-                <div key={round} className="flex flex-col gap-1.5">
-                  <h6 className="m-0 text-2xs font-bold text-ink-2">
-                    {t('recommendation.transcriptRound', { n: round })}
-                  </h6>
-                  <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
-                    {rec.turns
-                      .filter((turn) => turn.round === round)
-                      .map((turn, i) => (
-                        <li key={i} className="text-2xs text-ink-2">
-                          <span className="font-semibold text-ink">{roleLabel(t, turn.agent_role)}:</span>{' '}
-                          {turn.content}{' '}
-                          <span className="text-ink-3">
-                            (
-                            {turn.evidence_cited.length > 0
-                              ? t('recommendation.evidenceCount', { n: turn.evidence_cited.length })
-                              : t('recommendation.evidenceNone')}
-                            )
-                          </span>
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </details>
 
           <p className="m-0 text-2xs text-ink-3">{t('recommendation.modelLabel', { model: rec.model })}</p>
         </div>

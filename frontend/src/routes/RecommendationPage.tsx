@@ -4,6 +4,7 @@ import { Card, PageShell, Section } from '../shell/PageShell';
 import { Empty, ErrorState, Loading } from '../components/States';
 import { hrefWithSearch, navigate } from '../app/useRoute';
 import { AlertCard } from '../components/AlertCard';
+import { DebateTable } from '../components/DebateTable';
 import {
   fetchAlerts,
   fetchRecommendation,
@@ -339,67 +340,8 @@ export function RecommendationPage({ recommendationId }: { recommendationId?: st
       </Section>
 
       <Section label={t('recommendationPage.transcriptSection')}>
-        {rounds.length > 0 ? (
-          <div className="flex flex-col gap-4">
-            {rounds.map((r) => (
-              <Card key={r.round}>
-                <h3 className="m-0 text-2xs font-bold text-ink-2">
-                  {t('recommendation.transcriptRound', { n: r.round })}
-                </h3>
-                <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                  {r.turns.map((turn, i) => (
-                    <li key={i} className="flex flex-col gap-1 text-xs">
-                      <span className="font-semibold text-ink">{roleLabel(t, turn.agent_role)}</span>
-                      <span className="max-w-prose text-ink-2">{turn.content}</span>
-                      {turn.evidence_cited.length > 0 ? (
-                        <ul className="m-0 flex list-none flex-col gap-0.5 p-0 ps-3">
-                          {turn.evidence_cited.map((e, j) => (
-                            <li key={j} className="text-2xs text-ink-3">
-                              — {e}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-2xs text-ink-3">{t('recommendation.evidenceNone')}</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <p className="m-0 text-2xs text-ink-3">{t('recommendationPage.transcriptEmpty')}</p>
-          </Card>
-        )}
-      </Section>
-
-      <Section label={t('recommendationPage.verdictsSection')}>
         <Card>
-          {rec.verdicts.length > 0 ? (
-            <ul className="m-0 flex list-none flex-col gap-3 p-0">
-              {rec.verdicts.map((v, i) => (
-                <li key={i} className="flex flex-col gap-1 text-xs">
-                  <span>
-                    <span className="font-semibold">{t('recommendation.judgeLabel')}</span>{' '}
-                    {t(`recommendation.verdict.${v.verdict}`)} — {v.reasoning}
-                  </span>
-                  {v.evidence_cited.length > 0 ? (
-                    <ul className="m-0 flex list-none flex-col gap-0.5 p-0 ps-3">
-                      {v.evidence_cited.map((e, j) => (
-                        <li key={j} className="text-2xs text-ink-3">
-                          — {e}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="m-0 text-2xs text-ink-3">{t('recommendationPage.verdictsEmpty')}</p>
-          )}
+          <DebateTable rec={rec} />
         </Card>
       </Section>
 

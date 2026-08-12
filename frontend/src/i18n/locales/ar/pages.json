@@ -70,6 +70,18 @@
       "port_ops": "عمليات الميناء والصناعة",
       "civil_defense": "البلدية / الدفاع المدني",
       "tourism": "السياحة ومشغلو الغوص"
+    },
+    "table": {
+      "judge": "الحكم",
+      "done": "انتهت",
+      "failed": "فشلت",
+      "starting": "جارٍ البدء…",
+      "roundBadge": "الجولة {{round}} من {{max}}",
+      "waiting": "في انتظار هذه الجولة…",
+      "awaitingJudge": "في انتظار مراجعة الحكم…",
+      "spokenInRound": "تحدّث في الجولة {{round}}",
+      "liveRegionRunning": "الجولة {{round}} من أصل {{max}} قيد التنفيذ.",
+      "liveRegionDone": "انتهى النقاش."
     }
   },
   "recommendationPage": {
